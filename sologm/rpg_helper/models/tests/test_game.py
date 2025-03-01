@@ -7,8 +7,10 @@ from unittest.mock import patch
 
 from sologm.rpg_helper.models.game import (
     Game, 
+    GameSettings,
     MythicGMEGame,
     GameError,
+    SettingValidationError,
     ChannelGameExistsError,
     create_game,
     get_game_class,
@@ -70,7 +72,7 @@ class TestGameClass:
         assert basic_game.name == "Test Game"
         assert basic_game.creator_id == "user1"
         assert basic_game.channel_id == "channel1"
-        assert basic_game.setting_description is None
+        assert basic_game.setting_info is None
         assert isinstance(basic_game.created_at, datetime)
         assert isinstance(basic_game.updated_at, datetime)
         assert basic_game.members == set()
@@ -82,7 +84,7 @@ class TestGameClass:
             name="Test Game",
             creator_id="user1",
             channel_id="channel1",
-            setting_description="Fantasy world"
+            setting_info="Fantasy world"
         )
         game.members.add("user1")
         game.members.add("user2")
@@ -93,7 +95,7 @@ class TestGameClass:
         assert result["name"] == "Test Game"
         assert result["creator_id"] == "user1"
         assert result["channel_id"] == "channel1"
-        assert result["setting_description"] == "Fantasy world"
+        assert result["setting_info"] == "Fantasy world"
         assert isinstance(result["created_at"], str)
         assert isinstance(result["updated_at"], str)
         assert set(result["members"]) == {"user1", "user2"}
@@ -105,7 +107,7 @@ class TestGameClass:
             "name": "Test Game",
             "creator_id": "user1",
             "channel_id": "channel1",
-            "setting_description": "Fantasy world",
+            "setting_info": "Fantasy world",
             "created_at": "2023-01-01T12:00:00",
             "updated_at": "2023-01-02T12:00:00",
             "members": ["user1", "user2"]
@@ -117,7 +119,7 @@ class TestGameClass:
         assert game.name == "Test Game"
         assert game.creator_id == "user1"
         assert game.channel_id == "channel1"
-        assert game.setting_description == "Fantasy world"
+        assert game.setting_info == "Fantasy world"
         assert game.created_at == datetime.fromisoformat("2023-01-01T12:00:00")
         assert game.updated_at == datetime.fromisoformat("2023-01-02T12:00:00")
         assert game.members == {"user1", "user2"}
@@ -182,15 +184,15 @@ class TestGameClass:
         """Test checking if a user is the creator of the game."""
         assert basic_game.is_creator(user_id) is expected
     
-    def test_update_setting(self, basic_game):
+    def test_update_setting_info(self, basic_game):
         """Test updating the game's setting description."""
         # Save the original updated_at time
         original_time = basic_game.updated_at
         
         # Update the setting
-        basic_game.update_setting("New fantasy world")
+        basic_game.update_setting_info("New fantasy world")
         
-        assert basic_game.setting_description == "New fantasy world"
+        assert basic_game.setting_info == "New fantasy world"
         assert basic_game.updated_at > original_time
 
 
@@ -526,35 +528,52 @@ class TestGameSettings:
     """Tests for the Game settings functionality."""
     
     def test_default_settings(self, basic_game):
-        """Test that a new game has empty settings by default."""
-        assert basic_game.settings == {}
+        """Test that a new game has default settings."""
+        # Check that default settings are initialized
+        assert hasattr(basic_game.settings, "poll_default_timeout_minutes")
+        assert hasattr(basic_game.settings, "poll_default_options_count")
+        assert hasattr(basic_game.settings, "poll_default_max_votes")
+        assert hasattr(basic_game.settings, "poll_allow_multiple_votes_per_option")
+        
+        # Check default values
+        assert basic_game.settings.poll_default_timeout_minutes == 240
+        assert basic_game.settings.poll_default_options_count == 5
+        assert basic_game.settings.poll_default_max_votes == 1
+        assert basic_game.settings.poll_allow_multiple_votes_per_option is False
     
-    def test_set_setting(self, basic_game):
-        """Test setting a game setting."""
+    def test_set_setting_valid(self, basic_game):
+        """Test setting a valid game setting."""
         original_time = basic_game.updated_at
         
-        basic_game.set_setting("test_key", "test_value")
+        basic_game.set_setting("poll_default_timeout_minutes", 120)
         
-        assert basic_game.settings["test_key"] == "test_value"
+        assert basic_game.settings.poll_default_timeout_minutes == 120
         assert basic_game.updated_at > original_time
     
-    def test_set_setting_overwrite(self, basic_game):
-        """Test overwriting an existing setting."""
-        basic_game.settings["test_key"] = "old_value"
-        original_time = basic_game.updated_at
+    def test_set_setting_invalid_name(self, basic_game):
+        """Test setting a non-existent setting."""
+        with pytest.raises(AttributeError) as excinfo:
+            basic_game.set_setting("nonexistent_setting", "value")
         
-        basic_game.set_setting("test_key", "new_value")
+        assert "'GameSettings' has no attribute 'nonexistent_setting'" in str(excinfo.value)
+    
+    def test_set_setting_invalid_value(self, basic_game):
+        """Test setting a setting with an invalid value."""
+        with pytest.raises(SettingValidationError) as excinfo:
+            basic_game.set_setting("poll_default_timeout_minutes", -10)
         
-        assert basic_game.settings["test_key"] == "new_value"
-        assert basic_game.updated_at > original_time
+        assert "Invalid value for setting 'poll_default_timeout_minutes'" in str(excinfo.value)
+        assert "must be positive" in str(excinfo.value)
+        # Original value should be unchanged
+        assert basic_game.settings.poll_default_timeout_minutes == 240
     
     def test_get_setting_exists(self, basic_game):
         """Test getting an existing setting."""
-        basic_game.settings["test_key"] = "test_value"
+        basic_game.settings.poll_default_timeout_minutes = 120
         
-        result = basic_game.get_setting("test_key")
+        result = basic_game.get_setting("poll_default_timeout_minutes")
         
-        assert result == "test_value"
+        assert result == 120
     
     def test_get_setting_not_exists(self, basic_game):
         """Test getting a non-existent setting."""
@@ -568,34 +587,24 @@ class TestGameSettings:
         
         assert result == "default_value"
     
-    def test_delete_setting_exists(self, basic_game):
-        """Test deleting an existing setting."""
-        basic_game.settings["test_key"] = "test_value"
-        original_time = basic_game.updated_at
+    def test_delete_setting_not_allowed(self, basic_game):
+        """Test that deleting settings is not allowed."""
+        with pytest.raises(AttributeError) as excinfo:
+            basic_game.delete_setting("poll_default_timeout_minutes")
         
-        result = basic_game.delete_setting("test_key")
-        
-        assert result is True
-        assert "test_key" not in basic_game.settings
-        assert basic_game.updated_at > original_time
-    
-    def test_delete_setting_not_exists(self, basic_game):
-        """Test deleting a non-existent setting."""
-        original_time = basic_game.updated_at
-        
-        result = basic_game.delete_setting("nonexistent_key")
-        
-        assert result is False
-        assert basic_game.updated_at == original_time
+        # Setting should still exist
+        assert hasattr(basic_game.settings, "poll_default_timeout_minutes")
     
     def test_settings_in_to_dict(self, basic_game):
         """Test that settings are included in to_dict output."""
-        basic_game.settings = {"key1": "value1", "key2": 42}
+        basic_game.settings.poll_default_timeout_minutes = 120
+        basic_game.settings.poll_default_options_count = 7
         
         result = basic_game.to_dict()
         
         assert "settings" in result
-        assert result["settings"] == {"key1": "value1", "key2": 42}
+        assert result["settings"]["poll_default_timeout_minutes"] == 120
+        assert result["settings"]["poll_default_options_count"] == 7
     
     def test_settings_from_dict(self):
         """Test that settings are loaded from dict."""
@@ -604,34 +613,112 @@ class TestGameSettings:
             "name": "Test Game",
             "creator_id": "user1",
             "channel_id": "channel1",
-            "settings": {"key1": "value1", "key2": 42}
+            "settings": {
+                "poll_default_timeout_minutes": 120,
+                "poll_default_options_count": 7,
+                "unknown_setting": "value"  # This should be ignored
+            }
         }
         
         game = Game.from_dict(data)
         
-        assert game.settings == {"key1": "value1", "key2": 42}
+        # Custom settings should be loaded
+        assert game.settings.poll_default_timeout_minutes == 120
+        assert game.settings.poll_default_options_count == 7
+        
+        # Unknown settings should be ignored
+        with pytest.raises(AttributeError):
+            game.settings.unknown_setting
     
-    def test_complex_settings(self, basic_game):
-        """Test storing complex nested settings."""
-        complex_setting = {
-            "nested": {
-                "deeper": [1, 2, 3],
-                "value": True
-            },
-            "list": ["a", "b", "c"]
-        }
+    def test_validation_on_init(self):
+        """Test that validation happens during initialization."""
+        with pytest.raises(SettingValidationError) as excinfo:
+            GameSettings(poll_default_timeout_minutes=-10)
         
-        basic_game.set_setting("complex", complex_setting)
+        assert "Invalid value for setting 'poll_default_timeout_minutes'" in str(excinfo.value)
+        assert "must be positive" in str(excinfo.value)
+    
+    def test_validation_all_settings(self):
+        """Test validation for all settings."""
+        # Test poll_default_timeout_minutes
+        with pytest.raises(SettingValidationError):
+            GameSettings(poll_default_timeout_minutes=0)
         
-        # Test direct access
-        assert basic_game.settings["complex"] == complex_setting
+        # Test poll_default_options_count
+        with pytest.raises(SettingValidationError):
+            GameSettings(poll_default_options_count=1)
         
-        # Test via get_setting
-        retrieved = basic_game.get_setting("complex")
-        assert retrieved == complex_setting
-        assert retrieved["nested"]["deeper"] == [1, 2, 3]
+        # Test poll_default_max_votes
+        with pytest.raises(SettingValidationError):
+            GameSettings(poll_default_max_votes=0)
         
-        # Test serialization roundtrip
-        game_dict = basic_game.to_dict()
-        new_game = Game.from_dict(game_dict)
-        assert new_game.settings["complex"] == complex_setting 
+        # Test poll_allow_multiple_votes_per_option (should accept any boolean-convertible value)
+        settings = GameSettings(poll_allow_multiple_votes_per_option=True)
+        assert settings.poll_allow_multiple_votes_per_option is True
+
+@pytest.mark.game
+class TestGamePollSettings:
+    """Tests for the Game poll settings functionality."""
+    
+    def test_default_poll_settings(self, basic_game):
+        """Test that a new game has default poll settings."""
+        assert basic_game.get_poll_default_timeout() == 240
+        assert basic_game.get_poll_default_options_count() == 5
+        assert basic_game.get_poll_default_max_votes() == 1
+        assert basic_game.get_poll_allow_multiple_votes_per_option() is False
+    
+    def test_set_poll_default_timeout(self, basic_game):
+        """Test setting the default poll timeout."""
+        basic_game.set_poll_default_timeout(10)
+        
+        assert basic_game.get_poll_default_timeout() == 10
+        assert basic_game.settings.poll_default_timeout_minutes == 10
+    
+    def test_set_poll_default_timeout_invalid(self, basic_game):
+        """Test setting an invalid default poll timeout."""
+        with pytest.raises(ValueError) as excinfo:
+            basic_game.set_poll_default_timeout(0)
+        
+        assert "Poll timeout must be positive" in str(excinfo.value)
+        assert basic_game.get_poll_default_timeout() == 240  # Unchanged
+    
+    def test_set_poll_default_options_count(self, basic_game):
+        """Test setting the default poll options count."""
+        basic_game.set_poll_default_options_count(7)
+        
+        assert basic_game.get_poll_default_options_count() == 7
+        assert basic_game.settings.poll_default_options_count == 7
+    
+    def test_set_poll_default_options_count_invalid(self, basic_game):
+        """Test setting an invalid default poll options count."""
+        with pytest.raises(ValueError) as excinfo:
+            basic_game.set_poll_default_options_count(1)
+        
+        assert "Poll options count must be at least 2" in str(excinfo.value)
+        assert basic_game.get_poll_default_options_count() == 5  # Unchanged
+    
+    def test_set_poll_default_max_votes(self, basic_game):
+        """Test setting the default poll max votes."""
+        basic_game.set_poll_default_max_votes(3)
+        
+        assert basic_game.get_poll_default_max_votes() == 3
+        assert basic_game.settings.poll_default_max_votes == 3
+    
+    def test_set_poll_default_max_votes_invalid(self, basic_game):
+        """Test setting an invalid default poll max votes."""
+        with pytest.raises(ValueError) as excinfo:
+            basic_game.set_poll_default_max_votes(0)
+        
+        assert "Poll max votes must be at least 1" in str(excinfo.value)
+        assert basic_game.get_poll_default_max_votes() == 1  # Unchanged
+    
+    def test_set_poll_allow_multiple_votes_per_option(self, basic_game):
+        """Test setting whether polls allow multiple votes per option."""
+        basic_game.set_poll_allow_multiple_votes_per_option(True)
+        
+        assert basic_game.get_poll_allow_multiple_votes_per_option() is True
+        assert basic_game.settings.poll_allow_multiple_votes_per_option is True
+        
+        # Test converting non-boolean to boolean
+        basic_game.set_poll_allow_multiple_votes_per_option(0)
+        assert basic_game.get_poll_allow_multiple_votes_per_option() is False 

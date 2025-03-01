@@ -1,54 +1,127 @@
 """
-Data models for user preferences.
+Data models for users and their preferences.
 """
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from datetime import datetime
+from typing import Dict, List, Optional, Set, Any
 
 
 @dataclass
-class UserPreferences:
+class User:
     """
-    User preferences for the RPG Helper.
+    Represents a user of the RPG Helper bot and their preferences.
     """
-    user_id: str
-    num_options: int = 5  # Number of interpretation options
-    timeout_hours: int = 4  # Poll timeout in hours
-    active_game_id: Optional[str] = None  # Currently active game for this user
+    id: str  # Slack user ID
+    name: str  # Display name
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
     
-    def to_dict(self) -> Dict[str, object]:
+    # User preferences that apply across all games
+    theme: str = "default"  # UI theme preference
+    notification_enabled: bool = True  # Whether to receive notifications
+    
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            "user_id": self.user_id,
-            "num_options": self.num_options,
-            "timeout_hours": self.timeout_hours,
-            "active_game_id": self.active_game_id
+            "id": self.id,
+            "name": self.name,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "theme": self.theme,
+            "notification_enabled": self.notification_enabled,
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, object]) -> 'UserPreferences':
+    def from_dict(cls, data: Dict[str, Any]) -> 'User':
         """Create from dictionary."""
-        return cls(
-            user_id=data["user_id"],
-            num_options=data.get("num_options", 5),
-            timeout_hours=data.get("timeout_hours", 4),
-            active_game_id=data.get("active_game_id")
+        user = cls(
+            id=data["id"],
+            name=data["name"],
+            theme=data.get("theme", "default"),
+            notification_enabled=data.get("notification_enabled", True),
         )
+        
+        if "created_at" in data:
+            user.created_at = datetime.fromisoformat(data["created_at"])
+        
+        if "updated_at" in data:
+            user.updated_at = datetime.fromisoformat(data["updated_at"])
+        
+        return user
+    
+    def update_theme(self, theme: str) -> None:
+        """
+        Update the user's theme preference.
+        
+        Args:
+            theme: New theme name
+        """
+        self.theme = theme
+        self.updated_at = datetime.now()
+    
+    def toggle_notifications(self, enabled: bool) -> None:
+        """
+        Enable or disable notifications for this user.
+        
+        Args:
+            enabled: Whether notifications should be enabled
+        """
+        self.notification_enabled = enabled
+        self.updated_at = datetime.now()
 
 
-# In-memory storage for user preferences
-user_preferences: Dict[str, UserPreferences] = {}
+# In-memory storage for users
+users_by_id: Dict[str, User] = {}
 
-def get_user_preferences(user_id: str) -> UserPreferences:
+
+def get_user(user_id: str) -> Optional[User]:
     """
-    Get user preferences, creating default preferences if none exist.
+    Get a user by ID.
     
     Args:
         user_id: User ID
         
     Returns:
-        UserPreferences object
+        User object or None if not found
     """
-    if user_id not in user_preferences:
-        user_preferences[user_id] = UserPreferences(user_id)
+    return users_by_id.get(user_id)
+
+
+def create_or_update_user(user_id: str, name: str) -> User:
+    """
+    Create a new user or update an existing one.
     
-    return user_preferences[user_id]
+    Args:
+        user_id: User ID
+        name: User name
+        
+    Returns:
+        New or updated User object
+    """
+    if user_id in users_by_id:
+        user = users_by_id[user_id]
+        if user.name != name:
+            user.name = name
+            user.updated_at = datetime.now()
+        return user
+    
+    user = User(id=user_id, name=name)
+    users_by_id[user_id] = user
+    return user
+
+
+def delete_user(user_id: str) -> bool:
+    """
+    Delete a user.
+    
+    Args:
+        user_id: User ID
+        
+    Returns:
+        True if deleted, False if not found
+    """
+    if user_id not in users_by_id:
+        return False
+    
+    del users_by_id[user_id]
+    return True

@@ -1,9 +1,9 @@
 """
 Data models for games and memberships.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime
-from typing import Dict, List, Optional, Set, Type, Union, Any
+from typing import Dict, List, Optional, Set, Type, Union, Any, Callable
 import uuid
 
 
@@ -20,6 +20,123 @@ class ChannelGameExistsError(GameError):
         super().__init__(f"A game already exists in channel {channel_id}: '{existing_game.name}' (ID: {existing_game.id})")
 
 
+class SettingValidationError(Exception):
+    """Exception raised when a setting value fails validation."""
+    def __init__(self, setting_name: str, value: Any, message: str):
+        self.setting_name = setting_name
+        self.value = value
+        self.message = message
+        super().__init__(f"Invalid value for setting '{setting_name}': {message}")
+
+
+@dataclass
+class GameSettings:
+    """Settings for a game."""
+    # Poll settings
+    poll_default_timeout_minutes: int = 240
+    poll_default_options_count: int = 5
+    poll_default_max_votes: int = 1
+    poll_allow_multiple_votes_per_option: bool = False
+    
+    # Define validation rules for each setting
+    _validators: Dict[str, Callable[[Any], Optional[str]]] = field(default_factory=dict, repr=False)
+    
+    def __post_init__(self):
+        """Initialize validators for settings."""
+        # Define validation functions that return error message or None if valid
+        self._validators = {
+            "poll_default_timeout_minutes": lambda v: 
+                "must be positive" if v <= 0 else None,
+                
+            "poll_default_options_count": lambda v: 
+                "must be at least 2" if v < 2 else None,
+                
+            "poll_default_max_votes": lambda v: 
+                "must be at least 1" if v < 1 else None,
+                
+            "poll_allow_multiple_votes_per_option": lambda v: 
+                "must be a boolean" if not isinstance(v, bool) else None
+        }
+        
+        # Now that validators are set up, validate all initial values
+        self.validate_all()
+    
+    def validate(self, setting_name: str, value: Any) -> None:
+        """
+        Validate a single setting value.
+        
+        Args:
+            setting_name: Name of the setting to validate
+            value: Value to validate
+            
+        Raises:
+            SettingValidationError: If the value is invalid
+        """
+        # Check if we have a validator for this setting
+        if setting_name in self._validators:
+            validator = self._validators[setting_name]
+            error_message = validator(value)
+            
+            if error_message:
+                raise SettingValidationError(
+                    setting_name=setting_name,
+                    value=value,
+                    message=error_message
+                )
+
+    def get_fields(self) -> List[str]:
+        """Get a list of all fields."""
+        return [f for f in fields(self) if not f.name.startswith('_')]
+    
+    def validate_all(self) -> None:
+        """
+        Validate all current settings.
+        
+        Raises:
+            SettingValidationError: If any setting has an invalid value
+        """
+        # Validate standard fields
+        for field_name in [f.name for f in self.get_fields()]:
+            value = getattr(self, field_name)
+            self.validate(field_name, value)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert settings to dictionary."""
+        return {f.name: getattr(self, f.name) for f in self.get_fields()}
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'GameSettings':
+        """Create settings from dictionary."""
+        # Filter out unknown fields
+        known_field_names = {f.name for f in fields(cls)}
+        filtered_data = {k: v for k, v in data.items() if k in known_field_names}
+        
+        # Create instance with filtered data
+        return cls(**filtered_data)
+    
+    def __setattr__(self, name, value):
+        """Handle setting attributes with validation."""
+        # During initialization, _validators won't exist yet
+        if name == '_validators' or not hasattr(self, '_validators'):
+            # Set attribute without validation during initialization
+            super().__setattr__(name, value)
+            return
+        
+        # Get list of standard field names
+        standard_fields = {f.name for f in fields(self.__class__)}
+        
+        # If it's a standard field, validate and set normally
+        if name in standard_fields:
+            # Validate before setting
+            if name in self._validators:
+                self.validate(name, value)
+            super().__setattr__(name, value)
+        # If it's not a standard field, raise an error
+        else:
+            raise AttributeError(f"'GameSettings' has no attribute '{name}'. "
+                                f"Only predefined settings are allowed.")
+
+
 @dataclass
 class Game:
     """
@@ -29,11 +146,11 @@ class Game:
     name: str  # Game name
     creator_id: str  # User ID of the creator
     channel_id: str  # Slack channel associated with this game
-    setting_description: Optional[str] = None  # RPG setting description
+    setting_info: Optional[str] = None  # RPG setting description
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     members: Set[str] = field(default_factory=set)  # Set of user IDs
-    settings: Dict[str, Any] = field(default_factory=dict)  # Game settings
+    settings: GameSettings = field(default_factory=GameSettings)
     
     def to_dict(self) -> Dict[str, object]:
         """Convert to dictionary for serialization."""
@@ -42,22 +159,25 @@ class Game:
             "name": self.name,
             "creator_id": self.creator_id,
             "channel_id": self.channel_id,
-            "setting_description": self.setting_description,
+            "setting_info": self.setting_info,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "members": list(self.members),
-            "settings": self.settings
+            "settings": self.settings.to_dict()
         }
     
     @classmethod
     def from_dict(cls, data: Dict[str, object]) -> 'Game':
         """Create from dictionary."""
+        settings_data = data.get("settings", {})
+        
         game = cls(
             id=data["id"],
             name=data["name"],
             creator_id=data["creator_id"],
             channel_id=data["channel_id"],
-            setting_description=data.get("setting_description")
+            setting_info=data.get("setting_info"),
+            settings=GameSettings.from_dict(settings_data)
         )
         
         if "created_at" in data:
@@ -68,9 +188,6 @@ class Game:
         
         if "members" in data:
             game.members = set(data["members"])
-        
-        if "settings" in data:
-            game.settings = data["settings"]
         
         return game
     
@@ -115,9 +232,9 @@ class Game:
         """Check if a user is the creator of this game."""
         return user_id == self.creator_id
     
-    def update_setting(self, description: str) -> None:
-        """Update the game's setting description."""
-        self.setting_description = description
+    def update_setting_info(self, setting_info: str) -> None:
+        """Update the game's setting info."""
+        self.setting_info = setting_info
         self.updated_at = datetime.now()
     
     def get_setting(self, key: str, default: Any = None) -> Any:
@@ -131,17 +248,25 @@ class Game:
         Returns:
             Setting value or default
         """
-        return self.settings.get(key, default)
+        try:
+            return getattr(self.settings, key)
+        except AttributeError:
+            return default
     
     def set_setting(self, key: str, value: Any) -> None:
         """
-        Set a game setting value.
+        Set a game setting value with validation.
         
         Args:
             key: Setting key
             value: Setting value
+            
+        Raises:
+            AttributeError: If the setting doesn't exist
+            SettingValidationError: If the value is invalid for this setting
         """
-        self.settings[key] = value
+        # This will raise AttributeError if the setting doesn't exist
+        setattr(self.settings, key, value)
         self.updated_at = datetime.now()
     
     def delete_setting(self, key: str) -> bool:
@@ -152,13 +277,85 @@ class Game:
             key: Setting key
             
         Returns:
-            True if setting was deleted, False if it didn't exist
+            True if setting was deleted
+        
+        Raises:
+            AttributeError: If the setting is a required field or doesn't exist
         """
-        if key in self.settings:
-            del self.settings[key]
-            self.updated_at = datetime.now()
-            return True
-        return False
+        # All settings are required fields in this implementation
+        raise AttributeError(f"Cannot delete required setting '{key}'")
+    
+    # Poll settings convenience methods
+    def get_poll_default_timeout(self) -> int:
+        """Get the default timeout for polls in minutes."""
+        return self.settings.poll_default_timeout_minutes
+    
+    def set_poll_default_timeout(self, minutes: int) -> None:
+        """
+        Set the default timeout for polls in minutes.
+        
+        Args:
+            minutes: Default poll timeout in minutes (must be positive)
+            
+        Raises:
+            ValueError: If minutes is not positive
+        """
+        if minutes <= 0:
+            raise ValueError(f"Poll timeout must be positive, got {minutes}")
+        self.settings.poll_default_timeout_minutes = minutes
+        self.updated_at = datetime.now()
+    
+    def get_poll_default_options_count(self) -> int:
+        """Get the default number of options for polls."""
+        return self.settings.poll_default_options_count
+    
+    def set_poll_default_options_count(self, count: int) -> None:
+        """
+        Set the default number of options for polls.
+        
+        Args:
+            count: Default number of poll options (must be at least 2)
+            
+        Raises:
+            ValueError: If count is less than 2
+        """
+        if count < 2:
+            raise ValueError(f"Poll options count must be at least 2, got {count}")
+        self.settings.poll_default_options_count = count
+        self.updated_at = datetime.now()
+    
+    def get_poll_default_max_votes(self) -> int:
+        """Get the default maximum votes per user for polls."""
+        return self.settings.poll_default_max_votes
+    
+    def set_poll_default_max_votes(self, max_votes: int) -> None:
+        """
+        Set the default maximum votes per user for polls.
+        
+        Args:
+            max_votes: Default maximum votes per user (must be at least 1)
+            
+        Raises:
+            ValueError: If max_votes is less than 1
+        """
+        if max_votes < 1:
+            raise ValueError(f"Poll max votes must be at least 1, got {max_votes}")
+        self.settings.poll_default_max_votes = max_votes
+        self.updated_at = datetime.now()
+    
+    def get_poll_allow_multiple_votes_per_option(self) -> bool:
+        """Get whether polls allow multiple votes for the same option by default."""
+        return self.settings.poll_allow_multiple_votes_per_option
+    
+    def set_poll_allow_multiple_votes_per_option(self, allow: bool) -> None:
+        """
+        Set whether polls allow multiple votes for the same option by default.
+        
+        Args:
+            allow: Whether multiple votes per option are allowed
+        """
+        self.settings.poll_allow_multiple_votes_per_option = bool(allow)
+        self.updated_at = datetime.now()
 
 
 @dataclass
