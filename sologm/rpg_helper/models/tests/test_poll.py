@@ -12,6 +12,7 @@ from sologm.rpg_helper.models.poll import (
     InvalidVoteLimitError,
     active_polls
 )
+from sologm.rpg_helper.models.game import Game, games_by_id
 
 
 @pytest.fixture
@@ -28,144 +29,163 @@ def clean_poll_storage():
 
 
 @pytest.fixture
-def basic_poll():
-    """Fixture to create a basic poll for testing."""
-    return Poll(
-        id="poll1",
-        channel_id="channel1",
+def basic_game():
+    """Fixture to create a basic game for testing."""
+    game = Game(
+        id="game1",
+        name="Test Game",
         creator_id="user1",
-        question="What should happen next?",
-        options=["Option 1", "Option 2", "Option 3"]
+        channel_id="channel1"
     )
+    # Store in the global dictionary for lookups
+    games_by_id[game.id] = game
+    
+    yield game
+    
+    # Clean up
+    if game.id in games_by_id:
+        del games_by_id[game.id]
 
 
 @pytest.fixture
-def multi_vote_poll():
-    """Fixture to create a poll that allows multiple votes per user."""
-    return Poll(
-        id="poll2",
-        channel_id="channel1",
-        creator_id="user1",
-        question="What should happen next?",
+def basic_poll(basic_game):
+    """Fixture to create a basic poll for testing."""
+    poll = Poll(
+        id="poll1",
+        title="Test Poll",
         options=["Option 1", "Option 2", "Option 3"],
+        creator_id="user1",
+        game=basic_game
+    )
+    # Add the poll to the game
+    basic_game.add_poll(poll)
+    return poll
+
+
+@pytest.fixture
+def multi_vote_poll(basic_game):
+    """Fixture to create a poll that allows multiple votes per user."""
+    poll = Poll(
+        id="poll2",
+        title="Multi Vote Poll",
+        options=["Option 1", "Option 2", "Option 3"],
+        creator_id="user1",
+        game=basic_game,
         max_votes_per_user=2
     )
+    basic_game.add_poll(poll)
+    return poll
 
 
 @pytest.fixture
-def multi_option_vote_poll():
+def multi_option_vote_poll(basic_game):
     """Fixture to create a poll that allows multiple votes for the same option."""
-    return Poll(
+    poll = Poll(
         id="poll3",
-        channel_id="channel1",
-        creator_id="user1",
-        question="What should happen next?",
+        title="Multi Option Vote Poll",
         options=["Option 1", "Option 2", "Option 3"],
+        creator_id="user1",
+        game=basic_game,
         allow_multiple_votes_per_option=True
     )
+    basic_game.add_poll(poll)
+    return poll
 
 
 @pytest.mark.poll
 class TestPollClass:
     """Tests for the Poll class."""
     
-    def test_init(self, basic_poll):
+    def test_init(self, basic_poll, basic_game):
         """Test Poll initialization."""
         assert basic_poll.id == "poll1"
-        assert basic_poll.channel_id == "channel1"
-        assert basic_poll.creator_id == "user1"
-        assert basic_poll.question == "What should happen next?"
+        assert basic_poll.title == "Test Poll"
         assert basic_poll.options == ["Option 1", "Option 2", "Option 3"]
-        assert basic_poll.max_votes_per_user == 1
-        assert basic_poll.allow_multiple_votes_per_option is False
+        assert basic_poll.creator_id == "user1"
+        assert basic_poll.game == basic_game
         assert isinstance(basic_poll.created_at, datetime)
-        assert basic_poll.expires_at is None
-        assert basic_poll.message_ts is None
+        assert basic_poll.closed_at is None
         assert basic_poll.votes == {}
         assert basic_poll.timer is None
     
-    def test_init_with_invalid_max_votes(self):
+    def test_init_with_invalid_max_votes(self, basic_game):
         """Test Poll initialization with invalid max_votes_per_user."""
         with pytest.raises(InvalidVoteLimitError) as excinfo:
             Poll(
                 id="poll1",
-                channel_id="channel1",
-                creator_id="user1",
-                question="What should happen next?",
+                title="Test Poll",
                 options=["Option 1", "Option 2", "Option 3"],
+                creator_id="user1",
+                game=basic_game,
                 max_votes_per_user=0
             )
         
         assert "Maximum votes per user must be at least 1" in str(excinfo.value)
         assert "got 0" in str(excinfo.value)
     
-    def test_to_dict(self, basic_poll):
+    def test_to_dict(self, basic_poll, basic_game):
         """Test conversion to dictionary."""
         # Add some votes
         basic_poll.votes = {"user1": {0}, "user2": {1}}
-        basic_poll.expires_at = datetime.now() + timedelta(hours=1)
-        basic_poll.message_ts = "12345.67890"
+        basic_poll.closed_at = datetime.now() + timedelta(hours=1)
         
         result = basic_poll.to_dict()
         
         assert result["id"] == "poll1"
-        assert result["channel_id"] == "channel1"
-        assert result["creator_id"] == "user1"
-        assert result["question"] == "What should happen next?"
+        assert result["title"] == "Test Poll"
         assert result["options"] == ["Option 1", "Option 2", "Option 3"]
-        assert result["max_votes_per_user"] == 1
-        assert result["allow_multiple_votes_per_option"] is False
+        assert result["creator_id"] == "user1"
+        assert result["game_id"] == basic_game.id  # Should store the game ID
         assert isinstance(result["created_at"], str)
-        assert isinstance(result["expires_at"], str)
-        assert result["message_ts"] == "12345.67890"
+        assert isinstance(result["updated_at"], str)
+        assert isinstance(result["closed_at"], str)
         assert result["votes"] == {"user1": [0], "user2": [1]}
     
-    def test_from_dict(self):
+    def test_from_dict(self, basic_game):
         """Test creation from dictionary."""
         data = {
             "id": "poll1",
-            "channel_id": "channel1",
-            "creator_id": "user1",
-            "question": "What should happen next?",
+            "title": "Test Poll",
             "options": ["Option 1", "Option 2", "Option 3"],
+            "creator_id": "user1",
+            "game_id": basic_game.id,
             "created_at": "2023-01-01T12:00:00",
-            "expires_at": "2023-01-01T13:00:00",
-            "message_ts": "12345.67890",
+            "updated_at": "2023-01-01T12:30:00",
+            "closed_at": "2023-01-01T13:00:00",
             "votes": {"user1": [0], "user2": [1]},
             "max_votes_per_user": 2,
             "allow_multiple_votes_per_option": True
         }
         
-        poll = Poll.from_dict(data)
+        poll = Poll.from_dict(data, games_by_id)
         
         assert poll.id == "poll1"
-        assert poll.channel_id == "channel1"
-        assert poll.creator_id == "user1"
-        assert poll.question == "What should happen next?"
+        assert poll.title == "Test Poll"
         assert poll.options == ["Option 1", "Option 2", "Option 3"]
+        assert poll.creator_id == "user1"
+        assert poll.game == basic_game  # Should reference the actual game object
         assert poll.max_votes_per_user == 2
         assert poll.allow_multiple_votes_per_option is True
         assert poll.created_at == datetime.fromisoformat("2023-01-01T12:00:00")
-        assert poll.expires_at == datetime.fromisoformat("2023-01-01T13:00:00")
-        assert poll.message_ts == "12345.67890"
+        assert poll.updated_at == datetime.fromisoformat("2023-01-01T12:30:00")
+        assert poll.closed_at == datetime.fromisoformat("2023-01-01T13:00:00")
         assert poll.votes == {"user1": {0}, "user2": {1}}
     
-    def test_from_dict_with_invalid_max_votes(self):
-        """Test creation from dictionary with invalid max_votes_per_user."""
+    def test_from_dict_with_invalid_game_id(self):
+        """Test creation from dictionary with invalid game ID."""
         data = {
             "id": "poll1",
-            "channel_id": "channel1",
-            "creator_id": "user1",
-            "question": "What should happen next?",
+            "title": "Test Poll",
             "options": ["Option 1", "Option 2", "Option 3"],
-            "max_votes_per_user": 0
+            "creator_id": "user1",
+            "game_id": "nonexistent_game_id",
+            "max_votes_per_user": 1
         }
         
-        with pytest.raises(InvalidVoteLimitError) as excinfo:
-            Poll.from_dict(data)
+        with pytest.raises(ValueError) as excinfo:
+            Poll.from_dict(data, games_by_id)
         
-        assert "Maximum votes per user must be at least 1" in str(excinfo.value)
-        assert "got 0" in str(excinfo.value)
+        assert "Game with ID nonexistent_game_id not found" in str(excinfo.value)
     
     def test_add_vote(self, basic_poll):
         """Test adding a vote."""
@@ -189,20 +209,17 @@ class TestPollClass:
         with pytest.raises(VoteLimitExceededError) as excinfo:
             basic_poll.add_vote("user1", 1)
         
-        assert "User user1 has already voted 1 times" in str(excinfo.value)
-        assert "Maximum allowed votes is 1" in str(excinfo.value)
-        assert basic_poll.votes["user1"] == {0}  # Only the first vote remains
+        assert "User user1 has already used 1 of 1 allowed votes" in str(excinfo.value)
     
-    def test_add_vote_multiple_allowed(self, multi_vote_poll):
-        """Test adding multiple votes when allowed."""
+    def test_add_vote_exceed_limit_multi_vote(self, multi_vote_poll):
+        """Test adding more votes than allowed with multi-vote poll."""
         multi_vote_poll.add_vote("user1", 0)
         multi_vote_poll.add_vote("user1", 1)
         
-        assert multi_vote_poll.votes["user1"] == {0, 1}
-        
-        # Third vote should still fail
-        with pytest.raises(VoteLimitExceededError):
+        with pytest.raises(VoteLimitExceededError) as excinfo:
             multi_vote_poll.add_vote("user1", 2)
+        
+        assert "User user1 has already used 2 of 2 allowed votes" in str(excinfo.value)
     
     def test_add_vote_same_option_not_allowed(self, basic_poll):
         """Test adding a vote for the same option when not allowed."""

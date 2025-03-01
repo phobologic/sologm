@@ -14,4 +14,8 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers", "functions: tests for game-related functions"
-    ) 
+    )
+    config.addinivalue_line(
+        "markers",
+        "poll: mark test as a poll-related test"
+    )

@@ -151,6 +151,7 @@ class Game:
     updated_at: datetime = field(default_factory=datetime.now)
     members: Set[str] = field(default_factory=set)  # Set of user IDs
     settings: GameSettings = field(default_factory=GameSettings)
+    polls: List['Poll'] = field(default_factory=list)  # List of polls associated with this game
     
     def to_dict(self) -> Dict[str, object]:
         """Convert to dictionary for serialization."""
@@ -163,7 +164,8 @@ class Game:
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "members": list(self.members),
-            "settings": self.settings.to_dict()
+            "settings": self.settings.to_dict(),
+            "poll_ids": [poll.id for poll in self.polls]  # Store just the IDs for serialization
         }
     
     @classmethod
@@ -177,7 +179,8 @@ class Game:
             creator_id=data["creator_id"],
             channel_id=data["channel_id"],
             setting_info=data.get("setting_info"),
-            settings=GameSettings.from_dict(settings_data)
+            settings=GameSettings.from_dict(settings_data),
+            polls=[]  # Initialize with empty list, we'll resolve poll IDs later
         )
         
         if "created_at" in data:
@@ -188,6 +191,10 @@ class Game:
         
         if "members" in data:
             game.members = set(data["members"])
+        
+        # Store poll IDs temporarily - they'll be resolved to Poll objects when needed
+        if "poll_ids" in data:
+            game.polls = data["poll_ids"]
         
         return game
     
@@ -356,6 +363,66 @@ class Game:
         """
         self.settings.poll_allow_multiple_votes_per_option = bool(allow)
         self.updated_at = datetime.now()
+    
+    def add_poll(self, poll: 'Poll') -> None:
+        """
+        Add a poll to this game.
+        
+        Args:
+            poll: Poll to add
+            
+        Raises:
+            ValueError: If the poll is already associated with this game
+        """
+        if poll in self.polls:
+            raise ValueError(f"Poll {poll.id} is already associated with this game")
+        
+        self.polls.append(poll)
+        self.updated_at = datetime.now()
+    
+    def remove_poll(self, poll: 'Poll') -> bool:
+        """
+        Remove a poll from this game.
+        
+        Args:
+            poll: Poll to remove
+            
+        Returns:
+            True if the poll was removed, False if it wasn't associated with this game
+        """
+        if poll not in self.polls:
+            return False
+        
+        self.polls.remove(poll)
+        self.updated_at = datetime.now()
+        return True
+    
+    def get_polls(self) -> List['Poll']:
+        """
+        Get all polls associated with this game.
+        
+        Returns:
+            List of Poll objects
+        """
+        return self.polls
+
+    def resolve_poll_references(self) -> None:
+        """
+        Resolve poll IDs to Poll objects.
+        This should be called after all polls have been loaded.
+        """
+        from sologm.rpg_helper.models.poll import active_polls, archived_polls
+        
+        # If polls is already a list of Poll objects, nothing to do
+        if not self.polls or (self.polls and isinstance(self.polls[0], str)):
+            poll_ids = self.polls
+            self.polls = []
+            
+            for poll_id in poll_ids:
+                if poll_id in active_polls:
+                    self.polls.append(active_polls[poll_id])
+                elif poll_id in archived_polls:
+                    self.polls.append(archived_polls[poll_id])
 
 
 @dataclass

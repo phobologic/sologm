@@ -722,3 +722,172 @@ class TestGamePollSettings:
         # Test converting non-boolean to boolean
         basic_game.set_poll_allow_multiple_votes_per_option(0)
         assert basic_game.get_poll_allow_multiple_votes_per_option() is False 
+
+@pytest.mark.game
+class TestGamePolls:
+    """Tests for the Game polls functionality."""
+    
+    def test_add_poll(self, basic_game):
+        """Test adding a poll to a game."""
+        from sologm.rpg_helper.models.poll import Poll
+        
+        poll = Poll(
+            id="poll1",
+            title="Test Poll",
+            options=["Option 1", "Option 2", "Option 3"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        # The poll should already reference the game
+        assert poll.game == basic_game
+        
+        # Add the poll to the game
+        basic_game.add_poll(poll)
+        
+        # Check that the poll was added
+        assert poll in basic_game.polls
+        assert len(basic_game.polls) == 1
+    
+    def test_add_poll_already_exists(self, basic_game):
+        """Test adding a poll that's already in the game."""
+        from sologm.rpg_helper.models.poll import Poll
+        
+        poll = Poll(
+            id="poll1",
+            title="Test Poll",
+            options=["Option 1", "Option 2", "Option 3"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        # Add the poll to the game
+        basic_game.add_poll(poll)
+        
+        # Try to add it again
+        with pytest.raises(ValueError) as excinfo:
+            basic_game.add_poll(poll)
+        
+        assert f"Poll {poll.id} is already associated with this game" in str(excinfo.value)
+    
+    def test_remove_poll(self, basic_game):
+        """Test removing a poll from a game."""
+        from sologm.rpg_helper.models.poll import Poll
+        
+        poll = Poll(
+            id="poll1",
+            title="Test Poll",
+            options=["Option 1", "Option 2", "Option 3"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        # Add the poll to the game
+        basic_game.add_poll(poll)
+        
+        # Remove the poll
+        result = basic_game.remove_poll(poll)
+        
+        # Check that the poll was removed
+        assert result is True
+        assert poll not in basic_game.polls
+        assert len(basic_game.polls) == 0
+    
+    def test_remove_poll_not_exists(self, basic_game):
+        """Test removing a poll that's not in the game."""
+        from sologm.rpg_helper.models.poll import Poll
+        
+        poll = Poll(
+            id="poll1",
+            title="Test Poll",
+            options=["Option 1", "Option 2", "Option 3"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        # Try to remove a poll that's not in the game
+        result = basic_game.remove_poll(poll)
+        
+        # Check that the result is False
+        assert result is False
+    
+    def test_get_polls(self, basic_game):
+        """Test getting all polls for a game."""
+        from sologm.rpg_helper.models.poll import Poll
+        
+        # Create some polls
+        poll1 = Poll(
+            id="poll1",
+            title="Test Poll 1",
+            options=["Option 1", "Option 2", "Option 3"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        poll2 = Poll(
+            id="poll2",
+            title="Test Poll 2",
+            options=["Option A", "Option B", "Option C"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        # Add the polls to the game
+        basic_game.add_poll(poll1)
+        basic_game.add_poll(poll2)
+        
+        # Get all polls
+        polls = basic_game.get_polls()
+        
+        # Check that both polls are returned
+        assert len(polls) == 2
+        assert poll1 in polls
+        assert poll2 in polls
+    
+    def test_to_dict_with_polls(self, basic_game):
+        """Test that polls are included in to_dict output."""
+        from sologm.rpg_helper.models.poll import Poll
+        
+        # Create some polls
+        poll1 = Poll(
+            id="poll1",
+            title="Test Poll 1",
+            options=["Option 1", "Option 2", "Option 3"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        poll2 = Poll(
+            id="poll2",
+            title="Test Poll 2",
+            options=["Option A", "Option B", "Option C"],
+            creator_id="user1",
+            game=basic_game
+        )
+        
+        # Add the polls to the game
+        basic_game.add_poll(poll1)
+        basic_game.add_poll(poll2)
+        
+        # Convert to dictionary
+        result = basic_game.to_dict()
+        
+        # Check that poll IDs are included
+        assert "poll_ids" in result
+        assert set(result["poll_ids"]) == {"poll1", "poll2"}
+    
+    def test_from_dict_with_polls(self, clean_game_storage):
+        """Test that poll IDs are loaded from dict but not resolved to objects."""
+        data = {
+            "id": "game1",
+            "name": "Test Game",
+            "creator_id": "user1",
+            "channel_id": "channel1",
+            "poll_ids": ["poll1", "poll2"]
+        }
+        
+        game = Game.from_dict(data)
+        
+        # The poll_ids should be loaded as a list of strings
+        # They will be resolved to Poll objects later when needed
+        assert game.polls == ["poll1", "poll2"] 

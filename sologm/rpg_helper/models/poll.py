@@ -18,10 +18,7 @@ class VoteLimitExceededError(PollError):
         self.user_id = user_id
         self.current_votes = current_votes
         self.max_votes = max_votes
-        super().__init__(
-            f"User {user_id} has already voted {current_votes} times. "
-            f"Maximum allowed votes is {max_votes}."
-        )
+        super().__init__(f"User {user_id} has already used {current_votes} of {max_votes} allowed votes")
 
 
 class InvalidVoteLimitError(PollError):
@@ -36,19 +33,19 @@ class InvalidVoteLimitError(PollError):
 @dataclass
 class Poll:
     """
-    Represents a poll for interpretation voting.
+    Represents a poll with options that users can vote on.
     """
-    id: str
-    channel_id: str
-    creator_id: str
-    question: str
-    options: List[str]
+    id: str  # Unique identifier
+    title: str  # Poll title/question
+    options: List[str]  # List of options to vote on
+    creator_id: str  # User ID of the creator
+    game: 'Game'  # Reference to the game this poll belongs to
     created_at: datetime = field(default_factory=datetime.now)
-    expires_at: Optional[datetime] = None
-    message_ts: Optional[str] = None
-    votes: Dict[str, Set[int]] = field(default_factory=dict)  # user_id -> set of option indices
-    max_votes_per_user: int = 1
-    allow_multiple_votes_per_option: bool = False  # Whether users can vote multiple times for the same option
+    updated_at: datetime = field(default_factory=datetime.now)
+    closed_at: Optional[datetime] = None  # When the poll was closed
+    max_votes_per_user: int = 1  # Maximum number of votes per user
+    allow_multiple_votes_per_option: bool = False  # Whether users can vote for the same option multiple times
+    votes: Dict[str, Set[int]] = field(default_factory=dict)  # Maps user_id to set of option indices
     timer: Optional[Timer] = None
 
     def __post_init__(self):
@@ -56,50 +53,53 @@ class Poll:
         if self.max_votes_per_user < 1:
             raise InvalidVoteLimitError(self.max_votes_per_user)
 
-    def to_dict(self) -> Dict[str, Union[str, List[str], Dict[str, List[int]]]]:
-        """Convert to dictionary (excluding timer for serialization)."""
+    def to_dict(self) -> Dict[str, object]:
+        """Convert to dictionary for serialization."""
         return {
             "id": self.id,
-            "channel_id": self.channel_id,
-            "creator_id": self.creator_id,
-            "question": self.question,
+            "title": self.title,
             "options": self.options,
+            "creator_id": self.creator_id,
+            "game_id": self.game.id,  # Store just the ID for serialization
             "created_at": self.created_at.isoformat(),
-            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "message_ts": self.message_ts,
-            "votes": {user: list(indices) for user, indices in self.votes.items()},
+            "updated_at": self.updated_at.isoformat(),
+            "closed_at": self.closed_at.isoformat() if self.closed_at else None,
             "max_votes_per_user": self.max_votes_per_user,
-            "allow_multiple_votes_per_option": self.allow_multiple_votes_per_option
+            "allow_multiple_votes_per_option": self.allow_multiple_votes_per_option,
+            "votes": {user_id: list(option_indices) for user_id, option_indices in self.votes.items()}
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Union[str, List[str], Dict[str, List[int]]]]) -> 'Poll':
+    def from_dict(cls, data: Dict[str, object], games_by_id: Dict[str, 'Game']) -> 'Poll':
         """Create from dictionary."""
-        max_votes = data.get("max_votes_per_user", 1)
-        if max_votes < 1:
-            raise InvalidVoteLimitError(max_votes)
-            
+        # Look up the game by ID
+        game_id = data["game_id"]
+        if game_id not in games_by_id:
+            raise ValueError(f"Game with ID {game_id} not found")
+        
+        game = games_by_id[game_id]
+        
         poll = cls(
             id=data["id"],
-            channel_id=data["channel_id"],
-            creator_id=data["creator_id"],
-            question=data["question"],
+            title=data["title"],
             options=data["options"],
-            max_votes_per_user=max_votes,
+            creator_id=data["creator_id"],
+            game=game,  # Use the actual game object
+            max_votes_per_user=data.get("max_votes_per_user", 1),
             allow_multiple_votes_per_option=data.get("allow_multiple_votes_per_option", False)
         )
         
         if "created_at" in data:
             poll.created_at = datetime.fromisoformat(data["created_at"])
         
-        if "expires_at" in data and data["expires_at"]:
-            poll.expires_at = datetime.fromisoformat(data["expires_at"])
+        if "updated_at" in data:
+            poll.updated_at = datetime.fromisoformat(data["updated_at"])
         
-        if "message_ts" in data:
-            poll.message_ts = data["message_ts"]
+        if "closed_at" in data and data["closed_at"]:
+            poll.closed_at = datetime.fromisoformat(data["closed_at"])
         
         if "votes" in data:
-            poll.votes = {user: set(indices) for user, indices in data["votes"].items()}
+            poll.votes = {user_id: set(option_indices) for user_id, option_indices in data["votes"].items()}
         
         return poll
 
