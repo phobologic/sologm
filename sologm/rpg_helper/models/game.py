@@ -70,7 +70,18 @@ class Game:
         return game
     
     def add_member(self, user_id: str) -> None:
-        """Add a user to the game."""
+        """
+        Add a user to the game.
+        
+        Args:
+            user_id: The ID of the user to add
+            
+        Raises:
+            ValueError: If the user is already a member of the game
+        """
+        if user_id in self.members:
+            raise ValueError(f"User {user_id} is already a member of this game")
+        
         self.members.add(user_id)
         self.updated_at = datetime.now()
     
@@ -78,14 +89,18 @@ class Game:
         """
         Remove a user from the game.
         
+        Args:
+            user_id: The ID of the user to remove
+            
         Returns:
-            bool: True if user was removed, False if user wasn't a member
+            bool: True if user was successfully removed
+            
+        Raises:
+            ValueError: If the user is not a member of the game
         """
-        if user_id in self.members:
-            self.members.remove(user_id)
-            self.updated_at = datetime.now()
-            return True
-        return False
+        self.members.remove(user_id)
+        self.updated_at = datetime.now()
+        return True
     
     def is_member(self, user_id: str) -> bool:
         """Check if a user is a member of this game."""
@@ -121,12 +136,64 @@ class MythicGMEGame(Game):
         game.chaos_factor = data.get("chaos_factor", 5)
         return game
     
-    def update_chaos_factor(self, factor: int) -> None:
-        """Update the game's chaos factor."""
+    def update_chaos_factor(self, factor: int) -> int:
+        """
+        Update the game's chaos factor.
+        
+        Args:
+            factor: New chaos factor value (must be between 1 and 9)
+            
+        Returns:
+            int: The new chaos factor value
+            
+        Raises:
+            ValueError: If the chaos factor is outside the valid range (1-9)
+        """
         if 1 <= factor <= 9:
             self.chaos_factor = factor
             self.updated_at = datetime.now()
+            return self.chaos_factor
+        else:
+            raise ValueError(f"Chaos factor must be between 1 and 9, got {factor}")
+    
+    def get_chaos_factor(self) -> int:
+        """
+        Get the current chaos factor.
+        
+        Returns:
+            int: The current chaos factor value
 
+        Raises:
+            ValueError: If the chaos factor is outside the valid range (1-9)
+        """
+        return self.chaos_factor
+    
+    def increment_chaos_factor(self) -> int:
+        """
+        Increment the chaos factor by 1.
+        
+        Returns:
+            int: The new chaos factor value if incremented
+
+        Raises:
+            ValueError: If the chaos factor is outside the valid range (1-9)
+        """
+        current_factor = self.get_chaos_factor()
+        if current_factor < 9:
+            new_factor = current_factor + 1
+            return self.update_chaos_factor(new_factor)
+    
+    def decrement_chaos_factor(self) -> int:
+        """
+        Decrement the chaos factor by 1.
+        
+        Returns:
+            int: The new chaos factor value if decremented
+        """
+        current_factor = self.get_chaos_factor()
+        if current_factor > 1:
+            new_factor = current_factor - 1
+            return self.update_chaos_factor(new_factor)
 
 # In-memory storage for games
 games_by_id: Dict[str, Game] = {}
