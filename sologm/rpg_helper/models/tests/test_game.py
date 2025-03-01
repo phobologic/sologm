@@ -520,3 +520,118 @@ class TestGameFunctions:
         """Test deleting a non-existent game."""
         result = delete_game("nonexistent-id")
         assert result is False 
+
+@pytest.mark.game
+class TestGameSettings:
+    """Tests for the Game settings functionality."""
+    
+    def test_default_settings(self, basic_game):
+        """Test that a new game has empty settings by default."""
+        assert basic_game.settings == {}
+    
+    def test_set_setting(self, basic_game):
+        """Test setting a game setting."""
+        original_time = basic_game.updated_at
+        
+        basic_game.set_setting("test_key", "test_value")
+        
+        assert basic_game.settings["test_key"] == "test_value"
+        assert basic_game.updated_at > original_time
+    
+    def test_set_setting_overwrite(self, basic_game):
+        """Test overwriting an existing setting."""
+        basic_game.settings["test_key"] = "old_value"
+        original_time = basic_game.updated_at
+        
+        basic_game.set_setting("test_key", "new_value")
+        
+        assert basic_game.settings["test_key"] == "new_value"
+        assert basic_game.updated_at > original_time
+    
+    def test_get_setting_exists(self, basic_game):
+        """Test getting an existing setting."""
+        basic_game.settings["test_key"] = "test_value"
+        
+        result = basic_game.get_setting("test_key")
+        
+        assert result == "test_value"
+    
+    def test_get_setting_not_exists(self, basic_game):
+        """Test getting a non-existent setting."""
+        result = basic_game.get_setting("nonexistent_key")
+        
+        assert result is None
+    
+    def test_get_setting_with_default(self, basic_game):
+        """Test getting a non-existent setting with a default value."""
+        result = basic_game.get_setting("nonexistent_key", "default_value")
+        
+        assert result == "default_value"
+    
+    def test_delete_setting_exists(self, basic_game):
+        """Test deleting an existing setting."""
+        basic_game.settings["test_key"] = "test_value"
+        original_time = basic_game.updated_at
+        
+        result = basic_game.delete_setting("test_key")
+        
+        assert result is True
+        assert "test_key" not in basic_game.settings
+        assert basic_game.updated_at > original_time
+    
+    def test_delete_setting_not_exists(self, basic_game):
+        """Test deleting a non-existent setting."""
+        original_time = basic_game.updated_at
+        
+        result = basic_game.delete_setting("nonexistent_key")
+        
+        assert result is False
+        assert basic_game.updated_at == original_time
+    
+    def test_settings_in_to_dict(self, basic_game):
+        """Test that settings are included in to_dict output."""
+        basic_game.settings = {"key1": "value1", "key2": 42}
+        
+        result = basic_game.to_dict()
+        
+        assert "settings" in result
+        assert result["settings"] == {"key1": "value1", "key2": 42}
+    
+    def test_settings_from_dict(self):
+        """Test that settings are loaded from dict."""
+        data = {
+            "id": "game1",
+            "name": "Test Game",
+            "creator_id": "user1",
+            "channel_id": "channel1",
+            "settings": {"key1": "value1", "key2": 42}
+        }
+        
+        game = Game.from_dict(data)
+        
+        assert game.settings == {"key1": "value1", "key2": 42}
+    
+    def test_complex_settings(self, basic_game):
+        """Test storing complex nested settings."""
+        complex_setting = {
+            "nested": {
+                "deeper": [1, 2, 3],
+                "value": True
+            },
+            "list": ["a", "b", "c"]
+        }
+        
+        basic_game.set_setting("complex", complex_setting)
+        
+        # Test direct access
+        assert basic_game.settings["complex"] == complex_setting
+        
+        # Test via get_setting
+        retrieved = basic_game.get_setting("complex")
+        assert retrieved == complex_setting
+        assert retrieved["nested"]["deeper"] == [1, 2, 3]
+        
+        # Test serialization roundtrip
+        game_dict = basic_game.to_dict()
+        new_game = Game.from_dict(game_dict)
+        assert new_game.settings["complex"] == complex_setting 

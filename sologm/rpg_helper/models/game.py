@@ -3,7 +3,7 @@ Data models for games and memberships.
 """
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Set, Type, Union
+from typing import Dict, List, Optional, Set, Type, Union, Any
 import uuid
 
 
@@ -33,6 +33,7 @@ class Game:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     members: Set[str] = field(default_factory=set)  # Set of user IDs
+    settings: Dict[str, Any] = field(default_factory=dict)  # Game settings
     
     def to_dict(self) -> Dict[str, object]:
         """Convert to dictionary for serialization."""
@@ -44,7 +45,8 @@ class Game:
             "setting_description": self.setting_description,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
-            "members": list(self.members)
+            "members": list(self.members),
+            "settings": self.settings
         }
     
     @classmethod
@@ -66,6 +68,9 @@ class Game:
         
         if "members" in data:
             game.members = set(data["members"])
+        
+        if "settings" in data:
+            game.settings = data["settings"]
         
         return game
     
@@ -114,6 +119,46 @@ class Game:
         """Update the game's setting description."""
         self.setting_description = description
         self.updated_at = datetime.now()
+    
+    def get_setting(self, key: str, default: Any = None) -> Any:
+        """
+        Get a game setting value.
+        
+        Args:
+            key: Setting key
+            default: Default value if setting doesn't exist
+            
+        Returns:
+            Setting value or default
+        """
+        return self.settings.get(key, default)
+    
+    def set_setting(self, key: str, value: Any) -> None:
+        """
+        Set a game setting value.
+        
+        Args:
+            key: Setting key
+            value: Setting value
+        """
+        self.settings[key] = value
+        self.updated_at = datetime.now()
+    
+    def delete_setting(self, key: str) -> bool:
+        """
+        Delete a game setting.
+        
+        Args:
+            key: Setting key
+            
+        Returns:
+            True if setting was deleted, False if it didn't exist
+        """
+        if key in self.settings:
+            del self.settings[key]
+            self.updated_at = datetime.now()
+            return True
+        return False
 
 
 @dataclass
