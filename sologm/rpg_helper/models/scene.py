@@ -6,10 +6,14 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, TYPE_CHECKING
 from enum import Enum
+import uuid
+
+from sologm.rpg_helper.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from .game import Game
 
+logger = get_logger()
 
 class SceneStatus(Enum):
     """Status of a scene."""
@@ -45,35 +49,32 @@ class Scene:
     """
     Represents a scene in a game.
     """
-    id: str  # Unique identifier
     game: Game  # Reference to the game this scene belongs to
     title: Optional[str] = None  # Scene title
     description: Optional[str] = None  # General scene description
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))  # Unique identifier with default
     status: SceneStatus = field(default=SceneStatus.ACTIVE)
     events: List[SceneEvent] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
     
-    @classmethod
-    def create(cls, id: str, title: str, description: str, game: Game) -> 'Scene':
-        """
-        Create a new full scene.
+    def __post_init__(self):
+        """Post-initialization setup."""
+        # Set default title if not provided
+        if self.title is None:
+            self.title = f"Scene {self.id[:8]}"
         
-        Args:
-            id: Scene ID
-            title: Scene title
-            description: Scene description
-            game: Game this scene belongs to
-            
-        Returns:
-            New Scene instance
-        """
-        return cls(
-            id=id,
-            title=title,
-            description=description,
-            game=game
+        # Set default description if not provided
+        if self.description is None:
+            self.description = f"A new scene in {self.game.name}."
+        
+        logger.debug(
+            "Created new scene",
+            scene_id=self.id,
+            game_id=self.game.id,
+            title=self.title,
+            status=self.status.value
         )
     
     def add_event(self, description: str) -> SceneEvent:
@@ -95,6 +96,15 @@ class Scene:
         event = SceneEvent(description=description)
         self.events.append(event)
         self.updated_at = datetime.now()
+        
+        logger.debug(
+            "Added event to scene",
+            scene_id=self.id,
+            game_id=self.game.id,
+            event_description=description[:50] + "..." if len(description) > 50 else description,
+            event_count=len(self.events)
+        )
+        
         return event
     
     def set_title(self, title: str) -> None:
@@ -212,6 +222,30 @@ class Scene:
         
         return scene
 
+    def is_active(self) -> bool:
+        """Check if the scene is active.
+
+        Returns:
+            True if the scene is active, False otherwise
+        """
+        return self.status == SceneStatus.ACTIVE
+
+    def is_completed(self) -> bool:
+        """Check if the scene is completed.
+
+        Returns:
+            True if the scene is completed, False otherwise
+        """
+        return self.status == SceneStatus.COMPLETED
+
+    def is_abandoned(self) -> bool:
+        """Check if the scene is abandoned.
+
+        Returns:
+            True if the scene is abandoned, False otherwise
+        """
+        return self.status == SceneStatus.ABANDONED
+        
 
 # In-memory storage for scenes
 scenes_by_id: Dict[str, Scene] = {} 

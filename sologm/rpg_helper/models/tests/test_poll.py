@@ -13,6 +13,7 @@ from sologm.rpg_helper.models.poll import (
     active_polls
 )
 from sologm.rpg_helper.models.game.base import Game
+from sologm.rpg_helper.models.game.storage import games_by_id
 
 
 @pytest.fixture

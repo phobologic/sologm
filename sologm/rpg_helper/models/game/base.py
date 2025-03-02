@@ -32,28 +32,35 @@ class GameSettings:
     poll_default_max_votes: int = 1
     poll_allow_multiple_votes_per_option: bool = False
     
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         """Allow dictionary-style access to settings."""
-        return getattr(self, key)
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise AttributeError(f"No setting named '{key}'")
     
-    def get(self, key, default=None):
-        """Get a setting value with a default."""
-        return getattr(self, key, default)
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get a setting with a default value if not found."""
+        try:
+            return self[key]
+        except AttributeError:
+            return default
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
+        """Convert to dictionary for serialization."""
         return {
-            field.name: getattr(self, field.name)
-            for field in fields(self)
+            key: getattr(self, key)
+            for key in self.__annotations__
+            if hasattr(self, key)
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'GameSettings':
+    def from_dict(cls, data: Dict[str, Any]) -> GameSettings:
         """Create from dictionary."""
-        # Filter out unknown fields
-        known_fields = {field.name for field in fields(cls)}
-        filtered_data = {k: v for k, v in data.items() if k in known_fields}
-        return cls(**filtered_data)
+        return cls(**{
+            key: value
+            for key, value in data.items()
+            if key in cls.__annotations__
+        })
 
 @dataclass
 class Game:
@@ -84,6 +91,10 @@ class Game:
             creator_id=self.creator_id,
             channel_id=self.channel_id
         )
+        
+        # Create an initial scene if no scenes exist
+        if not self.scenes:
+            self.create_scene()
     
     def to_dict(self) -> Dict[str, object]:
         """Convert to dictionary for serialization."""
@@ -138,7 +149,7 @@ class Game:
         if "settings" in data:
             game.settings = GameSettings.from_dict(data["settings"])
         
-        # Scenes will be loaded separately
+        # Note: current_scene will be set when scenes are loaded
         
         return game
     
@@ -270,26 +281,51 @@ class Game:
                 return True
         return False
     
-    def add_scene(self, scene: Scene) -> None:
+    def create_scene(self, title: Optional[str] = None, description: Optional[str] = None, id: Optional[str] = None) -> Scene:
         """
-        Add a scene to the game.
+        Create and add a new scene to the game.
         
         Args:
-            scene: The scene to add
+            title: The title of the scene
+            description: The description of the scene
+            id: Optional ID for the scene (defaults to a generated UUID)
+            
+        Returns:
+            The created scene
+            
+        Raises:
+            ValueError: If multiple active scenes are not allowed and there's already an active scene
         """
+        # Check if we can create an active scene
+        if (self.current_scene is not None and self.current_scene.is_active()):
+            logger.error(
+                "Cannot create active scene when another active scene exists",
+                game_id=self.id,
+                current_scene_id=self.current_scene.id
+            )
+            raise ValueError("Cannot create active scene when another active scene exists")
+        
+        # Create the scene
+        scene = Scene(
+            game=self,
+            title=title,
+            description=description,
+        )
+        
+        # Add to scenes list
         self.scenes.append(scene)
+        self.current_scene = scene
         self.updated_at = datetime.now()
         
         logger.info(
-            "Added scene to game",
+            "Added new scene to game",
             game_id=self.id,
             scene_id=scene.id,
-            scene_count=len(self.scenes)
+            scene_title=title,
+            scene_status=scene.status
         )
         
-        # If this is the first scene, make it the current scene
-        if len(self.scenes) == 1:
-            self.set_current_scene(scene.id)
+        return scene
     
     def get_scene(self, scene_id: str) -> Optional[Scene]:
         """
@@ -375,3 +411,40 @@ class Game:
             List of active scenes
         """
         return [scene for scene in self.scenes if scene.status == SceneStatus.ACTIVE] 
+
+    def complete_scene(self, scene_id: str) -> bool:
+        """
+        Complete a scene.
+
+        Args:
+            scene_id: The ID of the scene to complete
+
+        Returns:
+            True if the scene was completed, False if not found
+
+        Raises:
+            ValueError: If the scene is not found
+        """
+        scene = self.get_scene(scene_id)
+        if not scene:
+            raise ValueError(f"Scene {scene_id} not found")
+        
+        scene.complete()
+        self.updated_at = datetime.now()
+        
+        return True
+
+    def complete_current_scene(self) -> bool:
+        """
+        Complete the current scene.
+
+        Returns:
+            True if the scene was completed, False if not found
+
+        Raises:
+            ValueError: If there is no current scene
+        """
+        if not self.current_scene:
+            raise ValueError("No current scene to complete")
+        
+        return self.complete_scene(self.current_scene.id)

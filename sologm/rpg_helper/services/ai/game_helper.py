@@ -1,10 +1,14 @@
 """
 Game-specific AI helper services.
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
+import re
+import random
 
-from sologm.rpg_helper.models.game import Game
-from sologm.rpg_helper.models.scene import Scene
+from sologm.rpg_helper.models.game.base import Game
+from sologm.rpg_helper.models.game.mythic import MythicGMEGame
+from sologm.rpg_helper.models.scene import Scene, SceneStatus
+from sologm.rpg_helper.services.ai.factory import AIServiceFactory
 from sologm.rpg_helper.utils.logging import get_logger
 from .service import AIService, AIServiceError, AIResponseError
 

@@ -2,13 +2,14 @@
 Tests for the game AI helper.
 """
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch, MagicMock
 
-from sologm.rpg_helper.models.game import Game
-from sologm.rpg_helper.models.scene import Scene
-from sologm.rpg_helper.services.ai import AIService, AIResponseError
+from sologm.rpg_helper.models.game.base import Game
+from sologm.rpg_helper.models.game.mythic import MythicGMEGame
+from sologm.rpg_helper.models.scene import Scene, SceneStatus
 from sologm.rpg_helper.services.ai.game_helper import GameAIHelper
 from sologm.rpg_helper.utils.logging import get_logger
+from sologm.rpg_helper.services.ai.service import AIService, AIResponseError
 
 logger = get_logger()
 
