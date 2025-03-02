@@ -1,213 +1,118 @@
 # RPG Helper Bot for Slack
 
-A Slack bot designed to assist with GM-less and solo RPG play, providing tools for dice rolling, Mythic GM Emulator-style fate checks, and collaborative interpretation through voting.
+A Slack bot designed to assist with GM-less and solo RPG play, providing tools for dice rolling, outcome generation, and collaborative interpretation through voting.
 
 ## Features
 
 - **Dice Rolling**: Roll dice using standard RPG notation (e.g., `2d6+3`)
-- **Fate Checks**: Perform Mythic GM Emulator-style fate checks based on chaos factor and likelihood
-- **Interpretation Voting**: Generate multiple interpretation options and create polls for players to vote
+- **Interpretation Voting**: Generate multiple interpretation options and create polls for players to vote based on AI-generated ideas
 - **Customizable**: Set preferences for number of options and voting timeout
+- **AI-Powered Ideas**: Generate creative scene outcomes using Claude AI
+
+## Environment Variables
+
+Set these environment variables to configure the application:
+
+- `ANTHROPIC_API_KEY`: Your Anthropic API key for Claude AI integration
+- `RPG_HELPER_LOG_LEVEL`: Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
+## Example Usage
+
+Here's a complete example showing how to use the main features:
+
+```python
+import os
+from sologm.rpg_helper.utils.logging import get_logger, LogLevel
+from sologm.rpg_helper.models.game import create_game
+from sologm.rpg_helper.services.ai import AIServiceFactory, GameAIHelper
+
+# Setup logging
+logger = get_logger(level=LogLevel.INFO)
+logger.info("Starting SoloGM RPG Helper example")
+
+# Make sure Claude API key is set
+if not os.environ.get("ANTHROPIC_API_KEY"):
+    logger.error("ANTHROPIC_API_KEY environment variable not set")
+    raise ValueError("Please set the ANTHROPIC_API_KEY environment variable")
+
+# Create a new game
+game = create_game(
+    name="The Lost Kingdom",
+    creator_id="user123",
+    channel_id="channel456",
+    game_type="mythic",  # Using the Mythic GME system
+    setting_info="A high fantasy world where magic is fading and ancient ruins hold forgotten power."
+)
+logger.info("Created new game", game_id=game.id, game_name=game.name)
+
+# Create a scene
+scene = game.create_scene(
+    title="The Forbidden Library",
+    description="The party has discovered an ancient library hidden beneath the city. "
+                "Dusty tomes line the walls, and strange magical symbols glow faintly on the floor."
+)
+logger.info("Created new scene", scene_id=scene.id, scene_title=scene.title)
+
+# Add some events to the scene
+scene.add_event("The party carefully enters the library, weapons drawn.")
+scene.add_event("Mara discovers a tome that seems to react to her touch, glowing with arcane energy.")
+scene.add_event("A strange mechanical sound comes from behind a bookshelf.")
+logger.info("Added events to scene", event_count=len(scene.events))
+
+# Set up AI service and game helper
+ai_service = AIServiceFactory.create_service("claude")
+game_helper = GameAIHelper(ai_service)
+
+# Generate outcome ideas based on the current situation
+logger.info("Generating outcome ideas...")
+ideas = game_helper.generate_outcome_ideas(
+    game=game,
+    scene=scene,
+    additional_context="The party is looking for information about an ancient artifact called 'The Crown of Stars'.",
+    focus_words=["guardian", "secret"]
+)
+
+# Display the generated ideas
+print("\n=== Potential Outcomes ===\n")
+for i, idea in enumerate(ideas, 1):
+    print(f"{i}. {idea}\n")
+
+# Update the chaos factor (Mythic GME specific)
+game.increment_chaos_factor()
+logger.info("Updated chaos factor", new_chaos_factor=game.chaos_factor)
+
+# Complete the scene
+scene.complete(
+    title="The Guardian's Challenge",
+    description="The party encountered the library's guardian and made a deal to access the restricted section."
+)
+logger.info("Completed scene", scene_id=scene.id)
+
+logger.info("Example completed successfully")
+```
+
+## Key Components
+
+- **Game Management**: Create and manage RPG games with different systems
+- **Scene Tracking**: Record and track scenes and events within your game
+- **AI Integration**: Use Claude AI to generate creative ideas for your game
+- **Logging**: Structured logging with context for debugging and tracking
 
 ## Project Structure
 
-```
-rpg_helper_bot/
-├── .env                           # Environment variables
-├── README.md                      # This file
-├── main.py                        # Entry point for the application
-└── rpg_helper/                    # Main package
-    ├── __init__.py                # Package initialization
-    ├── app.py                     # Slack app configuration
-    ├── commands/                  # Command handlers
-    │   ├── __init__.py
-    │   ├── dice.py                # Dice rolling commands
-    │   ├── fate.py                # Fate check commands
-    │   ├── interpret.py           # Interpretation commands
-    │   └── preferences.py         # User preference commands
-    ├── handlers/                  # Event handlers
-    │   ├── __init__.py
-    │   └── actions.py             # Button/interactive action handlers
-    ├── models/                    # Data models
-    │   ├── __init__.py
-    │   ├── poll.py                # Poll data structures
-    │   └── user.py                # User preference data structures
-    ├── services/                  # Business logic
-    │   ├── __init__.py
-    │   ├── dice_service.py        # Dice rolling logic
-    │   ├── fate_service.py        # Fate check logic
-    │   ├── interpreter_service.py # Interpretation generation
-    │   └── poll_service.py        # Poll management
-    └── utils/                     # Utility functions
-        ├── __init__.py
-        └── formatting.py          # Message formatting utilities
-```
+## Development
 
-## Setup
+### Running Tests
 
-### Prerequisites
-
-- Python 3.7 or higher
-- A Slack workspace where you have permissions to create apps
-- [uv](https://github.com/astral-sh/uv) for Python package and environment management
-
-### Environment Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/rpg-helper-bot.git
-   cd rpg-helper-bot
-   ```
-
-2. Create a virtual environment with uv:
-   ```bash
-   uv venv
-   ```
-
-3. Activate the virtual environment:
-   ```bash
-   # On Unix/macOS
-   source .venv/bin/activate
-   
-   # On Windows
-   .venv\Scripts\activate
-   ```
-
-4. Install dependencies using uv:
-   ```bash
-   uv pip install slack-bolt python-dotenv
-   ```
-
-5. Create a `.env` file in the root directory with the following variables:
-   ```
-   SLACK_BOT_TOKEN=xoxb-your-bot-token-here
-   SLACK_APP_TOKEN=xapp-your-app-token-here
-   ```
-
-### Slack App Setup
-
-1. Go to [Slack API](https://api.slack.com/apps) and click "Create New App"
-2. Choose "From scratch"
-3. Name your app (e.g., "RPG Helper") and select your workspace
-4. Click "Create App"
-
-5. Configure Bot Permissions
-   - In the left sidebar, click on "OAuth & Permissions"
-   - Scroll down to "Bot Token Scopes" and add these permissions:
-     - `chat:write` - To send messages
-     - `commands` - To create slash commands
-     - `users:read` - To read user information
-   - Scroll up and click "Install to Workspace"
-   - Authorize the app when prompted
-
-6. Create Slash Commands
-   - In the left sidebar, click on "Slash Commands"
-   - Create the following commands:
-     - Command: `/roll` - Description: "Roll dice using standard notation (e.g., 2d6+3)"
-     - Command: `/fate` - Description: "Make a Mythic GM Emulator fate check"
-     - Command: `/interpret` - Description: "Generate interpretation options and create a vote"
-     - Command: `/preferences` - Description: "Set your preferences for the RPG Helper"
-     - Command: `/endpoll` - Description: "Manually end an active poll"
-
-7. Enable Socket Mode
-   - In the left sidebar, click on "Socket Mode"
-   - Toggle "Enable Socket Mode" to On
-   - Click "Generate" to create an app-level token
-   - Save the generated token (this is your `SLACK_APP_TOKEN`)
-
-8. Set Up Interactivity
-   - In the left sidebar, click on "Interactivity & Shortcuts"
-   - Toggle "Interactivity" to On
-   - Click "Save Changes"
-
-### Running the Bot
-
-Run the bot:
 ```bash
-python main.py
+pytest
 ```
 
-## Development with uv
+### Setting Up Development Environment
 
-uv makes dependency management faster and more reliable. Here are some useful commands:
-
-- Install a new package:
-  ```bash
-  uv pip install package-name
-  ```
-
-- Update dependencies:
-  ```bash
-  uv pip install --upgrade slack-bolt python-dotenv
-  ```
-
-- Create a requirements file:
-  ```bash
-  uv pip freeze > requirements.txt
-  ```
-
-- Install from requirements file:
-  ```bash
-  uv pip install -r requirements.txt
-  ```
-
-## Usage
-
-### Roll Dice
+```bash
+pip install -e ".[dev]"
 ```
-/roll 2d6+3
-```
-This will roll two six-sided dice and add 3 to the total.
-
-### Fate Check
-```
-/fate 5 Likely
-```
-This will perform a Mythic GM Emulator fate check with a chaos factor of 5 and a likelihood of "Likely".
-
-### Generate Interpretations
-```
-/interpret What happens when we open the chest?
-```
-This will generate multiple interpretation options for what happens when the chest is opened, and create a poll for players to vote.
-
-### Set Preferences
-```
-/preferences options 7
-```
-This sets the number of interpretation options to 7.
-
-```
-/preferences timeout 2
-```
-This sets the poll timeout to 2 hours.
-
-```
-/preferences show
-```
-This shows your current preferences.
-
-### End a Poll
-```
-/endpoll
-```
-This manually ends the current poll in the channel (if you created it).
-
-## Customization
-
-### Interpretation Options
-You can customize the list of base interpretations by modifying the `BASE_INTERPRETATIONS` in `rpg_helper/services/interpreter_service.py`.
-
-### Fate Chart
-The current implementation uses a simplified fate chart. For a more accurate Mythic GM Emulator experience, you can update the logic in `rpg_helper/services/fate_service.py`.
-
-## Future Enhancements
-
-- Database integration for persistence
-- More advanced random generation tools
-- Integration with specific game systems
-- Character tracking
-- Campaign notes and session logs
 
 ## License
 
