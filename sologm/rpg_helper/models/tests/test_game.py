@@ -21,6 +21,7 @@ from sologm.rpg_helper.models.game import (
     games_by_channel,
     GAME_TYPES
 )
+from sologm.rpg_helper.models.scene import Scene, SceneStatus
 
 
 # Fixtures
@@ -891,3 +892,182 @@ class TestGamePolls:
         # The poll_ids should be loaded as a list of strings
         # They will be resolved to Poll objects later when needed
         assert game.polls == ["poll1", "poll2"] 
+
+@pytest.mark.game
+class TestGameScenes:
+    """Tests for the Game scenes functionality."""
+    
+    def test_create_scene_minimal(self, basic_game):
+        """Test creating a new scene with minimal info."""
+        scene = basic_game.create_scene()
+        
+        assert scene.title is None
+        assert scene.description is None
+        assert scene.game == basic_game
+        assert scene in basic_game.scenes
+        assert basic_game.current_scene == scene
+        assert scene.status == SceneStatus.ACTIVE
+    
+    def test_create_scene_with_title_description(self, basic_game):
+        """Test creating a scene with title and description."""
+        scene = basic_game.create_scene(
+            title="Test Scene",
+            description="A test scene description"
+        )
+        
+        assert scene.title == "Test Scene"
+        assert scene.description == "A test scene description"
+    
+    def test_complete_current_scene_with_title_description(self, basic_game):
+        """Test completing current scene with title and description."""
+        scene = basic_game.create_scene()
+        
+        next_scene = basic_game.complete_current_scene(
+            title="Final Title",
+            description="Final Description",
+            create_next_scene=False  # Don't create a new scene for this test
+        )
+        
+        assert scene.status == SceneStatus.COMPLETED
+        assert scene.title == "Final Title"
+        assert scene.description == "Final Description"
+        assert next_scene is None
+        assert basic_game.current_scene is None
+    
+    def test_complete_current_scene_without_title_description(self, basic_game):
+        """Test completing current scene without changing title/description."""
+        scene = basic_game.create_scene(
+            title="Original Title",
+            description="Original Description"
+        )
+        
+        next_scene = basic_game.complete_current_scene(create_next_scene=False)
+        
+        assert scene.status == SceneStatus.COMPLETED
+        assert scene.title == "Original Title"
+        assert scene.description == "Original Description"
+        assert next_scene is None
+        assert basic_game.current_scene is None
+    
+    def test_to_dict_with_scenes(self, basic_game):
+        """Test that scenes are included in to_dict output."""
+        scene1 = basic_game.create_scene(
+            title="Scene 1",
+            description="First scene description"
+        )
+        
+        # Complete first scene and create another
+        next_scene = basic_game.complete_current_scene(
+            title="Final Title",
+            description="Final Description"
+        )  # This will automatically create a new scene
+        
+        # The next_scene is now the current scene
+        assert next_scene == basic_game.current_scene
+        scene2 = next_scene
+        
+        result = basic_game.to_dict()
+        
+        assert "scene_ids" in result
+        assert set(result["scene_ids"]) == {scene1.id, scene2.id}
+        assert result["current_scene_id"] == scene2.id
+    
+    def test_from_dict_with_scenes(self, clean_game_storage):
+        """Test that scene IDs are loaded from dict."""
+        data = {
+            "id": "game1",
+            "name": "Test Game",
+            "creator_id": "user1",
+            "channel_id": "channel1",
+            "scene_ids": ["scene1", "scene2"],
+            "current_scene_id": "scene2"
+        }
+        
+        game = Game.from_dict(data)
+        
+        # The scene_ids should be loaded as Scene objects with minimal data
+        assert len(game.scenes) == 2
+        assert all(isinstance(scene, Scene) for scene in game.scenes)
+        assert {scene.id for scene in game.scenes} == {"scene1", "scene2"}
+        assert game.current_scene.id == "scene2"
+    
+    def test_complete_current_scene_create_next_scene(self, basic_game):
+        """Test completing scene with auto-creation of next scene."""
+        first_scene = basic_game.create_scene(title="First Scene")
+        
+        next_scene = basic_game.complete_current_scene(
+            title="Final Title",
+            description="Final Description"
+        )  # create_next_scene defaults to True
+        
+        # Check first scene was completed
+        assert first_scene.status == SceneStatus.COMPLETED
+        assert first_scene.title == "Final Title"
+        
+        # Check new scene was created
+        assert next_scene is not None
+        assert next_scene.status == SceneStatus.ACTIVE
+        assert basic_game.current_scene == next_scene
+        assert len(basic_game.scenes) == 2
+    
+    def test_complete_current_scene_no_auto_create(self, basic_game):
+        """Test completing scene without auto-creating next scene."""
+        scene = basic_game.create_scene(title="First Scene")
+        
+        next_scene = basic_game.complete_current_scene(
+            create_next_scene=False
+        )
+        
+        # Check scene was completed
+        assert scene.status == SceneStatus.COMPLETED
+        
+        # Check no new scene was created
+        assert next_scene is None
+        assert basic_game.current_scene is None
+        assert len(basic_game.scenes) == 1
+    
+    def test_abandon_current_scene_create_next_scene(self, basic_game):
+        """Test abandoning scene with auto-creation of next scene."""
+        first_scene = basic_game.create_scene(title="First Scene")
+        
+        next_scene = basic_game.abandon_current_scene()  # create_next_scene defaults to True
+        
+        # Check first scene was abandoned
+        assert first_scene.status == SceneStatus.ABANDONED
+        
+        # Check new scene was created
+        assert next_scene is not None
+        assert next_scene.status == SceneStatus.ACTIVE
+        assert basic_game.current_scene == next_scene
+        assert len(basic_game.scenes) == 2
+    
+    def test_abandon_current_scene_no_auto_create(self, basic_game):
+        """Test abandoning scene without auto-creating next scene."""
+        scene = basic_game.create_scene(title="First Scene")
+        
+        next_scene = basic_game.abandon_current_scene(create_next_scene=False)
+        
+        # Check scene was abandoned
+        assert scene.status == SceneStatus.ABANDONED
+        
+        # Check no new scene was created
+        assert next_scene is None
+        assert basic_game.current_scene is None
+        assert len(basic_game.scenes) == 1
+    
+    def test_create_scene_with_active_scene(self, basic_game):
+        """Test creating a scene when there's already an active scene."""
+        # Create first scene
+        basic_game.create_scene(
+            title="First Scene",
+            description="First scene description"
+        )
+        
+        # Try to create another scene
+        with pytest.raises(ValueError) as excinfo:
+            basic_game.create_scene(
+                title="Second Scene",
+                description="Second scene description"
+            )
+        
+        assert "Cannot create a new scene while another scene is active" in str(excinfo.value) 

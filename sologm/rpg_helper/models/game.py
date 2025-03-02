@@ -7,9 +7,12 @@ from datetime import datetime
 from typing import Dict, List, Optional, Set, Type, Union, Any, Callable, TYPE_CHECKING
 import uuid
 
+# Import Scene and SceneStatus for actual use
+from .scene import Scene, SceneStatus
+
 # Only import Poll when type checking to avoid circular imports
 if TYPE_CHECKING:
-    from sologm.rpg_helper.models.poll import Poll
+    from .poll import Poll
 
 
 class GameError(Exception):
@@ -157,6 +160,8 @@ class Game:
     members: Set[str] = field(default_factory=set)  # Set of user IDs
     settings: GameSettings = field(default_factory=GameSettings)
     polls: List['Poll'] = field(default_factory=list)  # List of polls associated with this game
+    scenes: List['Scene'] = field(default_factory=list)  # List of scenes
+    current_scene: Optional['Scene'] = None  # Currently active scene
     
     def to_dict(self) -> Dict[str, object]:
         """Convert to dictionary for serialization."""
@@ -170,7 +175,9 @@ class Game:
             "updated_at": self.updated_at.isoformat(),
             "members": list(self.members),
             "settings": self.settings.to_dict(),
-            "poll_ids": [poll.id for poll in self.polls]  # Store just the IDs for serialization
+            "poll_ids": [poll.id for poll in self.polls],
+            "scene_ids": [scene.id for scene in self.scenes],
+            "current_scene_id": self.current_scene.id if self.current_scene else None
         }
     
     @classmethod
@@ -200,6 +207,13 @@ class Game:
         # Store poll IDs temporarily - they'll be resolved to Poll objects when needed
         if "poll_ids" in data:
             game.polls = data["poll_ids"]
+        
+        if "scene_ids" in data:
+            # Create minimal Scene objects with just IDs
+            game.scenes = [Scene(id=scene_id, game=game) for scene_id in data["scene_ids"]]
+        
+        if "current_scene_id" in data:
+            game.current_scene = next((scene for scene in game.scenes if scene.id == data["current_scene_id"]), None)
         
         return game
     
@@ -428,6 +442,89 @@ class Game:
                     self.polls.append(active_polls[poll_id])
                 elif poll_id in archived_polls:
                     self.polls.append(archived_polls[poll_id])
+
+    def create_scene(self, title: Optional[str] = None, description: Optional[str] = None) -> Scene:
+        """
+        Create a new scene.
+        
+        Args:
+            title: Optional scene title
+            description: Optional scene description
+            
+        Returns:
+            The created Scene
+            
+        Raises:
+            ValueError: If there is already an active scene
+        """
+        if self.current_scene and self.current_scene.status == SceneStatus.ACTIVE:
+            raise ValueError("Cannot create a new scene while another scene is active")
+        
+        scene = Scene(
+            id=str(uuid.uuid4()),
+            game=self,
+            title=title,
+            description=description
+        )
+        
+        self.scenes.append(scene)
+        self.current_scene = scene
+        self.updated_at = datetime.now()
+        return scene
+    
+    def complete_current_scene(self, 
+                             title: Optional[str] = None, 
+                             description: Optional[str] = None,
+                             create_next_scene: bool = True) -> Optional[Scene]:
+        """
+        Complete the current scene.
+        
+        Args:
+            title: Optional title to set when completing
+            description: Optional description to set when completing
+            auto_create_next: Whether to automatically create a new scene (default: True)
+            
+        Returns:
+            The newly created scene if auto_create_next is True, None otherwise
+            
+        Raises:
+            ValueError: If there is no active scene
+        """
+        if not self.current_scene or self.current_scene.status != SceneStatus.ACTIVE:
+            raise ValueError("No active scene to complete")
+        
+        self.current_scene.complete(title=title, description=description)
+        self.current_scene = None
+        self.updated_at = datetime.now()
+        
+        if create_next_scene:
+            return self.create_scene()
+        return None
+    
+    def abandon_current_scene(self, 
+                            create_next_scene: bool = True) -> Optional[Scene]:
+        """
+        Abandon the current scene.
+        
+        Args:
+            auto_create_next: Whether to automatically create a new scene (default: True)
+            
+        Returns:
+            The newly created scene if auto_create_next is True, None otherwise
+            
+        Raises:
+            ValueError: If there is no active scene
+        """
+        if not self.current_scene or self.current_scene.status != SceneStatus.ACTIVE:
+            raise ValueError("No active scene to abandon")
+        
+        self.current_scene.abandon()
+        self.current_scene = None
+        self.updated_at = datetime.now()
+        
+        if create_next_scene:
+            return self.create_scene()
+        return None
 
 
 @dataclass

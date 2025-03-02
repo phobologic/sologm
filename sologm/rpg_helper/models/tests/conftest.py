@@ -19,3 +19,7 @@ def pytest_configure(config):
         "markers",
         "poll: mark test as a poll-related test"
     )
+    config.addinivalue_line(
+        "markers",
+        "scene: mark test as a scene-related test"
+    )
