@@ -33,11 +33,11 @@ logger.info("Starting SoloGM RPG Helper example")
 
 # Create a Mythic GME game
 mythic_game = create_game(
-    name="Mythic Adventure",
-    creator_id="user123",
-    channel_id="channel789",
-    game_type="mythic",
-    setting_info="A sci-fi universe with alien civilizations",
+    name="Mythic Adventure", # The name of the game
+    creator_id="user123", # The user ID of the creator
+    channel_id="channel789", # The channel ID to post messages to
+    game_type="mythic", # The type of game to create
+    setting_info="A sci-fi universe with alien civilizations", # The setting info for the game
     chaos_factor=4  # Initial chaos factor for Mythic GME
 )
 # Access game properties
@@ -52,22 +52,49 @@ logger.info("Game details",
 ### Managing Scenes
 
 ```python
-# Create a new scene directly through the game object
-scene = mythic_game.add_scene(
-    title="The Abandoned Space Station",
-    description="The crew docks with a derelict space station that's been sending out an automated distress signal."
-)
-logger.info("Created new scene", scene_id=scene.id, scene_title=scene.title)
+# Access the automatically created initial scene on the Game object
+# This is the first scene that is created, and is the default scene for the game
+# Note: It has no description, title or events
+initial_scene = mythic_game.current_scene
+logger.info("Initial scene created", 
+           scene_id=initial_scene.id, 
+           scene_title=initial_scene.title)
+
+# Update the initial scene's title and description
+initial_scene.title = "The Abandoned Space Station"
+initial_scene.description = "The crew docks with a derelict space station that's been sending out an automated distress signal."
+logger.info("Updated initial scene", scene_id=initial_scene.id, scene_title=initial_scene.title)
 
 # Add events to the scene
-scene.add_event("The airlock opens with a hiss, revealing a dark corridor.")
-scene.add_event("Emergency lights flicker on as the team steps inside.")
-logger.info("Added events to scene", event_count=len(scene.events))
+initial_scene.add_event("The airlock opens with a hiss, revealing a dark corridor.")
+initial_scene.add_event("Emergency lights flicker on as the team steps inside.")
+logger.info("Added events to scene", event_count=len(initial_scene.events))
 
 # Get all events in the scene
 logger.info("Scene events:")
-for i, event in enumerate(scene.events, 1):
+for i, event in enumerate(initial_scene.events, 1):
     logger.info(f"Event {i}: {event.description}")
+
+# When ready to move to a new scene, complete the current one first
+initial_scene.complete()
+logger.info("Completed initial scene", scene_id=initial_scene.id)
+
+# Now create a new scene
+new_scene = mythic_game.create_scene(
+    title="Engineering Deck",
+    description="The team descends to the engineering deck, where the energy readings are strongest."
+)
+logger.info("Created new scene", scene_id=new_scene.id, scene_title=new_scene.title)
+
+# Add events to the new scene that follow logically from the description
+new_scene.add_event("The team's energy scanner begins beeping rapidly as they approach the main reactor.")
+new_scene.add_event("Strange symbols are etched into the control panels, unlike any human language.")
+new_scene.add_event("A faint humming sound grows louder as they move deeper into the engineering section.")
+new_scene.add_event("One team member notices that the reactor appears to be running, despite the station being abandoned.")
+logger.info("Added events to new scene", event_count=len(new_scene.events))
+
+# The new scene is automatically set as the current scene
+assert mythic_game.current_scene is new_scene
 ```
 
 ### Creating Polls
@@ -76,14 +103,15 @@ for i, event in enumerate(scene.events, 1):
 from sologm.rpg_helper.models.poll import Poll
 import uuid
 
-# Create a poll
+# Create a poll for what happens when the team investigates the control panels
 poll = Poll(
-    id=str(uuid.uuid4()),
-    title="What should the crew investigate first?",
+    title="The team investigates the control panels, something goes wrong!",
     options=[
-        "The bridge, to access ship logs",
-        "The engineering section, to check power systems",
-        "The crew quarters, to look for survivors"
+        "Touching the symbols causes them to glow, triggering an alarm system",
+        "A holographic interface suddenly activates, displaying alien text",
+        "The reactor power levels spike dangerously when the panels are touched",
+        "One team member receives a strange electric shock when examining the symbols",
+        "The control room door suddenly seals shut, trapping the team inside"
     ],
     creator_id="user123",
     game=mythic_game,
@@ -111,6 +139,8 @@ logger.info("Closed poll", poll_id=poll.id, winning_options=winners)
 
 ### Using AI Assistance
 
+This can be used to generate outcome ideas for the current scene, or for a poll.
+
 ```python
 import os
 from sologm.rpg_helper.services.ai.factory import AIServiceFactory
@@ -121,7 +151,7 @@ if not os.environ.get("ANTHROPIC_API_KEY"):
     logger.error("ANTHROPIC_API_KEY environment variable not set")
     raise ValueError("Please set the ANTHROPIC_API_KEY environment variable")
 
-# Create an AI service
+# Create an AI service - using Claude in this case
 ai_service = AIServiceFactory.create_service("claude")
 logger.info("Created Claude AI service")
 
@@ -129,6 +159,10 @@ logger.info("Created Claude AI service")
 game_helper = GameAIHelper(ai_service)
 
 # Generate outcome ideas for the current scene
+# This will use the current scene description, and the game setting info to generate ideas
+# The additional_context is optional, and can be used to provide more specific context for the AI
+# The focus_words are used to refine the ideas, and the num_ideas is the number of ideas to generate
+# Often times the focus words come from something like the Mythic GME system, or other oracles
 logger.info("Generating outcome ideas...")
 ideas = game_helper.generate_outcome_ideas(
     game=mythic_game,

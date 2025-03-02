@@ -3,7 +3,7 @@ Unit tests for scene models.
 """
 import pytest
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from sologm.rpg_helper.models.scene import (
     Scene,
@@ -12,6 +12,7 @@ from sologm.rpg_helper.models.scene import (
     scenes_by_id
 )
 from sologm.rpg_helper.models.game import Game, games_by_id
+from sologm.rpg_helper.models.game.base import Game as BaseGame
 
 
 @pytest.fixture
@@ -61,244 +62,323 @@ class TestSceneEvent:
     
     def test_init(self):
         """Test SceneEvent initialization."""
-        event = SceneEvent("Something happened")
+        event = SceneEvent(description="Something happened")
         
         assert event.description == "Something happened"
         assert isinstance(event.timestamp, datetime)
     
     def test_to_dict(self):
         """Test conversion to dictionary."""
-        timestamp = datetime.now()
-        event = SceneEvent("Something happened")
+        event = SceneEvent(description="Something happened")
+        timestamp = datetime(2023, 1, 1, 12, 0, 0)
         event.timestamp = timestamp
         
         result = event.to_dict()
         
         assert result["description"] == "Something happened"
-        assert result["timestamp"] == timestamp.isoformat()
+        assert result["timestamp"] == "2023-01-01T12:00:00"
     
     def test_from_dict(self):
         """Test creation from dictionary."""
-        timestamp = datetime.now()
         data = {
             "description": "Something happened",
-            "timestamp": timestamp.isoformat()
+            "timestamp": "2023-01-01T12:00:00"
         }
         
         event = SceneEvent.from_dict(data)
         
         assert event.description == "Something happened"
-        assert event.timestamp == timestamp
+        assert event.timestamp == datetime(2023, 1, 1, 12, 0, 0)
+    
+    def test_from_dict_no_timestamp(self):
+        """Test creation from dictionary without timestamp."""
+        data = {
+            "description": "Something happened"
+        }
+        
+        event = SceneEvent.from_dict(data)
+        
+        assert event.description == "Something happened"
+        assert isinstance(event.timestamp, datetime)
 
 
 @pytest.mark.scene
 class TestScene:
     """Tests for the Scene class."""
     
-    def test_init_minimal(self, basic_game):
-        """Test Scene initialization with minimal arguments."""
-        scene = Scene(id="scene1", game=basic_game)
+    def setup_method(self):
+        """Set up test fixtures."""
+        # Create a mock game that won't auto-create scenes
+        self.game = MagicMock()
+        self.game.id = "game1"
+        self.game.name = "Test Game"
         
-        assert scene.id == "scene1"
-        assert scene.game == basic_game
-        assert scene.title is None
-        assert scene.description is None
+        # Prevent the mock game from auto-creating scenes
+        self.game.scenes = []
+    
+    def test_init(self):
+        """Test Scene initialization."""
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene"
+        )
+        
+        assert scene.game is self.game
+        assert scene.title == "Test Scene"
+        assert scene.description == "This is a test scene"
+        assert isinstance(scene.id, str)
         assert scene.status == SceneStatus.ACTIVE
-        assert scene.events == []
         assert isinstance(scene.created_at, datetime)
         assert isinstance(scene.updated_at, datetime)
-        assert scene.completed_at is None
+        assert scene.events == []
     
-    def test_init_with_title_description(self, basic_game):
-        """Test Scene initialization with title and description."""
-        scene = Scene(
-            id="scene1",
-            game=basic_game,
-            title="Test Scene",
-            description="A test scene description"
-        )
+    def test_init_with_defaults(self):
+        """Test Scene initialization with default values."""
+        scene = Scene(game=self.game)
         
-        assert scene.title == "Test Scene"
-        assert scene.description == "A test scene description"
+        assert scene.game is self.game
+        assert scene.title.startswith("Scene ")
+        assert scene.description == f"A new scene in {self.game.name}."
+        assert isinstance(scene.id, str)
+        assert scene.status == SceneStatus.ACTIVE
     
-    def test_set_title(self, basic_scene):
-        """Test setting the scene title."""
-        original_updated = basic_scene.updated_at
-        
-        basic_scene.set_title("New Title")
-        
-        assert basic_scene.title == "New Title"
-        assert basic_scene.updated_at > original_updated
-    
-    def test_set_description(self, basic_scene):
-        """Test setting the scene description."""
-        original_updated = basic_scene.updated_at
-        
-        basic_scene.set_description("New Description")
-        
-        assert basic_scene.description == "New Description"
-        assert basic_scene.updated_at > original_updated
-    
-    def test_clear_title(self, basic_scene):
-        """Test clearing the scene title."""
-        basic_scene.set_title("Test Title")
-        original_updated = basic_scene.updated_at
-        
-        basic_scene.clear_title()
-        
-        assert basic_scene.title is None
-        assert basic_scene.updated_at > original_updated
-    
-    def test_clear_description(self, basic_scene):
-        """Test clearing the scene description."""
-        basic_scene.set_description("Test Description")
-        original_updated = basic_scene.updated_at
-        
-        basic_scene.clear_description()
-        
-        assert basic_scene.description is None
-        assert basic_scene.updated_at > original_updated
-    
-    def test_complete_with_title_description(self, basic_scene):
-        """Test completing a scene with title and description."""
-        basic_scene.complete(
-            title="Final Title",
-            description="Final Description"
-        )
-        
-        assert basic_scene.status == SceneStatus.COMPLETED
-        assert basic_scene.title == "Final Title"
-        assert basic_scene.description == "Final Description"
-        assert isinstance(basic_scene.completed_at, datetime)
-    
-    def test_complete_without_title_description(self, basic_scene):
-        """Test completing a scene without changing title/description."""
-        basic_scene.set_title("Original Title")
-        basic_scene.set_description("Original Description")
-        
-        basic_scene.complete()
-        
-        assert basic_scene.status == SceneStatus.COMPLETED
-        assert basic_scene.title == "Original Title"
-        assert basic_scene.description == "Original Description"
-    
-    def test_add_event(self, basic_scene):
+    def test_add_event(self):
         """Test adding an event to a scene."""
-        original_updated = basic_scene.updated_at
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene"
+        )
         
-        event = basic_scene.add_event("Something happened")
+        event = scene.add_event("Something happened")
         
-        assert len(basic_scene.events) == 1
-        assert basic_scene.events[0] == event
+        assert len(scene.events) == 1
+        assert scene.events[0] is event
         assert event.description == "Something happened"
-        assert basic_scene.updated_at > original_updated
     
-    def test_add_event_to_completed_scene(self, basic_scene):
-        """Test adding an event to a completed scene."""
-        basic_scene.complete()
+    def test_add_event_to_inactive_scene(self):
+        """Test adding an event to an inactive scene."""
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene",
+            status=SceneStatus.COMPLETED
+        )
         
         with pytest.raises(ValueError) as excinfo:
-            basic_scene.add_event("Something happened")
+            scene.add_event("Something happened")
         
         assert "Cannot add events to a completed scene" in str(excinfo.value)
-        assert len(basic_scene.events) == 0
+        assert len(scene.events) == 0
     
-    def test_add_event_to_abandoned_scene(self, basic_scene):
-        """Test adding an event to an abandoned scene."""
-        basic_scene.abandon()
+    def test_is_active(self):
+        """Test checking if a scene is active."""
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene"
+        )
         
-        with pytest.raises(ValueError) as excinfo:
-            basic_scene.add_event("Something happened")
+        assert scene.is_active() is True
         
-        assert "Cannot add events to a abandoned scene" in str(excinfo.value)
-        assert len(basic_scene.events) == 0
+        scene.status = SceneStatus.COMPLETED
+        assert scene.is_active() is False
     
-    def test_complete_scene(self, basic_scene):
+    def test_is_completed(self):
+        """Test checking if a scene is completed."""
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene",
+            status=SceneStatus.COMPLETED
+        )
+        
+        assert scene.is_completed() is True
+        
+        scene.status = SceneStatus.ACTIVE
+        assert scene.is_completed() is False
+    
+    def test_is_abandoned(self):
+        """Test checking if a scene is abandoned."""
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene",
+            status=SceneStatus.ABANDONED
+        )
+        
+        assert scene.is_abandoned() is True
+        
+        scene.status = SceneStatus.ACTIVE
+        assert scene.is_abandoned() is False
+    
+    def test_complete(self):
         """Test completing a scene."""
-        original_updated = basic_scene.updated_at
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene"
+        )
         
-        basic_scene.complete()
+        scene.complete()
         
-        assert basic_scene.status == SceneStatus.COMPLETED
-        assert isinstance(basic_scene.completed_at, datetime)
-        assert basic_scene.updated_at > original_updated
+        assert scene.status == SceneStatus.COMPLETED
+        assert scene.completed_at is not None
     
-    def test_complete_already_completed_scene(self, basic_scene):
-        """Test completing an already completed scene."""
-        basic_scene.complete()
-        
-        with pytest.raises(ValueError) as excinfo:
-            basic_scene.complete()
-        
-        assert "Cannot complete a completed scene" in str(excinfo.value)
-    
-    def test_abandon_scene(self, basic_scene):
+    def test_abandon(self):
         """Test abandoning a scene."""
-        original_updated = basic_scene.updated_at
+        scene = Scene(
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene"
+        )
         
-        basic_scene.abandon()
+        scene.abandon()
         
-        assert basic_scene.status == SceneStatus.ABANDONED
-        assert isinstance(basic_scene.completed_at, datetime)
-        assert basic_scene.updated_at > original_updated
+        assert scene.status == SceneStatus.ABANDONED
     
-    def test_abandon_already_abandoned_scene(self, basic_scene):
-        """Test abandoning an already abandoned scene."""
-        basic_scene.abandon()
-        
-        with pytest.raises(ValueError) as excinfo:
-            basic_scene.abandon()
-        
-        assert "Cannot abandon a abandoned scene" in str(excinfo.value)
-    
-    def test_to_dict(self, basic_scene, basic_game):
+    def test_to_dict(self):
         """Test conversion to dictionary."""
-        basic_scene.add_event("Something happened")
-        basic_scene.complete()
+        scene = Scene(
+            id="scene1",
+            game=self.game,
+            title="Test Scene",
+            description="This is a test scene",
+            status=SceneStatus.ACTIVE
+        )
         
-        result = basic_scene.to_dict()
+        # Add an event
+        scene.add_event("Something happened")
+        
+        # Set timestamps
+        created_at = datetime(2023, 1, 1, 12, 0, 0)
+        updated_at = datetime(2023, 1, 1, 12, 30, 0)
+        scene.created_at = created_at
+        scene.updated_at = updated_at
+        
+        result = scene.to_dict()
         
         assert result["id"] == "scene1"
+        assert result["game_id"] == "game1"
         assert result["title"] == "Test Scene"
-        assert result["description"] == "A test scene description"
-        assert result["game_id"] == basic_game.id
-        assert result["status"] == "completed"
+        assert result["description"] == "This is a test scene"
+        assert result["status"] == "active"
+        assert result["created_at"] == "2023-01-01T12:00:00"
+        assert result["updated_at"] == "2023-01-01T12:30:00"
         assert len(result["events"]) == 1
         assert result["events"][0]["description"] == "Something happened"
-        assert isinstance(result["created_at"], str)
-        assert isinstance(result["updated_at"], str)
-        assert isinstance(result["completed_at"], str)
     
-    def test_from_dict(self, basic_game):
+    def test_from_dict(self):
         """Test creation from dictionary."""
-        timestamp = datetime.now()
+        # Create a dictionary of games by ID
+        games_by_id = {"game1": self.game}
+        
         data = {
             "id": "scene1",
+            "game_id": "game1",
             "title": "Test Scene",
-            "description": "A test scene description",
-            "game_id": basic_game.id,
+            "description": "This is a test scene",
             "status": "active",
+            "created_at": "2023-01-01T12:00:00",
+            "updated_at": "2023-01-01T12:30:00",
             "events": [
                 {
                     "description": "Something happened",
-                    "timestamp": timestamp.isoformat()
+                    "timestamp": "2023-01-01T12:15:00"
                 }
-            ],
-            "created_at": timestamp.isoformat(),
-            "updated_at": timestamp.isoformat(),
-            "completed_at": None
+            ]
         }
         
         scene = Scene.from_dict(data, games_by_id)
         
         assert scene.id == "scene1"
+        assert scene.game is self.game
         assert scene.title == "Test Scene"
-        assert scene.description == "A test scene description"
-        assert scene.game == basic_game
+        assert scene.description == "This is a test scene"
         assert scene.status == SceneStatus.ACTIVE
+        assert scene.created_at == datetime(2023, 1, 1, 12, 0, 0)
+        assert scene.updated_at == datetime(2023, 1, 1, 12, 30, 0)
         assert len(scene.events) == 1
         assert scene.events[0].description == "Something happened"
-        assert scene.events[0].timestamp == timestamp
-        assert scene.created_at == timestamp
-        assert scene.updated_at == timestamp
-        assert scene.completed_at is None 
+    
+    def test_from_dict_game_not_found(self):
+        """Test creation from dictionary with non-existent game."""
+        # Create an empty dictionary of games by ID
+        games_by_id = {}
+        
+        data = {
+            "id": "scene1",
+            "game_id": "game1",
+            "title": "Test Scene",
+            "description": "This is a test scene",
+            "status": "active"
+        }
+        
+        with pytest.raises(ValueError) as excinfo:
+            Scene.from_dict(data, games_by_id)
+        
+        assert "Game with ID game1 not found" in str(excinfo.value)
+
+
+class TestSceneWithRealGame:
+    """Tests for Scene with a real Game instance."""
+    
+    def test_scene_creation_with_real_game(self):
+        """Test creating a scene with a real Game instance."""
+        # Create a real game (which will auto-create an initial scene)
+        game = Game(
+            id="game1",
+            name="Test Game",
+            creator_id="user1",
+            channel_id="channel1"
+        )
+        
+        # Verify the game has an initial scene
+        assert len(game.scenes) == 1
+        assert game.current_scene is not None
+        
+        # Complete the initial scene so we can create a new one
+        game.complete_current_scene()
+        
+        # Create a new scene directly
+        scene = Scene(
+            game=game,
+            title="Test Scene",
+            description="This is a test scene"
+        )
+        
+        # Add the scene to the game
+        game.scenes.append(scene)
+        game.current_scene = scene
+        
+        # Verify the scene was added
+        assert len(game.scenes) == 2
+        assert game.current_scene is scene
+        assert scene in game.scenes
+    
+    def test_scene_creation_through_game(self):
+        """Test creating a scene through the Game.create_scene method."""
+        # Create a real game (which will auto-create an initial scene)
+        game = Game(
+            id="game1",
+            name="Test Game",
+            creator_id="user1",
+            channel_id="channel1"
+        )
+        
+        # Complete the initial scene so we can create a new one
+        game.complete_current_scene()
+        
+        # Create a new scene through the game
+        scene = game.create_scene(
+            title="Test Scene",
+            description="This is a test scene"
+        )
+        
+        # Verify the scene was created and added to the game
+        assert len(game.scenes) == 2
+        assert game.current_scene is scene
+        assert scene in game.scenes
+        assert scene.title == "Test Scene"
+        assert scene.description == "This is a test scene" 

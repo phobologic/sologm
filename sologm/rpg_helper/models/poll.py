@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from threading import Timer
 from typing import Dict, List, Optional, Union, Set, Any, TYPE_CHECKING
+import uuid
 
 from sologm.rpg_helper.utils.logging import get_logger
 
@@ -42,11 +43,11 @@ class Poll:
     """
     Represents a poll with options that users can vote on.
     """
-    id: str  # Unique identifier
     title: str  # Poll title/question
     options: List[str]  # List of options to vote on
     creator_id: str  # User ID of the creator
     game: 'Game'  # Reference to the game this poll belongs to
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))  # Unique identifier with default
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     closed_at: Optional[datetime] = None  # When the poll was closed

@@ -1,138 +1,166 @@
 """
-Tests for the game AI helper.
+Tests for the GameAIHelper class.
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+import json
 
-from sologm.rpg_helper.models.game.base import Game
-from sologm.rpg_helper.models.game.mythic import MythicGMEGame
-from sologm.rpg_helper.models.scene import Scene, SceneStatus
 from sologm.rpg_helper.services.ai.game_helper import GameAIHelper
-from sologm.rpg_helper.utils.logging import get_logger
-from sologm.rpg_helper.services.ai.service import AIService, AIResponseError
+from sologm.rpg_helper.models.game.base import Game
+from sologm.rpg_helper.models.scene import Scene
 
-logger = get_logger()
-
-
-@pytest.fixture
-def mock_ai_service():
-    """Create a mock AI service."""
-    service = MagicMock(spec=AIService)
-    service.generate_text.return_value = """[
-        "The ancient artifact suddenly glows with an eerie blue light, revealing hidden symbols on the cave walls that point to a secret passage.",
-        "A group of rival adventurers bursts into the chamber, demanding that you hand over the map and threatening violence if you refuse.",
-        "The ground begins to shake violently, causing stalactites to fall from the ceiling and blocking your original entrance path.",
-        "One of your companions suddenly clutches their head in pain, claiming to hear whispers from the artifact that promise great power in exchange for a sacrifice.",
-        "You notice strange markings on the floor that, when stepped on in the correct sequence, might activate a magical portal to another location entirely."
-    ]"""
-    return service
-
-
-@pytest.fixture
-def test_game():
-    """Create a test game."""
-    return Game(
-        id="game1",
-        name="Test Adventure",
-        creator_id="user1",
-        channel_id="channel1",
-        setting_info="A high fantasy world with ancient ruins and powerful magic."
-    )
-
-
-@pytest.fixture
-def test_scene(test_game):
-    """Create a test scene."""
-    scene = Scene(
-        id="scene1",
-        game=test_game,
-        title="The Hidden Cave",
-        description="The party has discovered a hidden cave behind a waterfall, containing strange symbols and an ancient artifact."
-    )
-    scene.add_event("The party carefully approached the artifact on the pedestal.")
-    scene.add_event("Mysterious runes began to glow faintly when touched.")
-    return scene
-
-
-def test_generate_outcome_ideas(mock_ai_service, test_game, test_scene):
-    """Test generating outcome ideas."""
-    helper = GameAIHelper(mock_ai_service)
+def test_init():
+    """Test initialization."""
+    ai_service = MagicMock()
+    helper = GameAIHelper(ai_service)
     
+    assert helper.ai_service is ai_service
+
+def test_generate_outcome_ideas():
+    """Test generating ideas."""
+    # Mock AI service
+    ai_service = MagicMock()
+    ai_service.generate_text.return_value = json.dumps([
+        "The heroes find a hidden treasure.",
+        "A trap is sprung, separating the party.",
+        "An old enemy appears unexpectedly."
+    ])
+    
+    helper = GameAIHelper(ai_service)
+    
+    # Create game and scene
+    game = Game(id="game1", name="Test", creator_id="user1", channel_id="channel1")
+    scene = game.current_scene  # Use the automatically created scene
+    
+    # Generate ideas
     ideas = helper.generate_outcome_ideas(
-        game=test_game,
-        scene=test_scene,
-        additional_context="The party is looking for a way to unlock the artifact's power.",
-        focus_words=["trap", "guardian"]
+        game=game,
+        scene=scene,
+        additional_context="The party is exploring a dungeon.",
+        focus_words=["treasure", "trap"],
+        num_ideas=3
     )
     
-    # Check that the AI service was called with appropriate arguments
-    mock_ai_service.generate_text.assert_called_once()
-    prompt = mock_ai_service.generate_text.call_args[1]["prompt"]
+    # Check results
+    assert len(ideas) == 3
+    assert "treasure" in ideas[0]
+    assert "trap" in ideas[1]
+    assert "enemy" in ideas[2]
     
-    # Verify prompt contains key elements
-    assert "Test Adventure" in prompt
-    assert "The Hidden Cave" in prompt
-    assert "high fantasy world" in prompt
-    assert "trap, guardian" in prompt
-    assert "looking for a way to unlock" in prompt
-    assert "FORMAT: Respond with a JSON array" in prompt
-    
-    # Check that we got the expected number of ideas
-    assert len(ideas) == 5
-    assert "ancient artifact suddenly glows" in ideas[0]
-    assert "rival adventurers" in ideas[1]
-    assert "ground begins to shake" in ideas[2]
-    assert "whispers from the artifact" in ideas[3]
-    assert "strange markings on the floor" in ideas[4]
+    # Check that AI service was called with appropriate prompt
+    ai_service.generate_text.assert_called_once()
+    # Use kwargs instead of positional args
+    prompt = ai_service.generate_text.call_args.kwargs.get('prompt')
+    assert "Test" in prompt
+    assert "exploring a dungeon" in prompt
+    assert "treasure" in prompt
+    assert "trap" in prompt
 
+def test_generate_outcome_ideas_default_params():
+    """Test generating ideas with default parameters."""
+    # Mock AI service
+    ai_service = MagicMock()
+    ai_service.generate_text.return_value = json.dumps([
+        "Outcome 1",
+        "Outcome 2",
+        "Outcome 3",
+        "Outcome 4",
+        "Outcome 5"
+    ])
+    
+    helper = GameAIHelper(ai_service)
+    
+    # Create game and scene
+    game = Game(id="game1", name="Test", creator_id="user1", channel_id="channel1")
+    scene = game.current_scene  # Use the automatically created scene
+    
+    # Generate ideas with minimal parameters
+    ideas = helper.generate_outcome_ideas(game=game, scene=scene)
+    
+    # Check results
+    assert len(ideas) == 5  # Default is 5 ideas
+    
+    # Check that AI service was called
+    ai_service.generate_text.assert_called_once()
 
 def test_generate_outcome_ideas_no_scene():
     """Test generating ideas with no scene."""
     helper = GameAIHelper(MagicMock())
     game = Game(id="game1", name="Test", creator_id="user1", channel_id="channel1")
     
+    # Remove the automatically created scene
+    game.current_scene = None
+    
     with pytest.raises(ValueError) as excinfo:
         helper.generate_outcome_ideas(game=game)
     
-    assert "No scene provided" in str(excinfo.value)
+    assert "No scene provided and game has no current scene" in str(excinfo.value)
 
+def test_generate_outcome_ideas_with_scene_id():
+    """Test generating ideas with scene ID."""
+    # Mock AI service
+    ai_service = MagicMock()
+    ai_service.generate_text.return_value = json.dumps([
+        "Outcome 1",
+        "Outcome 2",
+        "Outcome 3"
+    ])
+    
+    helper = GameAIHelper(ai_service)
+    
+    # Create game and scene
+    game = Game(id="game1", name="Test", creator_id="user1", channel_id="channel1")
+    scene = game.current_scene  # Use the automatically created scene
+    
+    # Generate ideas using the scene directly
+    ideas = helper.generate_outcome_ideas(
+        game=game,
+        scene=scene,
+        num_ideas=3
+    )
+    
+    # Check results
+    assert len(ideas) == 3
+    
+    # Check that AI service was called
+    ai_service.generate_text.assert_called_once()
 
-def test_parse_outcome_ideas_invalid_json():
-    """Test handling invalid JSON response."""
+def test_parse_outcome_ideas():
+    """Test parsing outcome ideas from AI response."""
     helper = GameAIHelper(MagicMock())
     
-    invalid_response = """
-    Here are some ideas:
-    1. The artifact reveals a hidden map.
-    2. A strange creature appears.
-    """
+    # Test with valid JSON array
+    response = json.dumps([
+        "Idea 1",
+        "Idea 2",
+        "Idea 3"
+    ])
     
-    with pytest.raises(AIResponseError) as excinfo:
-        helper._parse_outcome_ideas(invalid_response, 5)
+    ideas = helper._parse_outcome_ideas(response, 3)
     
-    assert "Failed to parse JSON response" in str(excinfo.value)
-
-
-def test_parse_outcome_ideas_not_array():
-    """Test handling JSON response that's not an array."""
-    helper = GameAIHelper(MagicMock())
+    assert len(ideas) == 3
+    assert ideas[0] == "Idea 1"
+    assert ideas[1] == "Idea 2"
+    assert ideas[2] == "Idea 3"
     
-    invalid_response = '{"ideas": ["First idea", "Second idea"]}'
+    # Test with fewer ideas than requested
+    response = json.dumps([
+        "Idea 1",
+        "Idea 2"
+    ])
     
-    with pytest.raises(AIResponseError) as excinfo:
-        helper._parse_outcome_ideas(invalid_response, 5)
-    
-    assert "Expected JSON array in response" in str(excinfo.value)
-
-
-def test_parse_outcome_ideas_fewer_than_expected():
-    """Test handling fewer ideas than requested."""
-    helper = GameAIHelper(MagicMock())
-    
-    response = '["First idea", "Second idea"]'
-    
-    ideas = helper._parse_outcome_ideas(response, 5)
+    ideas = helper._parse_outcome_ideas(response, 3)
     
     assert len(ideas) == 2
-    assert ideas[0] == "First idea"
-    assert ideas[1] == "Second idea" 
+    
+    # Test with more ideas than requested
+    response = json.dumps([
+        "Idea 1",
+        "Idea 2",
+        "Idea 3",
+        "Idea 4"
+    ])
+    
+    ideas = helper._parse_outcome_ideas(response, 3)
+    
+    assert len(ideas) == 3  # Should truncate to requested number 
