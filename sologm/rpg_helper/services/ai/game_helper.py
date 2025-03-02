@@ -5,7 +5,10 @@ from typing import List, Optional, Dict, Any
 
 from sologm.rpg_helper.models.game import Game
 from sologm.rpg_helper.models.scene import Scene
-from .service import AIService, AIServiceError
+from sologm.rpg_helper.utils.logging import get_logger
+from .service import AIService, AIServiceError, AIResponseError
+
+logger = get_logger()
 
 
 class GameAIHelper:
@@ -18,7 +21,9 @@ class GameAIHelper:
         Args:
             ai_service: The AI service to use for generating content
         """
+        logger.debug("Initializing game AI helper", service_type=type(ai_service).__name__)
         self.ai_service = ai_service
+        logger.info("Game AI helper initialized")
     
     def generate_outcome_ideas(self, 
                               game: Game,
@@ -43,10 +48,18 @@ class GameAIHelper:
             AIServiceError: If there's an error generating ideas
             ValueError: If no scene is provided and game has no current scene
         """
+        logger.info(
+            "Generating outcome ideas",
+            game_id=game.id,
+            scene_id=scene.id if scene else None,
+            num_ideas=num_ideas
+        )
+        
         # Use provided scene or current scene
         if scene is None:
             scene = game.current_scene
             if scene is None:
+                logger.error("No scene provided and game has no current scene", game_id=game.id)
                 raise ValueError("No scene provided and game has no current scene")
         
         # Build the prompt
@@ -58,17 +71,34 @@ class GameAIHelper:
             num_ideas=num_ideas
         )
         
-        # Generate ideas
-        response = self.ai_service.generate_text(
-            prompt=prompt,
-            max_tokens=1000,
-            temperature=0.8,
-            system_prompt="You are a creative game master assistant helping with tabletop RPG ideas."
-        )
+        logger.debug("Built prompt for outcome generation", prompt=prompt)
         
-        # Parse the response into a list of ideas
-        ideas = self._parse_outcome_ideas(response, num_ideas)
-        return ideas
+        # Generate ideas
+        try:
+            response = self.ai_service.generate_text(
+                prompt=prompt,
+                max_tokens=1000,
+                temperature=0.8,
+                system_prompt="You are a creative game master assistant helping with tabletop RPG ideas."
+            )
+            
+            # Parse the response into a list of ideas
+            ideas = self._parse_outcome_ideas(response, num_ideas)
+            
+            logger.info("Generated outcome ideas", count=len(ideas))
+            logger.debug("Generated ideas", ideas=ideas)
+            
+            return ideas
+            
+        except Exception as e:
+            logger.error(
+                "Error generating outcome ideas",
+                error=str(e),
+                error_type=type(e).__name__,
+                game_id=game.id,
+                scene_id=scene.id
+            )
+            raise
     
     def _build_outcome_prompt(self,
                              game: Game,
@@ -77,6 +107,13 @@ class GameAIHelper:
                              focus_words: Optional[List[str]],
                              num_ideas: int) -> str:
         """Build the prompt for generating outcome ideas."""
+        logger.debug(
+            "Building outcome prompt",
+            game_id=game.id,
+            scene_id=scene.id,
+            focus_words=focus_words
+        )
+        
         # Start with basic information
         prompt_parts = [
             f"Generate {num_ideas} potential outcome ideas for a tabletop RPG scene.",
@@ -113,34 +150,47 @@ class GameAIHelper:
         # Add specific instructions
         prompt_parts.append(
             f"\nPlease generate {num_ideas} creative and interesting outcome ideas "
-            "that could happen next in this scene. Each idea should be a paragraph "
-            "describing a potential development or twist. Number each idea clearly. "
-            "Provide ONLY the numbered list with no introduction or conclusion. "
-            "Start directly with '1.' and end with the last numbered item."
+            "that could happen next in this scene. Each idea should be a complete "
+            "paragraph describing a potential development or twist.\n\n"
+            "FORMAT: Respond with a JSON array of strings, where each string is "
+            "one complete idea. Example format:\n"
+            '["First complete idea here.", "Second complete idea here.", ...]\n\n'
+            "Ensure the response is valid JSON. Start directly with the opening "
+            "bracket and end with the closing bracket."
         )
         
-        return "\n".join(prompt_parts)
+        prompt = "\n".join(prompt_parts)
+        logger.debug("Built prompt", prompt=prompt)
+        return prompt
     
     def _parse_outcome_ideas(self, response: str, expected_count: int) -> List[str]:
         """Parse the AI response into a list of distinct ideas."""
-        # Simple parsing: split by numbered items and clean up
-        ideas = []
+        logger.debug("Parsing outcome ideas", response_length=len(response))
         
-        # Try to find numbered items (1., 2., etc.)
-        import re
-        numbered_items = re.split(r'\n\s*\d+[\.\)]\s*', response)
-        
-        # Remove any empty items and the text before the first number
-        items = [item.strip() for item in numbered_items if item.strip()]
-        if items and not response.strip().startswith("1"):
-            items = items[1:]  # Remove text before first numbered item
-        
-        # If we couldn't find numbered items or found too few, just split by newlines
-        if len(items) < expected_count:
-            # Fallback: just split the text into roughly equal parts
-            paragraphs = [p for p in response.split('\n\n') if p.strip()]
-            if len(paragraphs) >= expected_count:
-                items = paragraphs[:expected_count]
-        
-        # Take up to the expected number of items
-        return items[:expected_count] 
+        try:
+            import json
+            ideas = json.loads(response)
+            
+            if not isinstance(ideas, list):
+                logger.error("Response is not a JSON array", response=response[:100])
+                raise AIResponseError("Expected JSON array in response")
+                
+            if len(ideas) < expected_count:
+                logger.warning(
+                    "Received fewer ideas than expected",
+                    expected=expected_count,
+                    received=len(ideas)
+                )
+            
+            # Take up to the expected number of items
+            result = ideas[:expected_count]
+            logger.debug("Parsed ideas", count=len(result))
+            return result
+            
+        except json.JSONDecodeError as e:
+            logger.error(
+                "Failed to parse JSON response",
+                error=str(e),
+                response=response[:100]
+            )
+            raise AIResponseError("Failed to parse JSON response") from e 

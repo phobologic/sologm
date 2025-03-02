@@ -6,6 +6,9 @@ from typing import Dict, List, Optional, Any
 import anthropic
 
 from .service import AIService, AIRequestError, AIResponseError, AIServiceError
+from sologm.rpg_helper.utils.logging import get_logger
+
+logger = get_logger()
 
 
 class ClaudeService(AIService):
@@ -19,12 +22,16 @@ class ClaudeService(AIService):
             api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
             model: Claude model to use
         """
+        logger.debug("Initializing Claude service", model=model)
+        
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
+            logger.error("No API key provided and ANTHROPIC_API_KEY not set")
             raise ValueError("Anthropic API key is required. Set ANTHROPIC_API_KEY environment variable or pass api_key.")
         
         self.model = model
         self.client = anthropic.Anthropic(api_key=self.api_key)
+        logger.info("Claude service initialized", model=model)
     
     def generate_text(self, 
                      prompt: str, 
@@ -49,6 +56,14 @@ class ClaudeService(AIService):
             AIRequestError: If there's an error making the request
             AIResponseError: If there's an error processing the response
         """
+        logger.debug(
+            "Generating text", 
+            max_tokens=max_tokens, 
+            temperature=temperature,
+            system_prompt=system_prompt,
+            **kwargs
+        )
+        
         # Convert single prompt to messages format
         messages = [{"role": "user", "content": prompt}]
         return self.generate_chat(
@@ -82,6 +97,15 @@ class ClaudeService(AIService):
             AIRequestError: If there's an error making the request
             AIResponseError: If there's an error processing the response
         """
+        logger.debug(
+            "Generating chat response",
+            message_count=len(messages),
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system_prompt=system_prompt,
+            **kwargs
+        )
+        
         try:
             # Convert our generic message format to Anthropic's format
             anthropic_messages = []
@@ -95,6 +119,8 @@ class ClaudeService(AIService):
                     "content": msg["content"]
                 })
             
+            logger.debug("Converted messages to Anthropic format", messages=anthropic_messages)
+            
             # Create the message
             response = self.client.messages.create(
                 model=self.model,
@@ -105,11 +131,20 @@ class ClaudeService(AIService):
                 **kwargs
             )
             
-            return response.content[0].text
+            result = response.content[0].text
+            logger.info("Generated response", length=len(result))
+            logger.debug("Full response", response=result[:100] + "..." if len(result) > 100 else result)
+            
+            return result
             
         except Exception as e:
-            # Handle all exceptions generically
             error_message = str(e)
+            logger.error(
+                "Error generating response",
+                error=error_message,
+                error_type=type(e).__name__
+            )
+            
             if "API" in error_message or "request" in error_message.lower():
                 raise AIRequestError(f"Claude API error: {error_message}")
             elif "network" in error_message.lower() or "connection" in error_message.lower():
