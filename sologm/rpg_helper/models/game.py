@@ -1,10 +1,15 @@
 """
 Data models for games and memberships.
 """
+from __future__ import annotations  # This allows forward references in type hints
 from dataclasses import dataclass, field, fields
 from datetime import datetime
-from typing import Dict, List, Optional, Set, Type, Union, Any, Callable
+from typing import Dict, List, Optional, Set, Type, Union, Any, Callable, TYPE_CHECKING
 import uuid
+
+# Only import Poll when type checking to avoid circular imports
+if TYPE_CHECKING:
+    from sologm.rpg_helper.models.poll import Poll
 
 
 class GameError(Exception):

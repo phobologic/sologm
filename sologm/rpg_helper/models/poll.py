@@ -1,10 +1,15 @@
 """
 Data models for polls and voting.
 """
+from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from threading import Timer
-from typing import Dict, List, Optional, Union, Set
+from typing import Dict, List, Optional, Union, Set, Any, TYPE_CHECKING
+
+# Only import Game when type checking
+if TYPE_CHECKING:
+    from sologm.rpg_helper.models.game import Game
 
 
 class PollError(Exception):
