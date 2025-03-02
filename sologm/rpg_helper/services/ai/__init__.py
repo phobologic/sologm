@@ -4,6 +4,7 @@ AI service package.
 from .service import AIService, AIServiceError, AIRequestError, AIResponseError
 from .claude import ClaudeService
 from .factory import AIServiceFactory
+from .game_helper import GameAIHelper
 
 __all__ = [
     'AIService',
@@ -11,5 +12,6 @@ __all__ = [
     'AIRequestError',
     'AIResponseError',
     'ClaudeService',
-    'AIServiceFactory'
+    'AIServiceFactory',
+    'GameAIHelper'
 ] 
