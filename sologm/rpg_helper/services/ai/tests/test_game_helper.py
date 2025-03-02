@@ -6,27 +6,24 @@ from unittest.mock import MagicMock, patch
 
 from sologm.rpg_helper.models.game import Game
 from sologm.rpg_helper.models.scene import Scene
-from sologm.rpg_helper.services.ai import AIService
+from sologm.rpg_helper.services.ai import AIService, AIResponseError
 from sologm.rpg_helper.services.ai.game_helper import GameAIHelper
+from sologm.rpg_helper.utils.logging import get_logger
+
+logger = get_logger()
 
 
 @pytest.fixture
 def mock_ai_service():
     """Create a mock AI service."""
     service = MagicMock(spec=AIService)
-    service.generate_text.return_value = """
-Here are 5 potential outcome ideas:
-
-1. The ancient artifact suddenly glows with an eerie blue light, revealing hidden symbols on the cave walls that point to a secret passage.
-
-2. A group of rival adventurers bursts into the chamber, demanding that you hand over the map and threatening violence if you refuse.
-
-3. The ground begins to shake violently, causing stalactites to fall from the ceiling and blocking your original entrance path.
-
-4. One of your companions suddenly clutches their head in pain, claiming to hear whispers from the artifact that promise great power in exchange for a sacrifice.
-
-5. You notice strange markings on the floor that, when stepped on in the correct sequence, might activate a magical portal to another location entirely.
-"""
+    service.generate_text.return_value = """[
+        "The ancient artifact suddenly glows with an eerie blue light, revealing hidden symbols on the cave walls that point to a secret passage.",
+        "A group of rival adventurers bursts into the chamber, demanding that you hand over the map and threatening violence if you refuse.",
+        "The ground begins to shake violently, causing stalactites to fall from the ceiling and blocking your original entrance path.",
+        "One of your companions suddenly clutches their head in pain, claiming to hear whispers from the artifact that promise great power in exchange for a sacrifice.",
+        "You notice strange markings on the floor that, when stepped on in the correct sequence, might activate a magical portal to another location entirely."
+    ]"""
     return service
 
 
@@ -77,6 +74,7 @@ def test_generate_outcome_ideas(mock_ai_service, test_game, test_scene):
     assert "high fantasy world" in prompt
     assert "trap, guardian" in prompt
     assert "looking for a way to unlock" in prompt
+    assert "FORMAT: Respond with a JSON array" in prompt
     
     # Check that we got the expected number of ideas
     assert len(ideas) == 5
@@ -98,28 +96,42 @@ def test_generate_outcome_ideas_no_scene():
     assert "No scene provided" in str(excinfo.value)
 
 
-def test_parse_outcome_ideas_fallback():
-    """Test parsing when the response doesn't have numbered items."""
+def test_parse_outcome_ideas_invalid_json():
+    """Test handling invalid JSON response."""
     helper = GameAIHelper(MagicMock())
     
-    # Response without numbered items
-    response = """
-The artifact reveals a hidden map.
+    invalid_response = """
+    Here are some ideas:
+    1. The artifact reveals a hidden map.
+    2. A strange creature appears.
+    """
+    
+    with pytest.raises(AIResponseError) as excinfo:
+        helper._parse_outcome_ideas(invalid_response, 5)
+    
+    assert "Failed to parse JSON response" in str(excinfo.value)
 
-A strange creature appears from the shadows.
 
-The cave begins to collapse.
+def test_parse_outcome_ideas_not_array():
+    """Test handling JSON response that's not an array."""
+    helper = GameAIHelper(MagicMock())
+    
+    invalid_response = '{"ideas": ["First idea", "Second idea"]}'
+    
+    with pytest.raises(AIResponseError) as excinfo:
+        helper._parse_outcome_ideas(invalid_response, 5)
+    
+    assert "Expected JSON array in response" in str(excinfo.value)
 
-You hear voices coming from deeper in the cave.
 
-A magical barrier prevents you from leaving.
-"""
+def test_parse_outcome_ideas_fewer_than_expected():
+    """Test handling fewer ideas than requested."""
+    helper = GameAIHelper(MagicMock())
+    
+    response = '["First idea", "Second idea"]'
     
     ideas = helper._parse_outcome_ideas(response, 5)
     
-    assert len(ideas) == 5
-    assert "artifact reveals" in ideas[0]
-    assert "strange creature" in ideas[1]
-    assert "cave begins to collapse" in ideas[2]
-    assert "hear voices" in ideas[3]
-    assert "magical barrier" in ideas[4] 
+    assert len(ideas) == 2
+    assert ideas[0] == "First idea"
+    assert ideas[1] == "Second idea" 
