@@ -32,6 +32,9 @@ class GameSettings:
     poll_default_max_votes: int = 1
     poll_allow_multiple_votes_per_option: bool = False
     
+    # Mythic GME settings
+    mythic_chaos_factor: int = 5  # Default chaos factor (1-9)
+    
     def __getitem__(self, key: str) -> Any:
         """Allow dictionary-style access to settings."""
         if hasattr(self, key):

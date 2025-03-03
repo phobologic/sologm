@@ -347,7 +347,7 @@ class TestGameClass:
         assert game.created_at == datetime.fromisoformat("2023-01-01T12:00:00")
         assert game.updated_at == datetime.fromisoformat("2023-01-01T12:30:00")
         assert game.members == {"user1", "user2"}
-        assert game.settings.poll_default_timeout == 120
+        assert game.settings.get("poll_default_timeout") == 120
         
         # Check that an initial scene was created since none were provided
         assert len(game.scenes) == 1
@@ -376,11 +376,15 @@ class TestGameClass:
             channel_id="channel1"
         )
         
-        # Try to add the creator again
+        # Try to add the creator again - should silently succeed
         with pytest.raises(ValueError) as excinfo:
             game.add_member("user1")
         
         assert "User user1 is already a member" in str(excinfo.value)
+        
+        # Verify the member is still there
+        assert "user1" in game.members
+        assert len(game.members) == 1
     
     def test_remove_member(self):
         """Test removing a member."""

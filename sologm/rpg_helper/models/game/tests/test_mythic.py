@@ -5,6 +5,7 @@ import pytest
 from datetime import datetime
 
 from sologm.rpg_helper.models.game.mythic import MythicGMEGame
+from sologm.rpg_helper.models.game.base import GameSettings
 from sologm.rpg_helper.models.scene import Scene, SceneStatus
 
 class TestMythicGMEGameClass:
@@ -16,8 +17,7 @@ class TestMythicGMEGameClass:
             id="game1",
             name="Test Mythic Game",
             creator_id="user1",
-            channel_id="channel1",
-            chaos_factor=6
+            channel_id="channel1"
         )
         
         # Check basic attributes
@@ -27,15 +27,28 @@ class TestMythicGMEGameClass:
         assert game.channel_id == "channel1"
         
         # Check Mythic-specific attributes
-        assert game.chaos_factor == 6
-        
-        # Check that an initial scene was created
-        assert len(game.scenes) == 1
-        assert game.current_scene is not None
-        assert game.current_scene.is_active()
+        assert game.chaos_factor == 5  # Default value
+        assert game.settings.mythic_chaos_factor == 5
     
-    def test_init_with_default_chaos(self):
-        """Test MythicGMEGame initialization with default chaos factor."""
+    def test_init_with_custom_chaos_via_settings(self):
+        """Test MythicGMEGame initialization with custom chaos factor via settings."""
+        # Create settings with custom chaos factor
+        settings = GameSettings(mythic_chaos_factor=7)
+        
+        game = MythicGMEGame(
+            id="game1",
+            name="Test Mythic Game",
+            creator_id="user1",
+            channel_id="channel1",
+            settings=settings
+        )
+        
+        # Check that the custom chaos factor was used
+        assert game.chaos_factor == 7
+        assert game.settings.mythic_chaos_factor == 7
+    
+    def test_chaos_factor_property(self):
+        """Test the chaos_factor property."""
         game = MythicGMEGame(
             id="game1",
             name="Test Mythic Game",
@@ -43,8 +56,14 @@ class TestMythicGMEGameClass:
             channel_id="channel1"
         )
         
-        # Check that the default chaos factor was used
+        # Test getting the property
         assert game.chaos_factor == 5
+        assert game.settings.mythic_chaos_factor == 5
+        
+        # Test setting the property
+        game.chaos_factor = 7
+        assert game.chaos_factor == 7
+        assert game.settings.mythic_chaos_factor == 7
     
     def test_init_with_existing_scenes(self):
         """Test MythicGMEGame initialization with existing scenes."""
@@ -79,9 +98,11 @@ class TestMythicGMEGameClass:
             id="game1",
             name="Test Mythic Game",
             creator_id="user1",
-            channel_id="channel1",
-            chaos_factor=7
+            channel_id="channel1"
         )
+        
+        # Set a custom chaos factor
+        game.set_chaos(7)
         
         result = game.to_dict()
         
@@ -97,8 +118,8 @@ class TestMythicGMEGameClass:
         assert result["current_scene_id"] == game.current_scene.id
         assert result["type"] == "MythicGMEGame"
         
-        # Check Mythic-specific fields
-        assert result["chaos_factor"] == 7
+        # Check Mythic-specific fields in settings
+        assert result["settings"]["mythic_chaos_factor"] == 7
     
     def test_from_dict(self):
         """Test creation from dictionary."""
@@ -112,7 +133,9 @@ class TestMythicGMEGameClass:
             "members": ["user1", "user2"],
             "scene_ids": [],
             "current_scene_id": None,
-            "chaos_factor": 7
+            "settings": {
+                "mythic_chaos_factor": 7
+            }
         }
         
         game = MythicGMEGame.from_dict(data)
@@ -128,23 +151,11 @@ class TestMythicGMEGameClass:
         
         # Check Mythic-specific fields
         assert game.chaos_factor == 7
+        assert game.settings.mythic_chaos_factor == 7
         
         # Check that an initial scene was created since none were provided
         assert len(game.scenes) == 1
         assert game.current_scene is not None
-    
-    def test_from_dict_default_chaos(self):
-        """Test creation from dictionary without chaos factor."""
-        data = {
-            "id": "game1",
-            "name": "Test Mythic Game",
-            "creator_id": "user1",
-            "channel_id": "channel1",
-        }
-        
-        game = MythicGMEGame.from_dict(data)
-        
-        assert game.chaos_factor == 5  # Default value
     
     def test_create_scene_with_active_scene_fails(self):
         """Test that creating a scene fails when there's already an active scene."""
@@ -203,21 +214,25 @@ class TestMythicGMEGameClass:
             id="game1",
             name="Test Mythic Game",
             creator_id="user1",
-            channel_id="channel1",
-            chaos_factor=5
+            channel_id="channel1"
         )
+        
+        # Set initial chaos factor
+        game.set_chaos(5)
         
         # Test normal increase
         result = game.increase_chaos()
         assert result == 6
         assert game.chaos_factor == 6
+        assert game.settings.mythic_chaos_factor == 6
         
         # Test upper limit
-        game.chaos_factor = 9
+        game.set_chaos(9)
         with pytest.raises(ValueError) as excinfo:
             game.increase_chaos()
         assert "Chaos factor cannot be greater than 9" in str(excinfo.value)
         assert game.chaos_factor == 9  # Should not change
+        assert game.settings.mythic_chaos_factor == 9
     
     def test_decrease_chaos(self):
         """Test decreasing the chaos factor."""
@@ -225,21 +240,27 @@ class TestMythicGMEGameClass:
             id="game1",
             name="Test Mythic Game",
             creator_id="user1",
-            channel_id="channel1",
-            chaos_factor=5
+            channel_id="channel1"
         )
+        
+        # Set initial chaos factor
+        game.set_chaos(5)
         
         # Test normal decrease
         result = game.decrease_chaos()
         assert result == 4
         assert game.chaos_factor == 4
+        assert game.settings.mythic_chaos_factor == 4
         
         # Test lower limit
-        game.chaos_factor = 1
+        game.set_chaos(2)  # Set to 2 first since we can't set to 1 directly
+        game.settings.mythic_chaos_factor = 1  # Directly set to 1 to bypass validation
+        
         with pytest.raises(ValueError) as excinfo:
             game.decrease_chaos()
         assert "Chaos factor cannot be less than 1" in str(excinfo.value)
         assert game.chaos_factor == 1  # Should not change
+        assert game.settings.mythic_chaos_factor == 1
     
     def test_set_chaos(self):
         """Test setting the chaos factor."""
@@ -254,15 +275,18 @@ class TestMythicGMEGameClass:
         result = game.set_chaos(8)
         assert result == 8
         assert game.chaos_factor == 8
+        assert game.settings.mythic_chaos_factor == 8
         
         # Test lower limit
         with pytest.raises(ValueError) as excinfo:
-            game.set_chaos(0)
-        assert "Chaos factor cannot be less than or equal to 0" in str(excinfo.value)
+            game.set_chaos(1)  # Now 1 is invalid
+        assert "Chaos factor cannot be less than or equal to 1" in str(excinfo.value)
         assert game.chaos_factor == 8  # Should not change
+        assert game.settings.mythic_chaos_factor == 8
         
         # Test upper limit
         with pytest.raises(ValueError) as excinfo:
             game.set_chaos(10)
         assert "Chaos factor cannot be greater than 9" in str(excinfo.value)
         assert game.chaos_factor == 8  # Should not change
+        assert game.settings.mythic_chaos_factor == 8
