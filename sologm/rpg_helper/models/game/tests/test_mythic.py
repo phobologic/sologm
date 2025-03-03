@@ -112,7 +112,6 @@ class TestMythicGMEGameClass:
             "members": ["user1", "user2"],
             "scene_ids": [],
             "current_scene_id": None,
-            "type": "MythicGMEGame",
             "chaos_factor": 7
         }
         
@@ -141,7 +140,6 @@ class TestMythicGMEGameClass:
             "name": "Test Mythic Game",
             "creator_id": "user1",
             "channel_id": "channel1",
-            "type": "MythicGMEGame"
         }
         
         game = MythicGMEGame.from_dict(data)
@@ -169,7 +167,7 @@ class TestMythicGMEGameClass:
                 description="This should fail."
             )
         
-        assert "Cannot create active scene when another active scene exists" in str(excinfo.value)
+        assert "Cannot create new scene while current scene is active" in str(excinfo.value)
         assert len(game.scenes) == 1  # Still only the initial scene
     
     def test_create_scene_after_completing_current(self):

@@ -9,17 +9,19 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from sologm.rpg_helper.utils.logging import (
-    get_logger, set_global_log_level, LogLevel, RPGLogger
+    get_logger, set_global_log_level, LogLevel, RPGLogger, get_level_from_string,
 )
 
 
 def test_get_logger():
     """Test getting a logger."""
     logger = get_logger("test_module")
+
+    expected_level = get_level_from_string(os.environ.get("RPG_HELPER_LOG_LEVEL", "INFO"))
     
     assert logger.name == "test_module"
     assert isinstance(logger, RPGLogger)
-    assert logger.logger.level == LogLevel.INFO
+    assert logger.logger.level == expected_level
 
 
 def test_get_logger_default_name():

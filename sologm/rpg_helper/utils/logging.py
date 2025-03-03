@@ -17,6 +17,20 @@ class LogLevel:
     ERROR = logging.ERROR
     CRITICAL = logging.CRITICAL
 
+def get_level_from_string(level_str: str) -> LogLevel:
+    """
+    Get a log level from a string.
+    """
+    level_map = {
+        "DEBUG": LogLevel.DEBUG,
+        "INFO": LogLevel.INFO,
+        "WARNING": LogLevel.WARNING,
+        "ERROR": LogLevel.ERROR,
+        "CRITICAL": LogLevel.CRITICAL
+    }
+
+    return level_map.get(level_str.upper(), LogLevel.INFO)
+
 
 class RPGLogger:
     """
@@ -162,14 +176,7 @@ def get_logger(name: Optional[str] = None,
     if level is None:
         # Default to INFO, but check environment variable
         env_level = os.environ.get("RPG_HELPER_LOG_LEVEL", "INFO")
-        level_map = {
-            "DEBUG": LogLevel.DEBUG,
-            "INFO": LogLevel.INFO,
-            "WARNING": LogLevel.WARNING,
-            "ERROR": LogLevel.ERROR,
-            "CRITICAL": LogLevel.CRITICAL
-        }
-        level = level_map.get(env_level.upper(), LogLevel.INFO)
+        level = get_level_from_string(env_level)
     
     logger = RPGLogger(
         name=name,
