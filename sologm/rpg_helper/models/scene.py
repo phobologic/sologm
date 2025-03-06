@@ -1,251 +1,360 @@
 """
-Data models for game scenes.
+Scene model for the RPG Helper application.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, TYPE_CHECKING
 from enum import Enum
-import uuid
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
+
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum as SQLAEnum, Integer
+from sqlalchemy.orm import relationship, object_session
 
 from sologm.rpg_helper.utils.logging import get_logger
+from .base import BaseModel, get_session, close_session, NotFoundError
+from .scene_event import SceneEvent
+from .game.errors import SceneNotFoundError, InvalidSceneStatusError
 
 if TYPE_CHECKING:
-    from .game import Game
+    from .game.base import Game
 
 logger = get_logger()
 
-class SceneStatus(Enum):
+class SceneStatus(str, Enum):
     """Status of a scene."""
     ACTIVE = "active"
     COMPLETED = "completed"
     ABANDONED = "abandoned"
 
 
-@dataclass
-class SceneEvent:
-    """Represents a single event that occurred in a scene."""
-    description: str
-    timestamp: datetime = field(default_factory=datetime.now)
-    
-    def to_dict(self) -> Dict[str, str]:
-        """Convert to dictionary for serialization."""
-        return {
-            "description": self.description,
-            "timestamp": self.timestamp.isoformat()
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, str]) -> SceneEvent:
-        """Create from dictionary."""
-        event = cls(description=data["description"])
-        if "timestamp" in data:
-            event.timestamp = datetime.fromisoformat(data["timestamp"])
-        return event
-
-
-@dataclass
-class Scene:
+class Scene(BaseModel):
     """
-    Represents a scene in a game.
-    """
-    game: Game  # Reference to the game this scene belongs to
-    title: Optional[str] = None  # Scene title
-    description: Optional[str] = None  # General scene description
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))  # Unique identifier with default
-    status: SceneStatus = field(default=SceneStatus.ACTIVE)
-    events: List[SceneEvent] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
-    completed_at: Optional[datetime] = None
+    SQLAlchemy model for scenes.
     
-    def __post_init__(self):
-        """Post-initialization setup."""
-        # Set default title if not provided
-        if self.title is None:
-            self.title = f"Scene {self.id[:8]}"
+    Represents a scene in a game, which can contain multiple events.
+    """
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(SQLAEnum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE)
+    completed_at = Column(DateTime, nullable=True)
+    order = Column(Integer, nullable=False, default=0)
+    
+    # Foreign key to game
+    game_id = Column(String(36), ForeignKey('games.id'), nullable=False, index=True)
+    
+    # Relationships
+    game = relationship("Game", foreign_keys=[game_id], back_populates="scenes")
+    events = relationship("SceneEvent", back_populates="scene", cascade="all, delete-orphan", 
+                         order_by="SceneEvent.created_at")
+    
+    def __init__(self, **kwargs):
+        """Initialize a new scene."""
+        # Set default status if not provided
+        if 'status' not in kwargs:
+            kwargs['status'] = SceneStatus.ACTIVE
         
-        # Set default description if not provided
-        if self.description is None:
-            self.description = f"A new scene in {self.game.name}."
-        
-        logger.debug(
+        # If order is not specified, set it to the next available order
+        if 'order' not in kwargs and 'game_id' in kwargs:
+            kwargs['order'] = self._get_next_order(kwargs['game_id'])
+            
+        super().__init__(**kwargs)
+        logger.info(
             "Created new scene",
             scene_id=self.id,
-            game_id=self.game.id,
+            game_id=self.game_id,
             title=self.title,
-            status=self.status.value
+            status=self.status.value,
+            order=self.order
         )
+    
+    def __repr__(self):
+        """String representation of the scene."""
+        return f"<Scene(id='{self.id}', game_id='{self.game_id}', title='{self.title}', status='{self.status.value}', order={self.order})>"
+    
+    @classmethod
+    def _get_next_order(cls, game_id: str) -> int:
+        """
+        Get the next available order for a scene in a game.
+        
+        Args:
+            game_id: ID of the game
+            
+        Returns:
+            Next available order
+        """
+        session = get_session()
+        try:
+            # Get the maximum order value for scenes in this game
+            max_order = session.query(cls).filter_by(game_id=game_id).with_entities(
+                cls.order
+            ).order_by(cls.order.desc()).first()
+            
+            # If there are no scenes yet, start with 0
+            if max_order is None:
+                return 0
+                
+            # Otherwise, use the next order
+            return max_order[0] + 1
+        finally:
+            close_session(session)
+    
+    def reorder(self, new_order: int) -> None:
+        """
+        Change the order of this scene.
+        
+        Args:
+            new_order: New order value
+            
+        Note:
+            This method does not handle reordering other scenes.
+            Use the reorder_scenes class method for that.
+        """
+        old_order = self.order
+        self.order = new_order
+        self.updated_at = datetime.now()
+        
+        logger.debug(
+            "Reordered scene",
+            scene_id=self.id,
+            old_order=old_order,
+            new_order=new_order
+        )
+        
+        # Save changes if the scene is already in a session
+        session = object_session(self)
+        if session:
+            session.commit()
+    
+    @classmethod
+    def reorder_scenes(cls, game_id: str, scene_orders: Dict[str, int]) -> None:
+        """
+        Reorder multiple scenes in a game.
+        
+        Args:
+            game_id: ID of the game
+            scene_orders: Dictionary mapping scene IDs to new order values
+        """
+        session = get_session()
+        try:
+            # Get all scenes for this game
+            scenes = session.query(cls).filter_by(game_id=game_id).all()
+            
+            # Update orders
+            for scene in scenes:
+                if scene.id in scene_orders:
+                    scene.order = scene_orders[scene.id]
+                    scene.updated_at = datetime.now()
+            
+            session.commit()
+            
+            logger.info(
+                "Reordered scenes in game",
+                game_id=game_id,
+                scene_count=len(scene_orders)
+            )
+        finally:
+            close_session(session)
     
     def add_event(self, description: str) -> SceneEvent:
         """
-        Add a new event to the scene.
+        Add an event to the scene.
         
         Args:
-            description: Description of what happened
+            description: Description of the event
             
         Returns:
-            The created SceneEvent
+            The created event
             
         Raises:
-            ValueError: If the scene is not active
+            InvalidSceneStatusError: If the scene is not active
         """
         if self.status != SceneStatus.ACTIVE:
-            raise ValueError(f"Cannot add events to a {self.status.value} scene")
+            logger.warning(
+                "Attempted to add event to non-active scene",
+                scene_id=self.id,
+                status=self.status.value
+            )
+            raise InvalidSceneStatusError(
+                self.id, self.status.value, SceneStatus.ACTIVE.value
+            )
         
-        event = SceneEvent(description=description)
+        event = SceneEvent(
+            description=description,
+            scene_id=self.id
+        )
+        
         self.events.append(event)
         self.updated_at = datetime.now()
+        
+        # Save the event if the scene is already in a session
+        session = object_session(self)
+        if session:
+            session.add(event)
+            session.commit()
         
         logger.debug(
             "Added event to scene",
             scene_id=self.id,
-            game_id=self.game.id,
-            event_description=description[:50] + "..." if len(description) > 50 else description,
-            event_count=len(self.events)
+            event_id=event.id
         )
         
         return event
     
-    def set_title(self, title: str) -> None:
-        """
-        Set or update the scene title.
-        
-        Args:
-            title: New title for the scene
-        """
-        self.title = title
-        self.updated_at = datetime.now()
-    
-    def set_description(self, description: str) -> None:
-        """
-        Set or update the scene description.
-        
-        Args:
-            description: New description for the scene
-        """
-        self.description = description
-        self.updated_at = datetime.now()
-    
-    def clear_title(self) -> None:
-        """Remove the scene title."""
-        self.title = None
-        self.updated_at = datetime.now()
-    
-    def clear_description(self) -> None:
-        """Remove the scene description."""
-        self.description = None
-        self.updated_at = datetime.now()
-    
-    def complete(self, title: Optional[str] = None, description: Optional[str] = None) -> None:
+    def complete(self) -> None:
         """
         Mark the scene as completed.
         
-        Args:
-            title: Optional title to set when completing
-            description: Optional description to set when completing
-            
         Raises:
-            ValueError: If the scene is already completed or abandoned
+            InvalidSceneStatusError: If the scene is not active
         """
         if self.status != SceneStatus.ACTIVE:
-            raise ValueError(f"Cannot complete a {self.status.value} scene")
-        
-        if title is not None:
-            self.set_title(title)
-        
-        if description is not None:
-            self.set_description(description)
+            logger.warning(
+                "Attempted to complete non-active scene",
+                scene_id=self.id,
+                status=self.status.value
+            )
+            raise InvalidSceneStatusError(
+                self.id, self.status.value, SceneStatus.ACTIVE.value
+            )
         
         self.status = SceneStatus.COMPLETED
         self.completed_at = datetime.now()
         self.updated_at = datetime.now()
+        
+        logger.info(
+            "Completed scene",
+            scene_id=self.id,
+            game_id=self.game_id
+        )
+        
+        # Save changes if the scene is already in a session
+        session = object_session(self)
+        if session:
+            session.commit()
     
     def abandon(self) -> None:
         """
         Mark the scene as abandoned.
         
         Raises:
-            ValueError: If the scene is already completed or abandoned
+            InvalidSceneStatusError: If the scene is not active
         """
         if self.status != SceneStatus.ACTIVE:
-            raise ValueError(f"Cannot abandon a {self.status.value} scene")
+            logger.warning(
+                "Attempted to abandon non-active scene",
+                scene_id=self.id,
+                status=self.status.value
+            )
+            raise InvalidSceneStatusError(
+                self.id, self.status.value, SceneStatus.ACTIVE.value
+            )
         
         self.status = SceneStatus.ABANDONED
         self.completed_at = datetime.now()
         self.updated_at = datetime.now()
-    
-    def to_dict(self) -> Dict[str, object]:
-        """Convert to dictionary for serialization."""
-        return {
-            "id": self.id,
-            "title": self.title,
-            "description": self.description,
-            "game_id": self.game.id,
-            "status": self.status.value,
-            "events": [event.to_dict() for event in self.events],
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, object], games_by_id: Dict[str, Game]) -> Scene:
-        """Create from dictionary."""
-        # Look up the game by ID
-        game_id = data["game_id"]
-        if game_id not in games_by_id:
-            raise ValueError(f"Game with ID {game_id} not found")
         
-        game = games_by_id[game_id]
-        
-        scene = cls(
-            id=data["id"],
-            title=data["title"],
-            description=data["description"],
-            game=game,
-            status=SceneStatus(data["status"])
+        logger.info(
+            "Abandoned scene",
+            scene_id=self.id,
+            game_id=self.game_id
         )
         
-        if "events" in data:
-            scene.events = [SceneEvent.from_dict(event_data) 
-                          for event_data in data["events"]]
-        
-        if "created_at" in data:
-            scene.created_at = datetime.fromisoformat(data["created_at"])
-        
-        if "updated_at" in data:
-            scene.updated_at = datetime.fromisoformat(data["updated_at"])
-        
-        if "completed_at" in data and data["completed_at"]:
-            scene.completed_at = datetime.fromisoformat(data["completed_at"])
-        
-        return scene
-
+        # Save changes if the scene is already in a session
+        session = object_session(self)
+        if session:
+            session.commit()
+    
     def is_active(self) -> bool:
-        """Check if the scene is active.
-
-        Returns:
-            True if the scene is active, False otherwise
-        """
+        """Check if the scene is active."""
         return self.status == SceneStatus.ACTIVE
-
+    
     def is_completed(self) -> bool:
-        """Check if the scene is completed.
-
-        Returns:
-            True if the scene is completed, False otherwise
-        """
+        """Check if the scene is completed."""
         return self.status == SceneStatus.COMPLETED
-
+    
     def is_abandoned(self) -> bool:
-        """Check if the scene is abandoned.
-
-        Returns:
-            True if the scene is abandoned, False otherwise
-        """
+        """Check if the scene is abandoned."""
         return self.status == SceneStatus.ABANDONED
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        data = super().to_dict()
         
-
-# In-memory storage for scenes
-scenes_by_id: Dict[str, Scene] = {} 
+        # Convert status enum to string
+        data['status'] = self.status.value
+        
+        # Add events
+        data['events'] = [event.to_dict() for event in self.events]
+        
+        return data
+    
+    @classmethod
+    def get_by_game(cls, game_id: str, status: Optional[SceneStatus] = None) -> List[Scene]:
+        """
+        Get scenes for a game, optionally filtered by status.
+        
+        Args:
+            game_id: ID of the game
+            status: Optional status to filter by
+            
+        Returns:
+            List of scenes ordered by their order field
+        """
+        session = get_session()
+        try:
+            query = session.query(cls).filter_by(game_id=game_id)
+            
+            if status:
+                query = query.filter_by(status=status)
+            
+            # Order by the order field
+            query = query.order_by(cls.order)
+            
+            scenes = query.all()
+            
+            logger.debug(
+                "Retrieved scenes for game",
+                game_id=game_id,
+                status=status.value if status else "all",
+                count=len(scenes)
+            )
+            
+            return scenes
+        finally:
+            close_session(session)
+    
+    @classmethod
+    def get_for_game(cls, game_id: str, scene_id: str) -> Scene:
+        """
+        Get a scene for a game by ID.
+        
+        Args:
+            game_id: ID of the game
+            scene_id: ID of the scene
+            
+        Returns:
+            The scene
+            
+        Raises:
+            SceneNotFoundError: If the scene is not found
+        """
+        session = get_session()
+        try:
+            scene = session.query(cls).filter_by(game_id=game_id, id=scene_id).first()
+            
+            if not scene:
+                logger.warning(
+                    "Scene not found for game",
+                    game_id=game_id,
+                    scene_id=scene_id
+                )
+                raise SceneNotFoundError(scene_id, game_id)
+            
+            logger.debug(
+                "Retrieved scene for game",
+                game_id=game_id,
+                scene_id=scene_id
+            )
+            
+            return scene
+        finally:
+            close_session(session) 

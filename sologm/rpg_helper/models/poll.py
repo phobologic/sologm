@@ -1,373 +1,437 @@
 """
-Data models for polls and voting.
+Poll model for the RPG Helper application.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
-from datetime import datetime
-from threading import Timer
-from typing import Dict, List, Optional, Union, Set, Any, TYPE_CHECKING
-import uuid
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import List, Dict, Any, Optional, Set, TYPE_CHECKING
+import json
+
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Boolean, Integer, Table
+from sqlalchemy.orm import relationship, object_session
 
 from sologm.rpg_helper.utils.logging import get_logger
+from .base import BaseModel, get_session, close_session
+from .game.errors import PollNotFoundError, PollClosedError
 
-# Only import Game when type checking
 if TYPE_CHECKING:
-    from sologm.rpg_helper.models.game.base import Game
+    from .game.base import Game
 
 logger = get_logger()
 
-
-class PollError(Exception):
-    """Base exception for poll-related errors."""
-    pass
-
-
-class VoteLimitExceededError(PollError):
-    """Exception raised when attempting to vote beyond the allowed limit."""
-    def __init__(self, user_id: str, current_votes: int, max_votes: int):
-        self.user_id = user_id
-        self.current_votes = current_votes
-        self.max_votes = max_votes
-        super().__init__(f"User {user_id} has already used {current_votes} of {max_votes} allowed votes")
+class PollStatus(str, Enum):
+    """Status of a poll."""
+    OPEN = "open"
+    CLOSED = "closed"
 
 
-class InvalidVoteLimitError(PollError):
-    """Exception raised when attempting to set an invalid vote limit."""
-    def __init__(self, max_votes: int):
-        self.max_votes = max_votes
-        super().__init__(f"Invalid max votes per user: {max_votes}")
-
-
-@dataclass
-class Poll:
+class Vote(BaseModel):
     """
-    Represents a poll with options that users can vote on.
+    SQLAlchemy model for votes in a poll.
+    
+    Represents a single vote cast by a user for an option in a poll.
     """
-    title: str  # Poll title/question
-    options: List[str]  # List of options to vote on
-    creator_id: str  # User ID of the creator
-    game: 'Game'  # Reference to the game this poll belongs to
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))  # Unique identifier with default
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
-    closed_at: Optional[datetime] = None  # When the poll was closed
-    max_votes_per_user: int = 1  # Maximum number of votes per user
-    allow_multiple_votes_per_option: bool = False  # Whether users can vote for the same option multiple times
-    votes: Dict[str, Set[int]] = field(default_factory=dict)  # Maps user_id to set of option indices
-    timeout_seconds: int = 60  # Time in seconds until the poll auto-closes
-    timer: Optional[Timer] = None  # Timer for auto-closing
-
-    def __post_init__(self):
-        """Validate fields after initialization."""
-        if self.max_votes_per_user < 1:
-            logger.error(
-                "Invalid max votes per user",
-                poll_id=self.id,
-                max_votes=self.max_votes_per_user
-            )
-            raise InvalidVoteLimitError(self.max_votes_per_user)
-        
+    # Foreign keys
+    poll_id = Column(String(36), ForeignKey('polls.id'), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey('users.id'), nullable=False)
+    
+    # Vote details
+    option_index = Column(Integer, nullable=False)
+    
+    # Relationships
+    poll = relationship("Poll", back_populates="votes")
+    user = relationship("User")
+    
+    __table_args__ = (
+        # A user can only vote once per poll
+        {'sqlite_autoincrement': True},
+    )
+    
+    def __init__(self, **kwargs):
+        """Initialize a new vote."""
+        super().__init__(**kwargs)
         logger.debug(
+            "Created new vote",
+            poll_id=self.poll_id,
+            user_id=self.user_id,
+            option_index=self.option_index
+        )
+    
+    def __repr__(self):
+        """String representation of the vote."""
+        return f"<Vote(poll_id='{self.poll_id}', user_id='{self.user_id}', option_index={self.option_index})>"
+
+
+class Poll(BaseModel):
+    """
+    SQLAlchemy model for polls.
+    
+    Represents a poll in a game, which can have multiple options and votes.
+    """
+    question = Column(String(255), nullable=False)
+    options_json = Column(Text, nullable=False)  # JSON array of options
+    status = Column(String(10), nullable=False, default=PollStatus.OPEN.value)
+    closes_at = Column(DateTime, nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+    
+    # Foreign key to game
+    game_id = Column(String(36), ForeignKey('games.id'), nullable=False, index=True)
+    
+    # Relationships
+    game = relationship("Game", back_populates="polls")
+    votes = relationship("Vote", back_populates="poll", cascade="all, delete-orphan")
+    
+    def __init__(self, **kwargs):
+        """Initialize a new poll."""
+        # Handle options as a list
+        if 'options' in kwargs:
+            kwargs['options_json'] = json.dumps(kwargs.pop('options'))
+        
+        # Set closes_at if timeout is provided
+        if 'timeout' in kwargs:
+            timeout = kwargs.pop('timeout')
+            kwargs['closes_at'] = datetime.now() + timedelta(seconds=timeout)
+        
+        super().__init__(**kwargs)
+        logger.info(
             "Created new poll",
             poll_id=self.id,
-            game_id=self.game.id,
-            question=self.title,
+            game_id=self.game_id,
+            question=self.question,
             option_count=len(self.options),
-            timeout=self.timeout_seconds
+            closes_at=self.closes_at.isoformat() if self.closes_at else None
         )
+    
+    def __repr__(self):
+        """String representation of the poll."""
+        return f"<Poll(id='{self.id}', game_id='{self.game_id}', question='{self.question}', status='{self.status}')>"
+    
+    @property
+    def options(self) -> List[str]:
+        """Get the poll options."""
+        return json.loads(self.options_json)
+    
+    @options.setter
+    def options(self, options: List[str]) -> None:
+        """Set the poll options."""
+        self.options_json = json.dumps(options)
+    
+    def is_open(self) -> bool:
+        """Check if the poll is open."""
+        # Check status
+        if self.status != PollStatus.OPEN.value:
+            return False
         
-        # Set up auto-close timer if timeout is specified
-        if self.timeout_seconds > 0:
-            self.timer = Timer(self.timeout_seconds, self.close)
-            self.timer.start()
-            logger.debug(
-                "Started poll timer",
-                poll_id=self.id,
-                timeout=self.timeout_seconds
-            )
-
-    def to_dict(self) -> Dict[str, object]:
-        """Convert to dictionary for serialization."""
-        logger.debug("Converting poll to dict", poll_id=self.id)
+        # Check if it has timed out
+        if self.closes_at and datetime.now() > self.closes_at:
+            # Auto-close the poll
+            self.close()
+            return False
         
-        return {
-            "id": self.id,
-            "title": self.title,
-            "options": self.options,
-            "creator_id": self.creator_id,
-            "game_id": self.game.id,  # Store just the ID for serialization
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
-            "closed_at": self.closed_at.isoformat() if self.closed_at else None,
-            "max_votes_per_user": self.max_votes_per_user,
-            "allow_multiple_votes_per_option": self.allow_multiple_votes_per_option,
-            "timeout_seconds": self.timeout_seconds,
-            "votes": {user_id: list(option_indices) for user_id, option_indices in self.votes.items()}
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, object], games_by_id: Dict[str, 'Game']) -> 'Poll':
-        """Create from dictionary."""
-        logger.debug("Creating poll from dict", poll_id=data["id"])
-        
-        # Look up the game by ID
-        game_id = data["game_id"]
-        if game_id not in games_by_id:
-            logger.error(
-                "Game not found for poll",
-                game_id=game_id,
-                poll_id=data["id"]
-            )
-            raise ValueError(f"Game with ID {game_id} not found")
-        
-        game = games_by_id[game_id]
-        
-        poll = cls(
-            id=data["id"],
-            title=data["title"],
-            options=data["options"],
-            creator_id=data["creator_id"],
-            game=game,  # Use the actual game object
-            max_votes_per_user=data.get("max_votes_per_user", 1),
-            allow_multiple_votes_per_option=data.get("allow_multiple_votes_per_option", False),
-            timeout_seconds=data.get("timeout_seconds", 60)
-        )
-        
-        if "created_at" in data:
-            poll.created_at = datetime.fromisoformat(data["created_at"])
-        
-        if "updated_at" in data:
-            poll.updated_at = datetime.fromisoformat(data["updated_at"])
-        
-        if "closed_at" in data and data["closed_at"]:
-            poll.closed_at = datetime.fromisoformat(data["closed_at"])
-            # Don't start timer if poll is already closed
-            if poll.timer:
-                poll.timer.cancel()
-                poll.timer = None
-        
-        if "votes" in data:
-            poll.votes = {user_id: set(option_indices) for user_id, option_indices in data["votes"].items()}
-        
-        logger.debug(
-            "Loaded poll data",
-            poll_id=poll.id,
-            vote_count=len(poll.votes),
-            is_closed=poll.is_closed()
-        )
-        return poll
-
-    def add_vote(self, user_id: str, option_index: int) -> None:
+        return True
+    
+    def close(self) -> None:
         """
-        Add a vote for a specific option.
+        Close the poll.
+        
+        This prevents further votes from being cast.
+        """
+        if self.status == PollStatus.CLOSED.value:
+            logger.debug(
+                "Attempted to close already closed poll",
+                poll_id=self.id
+            )
+            return
+        
+        self.status = PollStatus.CLOSED.value
+        self.closed_at = datetime.now()
+        self.updated_at = datetime.now()
+        
+        logger.info(
+            "Closed poll",
+            poll_id=self.id,
+            game_id=self.game_id,
+            vote_count=len(self.votes)
+        )
+        
+        # Save changes if the poll is already in a session
+        session = object_session(self)
+        if session:
+            session.commit()
+    
+    def add_vote(self, user_id: str, option_index: int) -> Vote:
+        """
+        Add a vote to the poll.
         
         Args:
-            user_id: ID of the voting user
-            option_index: Index of the option to vote for (0-based)
+            user_id: ID of the user casting the vote
+            option_index: Index of the option being voted for
+            
+        Returns:
+            The created vote
             
         Raises:
-            ValueError: If the option index is invalid or poll is closed
-            VoteLimitExceededError: If the user has already voted the maximum number of times
+            PollClosedError: If the poll is closed
+            ValueError: If the option index is invalid
         """
-        if self.is_closed():
-            logger.error(
+        # Check if the poll is open
+        if not self.is_open():
+            logger.warning(
                 "Attempted to vote on closed poll",
                 poll_id=self.id,
                 user_id=user_id
             )
-            raise ValueError("Poll is closed")
-            
-        if not 0 <= option_index < len(self.options):
-            logger.error(
-                "Invalid option index in vote",
+            raise PollClosedError(self.id)
+        
+        # Check if the option index is valid
+        if option_index < 0 or option_index >= len(self.options):
+            logger.warning(
+                "Invalid option index for vote",
                 poll_id=self.id,
                 user_id=user_id,
-                invalid_index=option_index,
+                option_index=option_index,
                 option_count=len(self.options)
             )
             raise ValueError(f"Invalid option index: {option_index}")
         
-        # Initialize user's votes if not present
-        if user_id not in self.votes:
-            self.votes[user_id] = set()
-        
-        # Check if user has already voted for this option when not allowed
-        if not self.allow_multiple_votes_per_option and option_index in self.votes[user_id]:
-            logger.error(
-                "User attempted to vote for same option multiple times",
+        # Check if the user has already voted
+        session = object_session(self) or get_session()
+        try:
+            existing_vote = session.query(Vote).filter_by(
+                poll_id=self.id, user_id=user_id
+            ).first()
+            
+            if existing_vote:
+                # Update the existing vote
+                old_option = existing_vote.option_index
+                existing_vote.option_index = option_index
+                existing_vote.updated_at = datetime.now()
+                
+                logger.info(
+                    "Updated vote",
+                    poll_id=self.id,
+                    user_id=user_id,
+                    old_option=old_option,
+                    new_option=option_index
+                )
+                
+                if session == object_session(self):
+                    session.commit()
+                
+                return existing_vote
+            
+            # Create a new vote
+            vote = Vote(
                 poll_id=self.id,
                 user_id=user_id,
                 option_index=option_index
             )
-            raise ValueError(f"User {user_id} has already voted for option {option_index}")
-        
-        # Check vote limit
-        # Even with allow_multiple_votes_per_option, users are still limited by max_votes_per_user
-        if len(self.votes[user_id]) >= self.max_votes_per_user:
-            logger.error(
-                "User exceeded vote limit",
+            
+            self.votes.append(vote)
+            self.updated_at = datetime.now()
+            
+            if session == object_session(self):
+                session.add(vote)
+                session.commit()
+            
+            logger.info(
+                "Added vote to poll",
                 poll_id=self.id,
                 user_id=user_id,
-                current_votes=len(self.votes[user_id]),
-                max_votes=self.max_votes_per_user
+                option_index=option_index
             )
-            raise VoteLimitExceededError(
-                user_id, 
-                len(self.votes[user_id]), 
-                self.max_votes_per_user
-            )
+            
+            return vote
+        finally:
+            if session != object_session(self):
+                close_session(session)
+    
+    def get_results(self) -> Dict[int, int]:
+        """
+        Get the results of the poll.
         
-        # Add the vote
-        self.votes[user_id].add(option_index)
-        self.updated_at = datetime.now()
+        Returns:
+            Dictionary mapping option indices to vote counts
+        """
+        results = {}
+        
+        # Initialize all options with 0 votes
+        for i in range(len(self.options)):
+            results[i] = 0
+        
+        # Count votes
+        for vote in self.votes:
+            results[vote.option_index] = results.get(vote.option_index, 0) + 1
         
         logger.debug(
-            "Recorded vote",
+            "Retrieved poll results",
             poll_id=self.id,
-            user_id=user_id,
-            option_index=option_index,
-            total_votes=len(self.votes)
+            vote_count=len(self.votes),
+            results=results
         )
-
-    def remove_vote(self, user_id: str, option_index: int) -> None:
-        """
-        Remove a vote for a specific option.
         
-        Args:
-            user_id: ID of the voting user
-            option_index: Index of the option to remove vote from (0-based)
-            
-        Raises:
-            ValueError: If the option index is invalid or the user hasn't voted for this option
+        return results
+    
+    def get_winning_option(self) -> Optional[int]:
         """
-        if not 0 <= option_index < len(self.options):
-            raise ValueError(f"Invalid option index: {option_index}")
-        
-        if user_id not in self.votes or option_index not in self.votes[user_id]:
-            raise ValueError(f"User {user_id} has not voted for option {option_index}")
-        
-        self.votes[user_id].remove(option_index)
-        
-        # Clean up empty vote sets
-        if not self.votes[user_id]:
-            del self.votes[user_id]
-
-    def get_user_votes(self, user_id: str) -> Set[int]:
-        """
-        Get all options that a user has voted for.
-        
-        Args:
-            user_id: ID of the user
-            
-        Returns:
-            Set of option indices the user has voted for
-        """
-        return self.votes.get(user_id, set())
-
-    def get_vote_counts(self) -> List[int]:
-        """
-        Get the total votes for each option.
+        Get the index of the winning option.
         
         Returns:
-            List of vote counts, indexed by option
+            Index of the winning option, or None if there are no votes or a tie
         """
-        counts = [0] * len(self.options)
-        for votes in self.votes.values():
-            for idx in votes:
-                counts[idx] += 1
-        return counts
-
-    def can_vote(self, user_id: str) -> bool:
-        """
-        Check if a user can vote more times.
+        results = self.get_results()
         
-        Args:
-            user_id: ID of the user
-            
-        Returns:
-            True if the user can vote more, False otherwise
-        """
-        current_votes = len(self.get_user_votes(user_id))
-        return current_votes < self.max_votes_per_user
-
-    def get_option_vote_count(self, option_index: int) -> int:
-        """
-        Get the total votes for a specific option.
+        if not results:
+            return None
         
-        Args:
-            option_index: Index of the option
-            
-        Returns:
-            Number of votes for the option
-            
-        Raises:
-            ValueError: If the option index is invalid
-        """
-        if not 0 <= option_index < len(self.options):
-            logger.error(
-                "Invalid option index",
-                poll_id=self.id,
-                invalid_index=option_index,
-                option_count=len(self.options)
-            )
-            raise ValueError(f"Invalid option index: {option_index}")
+        # Find the option(s) with the most votes
+        max_votes = max(results.values())
         
-        return sum(1 for votes in self.votes.values() if option_index in votes)
-
-    def close(self) -> None:
-        """Close the poll for voting."""
-        if not self.is_closed():
-            self.closed_at = datetime.now()
-            self.updated_at = self.closed_at
-            
-            # Cancel the timer if it exists
-            if self.timer:
-                self.timer.cancel()
-                self.timer = None
-            
-            winning_options = self.get_winning_options()
+        if max_votes == 0:
+            return None
+        
+        winners = [option for option, count in results.items() if count == max_votes]
+        
+        # If there's a tie, return None
+        if len(winners) > 1:
             logger.info(
-                "Closed poll",
+                "Poll has tied winners",
                 poll_id=self.id,
-                total_votes=len(self.votes),
-                winning_options=winning_options,
-                winning_vote_count=self.get_vote_count(winning_options[0]) if winning_options else 0
+                winners=winners,
+                vote_count=max_votes
             )
-
-    def is_closed(self) -> bool:
-        """Check if the poll is closed."""
-        return self.closed_at is not None
-
+            return None
+        
+        logger.debug(
+            "Retrieved winning option",
+            poll_id=self.id,
+            winner=winners[0],
+            vote_count=max_votes
+        )
+        
+        return winners[0]
+    
     def get_winning_options(self) -> List[int]:
-        """Get indices of options with the most votes."""
-        counts = self.get_vote_counts()
-        if not counts:
+        """
+        Get the indices of all winning options.
+        
+        Returns:
+            List of indices of winning options (could be multiple in case of a tie)
+            or an empty list if there are no votes
+        """
+        results = self.get_results()
+        
+        if not results or max(results.values()) == 0:
             return []
         
-        max_votes = max(counts)
-        return [i for i, count in enumerate(counts) if count == max_votes]
-
-    def get_vote_count(self, option_index: int) -> int:
-        """Get number of votes for a specific option."""
-        if not 0 <= option_index < len(self.options):
-            logger.error(
-                "Invalid option index",
-                poll_id=self.id,
-                invalid_index=option_index,
-                option_count=len(self.options)
-            )
-            raise ValueError(f"Invalid option index: {option_index}")
+        # Find the option(s) with the most votes
+        max_votes = max(results.values())
+        winners = [option for option, count in results.items() if count == max_votes]
         
-        count = sum(1 for votes in self.votes.values() if option_index in votes)
         logger.debug(
-            "Retrieved vote count",
+            "Retrieved winning options",
             poll_id=self.id,
-            option_index=option_index,
-            count=count
+            winners=winners,
+            vote_count=max_votes,
+            is_tie=len(winners) > 1
         )
-        return count
-
-
-# In-memory storage for active polls
-active_polls: Dict[str, Poll] = {}
-archived_polls: Dict[str, Poll] = {}
+        
+        return winners
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        data = super().to_dict()
+        
+        # Add options
+        data['options'] = self.options
+        del data['options_json']
+        
+        # Add results
+        data['results'] = self.get_results()
+        
+        # Add winner and winners
+        data['winner'] = self.get_winning_option()  # Single winner or None if tie
+        data['winners'] = self.get_winning_options()  # All winners (could be multiple)
+        
+        # Add vote details
+        data['votes'] = [
+            {
+                'user_id': vote.user_id,
+                'option_index': vote.option_index
+            }
+            for vote in self.votes
+        ]
+        
+        return data
+    
+    @classmethod
+    def get_by_game(cls, game_id: str, status: Optional[PollStatus] = None) -> List[Poll]:
+        """
+        Get polls for a game, optionally filtered by status.
+        
+        Args:
+            game_id: ID of the game
+            status: Optional status to filter by
+            
+        Returns:
+            List of polls ordered by creation date (newest first)
+        """
+        session = get_session()
+        try:
+            query = session.query(cls).filter_by(game_id=game_id)
+            
+            if status:
+                query = query.filter_by(status=status.value)
+            
+            # Order by creation date, newest first
+            query = query.order_by(cls.created_at.desc())
+            
+            polls = query.all()
+            
+            logger.debug(
+                "Retrieved polls for game",
+                game_id=game_id,
+                status=status.value if status else "all",
+                count=len(polls)
+            )
+            
+            return polls
+        finally:
+            close_session(session)
+    
+    @classmethod
+    def get_for_game(cls, game_id: str, poll_id: str) -> Poll:
+        """
+        Get a poll for a game by ID.
+        
+        Args:
+            game_id: ID of the game
+            poll_id: ID of the poll
+            
+        Returns:
+            The poll
+            
+        Raises:
+            PollNotFoundError: If the poll is not found
+        """
+        session = get_session()
+        try:
+            poll = session.query(cls).filter_by(game_id=game_id, id=poll_id).first()
+            
+            if not poll:
+                logger.warning(
+                    "Poll not found for game",
+                    game_id=game_id,
+                    poll_id=poll_id
+                )
+                raise PollNotFoundError(poll_id, game_id)
+            
+            logger.debug(
+                "Retrieved poll for game",
+                game_id=game_id,
+                poll_id=poll_id
+            )
+            
+            return poll
+        finally:
+            close_session(session) 

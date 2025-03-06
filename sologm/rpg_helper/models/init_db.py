@@ -8,8 +8,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from sologm.rpg_helper.utils.logging import get_logger
-from sologm.rpg_helper.models2.base import BaseModel, set_session_factory
-from sologm.rpg_helper.models2.indexes import create_indexes
+from sologm.rpg_helper.models.base import BaseModel
+from sologm.rpg_helper.db.config import set_session_factory
+from sologm.rpg_helper.models.indexes import create_indexes
+from sologm.rpg_helper.db.config import init_db as _init_db
 
 logger = get_logger()
 
@@ -103,4 +105,16 @@ def init_db(db_path: str = None, apply_migrations: bool = True) -> tuple:
 if __name__ == "__main__":
     # Initialize the database when run as a script
     init_db()
-    print("Database initialized successfully.") 
+    print("Database initialized successfully.")
+
+def init_db(db_path=None):
+    """
+    Initialize the database.
+    
+    Args:
+        db_path: Path to the database file. If None, uses the default path.
+        
+    Returns:
+        Tuple of (engine, Session)
+    """
+    return _init_db(db_path) 

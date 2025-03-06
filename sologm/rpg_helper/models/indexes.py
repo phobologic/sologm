@@ -3,11 +3,11 @@ Add indexes to the models for better performance.
 """
 from sqlalchemy import Index
 
-from sologm.rpg_helper.models2.base import BaseModel
-from sologm.rpg_helper.models2.user import User
-from sologm.rpg_helper.models2.game.base import Game
-from sologm.rpg_helper.models2.scene import Scene
-from sologm.rpg_helper.models2.poll import Poll
+from sologm.rpg_helper.models.base import BaseModel
+from sologm.rpg_helper.models.user import User
+from sologm.rpg_helper.models.game.base import Game
+from sologm.rpg_helper.models.scene import Scene
+from sologm.rpg_helper.models.poll import Poll
 
 def create_indexes():
     """Create indexes on the models."""

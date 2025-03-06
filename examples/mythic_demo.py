@@ -8,8 +8,8 @@ from datetime import datetime
 # Add the parent directory to the path so we can import the package
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sologm.rpg_helper.models2.init_db import init_db
-from sologm.rpg_helper.models2 import (
+from sologm.rpg_helper.models.init_db import init_db
+from sologm.rpg_helper.models import (
     User, 
     MythicGame, MythicChaosFactor, EventFocus,
     Scene, SceneStatus

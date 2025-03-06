@@ -1,127 +1,141 @@
 """
-Data models for users and their preferences.
+User model for the RPG Helper application.
 """
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Dict, List, Optional, Set, Any
+from __future__ import annotations
+from typing import List, Dict, Any, Optional, Set
 
+from sqlalchemy import Column, String, Table, ForeignKey
+from sqlalchemy.orm import relationship
 
-@dataclass
-class User:
+from .base import BaseModel, get_session, close_session
+from sologm.rpg_helper.utils.logging import get_logger
+
+logger = get_logger()
+
+# Association table for many-to-many relationship between users and games
+user_game_association = Table(
+    'user_game_association',
+    BaseModel.metadata,
+    Column('user_id', String(36), ForeignKey('users.id'), primary_key=True),
+    Column('game_id', String(36), ForeignKey('games.id'), primary_key=True)
+)
+
+class User(BaseModel):
     """
-    Represents a user of the RPG Helper bot and their preferences.
+    SQLAlchemy model for users.
+    
+    Represents a user of the application, typically corresponding to a Slack user.
     """
-    id: str  # Slack user ID
-    name: str  # Display name
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
+    username = Column(String(100), nullable=False, unique=True)
+    display_name = Column(String(100), nullable=False)
     
-    # User preferences that apply across all games
-    theme: str = "default"  # UI theme preference
-    notification_enabled: bool = True  # Whether to receive notifications
+    # Relationships
+    games = relationship("Game", secondary=user_game_association, back_populates="members")
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization."""
-        return {
-            "id": self.id,
-            "name": self.name,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
-            "theme": self.theme,
-            "notification_enabled": self.notification_enabled,
-        }
+    def __init__(self, **kwargs):
+        """Initialize a new user."""
+        super().__init__(**kwargs)
+        logger.debug(
+            "Created new user",
+            user_id=self.id,
+            username=self.username
+        )
+    
+    def __repr__(self) -> str:
+        return f"<User(id='{self.id}', username='{self.username}')>"
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'User':
-        """Create from dictionary."""
-        user = cls(
-            id=data["id"],
-            name=data["name"],
-            theme=data.get("theme", "default"),
-            notification_enabled=data.get("notification_enabled", True),
+    def get_by_username(cls, username: str) -> Optional[User]:
+        """
+        Get a user by username.
+        
+        Args:
+            username: The username to look up
+            
+        Returns:
+            The user if found, None otherwise
+        """
+        session = get_session()
+        try:
+            user = session.query(cls).filter_by(username=username).first()
+            if user:
+                logger.debug(
+                    "Found user by username",
+                    username=username,
+                    user_id=user.id
+                )
+            else:
+                logger.debug(
+                    "User not found by username",
+                    username=username
+                )
+            return user
+        finally:
+            close_session(session)
+    
+    @classmethod
+    def get_or_create(cls, user_id: str, username: str, **kwargs) -> tuple[User, bool]:
+        """
+        Get a user by ID, or create if not found.
+        
+        Args:
+            user_id: The ID of the user
+            username: The username of the user
+            **kwargs: Additional user attributes
+            
+        Returns:
+            Tuple of (user, created) where created is True if a new user was created
+        """
+        session = get_session()
+        try:
+            user = session.query(cls).filter_by(id=user_id).first()
+            if user is None:
+                logger.info(
+                    "Creating new user",
+                    user_id=user_id,
+                    username=username
+                )
+                user = cls(id=user_id, username=username, **kwargs)
+                session.add(user)
+                session.commit()
+                return user, True
+            else:
+                logger.debug(
+                    "Found existing user",
+                    user_id=user_id,
+                    username=user.username
+                )
+                return user, False
+        finally:
+            close_session(session)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the user to a dictionary.
+        
+        Returns:
+            Dictionary representation of the user
+        """
+        data = super().to_dict()
+        
+        # Add game IDs if games are loaded
+        if 'games' in self.__dict__:
+            data['game_ids'] = [game.id for game in self.games]
+            logger.debug(
+                "Added game IDs to user dict",
+                user_id=self.id,
+                game_count=len(self.games)
+            )
+        
+        return data
+    
+    @property
+    def game_count(self) -> int:
+        """Get the number of games the user is a member of."""
+        count = len(self.games)
+        logger.debug(
+            "Retrieved user game count",
+            user_id=self.id,
+            game_count=count
         )
-        
-        if "created_at" in data:
-            user.created_at = datetime.fromisoformat(data["created_at"])
-        
-        if "updated_at" in data:
-            user.updated_at = datetime.fromisoformat(data["updated_at"])
-        
-        return user
-    
-    def update_theme(self, theme: str) -> None:
-        """
-        Update the user's theme preference.
-        
-        Args:
-            theme: New theme name
-        """
-        self.theme = theme
-        self.updated_at = datetime.now()
-    
-    def toggle_notifications(self, enabled: bool) -> None:
-        """
-        Enable or disable notifications for this user.
-        
-        Args:
-            enabled: Whether notifications should be enabled
-        """
-        self.notification_enabled = enabled
-        self.updated_at = datetime.now()
-
-
-# In-memory storage for users
-users_by_id: Dict[str, User] = {}
-
-
-def get_user(user_id: str) -> Optional[User]:
-    """
-    Get a user by ID.
-    
-    Args:
-        user_id: User ID
-        
-    Returns:
-        User object or None if not found
-    """
-    return users_by_id.get(user_id)
-
-
-def create_or_update_user(user_id: str, name: str) -> User:
-    """
-    Create a new user or update an existing one.
-    
-    Args:
-        user_id: User ID
-        name: User name
-        
-    Returns:
-        New or updated User object
-    """
-    if user_id in users_by_id:
-        user = users_by_id[user_id]
-        if user.name != name:
-            user.name = name
-            user.updated_at = datetime.now()
-        return user
-    
-    user = User(id=user_id, name=name)
-    users_by_id[user_id] = user
-    return user
-
-
-def delete_user(user_id: str) -> bool:
-    """
-    Delete a user.
-    
-    Args:
-        user_id: User ID
-        
-    Returns:
-        True if deleted, False if not found
-    """
-    if user_id not in users_by_id:
-        return False
-    
-    del users_by_id[user_id]
-    return True
+        return count 
