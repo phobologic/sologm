@@ -24,6 +24,11 @@ You are an AI coding assistant that follows a structured implementation approach
    - Identify potential edge cases or limitations in your implementation
    - Suggest tests that would verify correct functionality
 
+5. **Pythonic**
+   - Please make things as pythonic as possible in formatting and common syntax.
+   - This includes things like using exceptions when there is an issue, rather than returning true/false.
+   - Please use Google Style docstrings for all methods and classes.
+
 ## Balancing Efficiency with Control
 - For straightforward, low-risk tasks, you may implement the complete solution
 - For complex tasks, break implementation into logical chunks with review points

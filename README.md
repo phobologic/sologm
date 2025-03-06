@@ -38,7 +38,7 @@ mythic_game = create_game(
     channel_id="channel789", # The channel ID to post messages to
     game_type="mythic", # The type of game to create
     setting_info="A sci-fi universe with alien civilizations", # The setting info for the game
-    chaos_factor=4  # Initial chaos factor for Mythic GME
+    chaos_factor=5 # Initial chaos factor for Mythic GME
 )
 # Access game properties
 logger.info("Game details", 
@@ -198,6 +198,85 @@ pip install -e ".[dev]"
 # Run tests
 pytest
 ```
+
+
+## Database Models
+
+The application uses SQLAlchemy models to represent entities like games, scenes, polls, and users. These models are defined in the `sologm/rpg_helper/models2` package.
+
+## Database Migrations
+
+This project uses Alembic for database migrations. This allows you to update the database schema without losing data when you make changes to the models.
+
+### Setting Up Alembic
+
+If you're setting up the project for the first time, you need to initialize Alembic:
+
+```bash
+python -m sologm.rpg_helper.models2.migrations.init_alembic
+```
+
+This will create the necessary Alembic files in the `sologm/rpg_helper/models2/migrations` directory.
+
+### Creating a Migration
+
+When you make changes to the models, you need to create a migration:
+
+```bash
+python -m sologm.rpg_helper.models2.migrations.create_migration "Description of your changes"
+```
+
+This will create a new migration file in the `sologm/rpg_helper/models2/migrations/alembic/versions` directory.
+
+### Applying Migrations
+
+To apply pending migrations to the database:
+
+```bash
+python -m sologm.rpg_helper.models2.migrations.apply_migrations
+```
+
+By default, this will apply migrations to the database at `~/.sologm/rpg_helper.db`. You can specify a different database path with the `--db` option.
+
+### Automatic Migrations
+
+The `init_db` function in `sologm/rpg_helper/models2/init_db.py` will automatically apply migrations when initializing the database. If migrations fail (e.g., if Alembic is not installed), it will fall back to creating all tables from scratch.
+
+## Development
+
+### Running Tests
+
+To run the tests:
+
+```bash
+python -m unittest discover tests
+```
+
+### Example Usage
+
+See `examples/models_demo.py` for an example of how to use the models.
+
+## Models Overview
+
+### Game
+
+The `Game` model represents a game, which can have multiple scenes, polls, and members. It supports different game types through polymorphism.
+
+### MythicGame
+
+The `MythicGame` model extends the base `Game` model with Mythic GME specific functionality, such as chaos factor management.
+
+### Scene
+
+The `Scene` model represents a scene in a game. Scenes can have events and can be in different states (active, completed, abandoned).
+
+### Poll
+
+The `Poll` model represents a poll in a game. Polls can have options and votes, and can be open or closed.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
