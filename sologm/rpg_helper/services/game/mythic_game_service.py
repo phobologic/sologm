@@ -3,13 +3,13 @@ Mythic GME game service for managing Mythic GME game operations.
 """
 from typing import Dict, Any, Optional, Tuple, List, Union
 import random
-import enum
 from datetime import datetime
 
 from sqlalchemy.orm import object_session
 
-from sologm.rpg_helper.models.game.mythic import (
-    MythicGame, MythicChaosFactor, ChaosBoundaryError
+from sologm.rpg_helper.models.game.base import Game
+from sologm.rpg_helper.models.game.constants import (
+    GameType, MythicChaosFactor, ChaosBoundaryError
 )
 from sologm.rpg_helper.models.scene_event import SceneEvent
 from sologm.rpg_helper.services.game.game_service import GameService
@@ -20,10 +20,26 @@ logger = get_logger()
 class MythicGameService(GameService):
     """Service for managing Mythic GME game operations."""
     
-    @property
-    def mythic_game(self) -> MythicGame:
-        """Get the game as a MythicGame."""
-        return self.game
+    # Constants for settings keys
+    SETTING_CHAOS_FACTOR = "chaos_factor"
+    
+    def __init__(self, game: Game):
+        """Initialize with a game instance."""
+        super().__init__(game)
+        if game.game_type != GameType.MYTHIC:
+            raise ValueError(f"Game {game.id} is not a Mythic game")
+    
+    def get_chaos_factor(self) -> int:
+        """
+        Get the chaos factor.
+        
+        Returns:
+            The chaos factor
+        """
+        return int(self.game.get_setting(
+            self.SETTING_CHAOS_FACTOR, 
+            MythicChaosFactor.AVERAGE
+        ))
     
     def increase_chaos(self) -> int:
         """
@@ -35,30 +51,25 @@ class MythicGameService(GameService):
         Raises:
             ChaosBoundaryError: If already at maximum
         """
-        new_value = self.mythic_game.chaos_factor + 1
+        current = self.get_chaos_factor()
+        new_value = current + 1
         
-        if new_value > MythicChaosFactor.MAX.value:
+        if new_value > MythicChaosFactor.MAX:
             raise ChaosBoundaryError(
-                current=self.mythic_game.chaos_factor,
+                current=current,
                 attempted=new_value
             )
         
-        self.mythic_game.chaos_factor = new_value
-        self.mythic_game.updated_at = datetime.now()
+        self.set_chaos_factor(new_value)
         
-        # Save changes if the game is already in a session
-        session = object_session(self.mythic_game)
-        if session:
-            session.commit()
-            
         logger.info(
             "Increased chaos factor",
-            game_id=self.mythic_game.id,
-            old_chaos=self.mythic_game.chaos_factor - 1,
-            new_chaos=self.mythic_game.chaos_factor
+            game_id=self.game.id,
+            old_chaos=current,
+            new_chaos=new_value
         )
         
-        return self.mythic_game.chaos_factor
+        return new_value
     
     def decrease_chaos(self) -> int:
         """
@@ -70,37 +81,32 @@ class MythicGameService(GameService):
         Raises:
             ChaosBoundaryError: If already at minimum
         """
-        new_value = self.mythic_game.chaos_factor - 1
+        current = self.get_chaos_factor()
+        new_value = current - 1
         
-        if new_value < MythicChaosFactor.MIN.value:
+        if new_value < MythicChaosFactor.MIN:
             raise ChaosBoundaryError(
-                current=self.mythic_game.chaos_factor,
+                current=current,
                 attempted=new_value
             )
         
-        self.mythic_game.chaos_factor = new_value
-        self.mythic_game.updated_at = datetime.now()
+        self.set_chaos_factor(new_value)
         
-        # Save changes if the game is already in a session
-        session = object_session(self.mythic_game)
-        if session:
-            session.commit()
-            
         logger.info(
             "Decreased chaos factor",
-            game_id=self.mythic_game.id,
-            old_chaos=self.mythic_game.chaos_factor + 1,
-            new_chaos=self.mythic_game.chaos_factor
+            game_id=self.game.id,
+            old_chaos=current,
+            new_chaos=new_value
         )
         
-        return self.mythic_game.chaos_factor
+        return new_value
     
-    def set_chaos_factor(self, chaos_factor: int) -> int:
+    def set_chaos_factor(self, value: int) -> int:
         """
         Set the chaos factor.
         
         Args:
-            chaos_factor: The new chaos factor
+            value: The new chaos factor
             
         Returns:
             The new chaos factor
@@ -108,26 +114,27 @@ class MythicGameService(GameService):
         Raises:
             ChaosBoundaryError: If value is outside valid range
         """
-        if not MythicChaosFactor.MIN.value <= chaos_factor <= MythicChaosFactor.MAX.value:
+        current = self.get_chaos_factor()
+        
+        if not MythicChaosFactor.MIN <= value <= MythicChaosFactor.MAX:
             raise ChaosBoundaryError(
-                current=self.mythic_game.chaos_factor,
-                attempted=chaos_factor
+                current=current,
+                attempted=value
             )
         
-        old_chaos = self.mythic_game.chaos_factor
-        self.mythic_game.chaos_factor = chaos_factor
-        self.mythic_game.updated_at = datetime.now()
+        self.game.set_setting(self.SETTING_CHAOS_FACTOR, value)
+        self.game.updated_at = datetime.now()
         
         # Save changes if the game is already in a session
-        session = object_session(self.mythic_game)
+        session = object_session(self.game)
         if session:
             session.commit()
             
         logger.info(
             "Set chaos factor",
-            game_id=self.mythic_game.id,
-            old_chaos=old_chaos,
-            new_chaos=self.mythic_game.chaos_factor
+            game_id=self.game.id,
+            old_chaos=current,
+            new_chaos=value
         )
         
-        return self.mythic_game.chaos_factor 
+        return value 

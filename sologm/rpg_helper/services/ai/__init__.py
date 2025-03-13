@@ -1,17 +1,17 @@
 """
-AI service package.
+AI services package for the RPG Helper application.
+
+This package contains services for interacting with AI models.
 """
-from .service import AIService, AIServiceError, AIRequestError, AIResponseError
-from .claude import ClaudeService
-from .factory import AIServiceFactory
+
+from .service import AIService, AIServiceError, AIResponseError
 from .game_helper import GameAIHelper
+from .factory import AIServiceFactory
 
 __all__ = [
     'AIService',
     'AIServiceError',
-    'AIRequestError',
     'AIResponseError',
-    'ClaudeService',
-    'AIServiceFactory',
-    'GameAIHelper'
+    'GameAIHelper',
+    'AIServiceFactory'
 ] 

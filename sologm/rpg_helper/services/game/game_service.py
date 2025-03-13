@@ -11,7 +11,7 @@ from sologm.rpg_helper.models.scene import Scene, SceneStatus
 from sologm.rpg_helper.models.scene_event import SceneEvent
 from sologm.rpg_helper.models.poll import Poll, PollStatus
 from sologm.rpg_helper.models.game.errors import (
-    SceneNotFoundError, InvalidSceneStatusError,
+    SceneNotFoundError, InvalidSceneStateError, SceneStateTransitionError,
     PollNotFoundError, PollClosedError
 )
 from sologm.rpg_helper.db.config import get_session, close_session
@@ -189,17 +189,17 @@ class GameService:
             
         Raises:
             SceneNotFoundError: If the scene is not found
-            InvalidSceneStatusError: If the scene is already completed or abandoned
+            SceneStateTransitionError: If the scene cannot transition to completed state
         """
         # Get the scene
         scene = self.get_scene(scene_id)
         
         # Check if the scene can be completed
         if scene.status != SceneStatus.ACTIVE:
-            raise InvalidSceneStatusError(
+            raise SceneStateTransitionError(
                 scene_id=scene_id,
-                current_status=scene.status,
-                requested_status=SceneStatus.COMPLETED
+                current_state=scene.status.value,
+                requested_state=SceneStatus.COMPLETED.value
             )
         
         # Update the scene
@@ -232,17 +232,17 @@ class GameService:
             
         Raises:
             SceneNotFoundError: If the scene is not found
-            InvalidSceneStatusError: If the scene is already completed or abandoned
+            SceneStateTransitionError: If the scene cannot transition to abandoned state
         """
         # Get the scene
         scene = self.get_scene(scene_id)
         
         # Check if the scene can be abandoned
         if scene.status != SceneStatus.ACTIVE:
-            raise InvalidSceneStatusError(
+            raise SceneStateTransitionError(
                 scene_id=scene_id,
-                current_status=scene.status,
-                requested_status=SceneStatus.ABANDONED
+                current_state=scene.status.value,
+                requested_state=SceneStatus.ABANDONED.value
             )
         
         # Update the scene

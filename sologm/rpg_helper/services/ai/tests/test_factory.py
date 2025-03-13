@@ -2,9 +2,10 @@
 Tests for the AI service factory.
 """
 import pytest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from sologm.rpg_helper.services.ai import AIServiceFactory, ClaudeService
+from sologm.rpg_helper.services.ai import AIServiceFactory, AIService
+from sologm.rpg_helper.services.ai.claude import ClaudeService  # Import directly from the module
 
 
 def test_create_claude_service():

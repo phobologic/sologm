@@ -1,10 +1,10 @@
 """
 Factory for creating game service instances.
 """
-from typing import Union, Type
+from typing import Union
 
 from sologm.rpg_helper.models.game.base import Game
-from sologm.rpg_helper.models.game.mythic import MythicGame
+from sologm.rpg_helper.models.game.constants import GameType
 from sologm.rpg_helper.services.game.game_service import GameService
 from sologm.rpg_helper.services.game.mythic_game_service import MythicGameService
 from sologm.rpg_helper.db.config import get_session, close_session
@@ -40,7 +40,7 @@ class ServiceFactory:
                 close_session(session)
         
         # Create the appropriate service based on game type
-        if isinstance(game, MythicGame):
+        if game.game_type == GameType.MYTHIC:
             logger.debug(
                 "Creating MythicGameService",
                 game_id=game.id,

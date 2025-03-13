@@ -33,14 +33,24 @@ class SceneNotFoundError(SceneError):
             message += f" in game {game_id}"
         super().__init__(message)
 
-class InvalidSceneStatusError(SceneError):
-    """Exception raised when attempting to perform an operation on a scene with an invalid status."""
-    def __init__(self, scene_id: str, current_status: str, required_status: str):
+class InvalidSceneStateError(SceneError):
+    """Exception raised when a scene is in an invalid state for an operation."""
+    def __init__(self, scene_id: str, current_state: str, required_state: str):
         self.scene_id = scene_id
-        self.current_status = current_status
-        self.required_status = required_status
+        self.current_state = current_state
+        self.required_state = required_state
         super().__init__(
-            f"Scene {scene_id} has status {current_status}, but {required_status} is required"
+            f"Scene {scene_id} is in state {current_state}, but must be in state {required_state}"
+        )
+
+class SceneStateTransitionError(SceneError):
+    """Exception raised when a scene state transition is invalid."""
+    def __init__(self, scene_id: str, current_state: str, requested_state: str):
+        self.scene_id = scene_id
+        self.current_state = current_state
+        self.requested_state = requested_state
+        super().__init__(
+            f"Scene {scene_id} cannot transition from {current_state} to {requested_state}"
         )
 
 class PollError(GameError):

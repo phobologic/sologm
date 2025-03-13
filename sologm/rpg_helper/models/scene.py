@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship, object_session
 from sologm.rpg_helper.utils.logging import get_logger
 from .base import BaseModel, get_session, close_session, NotFoundError
 from .scene_event import SceneEvent
-from .game.errors import SceneNotFoundError, InvalidSceneStatusError
+from .game.errors import SceneNotFoundError, InvalidSceneStateError, SceneStateTransitionError
 
 if TYPE_CHECKING:
     from .game.base import Game
@@ -165,7 +165,7 @@ class Scene(BaseModel):
             The created event
             
         Raises:
-            InvalidSceneStatusError: If the scene is not active
+            InvalidSceneStateError: If the scene is not active
         """
         if self.status != SceneStatus.ACTIVE:
             logger.warning(
@@ -173,7 +173,7 @@ class Scene(BaseModel):
                 scene_id=self.id,
                 status=self.status.value
             )
-            raise InvalidSceneStatusError(
+            raise InvalidSceneStateError(
                 self.id, self.status.value, SceneStatus.ACTIVE.value
             )
         
@@ -204,7 +204,7 @@ class Scene(BaseModel):
         Mark the scene as completed.
         
         Raises:
-            InvalidSceneStatusError: If the scene is not active
+            SceneStateTransitionError: If the scene is not in an active state
         """
         if self.status != SceneStatus.ACTIVE:
             logger.warning(
@@ -212,8 +212,8 @@ class Scene(BaseModel):
                 scene_id=self.id,
                 status=self.status.value
             )
-            raise InvalidSceneStatusError(
-                self.id, self.status.value, SceneStatus.ACTIVE.value
+            raise SceneStateTransitionError(
+                self.id, self.status.value, SceneStatus.COMPLETED.value
             )
         
         self.status = SceneStatus.COMPLETED
@@ -236,7 +236,7 @@ class Scene(BaseModel):
         Mark the scene as abandoned.
         
         Raises:
-            InvalidSceneStatusError: If the scene is not active
+            SceneStateTransitionError: If the scene is not in an active state
         """
         if self.status != SceneStatus.ACTIVE:
             logger.warning(
@@ -244,8 +244,8 @@ class Scene(BaseModel):
                 scene_id=self.id,
                 status=self.status.value
             )
-            raise InvalidSceneStatusError(
-                self.id, self.status.value, SceneStatus.ACTIVE.value
+            raise SceneStateTransitionError(
+                self.id, self.status.value, SceneStatus.ABANDONED.value
             )
         
         self.status = SceneStatus.ABANDONED

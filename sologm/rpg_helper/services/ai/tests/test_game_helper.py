@@ -1,62 +1,116 @@
 """
 Tests for the GameAIHelper class.
 """
+import json
 import pytest
 from unittest.mock import MagicMock, patch
-import json
 
-from sologm.rpg_helper.services.ai.game_helper import GameAIHelper
 from sologm.rpg_helper.models.game.base import Game
-from sologm.rpg_helper.models.scene import Scene
+from sologm.rpg_helper.models.game.constants import GameType, MythicChaosFactor
+from sologm.rpg_helper.models.scene import Scene, SceneStatus
+from sologm.rpg_helper.models.scene_event import SceneEvent
+from sologm.rpg_helper.services.ai.game_helper import GameAIHelper
+from sologm.rpg_helper.services.game.mythic_game_service import MythicGameService
 
-def test_init():
-    """Test initialization."""
+
+@pytest.fixture
+def mock_game():
+    """Create a mock game for testing."""
+    game = MagicMock(spec=Game)
+    game.id = "test-game-id"
+    game.name = "Test Game"
+    game.game_type = GameType.STANDARD
+    game.description = "Test game description"
+    return game
+
+
+@pytest.fixture
+def mock_scene():
+    """Create a mock scene for testing."""
+    scene = MagicMock(spec=Scene)
+    scene.id = "test-scene-id"
+    scene.title = "Test Scene"
+    scene.description = "Test scene description"
+    scene.status = SceneStatus.ACTIVE
+    
+    # Add some events
+    event1 = MagicMock(spec=SceneEvent)
+    event1.text = "Event 1"
+    event1.created_at = "2023-01-01T12:00:00"
+    
+    event2 = MagicMock(spec=SceneEvent)
+    event2.text = "Event 2"
+    event2.created_at = "2023-01-01T12:05:00"
+    
+    scene.events = [event1, event2]
+    return scene
+
+
+def test_init(mock_game):
+    """Test initialization of GameAIHelper."""
     ai_service = MagicMock()
-    helper = GameAIHelper(ai_service)
+    helper = GameAIHelper(mock_game)
     
-    assert helper.ai_service is ai_service
+    assert helper.game == mock_game
+    assert helper.game_service is not None
 
-def test_generate_outcome_ideas():
-    """Test generating ideas."""
-    # Mock AI service
-    ai_service = MagicMock()
-    ai_service.generate_text.return_value = json.dumps([
-        "The heroes find a hidden treasure.",
-        "A trap is sprung, separating the party.",
-        "An old enemy appears unexpectedly."
-    ])
-    
-    helper = GameAIHelper(ai_service)
-    
-    # Create game and scene
-    game = Game(id="game1", name="Test", creator_id="user1", channel_id="channel1")
-    scene = game.current_scene  # Use the automatically created scene
-    
-    # Generate ideas
-    ideas = helper.generate_outcome_ideas(
-        game=game,
-        scene=scene,
-        additional_context="The party is exploring a dungeon.",
-        focus_words=["treasure", "trap"],
-        num_ideas=3
-    )
-    
-    # Check results
-    assert len(ideas) == 3
-    assert "treasure" in ideas[0]
-    assert "trap" in ideas[1]
-    assert "enemy" in ideas[2]
-    
-    # Check that AI service was called with appropriate prompt
-    ai_service.generate_text.assert_called_once()
-    # Use kwargs instead of positional args
-    prompt = ai_service.generate_text.call_args.kwargs.get('prompt')
-    assert "Test" in prompt
-    assert "exploring a dungeon" in prompt
-    assert "treasure" in prompt
-    assert "trap" in prompt
 
-def test_generate_outcome_ideas_default_params():
+def test_get_game_context_standard(mock_game, mock_scene):
+    """Test getting game context for a standard game."""
+    # Setup
+    mock_game.game_type = GameType.STANDARD
+    
+    # Mock the game service
+    mock_service = MagicMock()
+    mock_service.get_active_scene.return_value = mock_scene
+    
+    # Create helper with mocked service
+    helper = GameAIHelper(mock_game)
+    helper.game_service = mock_service
+    
+    # Execute
+    context = helper.get_game_context()
+    
+    # Verify
+    assert context["game_id"] == mock_game.id
+    assert context["game_name"] == mock_game.name
+    assert context["game_type"] == mock_game.game_type.value
+    assert context["game_description"] == mock_game.description
+    
+    # Verify active scene
+    assert "active_scene" in context
+    assert context["active_scene"]["id"] == mock_scene.id
+    assert context["active_scene"]["title"] == mock_scene.title
+    assert context["active_scene"]["description"] == mock_scene.description
+    assert len(context["active_scene"]["events"]) == 2
+
+
+def test_get_game_context_mythic(mock_game):
+    """Test getting game context for a Mythic game."""
+    # Setup
+    mock_game.game_type = GameType.MYTHIC
+    
+    # Mock the Mythic game service
+    mock_service = MagicMock(spec=MythicGameService)
+    mock_service.get_active_scene.return_value = None
+    mock_service.get_chaos_factor.return_value = MythicChaosFactor.AVERAGE
+    
+    # Create helper with mocked service
+    helper = GameAIHelper(mock_game)
+    helper.game_service = mock_service
+    
+    # Execute
+    context = helper.get_game_context()
+    
+    # Verify
+    assert context["game_id"] == mock_game.id
+    assert context["game_name"] == mock_game.name
+    assert context["game_type"] == mock_game.game_type.value
+    assert context["chaos_factor"] == MythicChaosFactor.AVERAGE
+    assert "active_scene" not in context
+
+
+def test_generate_outcome_ideas_default_params(mock_game, mock_scene):
     """Test generating ideas with default parameters."""
     # Mock AI service
     ai_service = MagicMock()
@@ -68,20 +122,30 @@ def test_generate_outcome_ideas_default_params():
         "Outcome 5"
     ])
     
-    helper = GameAIHelper(ai_service)
+    # Mock game service
+    mock_service = MagicMock()
+    mock_service.get_scene.return_value = mock_scene
+    mock_service.get_active_scene.return_value = mock_scene
     
-    # Create game and scene
-    game = Game(id="game1", name="Test", creator_id="user1", channel_id="channel1")
-    scene = game.current_scene  # Use the automatically created scene
+    # Create helper with mocked services
+    helper = GameAIHelper(mock_game)
+    helper.game_service = mock_service
+    helper.ai_service = ai_service
     
-    # Generate ideas with minimal parameters
-    ideas = helper.generate_outcome_ideas(game=game, scene=scene)
+    # Execute
+    outcomes = helper.generate_outcome_ideas()
     
-    # Check results
-    assert len(ideas) == 5  # Default is 5 ideas
+    # Verify
+    assert len(outcomes) == 5
+    assert "Outcome 1" in outcomes
+    assert "Outcome 5" in outcomes
     
-    # Check that AI service was called
+    # Verify AI service was called with appropriate prompt
     ai_service.generate_text.assert_called_once()
+    prompt = ai_service.generate_text.call_args[0][0]
+    assert mock_scene.title in prompt
+    assert mock_scene.description in prompt
+    assert "Event 1" in prompt
 
 def test_generate_outcome_ideas_no_scene():
     """Test generating ideas with no scene."""

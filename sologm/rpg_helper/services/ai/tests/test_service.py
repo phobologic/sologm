@@ -1,10 +1,12 @@
 """
-Tests for the AI service base class.
+Tests for the AI service.
 """
 import pytest
+from unittest.mock import MagicMock, patch
 from typing import Dict, List, Optional
 
-from sologm.rpg_helper.services.ai import AIService, AIServiceError, AIRequestError, AIResponseError
+from sologm.rpg_helper.services.ai import AIService, AIServiceError, AIResponseError
+from sologm.rpg_helper.services.ai.service import AIRequestError  # Import directly from the module
 
 
 class MockAIService(AIService):

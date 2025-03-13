@@ -15,8 +15,8 @@ class GameSetting(BaseModel):
     """SQLAlchemy model for game settings as key-value pairs."""
     
     name = Column(String(100), nullable=False)
-    value_str = Column(Text, nullable=True)
-    value_type = Column(String(20), nullable=False)  # 'str', 'int', 'bool', 'float', 'json'
+    value_str = Column(Text, nullable=False, default="")  # Use empty string as default
+    value_type = Column(String(10), nullable=False, default="str")  # 'str', 'int', 'bool'
     
     # Foreign key to game
     game_id = Column(String(36), ForeignKey('games.id'), nullable=False, index=True)
@@ -31,6 +31,10 @@ class GameSetting(BaseModel):
     
     def __init__(self, **kwargs):
         """Initialize a new game setting."""
+        if 'value_str' not in kwargs:
+            kwargs['value_str'] = ""  # Ensure value_str is never None
+        if 'value_type' not in kwargs:
+            kwargs['value_type'] = "str"  # Default to string type
         super().__init__(**kwargs)
         logger.debug(
             "Created new game setting",
@@ -40,7 +44,7 @@ class GameSetting(BaseModel):
         )
     
     def __repr__(self):
-        return f"<GameSetting(game_id='{self.game_id}', name='{self.name}')>"
+        return f"<GameSetting(game_id='{self.game_id}', name='{self.name}', value_type='{self.value_type}', value_str='{self.value_str}')>"
     
     @property
     def value(self):
@@ -52,10 +56,6 @@ class GameSetting(BaseModel):
                 return int(self.value_str)
             elif self.value_type == 'bool':
                 return self.value_str.lower() == 'true'
-            elif self.value_type == 'float':
-                return float(self.value_str)
-            elif self.value_type == 'json':
-                return json.loads(self.value_str)
             else:
                 logger.warning(
                     "Unknown value type for setting",
@@ -77,25 +77,19 @@ class GameSetting(BaseModel):
     @value.setter
     def value(self, val):
         """Set the value and determine its type."""
+        if val is None:
+            raise ValueError("Setting value cannot be None. Use an empty string for unset string values.")
+            
         old_type = getattr(self, 'value_type', None)
         old_value = getattr(self, 'value_str', None)
         
-        if isinstance(val, str):
-            self.value_type = 'str'
-            self.value_str = val
+        if isinstance(val, bool):  # Must check bool before int since bool is a subclass of int
+            self.value_type = 'bool'
+            self.value_str = str(val).lower()
         elif isinstance(val, int):
             self.value_type = 'int'
             self.value_str = str(val)
-        elif isinstance(val, bool):
-            self.value_type = 'bool'
-            self.value_str = str(val).lower()
-        elif isinstance(val, float):
-            self.value_type = 'float'
-            self.value_str = str(val)
-        elif isinstance(val, (dict, list)):
-            self.value_type = 'json'
-            self.value_str = json.dumps(val)
-        else:
+        else:  # Default to string for all other types
             self.value_type = 'str'
             self.value_str = str(val)
         
@@ -169,4 +163,16 @@ class GameSetting(BaseModel):
                 )
                 return settings
         finally:
-            close_session(session) 
+            close_session(session)
+
+    def to_dict(self):
+        """Convert the setting to a dictionary."""
+        base_dict = super().to_dict()
+        base_dict.update({
+            'game_id': self.game_id,
+            'name': self.name,
+            'value_str': self.value_str,
+            'value_type': self.value_type,
+            'value': self.value
+        })
+        return base_dict 

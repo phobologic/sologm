@@ -6,9 +6,11 @@ import re
 import random
 
 from sologm.rpg_helper.models.game.base import Game
-from sologm.rpg_helper.models.game.mythic import MythicGMEGame
+from sologm.rpg_helper.models.game.constants import GameType, MythicChaosFactor
 from sologm.rpg_helper.models.scene import Scene, SceneStatus
 from sologm.rpg_helper.services.ai.factory import AIServiceFactory
+from sologm.rpg_helper.services.game.service_factory import ServiceFactory
+from sologm.rpg_helper.services.game.mythic_game_service import MythicGameService
 from sologm.rpg_helper.utils.logging import get_logger
 from .service import AIService, AIServiceError, AIResponseError
 
@@ -18,15 +20,16 @@ logger = get_logger()
 class GameAIHelper:
     """Helper class for game-specific AI interactions."""
     
-    def __init__(self, ai_service: AIService):
+    def __init__(self, game: Game):
         """
         Initialize the game AI helper.
         
         Args:
-            ai_service: The AI service to use for generating content
+            game: The game to use for generating content
         """
-        logger.debug("Initializing game AI helper", service_type=type(ai_service).__name__)
-        self.ai_service = ai_service
+        logger.debug("Initializing game AI helper", service_type=type(game).__name__)
+        self.game = game
+        self.game_service = ServiceFactory.create_game_service(game)
         logger.info("Game AI helper initialized")
     
     def generate_outcome_ideas(self, 
@@ -197,4 +200,41 @@ class GameAIHelper:
                 error=str(e),
                 response=response[:100]
             )
-            raise AIResponseError("Failed to parse JSON response") from e 
+            raise AIResponseError("Failed to parse JSON response") from e
+
+    def get_game_context(self) -> Dict[str, Any]:
+        """
+        Get context information about the game for AI.
+        
+        Returns:
+            Dict with game context information
+        """
+        context = {
+            "game_id": self.game.id,
+            "game_name": self.game.name,
+            "game_type": self.game.game_type.value,
+            "game_description": self.game.description or "",
+        }
+        
+        # Add game type specific context
+        if self.game.game_type == GameType.MYTHIC:
+            mythic_service = self.game_service
+            if not isinstance(mythic_service, MythicGameService):
+                mythic_service = MythicGameService(self.game)
+                
+            context["chaos_factor"] = mythic_service.get_chaos_factor()
+        
+        # Add active scene if any
+        active_scene = self.game_service.get_active_scene()
+        if active_scene:
+            context["active_scene"] = {
+                "id": active_scene.id,
+                "title": active_scene.title,
+                "description": active_scene.description,
+                "events": [
+                    {"text": event.text, "created_at": event.created_at.isoformat()}
+                    for event in active_scene.events
+                ]
+            }
+        
+        return context 

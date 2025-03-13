@@ -3,8 +3,7 @@ Base game model.
 """
 from __future__ import annotations
 from datetime import datetime
-from enum import Enum
-from typing import List, Dict, Any, Optional, Type, ClassVar, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, TYPE_CHECKING, Union
 
 from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Table, Boolean, Enum as SQLAlchemyEnum, UniqueConstraint
 from sqlalchemy.orm import relationship, object_session
@@ -14,6 +13,7 @@ from sologm.rpg_helper.models.base import BaseModel, get_session, close_session
 from sologm.rpg_helper.models.game.errors import (
     GameError, ChannelGameExistsError
 )
+from sologm.rpg_helper.models.game.constants import GameType
 from sologm.rpg_helper.models.user import user_game_association
 
 if TYPE_CHECKING:
@@ -30,13 +30,6 @@ game_users = Table(
     Column('game_id', String(36), ForeignKey('games.id'), primary_key=True),
     Column('user_id', String(36), ForeignKey('users.id'), primary_key=True)
 )
-
-class GameType(Enum):
-    """Game type enumeration."""
-    STANDARD = "standard"
-    MYTHIC = "mythic"
-    # Add more game types as needed
-
 
 class Game(BaseModel):
     """
@@ -63,15 +56,6 @@ class Game(BaseModel):
         UniqueConstraint('channel_id', 'workspace_id', name='uix_game_channel_workspace'),
     )
     
-    # Polymorphic identity for inheritance
-    __mapper_args__ = {
-        'polymorphic_on': game_type,
-        'polymorphic_identity': GameType.STANDARD
-    }
-    
-    # Class variables for type-specific game classes
-    _game_types: ClassVar[Dict[str, Type[Game]]] = {}
-    
     def __init__(self, **kwargs):
         """Initialize a new game."""
         super().__init__(**kwargs)
@@ -85,22 +69,6 @@ class Game(BaseModel):
     def __repr__(self):
         """Return a string representation of the game."""
         return f"<Game(id='{self.id}', name='{self.name}', type='{self.game_type}')>"
-    
-    @classmethod
-    def register_game_type(cls, game_type: str, game_class: Type[Game]) -> None:
-        """
-        Register a game type with its corresponding class.
-        
-        Args:
-            game_type: The game type string
-            game_class: The game class
-        """
-        cls._game_types[game_type] = game_class
-        logger.debug(
-            "Registered game type",
-            game_type=game_type,
-            game_class=game_class.__name__
-        )
     
     @classmethod
     def get_by_id(cls, game_id: str) -> Optional[Game]:
@@ -171,12 +139,8 @@ class Game(BaseModel):
         kwargs['channel_id'] = channel_id
         kwargs['workspace_id'] = workspace_id
         
-        # Determine the game class based on the game type
-        game_type = kwargs.get('game_type', GameType.STANDARD.value)
-        game_class = cls._game_types.get(game_type, cls)
-        
         # Create the game
-        game = game_class(**kwargs)
+        game = cls(**kwargs)
         
         # Save the game
         session = get_session()
@@ -274,6 +238,37 @@ class Game(BaseModel):
             True if the user is a member, False otherwise
         """
         return any(member.id == user_id for member in self.members)
+    
+    def get_setting(self, name: str, default: Any = None) -> Any:
+        """
+        Get a game setting.
+        
+        Args:
+            name: The setting name
+            default: The default value if the setting doesn't exist
+            
+        Returns:
+            The setting value, or the default if not found
+        """
+        from sologm.rpg_helper.models.game.settings import GameSetting
+        from sologm.rpg_helper.db.config import get_session, close_session
+        
+        # Get existing session or create new one
+        session = object_session(self)
+        needs_close = session is None
+        if needs_close:
+            session = get_session()
+            
+        try:
+            # Check if the setting exists
+            setting = session.query(GameSetting).filter_by(
+                game_id=self.id, name=name
+            ).first()
+            
+            return setting.value if setting else default
+        finally:
+            if needs_close:
+                close_session(session)
     
     def set_setting(self, name: str, value: Any) -> None:
         """
