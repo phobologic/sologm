@@ -9,6 +9,7 @@ from sqlalchemy import Column, String, Text
 
 from sologm.rpg_helper.models.game.settings import GameSetting
 from sologm.rpg_helper.models.base import BaseModel
+from sologm.rpg_helper.models.game.errors import SettingTypeChangeError
 
 
 class TestGameSetting:
@@ -41,10 +42,6 @@ class TestGameSetting:
         assert not columns['value_type'].nullable
         assert not columns['value_str'].nullable
         
-        # Check defaults
-        assert columns['value_str'].default.arg == ""
-        assert columns['value_type'].default.arg == "str"
-        
         # Check string lengths where applicable
         assert columns['name'].type.length == 100
         assert columns['value_type'].type.length == 10
@@ -69,16 +66,53 @@ class TestGameSetting:
         assert constraint_columns == {'game_id', 'name'}, "Unexpected constraint columns"
     
     def test_init(self):
-        """Test initialization with game_id and name."""
+        """Test initialization with required parameters."""
         game_id = "test-game-id"
         name = "test-setting"
         
-        setting = GameSetting(game_id=game_id, name=name)
-        
+        # Test initialization with value parameter
+        setting = GameSetting(
+            game_id=game_id,
+            name=name,
+            value="test-value"
+        )
         assert setting.game_id == game_id
         assert setting.name == name
-        assert setting.value_str == ""  # Should default to empty string
-        assert setting.value_type == "str"  # Default type should be string
+        assert setting.value_str == "test-value"
+        assert setting.value_type == "str"
+        assert setting.value == "test-value"
+        
+        # Test initialization with value_str and value_type
+        setting = GameSetting(
+            game_id=game_id,
+            name=name,
+            value_str="42",
+            value_type="int"
+        )
+        assert setting.game_id == game_id
+        assert setting.name == name
+        assert setting.value_str == "42"
+        assert setting.value_type == "int"
+        assert setting.value == 42
+        
+        # Test initialization fails without required parameters
+        with pytest.raises(ValueError) as exc_info:
+            GameSetting(game_id=game_id, name=name)
+        assert "Must provide either value parameter" in str(exc_info.value)
+        
+        # Test initialization fails with None value
+        with pytest.raises(ValueError) as exc_info:
+            GameSetting(game_id=game_id, name=name, value=None)
+        assert "Must provide either value parameter" in str(exc_info.value)
+        
+        # Test initialization fails with partial value_str/value_type
+        with pytest.raises(ValueError) as exc_info:
+            GameSetting(game_id=game_id, name=name, value_str="42")
+        assert "Must provide either value parameter" in str(exc_info.value)
+        
+        with pytest.raises(ValueError) as exc_info:
+            GameSetting(game_id=game_id, name=name, value_type="int")
+        assert "Must provide either value parameter" in str(exc_info.value)
     
     def test_value_getter_string(self):
         """Test getting value when type is string."""
@@ -123,7 +157,11 @@ class TestGameSetting:
     
     def test_value_setter_string(self):
         """Test setting value to a string."""
-        setting = GameSetting(game_id="test-game-id", name="test-setting")
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value="initial-string"  # Initialize with a string since we'll set string value
+        )
         setting.value = "test-value"
         assert setting.value_str == "test-value"
         assert setting.value_type == "str"
@@ -131,7 +169,11 @@ class TestGameSetting:
     
     def test_value_setter_int(self):
         """Test setting value to an integer."""
-        setting = GameSetting(game_id="test-game-id", name="test-setting")
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value=0  # Initialize with an integer since we'll set integer value
+        )
         setting.value = 123
         assert setting.value_str == "123"
         assert setting.value_type == "int"
@@ -139,19 +181,23 @@ class TestGameSetting:
     
     def test_value_setter_bool(self):
         """Test setting value to a boolean."""
-        setting = GameSetting(game_id="test-game-id", name="test-setting")
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value=False  # Initialize with a boolean since we'll set boolean values
+        )
         
         # Test True
         setting.value = True
         assert setting.value_str == "true"
         assert setting.value_type == "bool"
-        assert setting.value is True  # Verify round-trip conversion
+        assert setting.value is True
         
         # Test False
         setting.value = False
         assert setting.value_str == "false"
         assert setting.value_type == "bool"
-        assert setting.value is False  # Verify round-trip conversion
+        assert setting.value is False
     
     def test_repr(self):
         """Test the __repr__ method."""
@@ -196,7 +242,11 @@ class TestGameSetting:
     
     def test_value_setter_rejects_none(self):
         """Test that setting value to None raises an error."""
-        setting = GameSetting(game_id="test-game-id", name="test-setting")
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value="initial"  # Initialize with any valid value
+        )
         
         with pytest.raises(ValueError) as exc_info:
             setting.value = None
@@ -204,7 +254,11 @@ class TestGameSetting:
     
     def test_value_setter_empty_string(self):
         """Test setting value to an empty string."""
-        setting = GameSetting(game_id="test-game-id", name="test-setting")
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value="initial"  # Initialize with non-empty string since we'll set string value
+        )
         setting.value = ""
         assert setting.value_str == ""
         assert setting.value_type == "str"
@@ -220,4 +274,104 @@ class TestGameSetting:
         )
         assert setting.value_str == ""
         assert setting.value_type == "str"
-        assert setting.value == "" 
+        assert setting.value == ""
+    
+    def test_value_setter_prevents_type_change(self):
+        """Test that value setter prevents type changes."""
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value="test-value"  # Initialize with string
+        )
+        
+        # Attempt to change from string to int
+        with pytest.raises(SettingTypeChangeError) as exc_info:
+            setting.value = 42
+        
+        error = exc_info.value
+        assert error.setting_name == setting.name
+        assert error.current_type == "str"
+        assert error.new_type == "int"
+        assert error.game_id == setting.game_id
+        assert "Use reset_value()" in str(error)
+        
+        # Verify value was not changed
+        assert setting.value_type == "str"
+        assert setting.value_str == "test-value"
+    
+    def test_reset_value_allows_type_change(self):
+        """Test that reset_value allows type changes."""
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value="123"  # Initialize with string
+        )
+        
+        # Change from string to int
+        setting.reset_value(42)
+        
+        assert setting.value_type == "int"
+        assert setting.value_str == "42"
+        assert setting.value == 42
+    
+    def test_reset_value_with_bool(self):
+        """Test reset_value with boolean values."""
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value="test"  # Initialize with string
+        )
+        
+        # Change from string to bool
+        setting.reset_value(True)
+        
+        assert setting.value_type == "bool"
+        assert setting.value_str == "true"
+        assert setting.value is True
+    
+    def test_reset_value_rejects_none(self):
+        """Test that reset_value rejects None values."""
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value=""  # Initialize with empty string
+        )
+        
+        with pytest.raises(ValueError) as exc_info:
+            setting.reset_value(None)
+        assert "Setting value cannot be None" in str(exc_info.value)
+    
+    def test_value_setter_same_type_allowed(self):
+        """Test that value setter allows changes within the same type."""
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value=123  # Initialize with int since we'll set integer value
+        )
+        
+        # Change to different int
+        setting.value = 456
+        
+        assert setting.value_type == "int"
+        assert setting.value_str == "456"
+        assert setting.value == 456
+    
+    def test_value_getter_unknown_type(self):
+        """Test getting value when type is unknown."""
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value_str="test",
+            value_type="unknown"  # Use unknown type
+        )
+        assert setting.value == "test"  # Should return raw string
+    
+    def test_value_getter_conversion_error(self):
+        """Test getting value when conversion fails."""
+        setting = GameSetting(
+            game_id="test-game-id",
+            name="test-setting",
+            value_str="not-an-int",
+            value_type="int"  # This will cause conversion error
+        )
+        assert setting.value == "not-an-int"  # Should return raw string on error 

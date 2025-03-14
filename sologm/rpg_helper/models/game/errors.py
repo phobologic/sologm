@@ -77,6 +77,18 @@ class SettingError(GameError):
     """Base exception for setting-related errors."""
     pass
 
+class SettingTypeChangeError(SettingError):
+    """Exception raised when attempting to change a setting's type without explicit permission."""
+    def __init__(self, setting_name: str, current_type: str, new_type: str, game_id: str):
+        self.setting_name = setting_name
+        self.current_type = current_type
+        self.new_type = new_type
+        self.game_id = game_id
+        super().__init__(
+            f"Cannot change type of setting {setting_name} from {current_type} to {new_type}. "
+            "Use reset_value() to explicitly change types."
+        )
+
 class SettingNotFoundError(SettingError):
     """Exception raised when a setting cannot be found."""
     def __init__(self, setting_name: str, game_id: str):
