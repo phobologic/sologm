@@ -11,12 +11,12 @@ from sologm.rpg_helper.models.game.base import Game
 from sologm.rpg_helper.models.game.constants import GameType
 from sologm.rpg_helper.models.scene import Scene, SceneStatus
 from sologm.rpg_helper.models.scene_event import SceneEvent
-from sologm.rpg_helper.models.poll import Poll, PollStatus, Vote
+from sologm.rpg_helper.models.poll import Poll, PollStatus
 from sologm.rpg_helper.models.game.errors import (
-    SceneNotFoundError, InvalidSceneStateError, SceneStateTransitionError,
-    PollNotFoundError, PollClosedError
+    SceneNotFoundError, PollNotFoundError
 )
 from sologm.rpg_helper.services.game.game_service import GameService
+from sologm.rpg_helper.db.config import get_session
 
 
 @pytest.fixture
@@ -34,16 +34,19 @@ def mock_game():
     game.name = "Test Game"
     game.game_type = GameType.STANDARD
     game.updated_at = datetime.now()
+    # Initialize empty collections
+    game.scenes = []
+    game.polls = []
     return game
 
 
 @pytest.fixture
 def game_service(mock_game, mock_session):
     """Create a GameService instance with a mock game."""
-    # Set up the session factory
-    GameService.set_session_factory(lambda: mock_session)
-    service = GameService(mock_game)
-    return service
+    # Patch the get_session function to return our mock session
+    with patch('sologm.rpg_helper.services.game.game_service.get_session', return_value=mock_session):
+        service = GameService(mock_game)
+        return service
 
 
 class TestGameService:
@@ -65,7 +68,6 @@ class TestGameService:
         mock_scene.id = "test-scene-id"
         mock_scene.title = title
         mock_scene.description = description
-        mock_scene.status = SceneStatus.ACTIVE
         mock_session.add.return_value = None
         mock_session.commit.return_value = None
         
@@ -77,10 +79,9 @@ class TestGameService:
             # Verify
             assert result == mock_scene
             mock_scene_class.assert_called_once_with(
-                game_id=mock_game.id,
                 title=title,
                 description=description,
-                status=SceneStatus.ACTIVE
+                game_id=mock_game.id
             )
             mock_session.add.assert_called_once_with(mock_scene)
             mock_session.commit.assert_called_once()
@@ -91,7 +92,10 @@ class TestGameService:
         # Setup
         mock_object_session.return_value = mock_session
         scene_id = "non-existent-scene"
-        mock_session.query.return_value.filter.return_value.first.return_value = None
+        # Ensure game's scenes collection is empty
+        game_service.game.scenes = []
+        # Ensure database query returns None
+        mock_session.query.return_value.filter_by.return_value.first.return_value = None
         
         # Execute & Verify
         with pytest.raises(SceneNotFoundError) as excinfo:
@@ -99,184 +103,46 @@ class TestGameService:
         
         assert scene_id in str(excinfo.value)
         mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
+        mock_session.query.return_value.filter_by.assert_called_once_with(
+            id=scene_id,
+            game_id=game_service.game.id
+        )
 
     @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_get_active_scene(self, mock_object_session, game_service, mock_game, mock_session):
-        """Test getting the active scene."""
+    def test_get_scene_from_collection(self, mock_object_session, game_service):
+        """Test getting a scene that exists in the game's collection."""
         # Setup
-        mock_object_session.return_value = mock_session
-        mock_scene = MagicMock(spec=Scene)
-        mock_scene.id = "test-scene-id"
-        mock_scene.status = SceneStatus.ACTIVE
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
-        
-        # Execute
-        result = game_service.get_active_scene()
-        
-        # Verify
-        assert result == mock_scene
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_get_active_scene_none(self, mock_object_session, game_service, mock_session):
-        """Test getting the active scene when none exists."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        mock_session.query.return_value.filter.return_value.first.return_value = None
-        
-        # Execute
-        result = game_service.get_active_scene()
-        
-        # Verify
-        assert result is None
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_complete_scene(self, mock_object_session, game_service, mock_session):
-        """Test completing a scene."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "test-scene-id"
+        scene_id = "existing-scene"
         mock_scene = MagicMock(spec=Scene)
         mock_scene.id = scene_id
-        mock_scene.status = SceneStatus.ACTIVE
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
-        mock_session.commit.return_value = None
-        
-        # Execute
-        result = game_service.complete_scene(scene_id)
-        
-        # Verify
-        assert result == mock_scene
-        assert mock_scene.status == SceneStatus.COMPLETED
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
-        mock_session.commit.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_complete_scene_not_found(self, mock_object_session, game_service, mock_session):
-        """Test completing a scene that doesn't exist."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "nonexistent-scene-id"
-        mock_session.query.return_value.filter.return_value.first.return_value = None
-        
-        # Execute & Verify
-        with pytest.raises(SceneNotFoundError) as excinfo:
-            game_service.complete_scene(scene_id)
-        
-        assert scene_id in str(excinfo.value)
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_complete_scene_already_completed(self, mock_object_session, game_service, mock_session):
-        """Test completing a scene that is already completed."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "test-scene-id"
-        mock_scene = MagicMock(spec=Scene)
-        mock_scene.id = scene_id
-        mock_scene.status = SceneStatus.COMPLETED
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
-        
-        # Execute & Verify
-        with pytest.raises(InvalidSceneStateError) as excinfo:
-            game_service.complete_scene(scene_id)
-        
-        assert scene_id in str(excinfo.value)
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_complete_scene_invalid_transition(self, mock_object_session, game_service, mock_session):
-        """Test completing a scene that is not in ACTIVE state."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "test-scene-id"
-        mock_scene = MagicMock(spec=Scene)
-        mock_scene.id = scene_id
-        mock_scene.status = SceneStatus.COMPLETED
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
-        
-        # Execute & Verify
-        with pytest.raises(SceneStateTransitionError) as excinfo:
-            game_service.complete_scene(scene_id)
-        
-        assert scene_id in str(excinfo.value)
-        assert SceneStatus.COMPLETED.value in str(excinfo.value)
-        assert SceneStatus.ACTIVE.value in str(excinfo.value)
-        assert "cannot transition from" in str(excinfo.value)
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
-        mock_session.commit.assert_not_called()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_add_scene_event(self, mock_object_session, game_service, mock_session):
-        """Test adding an event to a scene."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "test-scene-id"
-        event_text = "Test event"
-        mock_scene = MagicMock(spec=Scene)
-        mock_scene.id = scene_id
-        mock_scene.status = SceneStatus.ACTIVE
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
-        
-        mock_event = MagicMock(spec=SceneEvent)
-        mock_event.text = event_text
-        
-        # Mock the SceneEvent constructor
-        with patch('sologm.rpg_helper.services.game.game_service.SceneEvent', return_value=mock_event) as mock_event_class:
-            # Execute
-            result = game_service.add_scene_event(scene_id, event_text)
-            
-            # Verify
-            assert result == mock_event
-            mock_event_class.assert_called_once_with(
-                scene_id=scene_id,
-                text=event_text
-            )
-            mock_session.add.assert_called_once_with(mock_event)
-            mock_session.commit.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_add_scene_event_not_found(self, mock_object_session, game_service, mock_session):
-        """Test adding an event to a scene that doesn't exist."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "nonexistent-scene-id"
-        event_text = "Test event"
-        mock_session.query.return_value.filter.return_value.first.return_value = None
-        
-        # Execute & Verify
-        with pytest.raises(SceneNotFoundError) as excinfo:
-            game_service.add_scene_event(scene_id, event_text)
-        
-        assert scene_id in str(excinfo.value)
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_get_scene(self, mock_object_session, game_service, mock_session):
-        """Test getting a scene."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "test-scene-id"
-        mock_scene = MagicMock(spec=Scene)
-        mock_scene.id = scene_id
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
+        game_service.game.scenes = [mock_scene]
         
         # Execute
         result = game_service.get_scene(scene_id)
         
         # Verify
         assert result == mock_scene
-        mock_session.query.assert_called_once_with(Scene)
-        mock_session.query.return_value.filter.assert_called_once()
+        # Should not query database since found in collection
+        mock_object_session.assert_not_called()
+
+    @patch('sologm.rpg_helper.services.game.game_service.get_session')
+    def test_for_game_id(self, mock_get_session, mock_game, mock_session):
+        """Test creating a service for a game by ID."""
+        # Setup
+        game_id = "test-game-id"
+        mock_get_session.return_value = mock_session
+        mock_session.query.return_value.filter_by.return_value.first.return_value = mock_game
+        
+        # Execute
+        with patch('sologm.rpg_helper.services.game.game_service.close_session') as mock_close_session:
+            service = GameService.for_game_id(game_id)
+        
+        # Verify
+        assert service.game == mock_game
+        mock_get_session.assert_called_once()
+        mock_session.query.assert_called_once_with(Game)
+        mock_session.query.return_value.filter_by.assert_called_once_with(id=game_id)
+        mock_close_session.assert_called_once_with(mock_session)
 
     @patch('sologm.rpg_helper.services.game.game_service.object_session')
     def test_create_poll(self, mock_object_session, game_service, mock_game, mock_session):
@@ -301,30 +167,10 @@ class TestGameService:
             mock_poll_class.assert_called_once_with(
                 game_id=mock_game.id,
                 question=question,
-                options=options,
-                status=PollStatus.OPEN
+                options=options
             )
             mock_session.add.assert_called_once_with(mock_poll)
             mock_session.commit.assert_called_once()
-            assert mock_game.updated_at > datetime.now() - timedelta(seconds=1)
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_get_poll(self, mock_object_session, game_service, mock_session):
-        """Test getting a poll."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        poll_id = "test-poll-id"
-        mock_poll = MagicMock(spec=Poll)
-        mock_poll.id = poll_id
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_poll
-        
-        # Execute
-        result = game_service.get_poll(poll_id)
-        
-        # Verify
-        assert result == mock_poll
-        mock_session.query.assert_called_once_with(Poll)
-        mock_session.query.return_value.filter.assert_called_once()
 
     @patch('sologm.rpg_helper.services.game.game_service.object_session')
     def test_get_poll_not_found(self, mock_object_session, game_service, mock_session):
@@ -332,7 +178,10 @@ class TestGameService:
         # Setup
         mock_object_session.return_value = mock_session
         poll_id = "nonexistent-poll-id"
-        mock_session.query.return_value.filter.return_value.first.return_value = None
+        # Ensure game's polls collection is empty
+        game_service.game.polls = []
+        # Ensure database query returns None
+        mock_session.query.return_value.filter_by.return_value.first.return_value = None
         
         # Execute & Verify
         with pytest.raises(PollNotFoundError) as excinfo:
@@ -340,132 +189,24 @@ class TestGameService:
         
         assert poll_id in str(excinfo.value)
         mock_session.query.assert_called_once_with(Poll)
-        mock_session.query.return_value.filter.assert_called_once()
+        mock_session.query.return_value.filter_by.assert_called_once_with(
+            id=poll_id,
+            game_id=game_service.game.id
+        )
 
     @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_close_poll(self, mock_object_session, game_service, mock_session):
-        """Test closing a poll."""
+    def test_get_poll_from_collection(self, mock_object_session, game_service):
+        """Test getting a poll that exists in the game's collection."""
         # Setup
-        mock_object_session.return_value = mock_session
-        poll_id = "test-poll-id"
+        poll_id = "existing-poll"
         mock_poll = MagicMock(spec=Poll)
         mock_poll.id = poll_id
-        mock_poll.status = PollStatus.OPEN
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_poll
-        mock_session.commit.return_value = None
+        game_service.game.polls = [mock_poll]
         
         # Execute
-        result = game_service.close_poll(poll_id)
+        result = game_service.get_poll(poll_id)
         
         # Verify
         assert result == mock_poll
-        assert mock_poll.status == PollStatus.CLOSED
-        mock_session.query.assert_called_once_with(Poll)
-        mock_session.query.return_value.filter.assert_called_once()
-        mock_session.commit.assert_called_once()
-        assert mock_game.updated_at > datetime.now() - timedelta(seconds=1)
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_close_poll_not_found(self, mock_object_session, game_service, mock_session):
-        """Test closing a poll that doesn't exist."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        poll_id = "nonexistent-poll-id"
-        mock_session.query.return_value.filter.return_value.first.return_value = None
-        
-        # Execute & Verify
-        with pytest.raises(PollNotFoundError) as excinfo:
-            game_service.close_poll(poll_id)
-        
-        assert poll_id in str(excinfo.value)
-        mock_session.query.assert_called_once_with(Poll)
-        mock_session.query.return_value.filter.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_add_vote(self, mock_object_session, game_service, mock_game, mock_session):
-        """Test adding a vote to a poll."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        poll_id = "test-poll-id"
-        user_id = "test-user-id"
-        option_index = 0
-        mock_poll = MagicMock(spec=Poll)
-        mock_poll.id = poll_id
-        mock_poll.status = PollStatus.OPEN
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_poll
-        mock_session.commit.return_value = None
-        
-        # Mock the Vote constructor
-        mock_vote = MagicMock(spec=Vote)
-        with patch('sologm.rpg_helper.services.game.game_service.Vote', return_value=mock_vote) as mock_vote_class:
-            # Execute
-            result = game_service.add_vote(poll_id, user_id, option_index)
-            
-            # Verify
-            assert result == mock_vote
-            mock_vote_class.assert_called_once_with(
-                poll_id=poll_id,
-                user_id=user_id,
-                option_index=option_index
-            )
-            mock_session.add.assert_called_once_with(mock_vote)
-            mock_session.commit.assert_called_once()
-            assert mock_game.updated_at > datetime.now() - timedelta(seconds=1)
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_add_vote_not_found(self, mock_object_session, game_service, mock_session):
-        """Test adding a vote to a poll that doesn't exist."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        poll_id = "nonexistent-poll-id"
-        user_id = "test-user-id"
-        option_index = 0
-        mock_session.query.return_value.filter.return_value.first.return_value = None
-        
-        # Execute & Verify
-        with pytest.raises(PollNotFoundError) as excinfo:
-            game_service.add_vote(poll_id, user_id, option_index)
-        
-        assert poll_id in str(excinfo.value)
-        mock_session.query.assert_called_once_with(Poll)
-        mock_session.query.return_value.filter.assert_called_once()
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_complete_scene_success(self, mock_object_session, game_service, mock_session):
-        """Test successfully completing an active scene."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "test-scene-id"
-        mock_scene = MagicMock(spec=Scene)
-        mock_scene.id = scene_id
-        mock_scene.status = SceneStatus.ACTIVE
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
-        
-        # Execute
-        result = game_service.complete_scene(scene_id)
-        
-        # Verify
-        assert result == mock_scene
-        assert mock_scene.status == SceneStatus.COMPLETED
-        mock_session.commit.assert_called_once()
-        assert mock_scene.updated_at > datetime.now() - timedelta(seconds=1)
-
-    @patch('sologm.rpg_helper.services.game.game_service.object_session')
-    def test_abandon_scene_success(self, mock_object_session, game_service, mock_session):
-        """Test successfully abandoning an active scene."""
-        # Setup
-        mock_object_session.return_value = mock_session
-        scene_id = "test-scene-id"
-        mock_scene = MagicMock(spec=Scene)
-        mock_scene.id = scene_id
-        mock_scene.status = SceneStatus.ACTIVE
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_scene
-        
-        # Execute
-        result = game_service.abandon_scene(scene_id)
-        
-        # Verify
-        assert result == mock_scene
-        assert mock_scene.status == SceneStatus.ABANDONED
-        mock_session.commit.assert_called_once()
-        assert mock_scene.updated_at > datetime.now() - timedelta(seconds=1) 
+        # Should not query database since found in collection
+        mock_object_session.assert_not_called()

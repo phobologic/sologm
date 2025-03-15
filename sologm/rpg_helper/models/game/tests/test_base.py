@@ -32,7 +32,7 @@ def game_data():
         "channel_id": "test-channel-id",
         "workspace_id": "test-workspace-id",
         "game_type": GameType.STANDARD,
-        "is_active": True  # Add default value
+        "is_active": True
     }
 
 
@@ -51,13 +51,30 @@ class TestGameModel:
         # Create a session factory that returns our mock session
         session_factory = MagicMock(return_value=mock_session)
         
-        # Patch both the session factory and the session management functions
-        with patch('sologm.rpg_helper.db.config._session_factory', session_factory), \
-             patch('sologm.rpg_helper.db.config.get_session', return_value=mock_session), \
-             patch('sologm.rpg_helper.db.config.close_session') as self.mock_close_session, \
-             patch('sologm.rpg_helper.models.game.base.object_session') as self.mock_object_session:
-            yield
-    
+        # Set up all the patches we need
+        patches = [
+            patch('sologm.rpg_helper.db.config._session_factory', session_factory),
+            patch('sologm.rpg_helper.db.config.get_session', return_value=mock_session),
+            patch('sologm.rpg_helper.db.config.close_session'),
+            patch('sologm.rpg_helper.models.game.base.object_session'),
+            patch('sologm.rpg_helper.models.game.base.get_session', return_value=mock_session),
+            patch('sologm.rpg_helper.models.game.base.close_session')
+        ]
+        
+        # Start all patches
+        mocks = [patcher.start() for patcher in patches]
+        self.mock_session_factory = mocks[0]
+        self.mock_get_session = mocks[1]
+        self.mock_close_session = mocks[2]
+        self.mock_object_session = mocks[3]
+        self.mock_base_get_session = mocks[4]
+        self.mock_base_close_session = mocks[5]
+        
+        # Clean up after the test
+        yield
+        for patcher in patches:
+            patcher.stop()
+
     def test_inheritance(self):
         """Test that Game inherits from BaseModel."""
         from sologm.rpg_helper.models.base import BaseModel
@@ -371,7 +388,7 @@ class TestGameModel:
             game_id=game.id, name=setting_name
         )
         # Verify session management
-        self.mock_close_session.assert_called_once_with(mock_session)
+        self.mock_base_close_session.assert_called_once_with(mock_session)
     
     def test_get_setting_not_found(self, mock_session, game):
         """Test the get_setting method when the setting is not found."""
@@ -396,7 +413,7 @@ class TestGameModel:
         query_mock.filter_by.assert_called_once_with(
             game_id=game.id, name=setting_name
         )
-        self.mock_close_session.assert_called_once_with(mock_session)
+        self.mock_base_close_session.assert_called_once_with(mock_session)
     
     def test_get_setting_with_existing_session(self, mock_session, game):
         """Test the get_setting method with an existing session."""
@@ -412,6 +429,7 @@ class TestGameModel:
         query_mock = MagicMock()
         filter_mock = MagicMock()
         
+        # Return the mock session from object_session
         self.mock_object_session.return_value = mock_session
         mock_session.query.return_value = query_mock
         query_mock.filter_by.return_value = filter_mock
@@ -422,11 +440,12 @@ class TestGameModel:
         
         # Verify
         assert result == setting_value
-        self.mock_object_session.assert_called_once_with(game)
         mock_session.query.assert_called_once()
         query_mock.filter_by.assert_called_once_with(
             game_id=game.id, name=setting_name
         )
+        # Should not close session when it was existing
+        self.mock_base_close_session.assert_not_called()
     
     def test_deactivate(self, game):
         """Test the deactivate method."""
@@ -470,4 +489,70 @@ class TestGameModel:
         game.activate()
         
         # Verify - should not change the status
-        assert game.is_active is True 
+        assert game.is_active is True
+
+    def test_set_setting(self, mock_session, game):
+        """Test the set_setting method."""
+        # Setup
+        from sologm.rpg_helper.models.game.settings import GameSetting
+        
+        setting_name = "test-setting"
+        setting_value = "test-value"
+        
+        query_mock = MagicMock()
+        filter_mock = MagicMock()
+        
+        # Ensure object_session returns None so we use get_session
+        self.mock_object_session.return_value = None
+        
+        # Setup query chain for non-existent setting
+        mock_session.query.return_value = query_mock
+        query_mock.filter_by.return_value = filter_mock
+        filter_mock.first.return_value = None
+        
+        # Execute
+        game.set_setting(setting_name, setting_value)
+        
+        # Verify
+        mock_session.query.assert_called_once()
+        query_mock.filter_by.assert_called_once_with(
+            game_id=game.id, name=setting_name
+        )
+        mock_session.add.assert_called_once()
+        mock_session.commit.assert_called_once()
+        self.mock_base_close_session.assert_called_once_with(mock_session)
+
+    def test_set_setting_existing(self, mock_session, game):
+        """Test the set_setting method with an existing setting."""
+        # Setup
+        from sologm.rpg_helper.models.game.settings import GameSetting
+        
+        setting_name = "test-setting"
+        old_value = "old-value"
+        new_value = "new-value"
+        
+        mock_setting = MagicMock(spec=GameSetting)
+        mock_setting.value = old_value
+        
+        query_mock = MagicMock()
+        filter_mock = MagicMock()
+        
+        # Ensure object_session returns None so we use get_session
+        self.mock_object_session.return_value = None
+        
+        # Setup query chain for existing setting
+        mock_session.query.return_value = query_mock
+        query_mock.filter_by.return_value = filter_mock
+        filter_mock.first.return_value = mock_setting
+        
+        # Execute
+        game.set_setting(setting_name, new_value)
+        
+        # Verify
+        mock_session.query.assert_called_once()
+        query_mock.filter_by.assert_called_once_with(
+            game_id=game.id, name=setting_name
+        )
+        mock_session.commit.assert_called_once()
+        self.mock_base_close_session.assert_called_once_with(mock_session)
+        assert mock_setting.value == new_value 

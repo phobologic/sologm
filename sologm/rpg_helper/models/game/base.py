@@ -251,24 +251,27 @@ class Game(BaseModel):
             The setting value, or the default if not found
         """
         from sologm.rpg_helper.models.game.settings import GameSetting
-        from sologm.rpg_helper.db.config import get_session, close_session
         
         # Get existing session or create new one
         session = object_session(self)
-        needs_close = session is None
-        if needs_close:
+        if session is None:
             session = get_session()
-            
-        try:
-            # Check if the setting exists
+            try:
+                # Check if the setting exists
+                setting = session.query(GameSetting).filter_by(
+                    game_id=self.id, name=name
+                ).first()
+                
+                return setting.value if setting else default
+            finally:
+                close_session(session)
+        else:
+            # Use existing session
             setting = session.query(GameSetting).filter_by(
                 game_id=self.id, name=name
             ).first()
             
             return setting.value if setting else default
-        finally:
-            if needs_close:
-                close_session(session)
     
     def set_setting(self, name: str, value: Any) -> None:
         """
@@ -277,12 +280,55 @@ class Game(BaseModel):
         Args:
             name: The setting name
             value: The setting value
+            
+        Raises:
+            ValueError: If value is None
         """
         from sologm.rpg_helper.models.game.settings import GameSetting
         
-        session = object_session(self) or get_session()
-        try:
-            # Check if the setting already exists
+        # Get existing session or create new one
+        session = object_session(self)
+        if session is None:
+            session = get_session()
+            try:
+                # Check if the setting exists
+                setting = session.query(GameSetting).filter_by(
+                    game_id=self.id, name=name
+                ).first()
+                
+                if setting:
+                    # Update the existing setting
+                    old_value = setting.value
+                    setting.value = value
+                    
+                    logger.debug(
+                        "Updated game setting",
+                        game_id=self.id,
+                        name=name,
+                        old_value=old_value,
+                        new_value=value
+                    )
+                else:
+                    # Create a new setting
+                    setting = GameSetting(
+                        game_id=self.id,
+                        name=name,
+                        value=value
+                    )
+                    session.add(setting)
+                    
+                    logger.debug(
+                        "Created new game setting",
+                        game_id=self.id,
+                        name=name,
+                        value=value
+                    )
+                
+                session.commit()
+            finally:
+                close_session(session)
+        else:
+            # Use existing session
             setting = session.query(GameSetting).filter_by(
                 game_id=self.id, name=name
             ).first()
@@ -303,10 +349,9 @@ class Game(BaseModel):
                 # Create a new setting
                 setting = GameSetting(
                     game_id=self.id,
-                    name=name
+                    name=name,
+                    value=value
                 )
-                setting.value = value
-                
                 session.add(setting)
                 
                 logger.debug(
@@ -316,11 +361,97 @@ class Game(BaseModel):
                     value=value
                 )
             
-            if session == object_session(self):
+            session.commit()
+    
+    def reset_setting(self, name: str, value: Any) -> None:
+        """
+        Reset a game setting, allowing type change.
+        
+        Args:
+            name: The setting name
+            value: The new value
+            
+        Raises:
+            ValueError: If value is None
+        """
+        from sologm.rpg_helper.models.game.settings import GameSetting
+        
+        # Get existing session or create new one
+        session = object_session(self)
+        if session is None:
+            session = get_session()
+            try:
+                # Check if the setting exists
+                setting = session.query(GameSetting).filter_by(
+                    game_id=self.id, name=name
+                ).first()
+                
+                if setting:
+                    # Reset the existing setting
+                    old_value = setting.value
+                    setting.reset_value(value)
+                    
+                    logger.debug(
+                        "Reset game setting",
+                        game_id=self.id,
+                        name=name,
+                        old_value=old_value,
+                        new_value=value
+                    )
+                else:
+                    # Create a new setting
+                    setting = GameSetting(
+                        game_id=self.id,
+                        name=name,
+                        value=value
+                    )
+                    session.add(setting)
+                    
+                    logger.debug(
+                        "Created new game setting",
+                        game_id=self.id,
+                        name=name,
+                        value=value
+                    )
+                
                 session.commit()
-        finally:
-            if session != object_session(self):
+            finally:
                 close_session(session)
+        else:
+            # Use existing session
+            setting = session.query(GameSetting).filter_by(
+                game_id=self.id, name=name
+            ).first()
+            
+            if setting:
+                # Reset the existing setting
+                old_value = setting.value
+                setting.reset_value(value)
+                
+                logger.debug(
+                    "Reset game setting",
+                    game_id=self.id,
+                    name=name,
+                    old_value=old_value,
+                    new_value=value
+                )
+            else:
+                # Create a new setting
+                setting = GameSetting(
+                    game_id=self.id,
+                    name=name,
+                    value=value
+                )
+                session.add(setting)
+                
+                logger.debug(
+                    "Created new game setting",
+                    game_id=self.id,
+                    name=name,
+                    value=value
+                )
+            
+            session.commit()
     
     def deactivate(self) -> None:
         """Deactivate the game."""

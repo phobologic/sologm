@@ -36,4 +36,124 @@ You are an AI coding assistant that follows a structured implementation approach
 - When uncertain about scope, pause and ask clarifying questions
 - Be responsive to user feedback about process - some users may prefer more or less granular control
 
-Remember that your goal is to deliver correct, maintainable solutions while giving users appropriate oversight. Find the right balance between progress and checkpoints based on task complexity.​​​​​​​​​​​​​​​​
+Remember that your goal is to deliver correct, maintainable solutions while giving users appropriate oversight. Find the right balance between progress and checkpoints based on task complexity.
+
+# Model-Service Architecture Guidelines
+
+When working with domain models and services in Python, follow these guidelines for organizing code:
+
+## Domain Models Should Contain:
+
+1. Data attributes and relationships
+2. Self-contained state transitions and validations
+3. Simple relationship management methods
+4. Methods that only affect the model itself
+
+Examples:
+✅ DO:
+```python
+class Scene(BaseModel):
+    def complete(self) -> None:
+        """State transition affecting only this scene."""
+        if not self.is_active():
+            raise InvalidStateError()
+        self.status = SceneStatus.COMPLETED
+        self.completed_at = datetime.now()
+
+    def is_active(self) -> bool:
+        """State validation method."""
+        return self.status == SceneStatus.ACTIVE
+
+    def add_event(self, description: str) -> SceneEvent:
+        """Simple relationship management."""
+        event = SceneEvent(scene_id=self.id, description=description)
+        self.events.append(event)
+        return event
+```
+
+❌ DON'T:
+```python
+class Scene(BaseModel):
+    def create_for_game(cls, game_id: str, title: str):
+        """Don't put creation logic in models."""
+        pass
+
+    def transfer_to_game(self, new_game_id: str):
+        """Don't put complex cross-entity operations in models."""
+        pass
+```
+
+## Services Should Contain:
+
+1. Entity creation and complex relationship management
+2. Operations involving multiple models
+3. Transaction management
+4. External system integration
+5. Complex queries and data fetching
+
+Examples:
+✅ DO:
+```python
+class GameService:
+    def create_scene(self, title: str, description: str) -> Scene:
+        """Creation operation involving multiple entities."""
+        scene = Scene(title=title, description=description)
+        self.game.scenes.append(scene)
+        return scene
+
+    def transfer_scene(self, scene_id: str, target_game_id: str) -> Scene:
+        """Complex operation affecting multiple entities."""
+        scene = self.get_scene(scene_id)
+        target_game = Game.get_by_id(target_game_id)
+        scene.game_id = target_game.id
+        return scene
+```
+
+❌ DON'T:
+```python
+class GameService:
+    def is_scene_active(self, scene_id: str) -> bool:
+        """Don't put simple state checks in services."""
+        scene = self.get_scene(scene_id)
+        return scene.status == SceneStatus.ACTIVE
+
+    def get_scene_title(self, scene_id: str) -> str:
+        """Don't put simple property access in services."""
+        scene = self.get_scene(scene_id)
+        return scene.title
+```
+
+## General Rules:
+
+1. If an operation only affects one entity's state → Put it in the model
+2. If an operation creates new entities → Put it in a service
+3. If an operation affects multiple entities → Put it in a service
+4. If an operation is a simple state check → Put it in the model
+5. If an operation requires external services → Put it in a service
+
+## Type Hints and Circular Dependencies:
+
+1. Use TYPE_CHECKING for forward references:
+```python
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .game import Game
+```
+
+2. Use string literals for type hints when needed:
+```python
+def add_scene(self, scene: 'Scene') -> None:
+    pass
+```
+
+## Testing Implications:
+
+1. Model tests should focus on state transitions and validations
+2. Service tests should focus on coordination and transaction management
+3. Use mocks for external dependencies in service tests
+4. Test models in isolation without services
+
+## Error Handling:
+
+1. Models should raise domain-specific errors about their state
+2. Services should handle transaction errors and coordinate error responses
