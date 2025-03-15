@@ -66,3 +66,4 @@ dev.env
 tests/fixtures/blueprints/*-result
 FakeKey.pem
 vm_setup.sh
+*.env
