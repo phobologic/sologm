@@ -64,10 +64,10 @@ class GameAIHelper:
         
         # Use provided scene or current scene
         if scene is None:
-            scene = game.current_scene
-            if scene is None:
+            if game.current_scene_id is None:
                 logger.error("No scene provided and game has no current scene", game_id=game.id)
                 raise ValueError("No scene provided and game has no current scene")
+            scene = self.game_service.get_scene(game.current_scene_id)
         
         # Build the prompt
         prompt = self._build_outcome_prompt(
@@ -225,7 +225,7 @@ class GameAIHelper:
             context["chaos_factor"] = mythic_service.get_chaos_factor()
         
         # Add active scene if any
-        active_scene = self.game_service.get_active_scene()
+        active_scene = self.game_service.get_scene(self.game.current_scene_id) if self.game.current_scene_id else None
         if active_scene:
             context["active_scene"] = {
                 "id": active_scene.id,

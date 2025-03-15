@@ -30,23 +30,17 @@ class AIService(ABC):
                      temperature: Optional[float] = None,
                      system_prompt: Optional[str] = None,
                      **kwargs) -> str:
-        """
-        Generate text from a prompt.
-        
-        Args:
-            prompt: The user prompt to generate from
-            max_tokens: Maximum number of tokens to generate
-            temperature: Sampling temperature (0-1)
-            system_prompt: Optional system prompt to set context
-            **kwargs: Additional service-specific parameters
-            
-        Returns:
-            Generated text response
-            
-        Raises:
-            AIRequestError: If there's an error making the request
-            AIResponseError: If there's an error processing the response
-        """
+        """Synchronous text generation."""
+        pass
+    
+    @abstractmethod
+    async def generate_text_async(self, 
+                          prompt: str, 
+                          max_tokens: Optional[int] = None,
+                          temperature: Optional[float] = None,
+                          system_prompt: Optional[str] = None,
+                          **kwargs) -> str:
+        """Asynchronous text generation."""
         pass
     
     @abstractmethod
@@ -56,21 +50,36 @@ class AIService(ABC):
                      temperature: Optional[float] = None,
                      system_prompt: Optional[str] = None,
                      **kwargs) -> str:
+        """Synchronous chat generation."""
+        pass
+    
+    @abstractmethod
+    async def generate_chat_async(self, 
+                          messages: List[Dict[str, str]], 
+                          max_tokens: Optional[int] = None,
+                          temperature: Optional[float] = None,
+                          system_prompt: Optional[str] = None,
+                          **kwargs) -> str:
+        """Asynchronous chat generation."""
+        pass
+    
+    def count_tokens(self, text: str) -> int:
         """
-        Generate a response from a chat history.
+        Count the number of tokens in a text.
         
         Args:
-            messages: List of message dictionaries with 'role' and 'content' keys
-            max_tokens: Maximum number of tokens to generate
-            temperature: Sampling temperature (0-1)
-            system_prompt: Optional system prompt to set context
-            **kwargs: Additional service-specific parameters
+            text: The text to count tokens for
             
         Returns:
-            Generated text response
-            
-        Raises:
-            AIRequestError: If there's an error making the request
-            AIResponseError: If there's an error processing the response
+            Number of tokens
         """
-        pass 
+        raise NotImplementedError("Token counting not implemented for this service")
+    
+    def get_context_window(self) -> int:
+        """
+        Get the maximum context window size for the current model.
+        
+        Returns:
+            Maximum number of tokens that can be processed
+        """
+        raise NotImplementedError("Context window size not available for this service") 

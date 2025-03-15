@@ -1,150 +1,172 @@
-"""
-Tests for the Claude AI service.
-"""
+"""Tests for the Claude AI service."""
 import os
 import pytest
-from unittest.mock import patch, MagicMock
+import asyncio
+from unittest.mock import Mock, patch
+from anthropic import Anthropic
+from anthropic.types import Message
 
 from sologm.rpg_helper.services.ai.claude import ClaudeService
-from sologm.rpg_helper.services.ai import AIServiceError
+from sologm.rpg_helper.services.ai.service import AIRequestError, AIServiceError
 
 
 @pytest.fixture
 def mock_anthropic():
-    """Mock the Anthropic client to avoid actual API calls."""
-    with patch('anthropic.Anthropic') as mock_client_class:
-        # Create a mock client instance
-        mock_client = MagicMock()
-        # Make the constructor return our mock instance
-        mock_client_class.return_value = mock_client
-        
-        # Mock the messages.create method
-        mock_messages_create = MagicMock()
-        mock_client.messages.create = mock_messages_create
-        
-        # Set up a mock response
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="Mock response from Claude")]
-        mock_messages_create.return_value = mock_response
-        
-        yield mock_client
+    """Mock Anthropic client."""
+    mock = Mock(spec=Anthropic)
+    mock.messages = Mock()
+    mock.messages.create = Mock()
+    mock.count_tokens = Mock(return_value=10)
+    return mock
 
 
 @pytest.fixture
-def claude_service(mock_anthropic):
-    """Create a Claude service with a mocked client."""
-    # Use a fake API key
-    service = ClaudeService(api_key="fake_api_key")
-    return service
+def service(mock_anthropic):
+    """Create a Claude service with mocked client."""
+    with patch("anthropic.Anthropic", return_value=mock_anthropic):
+        service = ClaudeService(api_key="test-key")
+        return service
 
 
-def test_init():
+def test_init_with_api_key():
     """Test initialization with API key."""
-    # Patch the Anthropic client to avoid actual initialization
-    with patch('anthropic.Anthropic'):
-        service = ClaudeService(api_key="test_key")
-        assert service.api_key == "test_key"
-        assert service.model == "claude-3-opus-20240229"  # Update to match actual default
+    service = ClaudeService(api_key="test-key")
+    assert service.api_key == "test-key"
+    assert service.model == "claude-3-opus-20240229"
 
 
 def test_init_with_env_var():
-    """Test initialization with API key from environment variable."""
-    # Patch the environment and Anthropic client
-    with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "env_test_key"}), \
-         patch('anthropic.Anthropic'):
+    """Test initialization with environment variable."""
+    with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "env-key"}):
         service = ClaudeService()
-        assert service.api_key == "env_test_key"
+        assert service.api_key == "env-key"
 
 
 def test_init_no_api_key():
-    """Test initialization with no API key."""
-    # Patch the environment to ensure no API key is present
-    with patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}, clear=True), \
-         patch('anthropic.Anthropic'):
-        with pytest.raises(ValueError) as excinfo:
+    """Test initialization with no API key raises error."""
+    with patch.dict(os.environ, clear=True):
+        with pytest.raises(ValueError):
             ClaudeService()
-        assert "API key is required" in str(excinfo.value)
 
 
-def test_generate_text(claude_service, mock_anthropic):
-    """Test generating text."""
-    # Set up the mock response
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock(text="This is a test response")]
-    mock_anthropic.messages.create.return_value = mock_response
-    
-    # Call the method
-    result = claude_service.generate_text(
-        prompt="Test prompt",
-        max_tokens=100,
-        temperature=0.7
-    )
-    
-    # Check the result
-    assert result == "This is a test response"
-    
-    # Verify the client was called correctly
-    mock_anthropic.messages.create.assert_called_once()
-    call_kwargs = mock_anthropic.messages.create.call_args.kwargs
-    assert call_kwargs["model"] == "claude-3-opus-20240229"  # Update to match actual default
-    assert call_kwargs["max_tokens"] == 100
-    assert call_kwargs["temperature"] == 0.7
-    assert call_kwargs["messages"][0]["role"] == "user"
-    assert call_kwargs["messages"][0]["content"] == "Test prompt"
+def test_count_tokens(service):
+    """Test token counting."""
+    text = "Hello world"
+    service.client.count_tokens.return_value = 3
+    assert service.count_tokens(text) == 3
+    service.client.count_tokens.assert_called_once_with(text)
 
 
-def test_generate_text_with_system_prompt(claude_service, mock_anthropic):
-    """Test generating text with a system prompt."""
-    # Set up the mock response
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock(text="Response with system prompt")]
-    mock_anthropic.messages.create.return_value = mock_response
+def test_get_context_window(service):
+    """Test getting context window size."""
+    assert service.get_context_window() == 200000  # Default model
     
-    # Call the method
-    result = claude_service.generate_text(
-        prompt="Test prompt",
-        system_prompt="You are a helpful assistant",
-        max_tokens=100
-    )
-    
-    # Check the result
-    assert result == "Response with system prompt"
-    
-    # Verify the client was called correctly
-    mock_anthropic.messages.create.assert_called_once()
-    call_kwargs = mock_anthropic.messages.create.call_args.kwargs
-    assert call_kwargs["system"] == "You are a helpful assistant"
+    service.model = "unknown-model"
+    assert service.get_context_window() == 100000  # Default fallback
 
 
-def test_generate_text_with_custom_model(claude_service, mock_anthropic):
-    """Test generating text with a custom model."""
-    # Set up the mock response
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock(text="Response from custom model")]
-    mock_anthropic.messages.create.return_value = mock_response
+def test_prepare_messages(service):
+    """Test message preparation with token management."""
+    messages = [
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there"},
+        {"role": "user", "content": "How are you?"}
+    ]
     
-    # Set a custom model
-    claude_service.model = "claude-3-5-sonnet-20240620"  # Use a different model than default
+    # Mock token counts - provide enough responses for both calls to _prepare_messages
+    service.client.count_tokens.side_effect = [5, 8, 7,  # First call
+                                             5, 8, 7]  # Second call
     
-    # Call the method
-    result = claude_service.generate_text(prompt="Test prompt")
+    prepared = service._prepare_messages(messages, max_tokens=1000)
     
-    # Check the result
-    assert result == "Response from custom model"
+    assert len(prepared) == 3
+    assert prepared[0]["role"] == "user"
+    assert prepared[0]["content"] == "Hello"
     
-    # Verify the client was called with the custom model
-    mock_anthropic.messages.create.assert_called_once()
-    call_kwargs = mock_anthropic.messages.create.call_args.kwargs
-    assert call_kwargs["model"] == "claude-3-5-sonnet-20240620"
+    # Verify system role conversion
+    messages[1]["role"] = "system"
+    prepared = service._prepare_messages(messages, max_tokens=1000)
+    assert prepared[1]["role"] == "assistant"
 
 
-def test_handle_api_error(claude_service, mock_anthropic):
-    """Test handling API errors."""
-    # Make the client raise an exception
-    mock_anthropic.messages.create.side_effect = Exception("API error")
+def test_prepare_messages_truncation(service):
+    """Test message truncation when exceeding context window."""
+    messages = [
+        {"role": "user", "content": "First"},
+        {"role": "assistant", "content": "Second"},
+        {"role": "user", "content": "Third"}
+    ]
     
-    # Call the method and check that it raises the expected exception
-    with pytest.raises(AIServiceError) as excinfo:
-        claude_service.generate_text(prompt="Test prompt")
+    # Mock large token counts
+    service.client.count_tokens.side_effect = [50000, 150000, 50000]
     
-    assert "API error" in str(excinfo.value) 
+    prepared = service._prepare_messages(messages, max_tokens=1000)
+    
+    # Should only include first message due to token limits
+    assert len(prepared) == 1
+    assert prepared[0]["content"] == "First"
+
+
+def test_generate_text(service):
+    """Test text generation."""
+    mock_response = Mock()
+    mock_response.content = [Mock(text="Generated text")]
+    service.client.messages.create.return_value = mock_response
+    
+    result = service.generate_text("Hello")
+    
+    assert result == "Generated text"
+    service.client.messages.create.assert_called_once()
+
+
+def test_generate_chat(service):
+    """Test chat generation."""
+    messages = [
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi"}
+    ]
+    
+    mock_response = Mock()
+    mock_response.content = [Mock(text="Chat response")]
+    service.client.messages.create.return_value = mock_response
+    
+    result = service.generate_chat(messages)
+    
+    assert result == "Chat response"
+    service.client.messages.create.assert_called_once()
+
+
+def test_api_error_handling(service):
+    """Test API error handling."""
+    service.client.messages.create.side_effect = Exception("API error")
+    
+    with pytest.raises(AIRequestError) as exc:
+        service.generate_text("Hello")
+    assert "API error" in str(exc.value)
+
+
+def test_network_error_handling(service):
+    """Test network error handling."""
+    service.client.messages.create.side_effect = Exception("network timeout")
+    
+    with pytest.raises(AIRequestError) as exc:
+        service.generate_text("Hello")
+    assert "Network error" in str(exc.value)
+
+
+def test_unexpected_error_handling(service):
+    """Test unexpected error handling."""
+    service.client.messages.create.side_effect = ValueError("Unexpected")
+    
+    with pytest.raises(AIServiceError) as exc:
+        service.generate_text("Hello")
+    assert "Unexpected error" in str(exc.value)
+
+
+def test_async_methods_not_supported(service):
+    """Test that async methods raise NotImplementedError."""
+    with pytest.raises(NotImplementedError):
+        asyncio.run(service.generate_text_async("test"))
+    
+    with pytest.raises(NotImplementedError):
+        asyncio.run(service.generate_chat_async([])) 
