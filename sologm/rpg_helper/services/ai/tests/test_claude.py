@@ -160,13 +160,4 @@ def test_unexpected_error_handling(service):
     
     with pytest.raises(AIServiceError) as exc:
         service.generate_text("Hello")
-    assert "Unexpected error" in str(exc.value)
-
-
-def test_async_methods_not_supported(service):
-    """Test that async methods raise NotImplementedError."""
-    with pytest.raises(NotImplementedError):
-        asyncio.run(service.generate_text_async("test"))
-    
-    with pytest.raises(NotImplementedError):
-        asyncio.run(service.generate_chat_async([])) 
+    assert "Unexpected error" in str(exc.value) 

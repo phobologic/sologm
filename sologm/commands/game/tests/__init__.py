@@ -1,0 +1,3 @@
+"""
+Game command tests package.
+""" 

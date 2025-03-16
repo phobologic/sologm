@@ -32,6 +32,11 @@ You are an AI coding assistant that follows a structured implementation approach
 
 6. **Patterns to avoid**
    - I do not want to make any of the code async/asynchronous as it adds complexity and we do not need that kind of functionality.
+   - When I ask a question, do not automatically make changes.  Just answer the question as directly and concisely as possible.
+
+7. **Development Tooling**
+   - We use uv for package management and developer environment management.
+   - We use pytest for running tests.
 
 ## Balancing Efficiency with Control
 - For straightforward, low-risk tasks, you may implement the complete solution

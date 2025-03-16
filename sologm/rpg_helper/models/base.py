@@ -1,7 +1,7 @@
 """
 Base SQLAlchemy models and utilities for the RPG Helper application.
 """
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, Dict, Any, TypeVar, Type, List, ClassVar
 import uuid
 
@@ -45,8 +45,8 @@ class BaseModel(Base):
     __abstract__ = True
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
     
     @declared_attr
     def __tablename__(cls) -> str:

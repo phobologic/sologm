@@ -1,17 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "sologm"
 version = "0.1.0"
-description = "Add your description here"
+description = "A solo roleplaying game manager"
+authors = [
+    {name = "Michael Barrett"}
+]
 readme = "README.md"
-requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
 dependencies = [
-    "anthropic>=0.49.0",
-    "python-dotenv>=1.0.1",
-    "slack-bolt>=1.22.0",
-    "sqlalchemy>=2.0.38",
+    "click>=8.0.0",
+    "sqlalchemy>=2.0.0",
+    "structlog>=24.1.0",
 ]
 
-[dependency-groups]
-dev = [
-    "pytest>=8.3.4",
-]
+[project.scripts]
+sologm = "sologm.interfaces.cli:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sologm"]

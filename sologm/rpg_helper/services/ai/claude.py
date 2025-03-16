@@ -154,11 +154,4 @@ class ClaudeService(AIService):
             elif "network" in error_message.lower() or "connection" in error_message.lower():
                 raise AIRequestError(f"Network error when calling Claude API: {error_message}")
             else:
-                raise AIServiceError(f"Unexpected error: {error_message}")
-    
-    # Required by AIService but not implemented since we don't want async
-    async def generate_text_async(self, *args, **kwargs) -> str:
-        raise NotImplementedError("Async methods are not supported")
-    
-    async def generate_chat_async(self, *args, **kwargs) -> str:
-        raise NotImplementedError("Async methods are not supported") 
+                raise AIServiceError(f"Unexpected error: {error_message}") 

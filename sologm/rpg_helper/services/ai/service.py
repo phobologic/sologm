@@ -30,17 +30,23 @@ class AIService(ABC):
                      temperature: Optional[float] = None,
                      system_prompt: Optional[str] = None,
                      **kwargs) -> str:
-        """Synchronous text generation."""
-        pass
-    
-    @abstractmethod
-    async def generate_text_async(self, 
-                          prompt: str, 
-                          max_tokens: Optional[int] = None,
-                          temperature: Optional[float] = None,
-                          system_prompt: Optional[str] = None,
-                          **kwargs) -> str:
-        """Asynchronous text generation."""
+        """
+        Generate text from a prompt.
+        
+        Args:
+            prompt: The text prompt to generate from
+            max_tokens: Maximum number of tokens to generate
+            temperature: Sampling temperature (0.0 to 1.0)
+            system_prompt: Optional system prompt for context
+            **kwargs: Additional service-specific parameters
+            
+        Returns:
+            Generated text
+            
+        Raises:
+            AIRequestError: If there's an error making the request
+            AIResponseError: If there's an error processing the response
+        """
         pass
     
     @abstractmethod
@@ -50,17 +56,23 @@ class AIService(ABC):
                      temperature: Optional[float] = None,
                      system_prompt: Optional[str] = None,
                      **kwargs) -> str:
-        """Synchronous chat generation."""
-        pass
-    
-    @abstractmethod
-    async def generate_chat_async(self, 
-                          messages: List[Dict[str, str]], 
-                          max_tokens: Optional[int] = None,
-                          temperature: Optional[float] = None,
-                          system_prompt: Optional[str] = None,
-                          **kwargs) -> str:
-        """Asynchronous chat generation."""
+        """
+        Generate text from a chat conversation.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            max_tokens: Maximum number of tokens to generate
+            temperature: Sampling temperature (0.0 to 1.0)
+            system_prompt: Optional system prompt for context
+            **kwargs: Additional service-specific parameters
+            
+        Returns:
+            Generated text
+            
+        Raises:
+            AIRequestError: If there's an error making the request
+            AIResponseError: If there's an error processing the response
+        """
         pass
     
     def count_tokens(self, text: str) -> int:

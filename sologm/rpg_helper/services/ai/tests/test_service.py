@@ -46,24 +46,6 @@ class MockAIService(AIService):
             raise AIRequestError("Mock error")
         
         return f"Response to chat with {len(messages)} messages"
-    
-    async def generate_text_async(self, 
-                                prompt: str, 
-                                max_tokens: Optional[int] = None,
-                                temperature: Optional[float] = None,
-                                system_prompt: Optional[str] = None,
-                                **kwargs) -> str:
-        """Mock async text generation."""
-        return self.generate_text(prompt, max_tokens, temperature, system_prompt, **kwargs)
-    
-    async def generate_chat_async(self, 
-                                messages: List[Dict[str, str]], 
-                                max_tokens: Optional[int] = None,
-                                temperature: Optional[float] = None,
-                                system_prompt: Optional[str] = None,
-                                **kwargs) -> str:
-        """Mock async chat generation."""
-        return self.generate_chat(messages, max_tokens, temperature, system_prompt, **kwargs)
 
 
 def test_generate_text():
@@ -102,61 +84,12 @@ def test_generate_chat():
     assert service.last_kwargs["custom_param"] == "test"
 
 
-@pytest.mark.asyncio
-async def test_generate_text_async():
-    """Test the async text generation interface."""
-    service = MockAIService()
-    
-    response = await service.generate_text_async(
-        prompt="Test prompt",
-        max_tokens=100,
-        temperature=0.7,
-        custom_param="test"
-    )
-    
-    assert response == "Response to: Test prompt"
-    assert service.last_prompt == "Test prompt"
-    assert service.last_kwargs["custom_param"] == "test"
-
-
-@pytest.mark.asyncio
-async def test_generate_chat_async():
-    """Test the async chat generation interface."""
-    service = MockAIService()
-    messages = [
-        {"role": "user", "content": "Hello"},
-        {"role": "assistant", "content": "Hi"},
-    ]
-    
-    response = await service.generate_chat_async(
-        messages=messages,
-        max_tokens=100,
-        temperature=0.7,
-        custom_param="test"
-    )
-    
-    assert response == "Response to chat with 2 messages"
-    assert service.last_messages == messages
-    assert service.last_kwargs["custom_param"] == "test"
-
-
 def test_error_handling():
     """Test error handling in the service interface."""
     service = MockAIService(should_fail=True)
     
     with pytest.raises(AIRequestError) as excinfo:
         service.generate_text("Test prompt")
-    
-    assert "Mock error" in str(excinfo.value)
-
-
-@pytest.mark.asyncio
-async def test_async_error_handling():
-    """Test error handling in the async service interface."""
-    service = MockAIService(should_fail=True)
-    
-    with pytest.raises(AIRequestError) as excinfo:
-        await service.generate_text_async("Test prompt")
     
     assert "Mock error" in str(excinfo.value)
 
