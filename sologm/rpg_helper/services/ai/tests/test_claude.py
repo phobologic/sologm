@@ -25,7 +25,7 @@ def service(mock_anthropic):
     """Create a Claude service with mocked client."""
     with patch("anthropic.Anthropic", return_value=mock_anthropic):
         service = ClaudeService(api_key="test-key")
-        return service
+    return service
 
 
 def test_init_with_api_key():

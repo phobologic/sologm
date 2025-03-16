@@ -3,91 +3,106 @@ Game-related CLI commands.
 """
 import os
 import click
+import getpass
 from typing import Optional
+from datetime import datetime
 
-from sologm.interfaces.cli.main import command_bus
-from sologm.commands.contexts import CLIContext
 from sologm.commands.game.init import InitGameCommand
 from sologm.commands.game.list import ListGamesCommand
+from sologm.commands.contexts import CLIContext
+from sologm.rpg_helper.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 @click.group()
 def game():
-    """Manage games."""
+    """Game management commands."""
     pass
 
 @game.command()
-@click.argument('name')
-@click.option('--system', '-s', default='standard', help='Game system to use (standard or mythic)')
-@click.option('--description', '-d', help='Description of the game')
-def init(name: str, system: str, description: Optional[str]):
+@click.argument("name")
+@click.option("--system", "-s", default="standard", help="Game system to use")
+@click.option("--description", "-d", default="", help="Game description")
+def init(name: str, system: str, description: str):
     """Initialize a new game."""
-    # Create CLI context
+    from sologm.interfaces.cli.main import get_command_bus, get_workspace_info
+    
+    workspace_id, channel_id = get_workspace_info()
+    bus = get_command_bus()
+    
+    # Create context with current directory and user
     context = CLIContext(
-        working_directory=os.getcwd(),
-        user=os.getenv('USER', 'unknown')
+        working_directory=channel_id,
+        user=getpass.getuser()
     )
     
-    # Create command
     command = InitGameCommand(
-        game_system=system,
         name=name,
-        channel_id=os.getcwd(),  # Use current directory as channel ID
-        workspace_id=f"cli:{os.getcwd()}",  # Use CLI workspace prefix
-        description=description
+        game_type=system,
+        description=description,
+        channel_id=channel_id,
+        workspace_id=workspace_id,
+        context=context
     )
     
-    # Set context on command
-    command.context = context
+    result = bus.execute(command)
     
-    # Execute command
-    result = command_bus.execute(command)
-    
-    # Display result
     if result.success:
-        click.echo(click.style(result.message, fg='green'))
+        click.echo(click.style("✨ Game initialized successfully!", fg="green"))
+        click.echo(result.message)
     else:
-        click.echo(click.style(result.message, fg='red'))
-        exit(1)
+        click.echo(click.style(f"Error: {result.message}", fg="red"), err=True)
 
 @game.command()
 def list():
-    """List games in the current directory."""
-    # Create CLI context
+    """List games in current directory."""
+    from sologm.interfaces.cli.main import get_command_bus, get_workspace_info
+    
+    workspace_id, channel_id = get_workspace_info()
+    bus = get_command_bus()
+    
+    # Create context with current directory and user
     context = CLIContext(
-        working_directory=os.getcwd(),
-        user=os.getenv('USER', 'unknown')
+        working_directory=channel_id,
+        user=getpass.getuser()
     )
     
-    # Create command
     command = ListGamesCommand(
-        channel_id=os.getcwd(),  # Use current directory as channel ID
-        workspace_id=f"cli:{os.getcwd()}"  # Use CLI workspace prefix
+        channel_id=channel_id,
+        workspace_id=workspace_id,
+        context=context
     )
     
-    # Set context on command
-    command.context = context
+    result = bus.execute(command)
     
-    # Execute command
-    result = command_bus.execute(command)
-    
-    # Display result
     if not result.success:
-        click.echo(click.style(result.message, fg='red'))
-        exit(1)
-    
-    games = result.data.get('games', [])
+        click.echo(click.style(f"Error: {result.message}", fg="red"), err=True)
+        return
+        
+    games = result.data["games"]
     if not games:
         click.echo("No games found in current directory.")
         return
-    
-    # Display games
-    click.echo("Games in current directory:")
+        
     for game in games:
-        status = click.style("Active", fg='green') if game['is_active'] else click.style("Inactive", fg='red')
-        click.echo(f"\n🎲 {click.style(game['name'], bold=True)} ({status})")
+        status = click.style("active", fg="green") if game["is_active"] else click.style("inactive", fg="yellow")
+        
+        # Print game header with name and status
+        click.echo(f"🎲 {click.style(game['name'], bold=True)} ({status})")
+        
+        # Print game details
         click.echo(f"    System: {game['game_type']}")
-        if game['description']:
+        if game["description"]:
             click.echo(f"    Description: {game['description']}")
-        click.echo(f"    Created: {game['created_at']}")
-        if game['members']:
-            click.echo(f"    Members: {', '.join(game['members'])}") 
+            
+        created_at = datetime.fromisoformat(game["created_at"])
+        click.echo(f"    Created: {created_at.isoformat()}")
+        
+        if game["members"]:
+            click.echo(f"    Members: {', '.join(game['members'])}")
+            
+        logger.debug("Displayed game details",
+            game_name=game["name"],
+            is_active=game["is_active"],
+            member_count=len(game["members"])
+        ) 

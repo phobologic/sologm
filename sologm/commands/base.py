@@ -1,158 +1,110 @@
 """
-Base classes for the command system.
+Base command and handler classes.
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Protocol, Optional, Type, TypeVar
+from typing import TypeVar, Generic, Dict, Optional, Any
 
-from .exceptions import (
-    NoHandlerFoundError,
-    DuplicateHandlerError,
-    HandlerExecutionError
-)
-
-class CommandContext(Protocol):
-    """Protocol defining what every context must provide."""
-    
-    @property
-    @abstractmethod
-    def workspace_id(self) -> str:
-        """Get unique identifier for this workspace/channel."""
-        ...
-    
-    @property
-    @abstractmethod
-    def user_id(self) -> str:
-        """Get the user initiating the command."""
-        ...
-    
-    @property
-    @abstractmethod
-    def metadata(self) -> Dict[str, Any]:
-        """Get any interface-specific metadata."""
-        ...
+from sologm.commands.contexts import CommandContext
+from sologm.commands.results import CommandResult
 
 @dataclass
 class Command:
     """Base class for all commands."""
-    _context: Optional[CommandContext] = field(default=None, init=False)
-
+    
     @property
-    def context(self) -> Optional[CommandContext]:
-        """Get the command context."""
-        return self._context
+    @abstractmethod
+    def path(self) -> str:
+        """Return the command path for registry lookup."""
+        raise NotImplementedError("Command must implement path property")
+    
+    # Context is optional and should be at the end since it has a default value
+    context: Optional[CommandContext] = None
 
-    @context.setter
-    def context(self, value: Optional[CommandContext]) -> None:
-        """Set the command context."""
-        self._context = value
+T = TypeVar('T', bound=Command)
 
-    def validate(self) -> None:
-        """
-        Validate the command parameters.
-        
-        Raises:
-            CommandValidationError: If validation fails
-        """
-        pass
-
-TCommand = TypeVar('TCommand', bound=Command)
-
-class CommandHandler(Protocol[TCommand]):
-    """Protocol for command handlers."""
+class CommandHandler(Generic[T], ABC):
+    """Base class for all command handlers."""
     
     @abstractmethod
-    def can_handle(self, command: Command) -> bool:
-        """
-        Check if this handler can handle the command.
-        
-        Args:
-            command: The command to check
-            
-        Returns:
-            bool: True if this handler can handle the command
-        """
-        ...
+    def handle(self, command: T, context: CommandContext) -> CommandResult:
+        """Handle the command."""
+        raise NotImplementedError("Handler must implement handle method")
 
-    @abstractmethod
-    def handle(self, command: TCommand, context: CommandContext) -> Any:
-        """
-        Execute the command.
-        
-        Args:
-            command: The command to execute
-            context: The context in which to execute the command
-            
-        Returns:
-            Any: The result of the command execution
-            
-        Raises:
-            HandlerExecutionError: If execution fails
-        """
-        ...
+class HandlerNotFoundError(Exception):
+    """Raised when no handler is found for a command."""
+    pass
 
-class CommandBus:
-    """
-    Command bus that routes commands to their handlers.
-    """
+class CommandRegistry:
+    """Registry for command handlers."""
     
     def __init__(self):
-        """Initialize an empty command bus."""
-        self._handlers: List[CommandHandler] = []
-
-    def register_handler(self, handler: CommandHandler) -> None:
-        """
-        Register a new command handler.
+        self._handlers: Dict[str, Dict[str, Any]] = {}
+    
+    def register(self, command_path: str, handler: CommandHandler) -> None:
+        """Register a handler for a specific command path.
         
         Args:
-            handler: The handler to register
-            
-        Raises:
-            DuplicateHandlerError: If an equivalent handler is already registered
+            command_path: Dot-separated path (e.g., "game.init")
+            handler: Handler instance for the command
         """
-        # Check for duplicate handlers
-        for existing in self._handlers:
-            if type(existing) == type(handler):
-                raise DuplicateHandlerError(
-                    f"Handler of type {type(handler).__name__} is already registered"
-                )
-        self._handlers.append(handler)
-
-    def execute(self, command: Command) -> Any:
-        """
-        Execute a command using the appropriate handler.
+        parts = command_path.split('.')
+        current = self._handlers
+        
+        # Navigate/create nested dictionaries for each path part
+        for part in parts[:-1]:
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+        
+        # Register the handler at the final path
+        current[parts[-1]] = handler
+    
+    def get_handler(self, command_path: str) -> Optional[CommandHandler]:
+        """Get handler for a command path.
         
         Args:
-            command: The command to execute
+            command_path: Dot-separated path (e.g., "game.init")
             
         Returns:
-            Any: The result of the command execution
+            Handler for the command or None if not found
+        """
+        parts = command_path.split('.')
+        current = self._handlers
+        
+        # Navigate through the path
+        for part in parts:
+            if part not in current:
+                return None
+            current = current[part]
+        
+        # Return handler if we found one, None otherwise
+        return current if isinstance(current, CommandHandler) else None
+
+class CommandBus:
+    """Command bus for executing commands."""
+    
+    def __init__(self):
+        self._registry = CommandRegistry()
+    
+    def register_handler(self, command_path: str, handler: CommandHandler) -> None:
+        """Register a handler for a command path."""
+        self._registry.register(command_path, handler)
+    
+    def execute(self, command: Command) -> CommandResult:
+        """Execute a command using its registered handler.
+        
+        Args:
+            command: Command to execute
+            
+        Returns:
+            Result of command execution
             
         Raises:
-            NoHandlerFoundError: If no handler is found for the command
-            HandlerExecutionError: If the handler fails to execute the command
+            HandlerNotFoundError: If no handler is found for the command
         """
-        # Validate command
-        command.validate()
+        handler = self._registry.get_handler(command.path)
+        if handler is None:
+            raise HandlerNotFoundError(f"No handler found for command: {command.path}")
         
-        # Find handler
-        handler = None
-        for h in self._handlers:
-            if h.can_handle(command):
-                handler = h
-                break
-                
-        if not handler:
-            raise NoHandlerFoundError(
-                f"No handler found for command type {type(command).__name__}"
-            )
-            
-        # Execute command
-        try:
-            if command.context is None:
-                raise HandlerExecutionError("Command context is required")
-            return handler.handle(command, command.context)
-        except Exception as e:
-            raise HandlerExecutionError(
-                f"Handler {type(handler).__name__} failed to execute command: {str(e)}"
-            ) from e 
+        return handler.handle(command, command.context) 

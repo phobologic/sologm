@@ -1,12 +1,34 @@
 """
-Command context implementations.
+Command context classes.
 """
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
+class CommandContext(ABC):
+    """Base class for all command contexts."""
+    
+    @property
+    @abstractmethod
+    def workspace_id(self) -> str:
+        """Get unique identifier for this workspace/channel."""
+        raise NotImplementedError("Context must implement workspace_id")
+    
+    @property
+    @abstractmethod
+    def user_id(self) -> str:
+        """Get the user initiating the command."""
+        raise NotImplementedError("Context must implement user_id")
+    
+    @property
+    @abstractmethod
+    def metadata(self) -> Dict[str, Any]:
+        """Get any interface-specific metadata."""
+        raise NotImplementedError("Context must implement metadata")
+
 @dataclass
-class CLIContext:
-    """CLI-specific command context."""
+class CLIContext(CommandContext):
+    """Context for CLI commands."""
     working_directory: str
     user: str
     extra_args: Dict[str, Any] = field(default_factory=dict)
@@ -17,9 +39,9 @@ class CLIContext:
         return f"cli:{self.working_directory}"
 
     @property
-    def formatted_user_id(self) -> str:
-        """Get user ID."""
-        return f"cli:{self.user}"
+    def user_id(self) -> str:
+        """Get the user initiating the command."""
+        return self.user
 
     @property
     def metadata(self) -> Dict[str, Any]:

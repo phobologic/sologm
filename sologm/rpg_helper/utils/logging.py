@@ -128,8 +128,8 @@ class RPGLogger:
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
         
-        # Allow propagation to root logger by default
-        self.logger.propagate = True
+        # Prevent propagation to root logger to avoid duplicate messages
+        self.logger.propagate = False
         
         formatter = LogFormatter.create_formatter(
             format_type,
@@ -159,92 +159,71 @@ class RPGLogger:
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
     
-    def debug(self, message: str, **kwargs):
+    def debug(self, msg: str, **kwargs):
         """Log a debug message."""
-        self._log(LogLevel.DEBUG, message, **kwargs)
+        self.logger.debug(msg, extra={"data": kwargs})
     
-    def info(self, message: str, **kwargs):
+    def info(self, msg: str, **kwargs):
         """Log an info message."""
-        self._log(LogLevel.INFO, message, **kwargs)
+        self.logger.info(msg, extra={"data": kwargs})
     
-    def warning(self, message: str, **kwargs):
+    def warning(self, msg: str, **kwargs):
         """Log a warning message."""
-        self._log(LogLevel.WARNING, message, **kwargs)
+        self.logger.warning(msg, extra={"data": kwargs})
     
-    def error(self, message: str, **kwargs):
+    def error(self, msg: str, **kwargs):
         """Log an error message."""
-        self._log(LogLevel.ERROR, message, **kwargs)
+        self.logger.error(msg, extra={"data": kwargs})
     
-    def critical(self, message: str, **kwargs):
+    def critical(self, msg: str, **kwargs):
         """Log a critical message."""
-        self._log(LogLevel.CRITICAL, message, **kwargs)
-    
-    def _log(self, level: int, message: str, **kwargs):
-        """
-        Internal method to log a message with additional context.
-        
-        Args:
-            level: Log level
-            message: Log message
-            **kwargs: Additional context to include in the log
-        """
-        if not self.logger.isEnabledFor(level):
-            return
-        
-        log_kwargs = {}
-        extra = kwargs.pop('extra', {}).copy() if 'extra' in kwargs else {}
-        
-        # Handle exc_info if provided
-        exc_info = kwargs.pop('exc_info', None)
-        if exc_info:
-            log_kwargs['exc_info'] = exc_info
-        
-        if extra:
-            log_kwargs['extra'] = extra
-        
-        if kwargs:
-            context_str = ", ".join(f"{k}={repr(v)}" for k, v in kwargs.items())
-            full_message = f"{message} - {{{context_str}}}"
-        else:
-            full_message = message
-        
-        self.logger.log(level, full_message, **log_kwargs)
+        self.logger.critical(msg, extra={"data": kwargs})
 
 
 # Global logger registry
 _loggers: Dict[str, RPGLogger] = {}
 
 
-def get_logger(name: Optional[str] = None, 
-              level: Optional[int] = None,
-              log_to_stdout: bool = True,
-              log_to_file: bool = False,
-              log_dir: str = "logs",
-              log_file: Optional[str] = None,
-              format_type: Optional[str] = None,
-              formatter_kwargs: Optional[Dict[str, Any]] = None) -> RPGLogger:
+def get_logger(
+    name: Optional[str] = None,
+    level: Optional[int] = None,
+    format_type: Optional[str] = None,
+    formatter_kwargs: Optional[Dict[str, Any]] = None,
+    log_to_stdout: bool = True,
+    log_to_file: bool = False,
+    log_dir: str = "logs",
+    log_file: Optional[str] = None
+) -> RPGLogger:
     """
-    Get or create a logger with the given name.
-    
-    If no name is provided, automatically uses the calling module's name.
+    Get or create a logger instance.
     
     Args:
-        name: Logger name (defaults to calling module name)
-        level: Minimum log level to record (defaults to INFO)
+        name: Logger name (defaults to module name)
+        level: Optional log level override
+        format_type: Optional format type override
+        formatter_kwargs: Optional formatter arguments override
         log_to_stdout: Whether to log to stdout
         log_to_file: Whether to log to a file
         log_dir: Directory for log files
-        log_file: Specific log file name (defaults to name-YYYY-MM-DD.log)
-        format_type: Type of log format to use (defaults to global config)
-        formatter_kwargs: Additional arguments for the formatter
-        
+        log_file: Specific log file name
+    
     Returns:
         RPGLogger instance
     """
     if name is None:
-        frame = inspect.currentframe().f_back
-        module = inspect.getmodule(frame)
-        name = module.__name__ if module else "unknown"
+        # Get the module name of the caller
+        frame = inspect.currentframe()
+        if frame is None:
+            name = "__main__"
+        else:
+            try:
+                frame = frame.f_back
+                if frame is not None:
+                    name = frame.f_globals["__name__"]
+                else:
+                    name = "__main__"
+            finally:
+                del frame
     
     if name in _loggers:
         logger = _loggers[name]
@@ -304,17 +283,11 @@ def initialize_logging(
     LoggingConfig.set_global_format(format_type, **formatter_kwargs)
     
     if level is not None:
-        logging.root.setLevel(level)
-        set_global_log_level(level)
+        # Clear any existing root handlers to avoid duplicates
+        logging.root.handlers.clear()
         
-        if not logging.root.handlers:
-            handler = logging.StreamHandler(sys.stdout)
-            handler.setLevel(level)
-            formatter = LogFormatter.create_formatter(format_type, **formatter_kwargs)
-            handler.setFormatter(formatter)
-            logging.root.addHandler(handler)
-        else:
-            for handler in logging.root.handlers:
-                handler.setLevel(level)
-                formatter = LogFormatter.create_formatter(format_type, **formatter_kwargs)
-                handler.setFormatter(formatter) 
+        # Set root logger level
+        logging.root.setLevel(level)
+        
+        # Update all existing loggers
+        set_global_log_level(level) 
