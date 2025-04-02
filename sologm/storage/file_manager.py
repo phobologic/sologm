@@ -54,8 +54,32 @@ class FileManager:
         except Exception as e:
             raise StorageError(f"Failed to read YAML file {path}: {str(e)}")
     
+    def _create_backup(self, path: Path) -> Optional[Path]:
+        """Create a backup of a file if it exists.
+        
+        Args:
+            path: Path to the file to backup.
+            
+        Returns:
+            Path to the backup file, or None if no backup was created.
+            
+        Raises:
+            StorageError: If the backup cannot be created.
+        """
+        if not path.exists():
+            return None
+            
+        try:
+            backup_path = path.with_suffix(f"{path.suffix}.bak")
+            path.rename(backup_path)
+            return backup_path
+        except Exception as e:
+            raise StorageError(f"Failed to create backup of {path}: {str(e)}")
+    
     def write_yaml(self, path: Path, data: Dict[str, Any]) -> None:
         """Write data to a YAML file.
+        
+        Creates a backup of the existing file before writing if it exists.
         
         Args:
             path: Path to the YAML file.
@@ -67,6 +91,10 @@ class FileManager:
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             
+            # Create backup of existing file
+            self._create_backup(path)
+            
+            # Write new data
             with open(path, "w") as f:
                 yaml.dump(data, f, default_flow_style=False, sort_keys=False)
         except Exception as e:

@@ -73,6 +73,28 @@ class TestFileManager:
         assert path.parent.exists()
         assert path.parent.is_dir()
 
+    def test_write_yaml_creates_backup(self):
+        """Test that writing a YAML file creates a backup of existing file."""
+        path = self.base_dir / "test.yaml"
+        
+        # Write initial data
+        initial_data = {"key": "initial"}
+        self.file_manager.write_yaml(path, initial_data)
+        
+        # Write new data
+        new_data = {"key": "new"}
+        self.file_manager.write_yaml(path, new_data)
+        
+        # Check backup exists with initial data
+        backup_path = path.with_suffix(".yaml.bak")
+        assert backup_path.exists()
+        with open(backup_path, "r") as f:
+            assert yaml.safe_load(f) == initial_data
+        
+        # Check original file has new data
+        with open(path, "r") as f:
+            assert yaml.safe_load(f) == new_data
+
     def test_get_active_game_id_none(self):
         """Test getting the active game ID when none is set."""
         assert self.file_manager.get_active_game_id() is None
