@@ -1,5 +1,6 @@
 """Main CLI entry point for Solo RPG Helper."""
 
+import logging
 import sys
 from typing import Optional
 
@@ -10,6 +11,8 @@ from sologm import __version__
 from sologm.utils.config import config
 from sologm.utils.errors import SoloGMError
 from sologm.utils.logger import setup_root_logger
+
+logger = logging.getLogger(__name__)
 
 # Create Typer app
 app = typer.Typer(
@@ -51,6 +54,7 @@ def main(
     """
     # Set up root logger with debug flag
     setup_root_logger(debug)
+    logger.debug("CLI startup with debug=%s", debug)
 
     # Update config path if provided
     if config_path:
@@ -58,6 +62,7 @@ def main(
         from sologm.utils.config import Config
 
         global config
+        logger.debug("Loading config from %s", config_path)
         config = Config(Path(config_path))
 
 
@@ -75,10 +80,11 @@ def handle_errors(func):
         try:
             return func(*args, **kwargs)
         except SoloGMError as e:
+            logger.error("Command error: %s", str(e))
             if config.get("debug", False):
                 console.print(f"[bold red]Error:[/] {str(e)}")
                 import traceback
-
+                logger.debug("Traceback:\n%s", traceback.format_exc())
                 console.print(traceback.format_exc())
                 sys.exit(1)
             else:
@@ -86,10 +92,11 @@ def handle_errors(func):
                 console.print("Run with --debug for more information.")
                 sys.exit(1)
         except Exception as e:
+            logger.error("Unexpected error: %s", str(e))
             if config.get("debug", False):
                 console.print(f"[bold red]Unexpected error:[/] {str(e)}")
                 import traceback
-
+                logger.debug("Traceback:\n%s", traceback.format_exc())
                 console.print(traceback.format_exc())
                 sys.exit(1)
             else:
