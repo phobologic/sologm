@@ -52,3 +52,16 @@ Completed: 2025-04-02
 - [x] Run scene logic tests and verify all tests pass successfully
 
 Test Results: All 14 tests passed successfully with 98% coverage
+
+### Part 2.5: Scene CLI Commands
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Implement cli/scene.py with scene-related commands
+- [x] Add scene create command
+- [x] Add scene list and info commands
+- [x] Add scene complete command
+- [x] Write tests for scene commands
+- [x] Run scene CLI tests and verify all tests pass successfully
+
+Test Results: All scene CLI commands working as expected
