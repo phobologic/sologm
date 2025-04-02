@@ -49,15 +49,18 @@ def list_games() -> None:
         console.print("No games found.")
         return
 
+    scene_manager = SceneManager()
     console.print("\nGames:")
     active_game = game_manager.get_active_game()
     for game in games:
         active = ""
         if active_game and game.id == active_game.id:
             active = " [green](active)[/green]"
+        # Get actual scene count from disk
+        scenes = scene_manager.list_scenes(game.id)
         console.print(f"- {game.name} ({game.id}){active}")
         console.print(f"  Description: {game.description}")
-        console.print(f"  Scenes: {len(game.scenes)}")
+        console.print(f"  Scenes: {len(scenes)}")
         console.print()
 
 
