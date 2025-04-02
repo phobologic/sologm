@@ -55,11 +55,14 @@ class EventManager:
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
         scene_data = self.file_manager.read_yaml(scene_path)
         if not scene_data:
+            logger.error(f"Scene {scene_id} not found in game {game_id}")
             raise EventError(f"Scene {scene_id} not found in game {game_id}")
             
         # Create event
+        event_id = f"event-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        logger.debug(f"Creating new event {event_id}")
         event = Event(
-            id=f"event-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+            id=event_id,
             scene_id=scene_id,
             game_id=game_id,
             description=description,
@@ -85,6 +88,7 @@ class EventManager:
         })
         
         # Save events
+        logger.debug(f"Saving event {event.id} to {events_path}")
         self.file_manager.write_yaml(events_path, events_data)
         
         return event
@@ -113,13 +117,16 @@ class EventManager:
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
         scene_data = self.file_manager.read_yaml(scene_path)
         if not scene_data:
+            logger.error(f"Scene {scene_id} not found in game {game_id}")
             raise EventError(f"Scene {scene_id} not found in game {game_id}")
             
         # Load events
         events_path = self.file_manager.get_events_path(game_id, scene_id)
+        logger.debug(f"Loading events from {events_path}")
         events_data = self.file_manager.read_yaml(events_path)
         
         if not events_data:
+            logger.debug("No events found")
             return []
             
         # Convert to Event objects

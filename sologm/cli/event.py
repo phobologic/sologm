@@ -42,6 +42,7 @@ def add_event(
                       "'sologm scene create'.")
         raise typer.Exit(1)
 
+    logger.debug(f"Adding event to game {game.id}, scene {scene.id}")
     try:
         event = event_manager.add_event(
             game_id=game.id,
@@ -49,6 +50,7 @@ def add_event(
             description=text,
             source=source
         )
+        logger.debug(f"Added event {event.id}")
         console.print(f"\nAdded event to scene '{scene.title}':")
         console.print(f"[green]{event.description}[/]")
 
@@ -81,12 +83,14 @@ def list_events(
                       "'sologm scene create'.")
         raise typer.Exit(1)
 
+    logger.debug(f"Listing events for game {game.id}, scene {scene.id} with limit {limit}")
     try:
         events = event_manager.list_events(
             game_id=game.id,
             scene_id=scene.id,
             limit=limit
         )
+        logger.debug(f"Found {len(events)} events")
 
         if not events:
             console.print(f"\nNo events in scene '{scene.title}'")
