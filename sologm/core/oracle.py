@@ -182,7 +182,7 @@ DESCRIPTION: Detailed description of interpretation idea
             parsed = self._parse_interpretations(response)
             
             # Create interpretation objects
-            now = datetime.utcnow()
+            now = datetime.now(datetime.UTC)
             interpretations = [
                 Interpretation(
                     id=f"interp-{i+1}",
@@ -258,12 +258,19 @@ DESCRIPTION: Detailed description of interpretation idea
             OracleError: If interpretation selection fails.
         """
         try:
-            # Load interpretation set
+            # Load and validate interpretation set
             interp_path = Path(
                 self.file_manager.get_interpretations_dir(game_id, scene_id),
                 f"{interpretation_set_id}.yaml"
             )
             interp_data = self.file_manager.read_yaml(interp_path)
+            
+            # Validate interpretation data exists
+            if not interp_data:
+                raise OracleError(f"Interpretation set {interpretation_set_id} not found")
+            
+            if "interpretations" not in interp_data:
+                raise OracleError(f"Invalid interpretation set format: missing interpretations")
             
             # Find selected interpretation
             selected = None
@@ -278,13 +285,6 @@ DESCRIPTION: Detailed description of interpretation idea
                     )
                     selected_index = i
                     break
-            
-            # Validate interpretation data exists
-            if not interp_data:
-                raise OracleError(f"Interpretation set {interpretation_set_id} not found")
-            
-            if "interpretations" not in interp_data:
-                raise OracleError(f"Invalid interpretation set format: missing interpretations")
 
             if not selected:
                 raise OracleError(f"Interpretation {interpretation_id} not found in set {interpretation_set_id}")

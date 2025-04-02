@@ -221,10 +221,22 @@ DESCRIPTION: Test Description
     def test_select_interpretation(
         self,
         oracle_manager: OracleManager,
+        mock_anthropic_client: MagicMock,
         test_game: dict,
         test_scene: dict
     ) -> None:
         """Test selecting an interpretation."""
+        # Configure mock to return string response
+        response_text = """=== BEGIN INTERPRETATIONS ===
+
+--- INTERPRETATION 1 ---
+TITLE: Test Title
+DESCRIPTION: Test Description
+--- END INTERPRETATION 1 ---
+
+=== END INTERPRETATIONS ==="""
+        mock_anthropic_client.send_message.return_value = response_text
+        
         # First create an interpretation set
         interp_set = oracle_manager.get_interpretations(
             "test-game",
