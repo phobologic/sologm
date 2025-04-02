@@ -65,3 +65,17 @@ Completed: 2025-04-02
 - [x] Run scene CLI tests and verify all tests pass successfully
 
 Test Results: All scene CLI commands working as expected
+
+## Phase 3: Event Tracking and Dice System
+
+### Part 3.1: Event Models and Logic
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Create Event data model
+- [x] Implement core/event.py functionality
+- [x] Add add_event and list_events functions
+- [x] Write tests for event tracking functions
+- [x] Run event logic tests and verify all tests pass successfully
+
+Test Results: All 7 tests passed successfully
