@@ -114,8 +114,6 @@ import sologm.cli.event  # noqa
 import sologm.cli.oracle  # noqa
 import sologm.cli.dice  # noqa
 
-# Register command groups
-app.add_typer(game_app, name="game", help="Game management commands")
 
 
 if __name__ == "__main__":
