@@ -84,7 +84,8 @@ def test_send_message_with_options(mock_anthropic, mock_response):
 
 def test_send_message_api_error(mock_anthropic):
     """Test handling API errors when sending messages."""
-    mock_anthropic.return_value.messages.create.side_effect = Exception("API Error")
+    mock_class, mock_instance = mock_anthropic
+    mock_instance.messages.create.side_effect = Exception("API Error")
     
     client = AnthropicClient(api_key="test_key")
     with pytest.raises(APIError) as exc:
