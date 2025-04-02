@@ -36,22 +36,18 @@ def create_scene(
     if not active_game:
         raise GameError("No active game. Use 'sologm game activate' to set one.")
 
-    try:
-        # Create the scene
-        scene = scene_manager.create_scene(
-            game_id=active_game.id,
-            title=title,
-            description=description,
-        )
+    # Create the scene
+    scene = scene_manager.create_scene(
+        game_id=active_game.id,
+        title=title,
+        description=description,
+    )
 
-        console.print("[bold green]Scene created successfully![/]")
-        console.print(f"Title: {scene.title}")
-        console.print(f"Description: {scene.description}")
-        console.print(f"Status: {scene.status}")
-        console.print(f"Sequence: {scene.sequence}")
-    except SceneError as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
-        return
+    console.print("[bold green]Scene created successfully![/]")
+    console.print(f"Title: {scene.title}")
+    console.print(f"Description: {scene.description}")
+    console.print(f"Status: {scene.status}")
+    console.print(f"Sequence: {scene.sequence}")
 
 
 @handle_errors
