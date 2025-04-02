@@ -101,11 +101,14 @@ def handle_errors(func):
 
 
 # Import subcommands
-import sologm.cli.game  # noqa
+from sologm.cli.game import game_app
 import sologm.cli.scene  # noqa
 import sologm.cli.event  # noqa
 import sologm.cli.oracle  # noqa
 import sologm.cli.dice  # noqa
+
+# Register command groups
+app.add_typer(game_app, name="game", help="Game management commands")
 
 
 if __name__ == "__main__":
