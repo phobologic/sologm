@@ -119,7 +119,9 @@ class SceneManager:
         if not game_data:
             raise SceneError(f"Game {game_id} not found")
             
+        # Get list of scenes and filter out any that don't exist on disk
         scenes = []
+        existing_scene_ids = []
         for scene_id in game_data.get("scenes", []):
             scene_path = self.file_manager.get_scene_path(game_id, scene_id)
             scene_data = self.file_manager.read_yaml(scene_path)
@@ -136,6 +138,14 @@ class SceneManager:
                     modified_at=datetime.fromisoformat(scene_data["modified_at"])
                 )
                 scenes.append(scene)
+                existing_scene_ids.append(scene_id)
+
+        # Update game's scene list if any scenes were missing
+        if len(existing_scene_ids) != len(game_data.get("scenes", [])):
+            game_data["scenes"] = existing_scene_ids
+            game_path = self.file_manager.get_game_path(game_id)
+            self.file_manager.write_yaml(game_path, game_data)
+            logger.debug(f"Updated game {game_id} scene list to remove missing scenes")
                 
         return sorted(scenes, key=lambda s: s.sequence)
 
