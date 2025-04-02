@@ -69,7 +69,7 @@ from sologm.cli.game import game_app  # noqa
 from sologm.cli.scene import scene_app  # noqa
 from sologm.cli.event import event_app  # noqa
 from sologm.cli.dice import dice_app  # noqa
-import sologm.cli.oracle  # noqa
+from sologm.cli.oracle import oracle_app  # noqa
 
 # Add subcommands
 app.add_typer(game_app, name="game")
