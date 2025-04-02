@@ -3,7 +3,7 @@
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import List, Optional
 
