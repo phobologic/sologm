@@ -175,17 +175,17 @@ sologm game activate --id fantasy-adventure
 
 # Create a scene in the active game
 sologm scene create --title "Departure" --description "Starting the journey"
-# Should create scene and set as active
+# Should create scene with active status and set as current
 
 # Create another scene
 sologm scene create --title "Forest Path" --description "Entering the dark woods"
-# Should create scene and set as active
+# Should create scene with active status and set as current
 
 # List all scenes
 sologm scene list
-# Should show both scenes, with Forest Path marked as active
+# Should show both scenes, with Forest Path marked as [current] and both showing status
 
-# Show details of active scene
+# Show details of current scene
 sologm scene info
 # Should display details of the active scene
 

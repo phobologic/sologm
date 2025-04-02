@@ -336,7 +336,8 @@ id: "unique-scene-id"
 game_id: "parent-game-id"
 title: "Scene Title"
 description: "Scene description"
-status: "active"  # active, completed
+status: "active"  # Scene's completion status: active or completed
+current: false    # Whether this is the current scene being played
 sequence: 1
 created_at: "2025-04-01T12:30:00Z"
 modified_at: "2025-04-01T14:45:00Z"

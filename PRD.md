@@ -29,8 +29,11 @@ The application will provide a command-line interface, allowing users to manage 
 
 #### 2.1.2 Scene Management
 - Users should be able to create Scenes with descriptions
-- A game should only have one "currently active" scene at a time
-- Completed scenes should be preserved with state changes, not deleted
+- Each scene has a status (active/completed)
+- A game should only have one "current" scene at a time (the scene being played)
+- The current scene is tracked separately from scene status
+- When a scene is completed, its status changes but it remains preserved
+- Completing a scene is separate from changing which scene is current
 
 #### 2.1.3 Event Tracking
 - Users should be able to create events in the currently active scene
