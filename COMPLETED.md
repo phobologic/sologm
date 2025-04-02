@@ -15,3 +15,15 @@ Completed: 2025-04-02
 - [x] Run storage tests and verify all tests pass successfully
 
 Test Results: All 16 tests passed successfully
+
+### Part 2.2: Game Models and Logic
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Create Game data model
+- [x] Implement core/game.py functionality
+- [x] Add create_game, list_games, and activate_game functions
+- [x] Write tests for game management functions
+- [x] Run game logic tests and verify all tests pass successfully
+
+Test Results: All 10 tests passed successfully
