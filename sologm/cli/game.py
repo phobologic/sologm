@@ -3,7 +3,16 @@
 import typer
 from rich.console import Console
 
+from typing import Optional
+
+from sologm.core.game import GameManager
 from sologm.cli.main import app, handle_errors
+from sologm.utils.errors import GameError
+from sologm.cli.main import handle_errors
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Create game subcommand
 game_app = typer.Typer(help="Game management commands")
@@ -51,21 +60,6 @@ def game_info() -> None:
     console.print("[bold]Active Game:[/]")
     console.print("No active game. Activate one with 'sologm game activate'.")
 """Game management commands."""
-
-from typing import Optional
-
-import typer
-from rich.console import Console
-
-from sologm.core.game import GameManager
-from sologm.utils.errors import GameError
-from sologm.cli.main import handle_errors
-import logging
-
-logger = logging.getLogger(__name__)
-
-game_app = typer.Typer(help="Game management commands")
-console = Console()
 
 @game_app.command("create")
 @handle_errors

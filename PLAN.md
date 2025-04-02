@@ -135,8 +135,6 @@ sologm nonexistent-command
 2. Add game create command with interactive options
 3. Add game list command with formatted output
 4. Add game activate and info commands
-5. Write tests for game commands
-6. **Run game CLI tests and verify all tests pass successfully**
 
 ### Part 2.4: Scene Models and Logic
 1. Create Scene data model
