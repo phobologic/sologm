@@ -156,7 +156,16 @@ def set_current_scene(
     if not active_game:
         raise GameError("No active game. Use 'sologm game activate' to set one.")
 
-    # Set the current scene
-    new_current = scene_manager.set_current_scene(active_game.id, scene_id)
-    console.print("[bold green]Current scene updated successfully![/]")
-    console.print(f"Current scene: {new_current.title}")
+    try:
+        # Set the current scene
+        new_current = scene_manager.set_current_scene(active_game.id, scene_id)
+        console.print("[bold green]Current scene updated successfully![/]")
+        console.print(f"Current scene: {new_current.title}")
+    except SceneError:
+        # Get list of valid scenes for better error message
+        scenes = scene_manager.list_scenes(active_game.id)
+        scene_ids = [s.id for s in scenes]
+        console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
+        console.print("\nValid scene IDs:")
+        for sid in scene_ids:
+            console.print(f"  {sid}")
