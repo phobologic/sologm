@@ -66,6 +66,13 @@ def main(
         config = Config(Path(config_path))
 
 
+# Import subcommands first
+from sologm.cli.game import game_app
+import sologm.cli.scene  # noqa
+import sologm.cli.event  # noqa
+import sologm.cli.oracle  # noqa
+import sologm.cli.dice  # noqa
+
 from functools import wraps
 
 def handle_errors(func):
@@ -113,14 +120,6 @@ def handle_errors(func):
                 sys.exit(1)
 
     return wrapper
-
-
-# Import subcommands
-from sologm.cli.game import game_app
-import sologm.cli.scene  # noqa
-import sologm.cli.event  # noqa
-import sologm.cli.oracle  # noqa
-import sologm.cli.dice  # noqa
 
 
 
