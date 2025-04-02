@@ -129,7 +129,8 @@ DESCRIPTION: Detailed description of interpretation idea
         scene_id: str,
         context: str,
         oracle_results: str,
-        count: int = 3
+        count: int = 3,
+        retry_attempt: int = 0
     ) -> InterpretationSet:
         """Get interpretations for oracle results.
         
@@ -210,7 +211,22 @@ DESCRIPTION: Detailed description of interpretation idea
                 created_at=now
             )
             
-            # Save to file
+            # Update game's current interpretation
+            game_data = self.file_manager.read_yaml(
+                self.file_manager.get_game_path(game_id)
+            )
+            game_data["current_interpretation"] = {
+                "id": interp_set.id,
+                "context": context,
+                "results": oracle_results,
+                "retry_count": retry_attempt
+            }
+            self.file_manager.write_yaml(
+                self.file_manager.get_game_path(game_id),
+                game_data
+            )
+
+            # Save interpretation set to file
             interp_path = Path(
                 self.file_manager.get_interpretations_dir(game_id, scene_id),
                 f"{interp_set.id}.yaml"
@@ -224,6 +240,7 @@ DESCRIPTION: Detailed description of interpretation idea
                     "oracle_results": oracle_results,
                     "created_at": interp_set.created_at.isoformat(),
                     "selected_interpretation": None,
+                    "retry_attempt": retry_attempt,
                     "interpretations": [
                         {
                             "id": i.id,
