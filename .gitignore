@@ -111,3 +111,4 @@ htmlcov/
 
 # Project specific
 .sologm/
+.aider*
