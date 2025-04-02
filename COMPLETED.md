@@ -92,3 +92,16 @@ Completed: 2025-04-02
 - [x] Fix logger configuration and imports
 
 Test Results: Event CLI commands implemented with rich table output and debug logging
+
+### Part 3.3: Dice System Logic
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Implement core/dice.py functionality
+- [x] Create dice notation parser
+- [x] Implement dice rolling logic
+- [x] Add roll formatting with result breakdown
+- [x] Write tests for dice system with multiple scenarios
+- [x] Run dice system tests and verify all tests pass successfully
+
+Test Results: All 11 dice system tests passed successfully with full coverage
