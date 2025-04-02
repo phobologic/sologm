@@ -58,4 +58,3 @@ disallow_incomplete_defs = true
 python_files = "test_*.py"
 testpaths = ["sologm"]
 log_cli = true
-log_cli_level = "DEBUG"
