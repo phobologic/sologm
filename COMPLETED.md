@@ -27,3 +27,28 @@ Completed: 2025-04-02
 - [x] Run game logic tests and verify all tests pass successfully
 
 Test Results: All 10 tests passed successfully
+
+### Part 2.3: Game CLI Commands
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Implement cli/game.py with game-related commands
+- [x] Add game create command with interactive options
+- [x] Add game list command with formatted output
+- [x] Add game activate and info commands
+- [x] Write tests for game commands
+- [x] Run game CLI tests and verify all tests pass successfully
+
+Test Results: All CLI command tests passed successfully
+
+### Part 2.4: Scene Models and Logic
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Create Scene data model
+- [x] Implement core/scene.py functionality
+- [x] Add create_scene, list_scenes, and complete_scene functions
+- [x] Write tests for scene management functions
+- [x] Run scene logic tests and verify all tests pass successfully
+
+Test Results: All 14 tests passed successfully with 98% coverage
