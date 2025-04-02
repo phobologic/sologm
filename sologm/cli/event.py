@@ -3,7 +3,7 @@
 import typer
 from rich.console import Console
 
-from sologm.cli.main import app, handle_errors
+from sologm.cli.main import app
 
 # Create event subcommand
 event_app = typer.Typer(help="Event tracking commands")
@@ -14,7 +14,6 @@ console = Console()
 
 
 @event_app.command("add")
-@handle_errors
 def add_event(
     text: str = typer.Option(..., "--text", "-t", help="Text of the event"),
 ) -> None:
@@ -24,7 +23,6 @@ def add_event(
 
 
 @event_app.command("list")
-@handle_errors
 def list_events(
     limit: int = typer.Option(5, "--limit", "-l", help="Number of events to show"),
 ) -> None:

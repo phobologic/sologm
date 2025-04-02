@@ -5,7 +5,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from sologm.cli.main import app, handle_errors
+from sologm.cli.main import app
 
 # Create dice subcommand
 dice_app = typer.Typer(help="Dice rolling commands")
@@ -16,7 +16,6 @@ console = Console()
 
 
 @dice_app.command("roll")
-@handle_errors
 def roll_dice(
     notation: str = typer.Argument(..., help="Dice notation (e.g., 2d6+3)"),
     reason: Optional[str] = typer.Option(

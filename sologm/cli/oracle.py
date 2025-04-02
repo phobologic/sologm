@@ -3,7 +3,7 @@
 import typer
 from rich.console import Console
 
-from sologm.cli.main import app, handle_errors
+from sologm.cli.main import app
 from sologm.utils.config import config
 
 # Create oracle subcommand
@@ -15,7 +15,6 @@ console = Console()
 
 
 @oracle_app.command("interpret")
-@handle_errors
 def interpret_oracle(
     context: str = typer.Option(
         ..., "--context", "-c", help="Context or question for interpretation"
@@ -45,7 +44,6 @@ def interpret_oracle(
 
 
 @oracle_app.command("select")
-@handle_errors
 def select_interpretation(
     interpretation_id: str = typer.Option(
         ..., "--id", help="ID of the interpretation to select"
