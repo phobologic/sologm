@@ -1,7 +1,7 @@
 """Tests for the scene management functionality."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Generator
 
@@ -43,8 +43,8 @@ def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
         "description": "A game for testing",
         "status": "active",
         "scenes": [],
-        "created_at": datetime.utcnow().isoformat(),
-        "modified_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
+        "modified_at": datetime.now(UTC).isoformat(),
     }
     
     game_path = file_manager.get_game_path(game_id)
@@ -58,7 +58,7 @@ class TestScene:
 
     def test_scene_creation(self) -> None:
         """Test creating a Scene object."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         scene = Scene(
             id="test-scene",
             game_id="test-game",

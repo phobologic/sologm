@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional
 
 from sologm.storage.file_manager import FileManager
@@ -64,7 +64,7 @@ class SceneManager:
         scene_id = f"scene-{sequence}-{title.lower().replace(' ', '-')}"
         
         # Create scene data
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         scene = Scene(
             id=scene_id,
             game_id=game_id,
@@ -201,7 +201,7 @@ class SceneManager:
             
         # Update scene status
         scene.status = "completed"
-        scene.modified_at = datetime.utcnow()
+        scene.modified_at = datetime.now(UTC)
         
         # Save updated scene data
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
