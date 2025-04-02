@@ -76,6 +76,7 @@ app.add_typer(game_app, name="game")
 app.add_typer(scene_app, name="scene")
 app.add_typer(event_app, name="event")
 app.add_typer(dice_app, name="dice")
+app.add_typer(oracle_app, name="oracle")
 
 if __name__ == "__main__":
     app()
