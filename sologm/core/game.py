@@ -124,7 +124,6 @@ class GameManager:
                             id=game_data["id"],
                             name=game_data["name"],
                             description=game_data["description"],
-                            status=game_data["status"],
                             created_at=datetime.fromisoformat(game_data["created_at"]),
                             modified_at=datetime.fromisoformat(game_data["modified_at"]),
                             scenes=game_data["scenes"]
