@@ -92,12 +92,14 @@ def game_info() -> None:
 
     # Get scenes and active scene
     scene_manager = SceneManager()
-    scenes = scene_manager.list_scenes(game.id)  # This will clean up missing scenes
+    scenes = scene_manager.list_scenes(game.id)
     active_scene = scene_manager.get_active_scene(game.id)
 
-    console.print("\n[bold]Active Game:[/]")
-    console.print(f"Name: {game.name} ({game.id})")
-    console.print(f"Description: {game.description}")
-    console.print(f"Created: {game.created_at}")
-    console.print(f"Modified: {game.modified_at}")
-    console.print(f"Scenes: {len(scenes)}")  # Use actual scene count
+    console.print("[bold]Active Game:[/]")
+    console.print(f"  Name: {game.name} ({game.id})")
+    console.print(f"  Description: {game.description}")
+    console.print(f"  Created: {game.created_at}")
+    console.print(f"  Modified: {game.modified_at}")
+    console.print(f"  Scenes: {len(scenes)}")  # Use actual scene count
+    if active_scene:
+        console.print(f"  Active Scene: {active_scene.title}")
