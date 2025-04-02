@@ -66,6 +66,8 @@ def main(
         config = Config(Path(config_path))
 
 
+from functools import wraps
+
 def handle_errors(func):
     """Decorator to handle errors in CLI commands.
 
@@ -77,6 +79,7 @@ def handle_errors(func):
     """
     logger.debug(f"Registering error handler for function: {func.__name__}")
 
+    @wraps(func)
     def wrapper(*args, **kwargs):
         logger.debug(f"Entering error handler wrapper for {func.__name__}")
         try:
