@@ -155,7 +155,10 @@ def get_current_scene(game_id: str) -> Optional[Scene]:
     """Get the current scene for the specified game."""
     
 def complete_scene(game_id: str, scene_id: str) -> Scene:
-    """Mark a scene as complete."""
+    """Mark a scene as complete without changing which scene is current."""
+
+def set_current_scene(game_id: str, scene_id: str) -> Scene:
+    """Set which scene is currently being played without changing its status."""
 ```
 
 ### 3.4 Event Tracking Module
@@ -337,10 +340,12 @@ game_id: "parent-game-id"
 title: "Scene Title"
 description: "Scene description"
 status: "active"  # Scene's completion status: active or completed
-current: false    # Whether this is the current scene being played
 sequence: 1
 created_at: "2025-04-01T12:30:00Z"
 modified_at: "2025-04-01T14:45:00Z"
+
+# current_scene file in game directory
+scene_id: "unique-scene-id"  # ID of current scene being played
 ```
 
 #### 4.1.3 Events Schema
