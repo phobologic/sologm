@@ -5,7 +5,7 @@ from rich.console import Console
 
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
-from sologm.cli.main import app, handle_errors
+from sologm.cli.main import app
 
 import logging
 
@@ -19,7 +19,6 @@ app.add_typer(game_app, name="game")
 console = Console()
 
 
-@handle_errors
 @game_app.command("create")
 def create_game(
     name: str = typer.Option(..., "--name", "-n", help="Name of the game"),
@@ -38,7 +37,6 @@ def create_game(
     console.print(f"Description: {game.description}")
 
 
-@handle_errors
 @game_app.command("list")
 def list_games() -> None:
     """List all games."""
@@ -65,7 +63,6 @@ def list_games() -> None:
         console.print()
 
 
-@handle_errors
 @game_app.command("activate")
 def activate_game(
     game_id: str = typer.Option(...,
@@ -82,7 +79,6 @@ def activate_game(
     console.print(f"Description: {game.description}")
 
 
-@handle_errors
 @game_app.command("info")
 def game_info() -> None:
     """Show information about the active game."""

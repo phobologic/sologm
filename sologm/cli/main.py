@@ -1,9 +1,7 @@
 """Main CLI entry point for Solo RPG Helper."""
 
 import logging
-import sys
 from typing import Optional
-from functools import wraps
 
 import typer
 from rich.console import Console
@@ -68,52 +66,6 @@ def main(
         config = Config(Path(config_path))
 
 
-def handle_errors(func):
-    """Decorator to handle errors in CLI commands.
-
-    Args:
-        func: Function to decorate.
-
-    Returns:
-        Decorated function.
-    """
-    logger.debug(f"Registering error handler for function: {func.__name__}")
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        logger.debug(f"Entering error handler wrapper for {func.__name__}")
-        try:
-            logger.debug(f"Calling {func.__name__} with args={args}, "
-                         "kwargs={kwargs}")
-            result = func(*args, **kwargs)
-            logger.debug(f"Successfully completed {func.__name__}")
-            return result
-        except SoloGMError as e:
-            logger.error("Command error: %s", str(e))
-            if config.get("debug", False):
-                console.print(f"[bold red]Error:[/] {str(e)}")
-                import traceback
-                logger.debug("Traceback:\n%s", traceback.format_exc())
-                console.print(traceback.format_exc())
-                sys.exit(1)
-            else:
-                console.print(f"[bold red]Error:[/] {str(e)}")
-                console.print("Run with --debug for more information.")
-                sys.exit(1)
-        except Exception as e:
-            logger.error("Unexpected error: %s", str(e))
-            if config.get("debug", False):
-                console.print(f"[bold red]Unexpected error:[/] {str(e)}")
-                import traceback
-                logger.debug("Traceback:\n%s", traceback.format_exc())
-                console.print(traceback.format_exc())
-                sys.exit(1)
-            else:
-                console.print("[bold red]An unexpected error occurred.[/]")
-                console.print("Run with --debug for more information.")
-                sys.exit(1)
-
-    return wrapper
 
 from sologm.cli.game import game_app # noqa
 import sologm.cli.scene  # noqa

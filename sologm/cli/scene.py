@@ -5,7 +5,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from sologm.cli.main import app, handle_errors
+from sologm.cli.main import app
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.utils.errors import GameError, SceneError
@@ -19,7 +19,6 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-@handle_errors
 @scene_app.command("create")
 def create_scene(
     title: str = typer.Option(..., "--title", "-t", help="Title of the scene"),
@@ -51,7 +50,6 @@ def create_scene(
     console.print(f"Sequence: {scene.sequence}")
 
 
-@handle_errors
 @scene_app.command("list")
 def list_scenes() -> None:
     """List all scenes in the active game."""
@@ -96,7 +94,6 @@ def list_scenes() -> None:
     console.print(table)
 
 
-@handle_errors
 @scene_app.command("info")
 def scene_info() -> None:
     """Show information about the active scene."""
@@ -126,7 +123,6 @@ def scene_info() -> None:
     console.print(f"Modified: {active_scene.modified_at}")
 
 
-@handle_errors
 @scene_app.command("complete")
 def complete_scene() -> None:
     """Complete the active scene."""
@@ -151,7 +147,6 @@ def complete_scene() -> None:
     console.print(f"Completed scene: {completed_scene.title}")
 
 
-@handle_errors
 @scene_app.command("set-current")
 def set_current_scene(
     scene_id: str = typer.Option(..., "--id",
