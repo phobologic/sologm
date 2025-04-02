@@ -1,5 +1,61 @@
 # Solo RPG Helper CLI Development Plan
 
+## Phase Instructions
+
+### For Each Phase
+
+1. **Start of Phase**
+   - Create a branch for the phase (e.g., `git checkout -b phase-1-setup`)
+   - Review the phase goals and expected deliverables
+   - Prepare any necessary resources or dependencies
+
+2. **For Each Part**
+   - Create a feature branch from the phase branch (e.g., `git checkout -b part-1-1-environment`)
+   - Work through each step in order
+   - After completing a part, merge back to the phase branch
+   - Update COMPLETED.md with completed steps (see format below)
+
+3. **End of Phase**
+   - Ensure all tests for the phase pass successfully
+   - Create a comprehensive demo script showing the functionality added in the phase
+   - Record a short video or prepare a live demonstration of the new features
+   - Document any challenges, decisions, or design changes in PHASE-NOTES.md
+   - Create a pull request to merge the phase branch to main
+   - Tag the repository with the phase completion (e.g., `git tag v0.1-phase1`)
+   - Update project timeline if necessary
+
+### COMPLETED.md Format
+
+Use the following format to track completed work in COMPLETED.md:
+
+```markdown
+# Completed Work
+
+## Phase X: [Phase Name]
+Completed: [Date]
+
+### Part X.Y: [Part Name]
+Completed: [Date]
+
+#### Steps:
+- [x] Step 1
+- [x] Step 2
+...
+
+### Demo X:
+Completed: [Date]
+Demo Link: [Link to demo script or recording]
+```
+
+### Demo Requirements
+
+Each phase demo should:
+1. Include a script of commands to run
+2. Show practical use cases for the new functionality
+3. Highlight any user experience improvements
+4. Include sample output or expected behaviors
+5. Be reproducible by team members or stakeholders
+
 ## Phase 1: Project Setup and Basic CLI Framework
 
 ### Part 1.1: Development Environment Setup
