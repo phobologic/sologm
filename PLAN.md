@@ -293,9 +293,17 @@ sologm dice roll 1d100
 
 ### Part 4.3: Oracle CLI Commands
 1. Implement cli/oracle.py with oracle-related commands
-2. Add oracle interpret command
+2. Add oracle interpret command that stores result as current interpretation
 3. Add oracle select command with interactive selection
 4. Create user-friendly interpretation display
+
+### Part 4.3.1: Current Interpretation Management
+1. Add current interpretation tracking in game.yaml
+2. Implement retry functionality for current interpretation
+3. Update oracle select to use current interpretation by default
+4. Add retry attempt tracking and context
+5. Write tests for current interpretation management
+6. **Run current interpretation tests and verify all tests pass successfully**
 
 ### Demo 4: Oracle Interpretation
 ```bash
@@ -309,7 +317,7 @@ export ANTHROPIC_API_KEY=your_api_key_here
 
 # Submit oracle results for interpretation
 sologm oracle interpret --context "What do I find inside the abandoned ship?" --results "Focus, Danger, Technology" --count 3
-# Should return 3 different interpretations with IDs
+# Should return 3 different interpretations with IDs and store as current interpretation
 
 # The output should look something like:
 # === INTERPRETATIONS ===
@@ -322,7 +330,7 @@ sologm oracle interpret --context "What do I find inside the abandoned ship?" --
 # 3. [interp-789] "Malfunctioning Engine Core"
 #    The heart of the ship is unstable, with a dangerously overloaded...
 
-# Select one of the interpretations to add as an event
+# Select from current interpretation set (no need to specify set ID)
 sologm oracle select --id interp-456
 # Should add the selected interpretation as an event
 
@@ -330,9 +338,13 @@ sologm oracle select --id interp-456
 sologm event list
 # Should show the new event from the interpretation
 
+# Request new interpretations for the same context/results
+sologm oracle retry
+# Should show 3 new, different interpretations for the same context
+
 # Try another interpretation with more context
 sologm oracle interpret --context "I try to access the ship's computer. What happens?" --results "Success, Information, Danger" --count 4
-# Should show 4 new interpretations
+# Should show 4 new interpretations and update current interpretation
 ```
 
 ## Phase 5: Advanced Features and Enhancement
