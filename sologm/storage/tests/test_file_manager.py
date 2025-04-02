@@ -127,21 +127,21 @@ class TestFileManager:
         """Test getting the path to a scene's YAML file."""
         game_id = "test-game"
         scene_id = "test-scene"
-        expected_path = self.base_dir / "games" / game_id / scene_id / "scene.yaml"
+        expected_path = self.base_dir / "games" / game_id / "scenes" / scene_id / "scene.yaml"
         assert self.file_manager.get_scene_path(game_id, scene_id) == expected_path
 
     def test_get_events_path(self):
         """Test getting the path to a scene's events YAML file."""
         game_id = "test-game"
         scene_id = "test-scene"
-        expected_path = self.base_dir / "games" / game_id / scene_id / "events.yaml"
+        expected_path = self.base_dir / "games" / game_id / "scenes" / scene_id / "events.yaml"
         assert self.file_manager.get_events_path(game_id, scene_id) == expected_path
 
     def test_get_interpretations_dir(self):
         """Test getting the path to a scene's interpretations directory."""
         game_id = "test-game"
         scene_id = "test-scene"
-        expected_path = self.base_dir / "games" / game_id / scene_id / "interpretations"
+        expected_path = self.base_dir / "games" / game_id / "scenes" / scene_id / "interpretations"
         assert self.file_manager.get_interpretations_dir(game_id, scene_id) == expected_path
 
     def test_create_timestamp_filename(self):
