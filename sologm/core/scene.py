@@ -50,17 +50,22 @@ class SceneManager:
         Raises:
             SceneError: If there's an error creating the scene or if title is not unique.
         """
+        logger.debug(f"Creating new scene in game {game_id} with title '{title}'")
+        
         # Get the game's scenes to determine sequence number and check for duplicate titles
         game_path = self.file_manager.get_game_path(game_id)
         game_data = self.file_manager.read_yaml(game_path)
         
         if not game_data:
+            logger.error(f"Game {game_id} not found when creating scene")
             raise SceneError(f"Game {game_id} not found")
             
         # Check for duplicate titles
+        logger.debug("Checking for duplicate scene titles")
         existing_scenes = self.list_scenes(game_id)
         for scene in existing_scenes:
             if scene.title.lower() == title.lower():
+                logger.error(f"Duplicate scene title found: '{title}'")
                 raise SceneError(f"A scene with title '{title}' already exists in this game")
             
         scenes = game_data.get("scenes", [])
@@ -119,10 +124,12 @@ class SceneManager:
         Raises:
             SceneError: If there's an error listing the scenes.
         """
+        logger.debug(f"Listing scenes for game {game_id}")
         game_path = self.file_manager.get_game_path(game_id)
         game_data = self.file_manager.read_yaml(game_path)
         
         if not game_data:
+            logger.error(f"Game {game_id} not found when listing scenes")
             raise SceneError(f"Game {game_id} not found")
             
         # Get list of scenes and filter out any that don't exist on disk
@@ -208,11 +215,14 @@ class SceneManager:
         Raises:
             SceneError: If there's an error completing the scene.
         """
+        logger.debug(f"Completing scene {scene_id} in game {game_id}")
         scene = self.get_scene(game_id, scene_id)
         if not scene:
+            logger.error(f"Scene {scene_id} not found in game {game_id} when completing")
             raise SceneError(f"Scene {scene_id} not found in game {game_id}")
             
         if scene.status == "completed":
+            logger.error(f"Scene {scene_id} is already completed")
             raise SceneError(f"Scene {scene_id} is already completed")
             
         # Update scene status
@@ -249,8 +259,10 @@ class SceneManager:
         Raises:
             SceneError: If there's an error setting the current scene.
         """
+        logger.debug(f"Setting scene {scene_id} as current in game {game_id}")
         scene = self.get_scene(game_id, scene_id)
         if not scene:
+            logger.error(f"Scene {scene_id} not found in game {game_id} when setting current")
             raise SceneError(f"Scene {scene_id} not found in game {game_id}")
 
         self.file_manager.set_active_scene_id(game_id, scene_id)
