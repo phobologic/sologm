@@ -19,8 +19,8 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-@scene_app.command("create")
 @handle_errors
+@scene_app.command("create")
 def create_scene(
     title: str = typer.Option(..., "--title", "-t", help="Title of the scene"),
     description: str = typer.Option(
@@ -50,8 +50,8 @@ def create_scene(
     console.print(f"Sequence: {scene.sequence}")
 
 
-@scene_app.command("list")
 @handle_errors
+@scene_app.command("list")
 def list_scenes() -> None:
     """List all scenes in the active game."""
     game_manager = GameManager()
@@ -88,8 +88,8 @@ def list_scenes() -> None:
     console.print(table)
 
 
-@scene_app.command("info")
 @handle_errors
+@scene_app.command("info")
 def scene_info() -> None:
     """Show information about the active scene."""
     game_manager = GameManager()
@@ -116,8 +116,8 @@ def scene_info() -> None:
     console.print(f"Modified: {active_scene.modified_at}")
 
 
-@scene_app.command("complete")
 @handle_errors
+@scene_app.command("complete")
 def complete_scene() -> None:
     """Complete the active scene."""
     game_manager = GameManager()
