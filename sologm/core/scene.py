@@ -50,18 +50,22 @@ class SceneManager:
         Raises:
             SceneError: If there's an error creating the scene.
         """
+        logger.debug(f"Creating scene in game {game_id} with title='{title}'")
+        
         # Get the game's scenes to determine sequence number
         game_path = self.file_manager.get_game_path(game_id)
         game_data = self.file_manager.read_yaml(game_path / "game.yaml")
         
         if not game_data:
+            logger.error(f"Cannot create scene: Game {game_id} not found")
             raise SceneError(f"Game {game_id} not found")
             
         scenes = game_data.get("scenes", [])
         sequence = len(scenes) + 1
         
-        # Generate scene ID from title
+        logger.debug(f"Generating scene ID for sequence {sequence}")
         scene_id = f"scene-{sequence}-{title.lower().replace(' ', '-')}"
+        logger.debug(f"Generated scene ID: {scene_id}")
         
         # Create scene data
         now = datetime.now(UTC)
@@ -78,6 +82,7 @@ class SceneManager:
         
         # Save scene data
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
+        logger.debug(f"Saving scene data to {scene_path}")
         scene_data = {
             "id": scene.id,
             "game_id": scene.game_id,
@@ -93,6 +98,7 @@ class SceneManager:
         # Update game's scene list
         scenes.append(scene_id)
         game_data["scenes"] = scenes
+        logger.debug(f"Updating game {game_id} with new scene list: {scenes}")
         self.file_manager.write_yaml(game_path / "game.yaml", game_data)
         
         # Set as active scene
@@ -113,10 +119,12 @@ class SceneManager:
         Raises:
             SceneError: If there's an error listing the scenes.
         """
+        logger.debug(f"Listing scenes for game {game_id}")
         game_path = self.file_manager.get_game_path(game_id)
         game_data = self.file_manager.read_yaml(game_path / "game.yaml")
         
         if not game_data:
+            logger.error(f"Cannot list scenes: Game {game_id} not found")
             raise SceneError(f"Game {game_id} not found")
             
         scenes = []
@@ -137,7 +145,9 @@ class SceneManager:
                 )
                 scenes.append(scene)
                 
-        return sorted(scenes, key=lambda s: s.sequence)
+        sorted_scenes = sorted(scenes, key=lambda s: s.sequence)
+        logger.debug(f"Listed {len(sorted_scenes)} scenes for game {game_id}")
+        return sorted_scenes
 
     def get_scene(self, game_id: str, scene_id: str) -> Optional[Scene]:
         """Get a specific scene by ID.
@@ -149,10 +159,12 @@ class SceneManager:
         Returns:
             Scene object if found, None otherwise.
         """
+        logger.debug(f"Getting scene {scene_id} from game {game_id}")
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
         scene_data = self.file_manager.read_yaml(scene_path / "scene.yaml")
         
         if scene_data:
+            logger.debug(f"Found scene {scene_id}")
             return Scene(
                 id=scene_data["id"],
                 game_id=scene_data["game_id"],
@@ -174,9 +186,12 @@ class SceneManager:
         Returns:
             Active Scene object if found, None otherwise.
         """
+        logger.debug(f"Getting active scene for game {game_id}")
         active_scene_id = self.file_manager.get_active_scene_id(game_id)
         if active_scene_id:
+            logger.debug(f"Found active scene ID: {active_scene_id}")
             return self.get_scene(game_id, active_scene_id)
+        logger.debug("No active scene found")
         return None
 
     def complete_scene(self, game_id: str, scene_id: str) -> Scene:
@@ -192,11 +207,14 @@ class SceneManager:
         Raises:
             SceneError: If there's an error completing the scene.
         """
+        logger.debug(f"Completing scene {scene_id} in game {game_id}")
         scene = self.get_scene(game_id, scene_id)
         if not scene:
+            logger.error(f"Cannot complete scene: Scene {scene_id} not found in game {game_id}")
             raise SceneError(f"Scene {scene_id} not found in game {game_id}")
             
         if scene.status == "completed":
+            logger.error(f"Cannot complete scene: Scene {scene_id} is already completed")
             raise SceneError(f"Scene {scene_id} is already completed")
             
         # Update scene status
