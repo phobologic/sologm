@@ -1,37 +1,4 @@
 """Dice rolling commands for Solo RPG Helper."""
-
-from typing import Optional
-
-import typer
-from rich.console import Console
-
-from sologm.cli.main import app
-
-# Create dice subcommand
-dice_app = typer.Typer(help="Dice rolling commands")
-app.add_typer(dice_app, name="dice")
-
-# Create console for rich output
-console = Console()
-
-
-@dice_app.command("roll")
-def roll_dice(
-    notation: str = typer.Argument(..., help="Dice notation (e.g., 2d6+3)"),
-    reason: Optional[str] = typer.Option(
-        None, "--reason", "-r", help="Reason for the roll"
-    ),
-) -> None:
-    """Roll dice using standard notation."""
-    console.print("[bold]Dice Roll:[/]")
-    if reason:
-        console.print(f"Reason: {reason}")
-    console.print(f"Notation: {notation}")
-    console.print(
-        "[yellow]This is a placeholder. Dice rolling will be implemented later.[/]"
-    )
-"""Dice rolling commands."""
-
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -44,6 +11,7 @@ from sologm.utils.errors import DiceError
 dice_app = typer.Typer(help="Dice rolling commands")
 console = Console()
 
+
 @dice_app.command("roll")
 def roll_dice_command(
     notation: str = typer.Argument(..., help="Dice notation (e.g., 2d6+3)"),
@@ -52,7 +20,7 @@ def roll_dice_command(
     ),
 ) -> None:
     """Roll dice using standard notation (XdY+Z).
-    
+
     Examples:
         1d20    Roll a single 20-sided die
         2d6+3   Roll two 6-sided dice and add 3
@@ -60,27 +28,27 @@ def roll_dice_command(
     """
     try:
         result = roll_dice(notation, reason)
-        
+
         # Create formatted output
         title = Text()
         if reason:
             title.append(f"{reason}: ", style="bold blue")
         title.append(result.notation, style="bold")
-        
+
         details = Text()
         if len(result.individual_results) > 1:
             details.append("Rolls: ", style="dim")
             details.append(str(result.individual_results), style="cyan")
             details.append("\n")
-        
+
         if result.modifier != 0:
             details.append("Modifier: ", style="dim")
             details.append(f"{result.modifier:+d}", style="yellow")
             details.append("\n")
-        
+
         details.append("Result: ", style="dim")
         details.append(str(result.total), style="bold green")
-        
+
         # Display in a panel
         panel = Panel(
             details,
@@ -89,7 +57,7 @@ def roll_dice_command(
             expand=False
         )
         console.print(panel)
-        
+
     except DiceError as e:
         console.print(f"Error: {str(e)}", style="bold red")
         raise typer.Exit(1)
