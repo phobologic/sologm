@@ -67,11 +67,16 @@ def main(
 
 
 
-from sologm.cli.game import game_app # noqa
-import sologm.cli.scene  # noqa
-import sologm.cli.event  # noqa
+from sologm.cli.game import game_app  # noqa
+from sologm.cli.scene import scene_app  # noqa
+from sologm.cli.event import event_app  # noqa
 import sologm.cli.oracle  # noqa
 import sologm.cli.dice  # noqa
+
+# Add subcommands
+app.add_typer(game_app, name="game")
+app.add_typer(scene_app, name="scene")
+app.add_typer(event_app, name="event")
 
 if __name__ == "__main__":
     app()
