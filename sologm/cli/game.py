@@ -22,8 +22,8 @@ app.add_typer(game_app, name="game")
 console = Console()
 
 
-@game_app.command("create")
 @handle_errors
+@game_app.command("create")
 def create_game(
     name: str = typer.Option(..., "--name", "-n", help="Name of the game"),
     description: str = typer.Option(
@@ -59,8 +59,8 @@ def list_games() -> None:
         console.print()
 
 
-@game_app.command("activate")
 @handle_errors
+@game_app.command("activate")
 def activate_game(
     game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
 ) -> None:
@@ -68,8 +68,8 @@ def activate_game(
     console.print(f"[bold green]Game {game_id} activated![/]")
 
 
-@game_app.command("info")
 @handle_errors
+@game_app.command("info")
 def game_info() -> None:
     """Show information about the active game."""
     console.print("[bold]Active Game:[/]")
