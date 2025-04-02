@@ -88,7 +88,7 @@ class SceneManager:
             "created_at": scene.created_at.isoformat(),
             "modified_at": scene.modified_at.isoformat()
         }
-        self.file_manager.write_yaml(scene_path / "scene.yaml", scene_data)
+        self.file_manager.write_yaml(scene_path, scene_data)
         
         # Update game's scene list
         scenes.append(scene_id)
@@ -122,7 +122,7 @@ class SceneManager:
         scenes = []
         for scene_id in game_data.get("scenes", []):
             scene_path = self.file_manager.get_scene_path(game_id, scene_id)
-            scene_data = self.file_manager.read_yaml(scene_path / "scene.yaml")
+            scene_data = self.file_manager.read_yaml(scene_path)
             
             if scene_data:
                 scene = Scene(
@@ -150,7 +150,7 @@ class SceneManager:
             Scene object if found, None otherwise.
         """
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
-        scene_data = self.file_manager.read_yaml(scene_path / "scene.yaml")
+        scene_data = self.file_manager.read_yaml(scene_path)
         
         if scene_data:
             return Scene(
@@ -215,7 +215,7 @@ class SceneManager:
             "created_at": scene.created_at.isoformat(),
             "modified_at": scene.modified_at.isoformat()
         }
-        self.file_manager.write_yaml(scene_path / "scene.yaml", scene_data)
+        self.file_manager.write_yaml(scene_path, scene_data)
         
         logger.debug(f"Completed scene {scene_id} in game {game_id}")
         return scene
