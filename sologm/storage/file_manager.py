@@ -1,3 +1,4 @@
+import logging
 import os
 import yaml
 from datetime import datetime
@@ -5,6 +6,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from sologm.utils.errors import StorageError
+
+logger = logging.getLogger(__name__)
 
 
 class FileManager:
@@ -24,13 +27,17 @@ class FileManager:
         if base_dir is None:
             base_dir = Path.home() / ".sologm"
         self.base_dir = base_dir
+        logger.debug("Initializing FileManager with base_dir: %s", self.base_dir)
         self._ensure_directory_structure()
     
     def _ensure_directory_structure(self) -> None:
         """Ensure the required directory structure exists."""
         try:
-            (self.base_dir / "games").mkdir(parents=True, exist_ok=True)
+            games_dir = self.base_dir / "games"
+            logger.debug("Creating directory structure at: %s", games_dir)
+            games_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
+            logger.error("Failed to create directory structure: %s", str(e))
             raise StorageError(f"Failed to create directory structure: {str(e)}")
     
     def read_yaml(self, path: Path) -> Dict[str, Any]:
@@ -45,13 +52,18 @@ class FileManager:
         Raises:
             StorageError: If the file cannot be read or parsed.
         """
+        logger.debug("Reading YAML file: %s", path)
         if not path.exists():
+            logger.debug("File does not exist, returning empty dict: %s", path)
             return {}
         
         try:
             with open(path, "r") as f:
-                return yaml.safe_load(f) or {}
+                data = yaml.safe_load(f) or {}
+                logger.debug("Read %d keys from %s", len(data), path)
+                return data
         except Exception as e:
+            logger.error("Failed to read YAML file %s: %s", path, str(e))
             raise StorageError(f"Failed to read YAML file {path}: {str(e)}")
     
     def _create_backup(self, path: Path) -> Optional[Path]:
@@ -88,16 +100,22 @@ class FileManager:
         Raises:
             StorageError: If the file cannot be written.
         """
+        logger.debug("Writing YAML file: %s with %d keys", path, len(data))
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
+            logger.debug("Created parent directory: %s", path.parent)
             
             # Create backup of existing file
-            self._create_backup(path)
+            backup_path = self._create_backup(path)
+            if backup_path:
+                logger.debug("Created backup at: %s", backup_path)
             
             # Write new data
             with open(path, "w") as f:
                 yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+            logger.debug("Successfully wrote data to: %s", path)
         except Exception as e:
+            logger.error("Failed to write YAML file %s: %s", path, str(e))
             raise StorageError(f"Failed to write YAML file {path}: {str(e)}")
     
     def get_active_game_id(self) -> Optional[str]:
@@ -107,14 +125,19 @@ class FileManager:
             The ID of the active game, or None if no game is active.
         """
         active_game_file = self.base_dir / "active_game"
+        logger.debug("Getting active game ID from: %s", active_game_file)
         
         if not active_game_file.exists():
+            logger.debug("No active game file found")
             return None
         
         try:
             with open(active_game_file, "r") as f:
-                return f.read().strip() or None
+                game_id = f.read().strip() or None
+                logger.debug("Active game ID: %s", game_id)
+                return game_id
         except Exception as e:
+            logger.error("Failed to read active game ID: %s", str(e))
             raise StorageError(f"Failed to read active game ID: {str(e)}")
     
     def set_active_game_id(self, game_id: str) -> None:
@@ -127,11 +150,14 @@ class FileManager:
             StorageError: If the active game ID cannot be set.
         """
         active_game_file = self.base_dir / "active_game"
+        logger.debug("Setting active game ID to %s in %s", game_id, active_game_file)
         
         try:
             with open(active_game_file, "w") as f:
                 f.write(game_id)
+            logger.debug("Successfully set active game ID")
         except Exception as e:
+            logger.error("Failed to set active game ID: %s", str(e))
             raise StorageError(f"Failed to set active game ID: {str(e)}")
     
     def get_active_scene_id(self, game_id: str) -> Optional[str]:
