@@ -48,14 +48,20 @@ class SceneManager:
             The created Scene object.
 
         Raises:
-            SceneError: If there's an error creating the scene.
+            SceneError: If there's an error creating the scene or if title is not unique.
         """
-        # Get the game's scenes to determine sequence number
+        # Get the game's scenes to determine sequence number and check for duplicate titles
         game_path = self.file_manager.get_game_path(game_id)
         game_data = self.file_manager.read_yaml(game_path)
         
         if not game_data:
             raise SceneError(f"Game {game_id} not found")
+            
+        # Check for duplicate titles
+        existing_scenes = self.list_scenes(game_id)
+        for scene in existing_scenes:
+            if scene.title.lower() == title.lower():
+                raise SceneError(f"A scene with title '{title}' already exists in this game")
             
         scenes = game_data.get("scenes", [])
         sequence = len(scenes) + 1

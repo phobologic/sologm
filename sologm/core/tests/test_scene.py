@@ -103,10 +103,47 @@ class TestSceneManager:
         # Verify scene was saved
         scene_data = scene_manager.file_manager.read_yaml(
             scene_manager.file_manager.get_scene_path(test_game["id"], scene.id)
-            / "scene.yaml"
         )
         assert scene_data is not None
         assert scene_data["title"] == "First Scene"
+
+    def test_create_scene_duplicate_title(
+        self, scene_manager: SceneManager, test_game: dict
+    ) -> None:
+        """Test creating a scene with a duplicate title fails."""
+        # Create first scene
+        scene_manager.create_scene(
+            game_id=test_game["id"],
+            title="First Scene",
+            description="The beginning",
+        )
+        
+        # Try to create another scene with same title
+        with pytest.raises(SceneError, match="A scene with title 'First Scene' already exists in this game"):
+            scene_manager.create_scene(
+                game_id=test_game["id"],
+                title="First Scene",
+                description="Another beginning",
+            )
+
+    def test_create_scene_duplicate_title_different_case(
+        self, scene_manager: SceneManager, test_game: dict
+    ) -> None:
+        """Test creating a scene with a duplicate title in different case fails."""
+        # Create first scene
+        scene_manager.create_scene(
+            game_id=test_game["id"],
+            title="Forest Path",
+            description="A dark forest trail",
+        )
+        
+        # Try to create another scene with same title in different case
+        with pytest.raises(SceneError, match="A scene with title 'FOREST PATH' already exists in this game"):
+            scene_manager.create_scene(
+                game_id=test_game["id"],
+                title="FOREST PATH",
+                description="Another forest trail",
+            )
 
     def test_create_scene_nonexistent_game(
         self, scene_manager: SceneManager
