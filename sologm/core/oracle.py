@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from pathlib import Path
 
@@ -182,7 +182,7 @@ DESCRIPTION: Detailed description of interpretation idea
             parsed = self._parse_interpretations(response)
             
             # Create interpretation objects
-            now = datetime.now(datetime.UTC)
+            now = datetime.now(timezone.utc)
             interpretations = [
                 Interpretation(
                     id=f"interp-{i+1}",
@@ -304,7 +304,7 @@ DESCRIPTION: Detailed description of interpretation idea
                 "id": f"event-{len(events_data['events'])+1}",
                 "description": f"{selected.title}: {selected.description}",
                 "source": "oracle",
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat()
             })
             
             self.file_manager.write_yaml(events_path, events_data)
