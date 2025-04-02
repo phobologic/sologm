@@ -21,6 +21,8 @@ def test_create_game(temp_base_dir, monkeypatch):
     """Test creating a game via CLI."""
     monkeypatch.setattr("sologm.core.game.FileManager", 
                        lambda: FileManager(temp_base_dir))
+    monkeypatch.setattr("sologm.cli.game.GameManager",
+                       lambda: GameManager(FileManager(temp_base_dir)))
     
     result = runner.invoke(
         app, 
