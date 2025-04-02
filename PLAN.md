@@ -125,7 +125,7 @@ sologm nonexistent-command
 
 ### Part 2.2: Game Models and Logic
 1. Create Game data model
-2. Implement core/game.py functionality
+2. Implement core/game.py functionality with active game tracking
 3. Add create_game, list_games, and activate_game functions
 4. Write tests for game management functions
 5. **Run game logic tests and verify all tests pass successfully**
@@ -155,7 +155,7 @@ sologm nonexistent-command
 ```bash
 # Create a new game
 sologm game create --name "Fantasy Adventure" --description "A solo adventure in a fantasy world"
-# Should create game and set as active
+# Should create game and make it active
 
 # Show game info
 sologm game info
@@ -163,25 +163,27 @@ sologm game info
 
 # Create another game
 sologm game create --name "Space Explorer" --description "Exploring the galaxy alone"
+# Should create game and make it active, replacing Fantasy Adventure
 
 # List all games
 sologm game list
-# Should show both games with their status
+# Should show both games, with Space Explorer marked as [active game]
 
 # Switch active game
-sologm game activate --id space-explorer
-# Should set Space Explorer as active game
+sologm game activate --id fantasy-adventure
+# Should set Fantasy Adventure as active game
 
 # Create a scene in the active game
-sologm scene create --title "Departure" --description "Preparing to leave the space station"
+sologm scene create --title "Departure" --description "Starting the journey"
 # Should create scene and set as active
 
 # Create another scene
-sologm scene create --title "Asteroid Field" --description "Navigating through dangerous asteroids"
+sologm scene create --title "Forest Path" --description "Entering the dark woods"
+# Should create scene and set as active
 
 # List all scenes
 sologm scene list
-# Should show both scenes with their status
+# Should show both scenes, with Forest Path marked as active
 
 # Show details of active scene
 sologm scene info
