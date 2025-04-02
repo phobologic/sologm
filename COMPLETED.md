@@ -79,3 +79,14 @@ Completed: 2025-04-02
 - [x] Run event logic tests and verify all tests pass successfully
 
 Test Results: All 7 tests passed successfully
+
+### Part 3.2: Event CLI Commands
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Implement cli/event.py with event-related commands
+- [x] Add event add command with text and source options
+- [x] Add event list command with table formatting
+- [x] Write tests for event commands
+
+Test Results: Event CLI commands implemented with rich table output
