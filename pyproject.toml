@@ -57,3 +57,5 @@ disallow_incomplete_defs = true
 [tool.pytest.ini_options]
 python_files = "test_*.py"
 testpaths = ["sologm"]
+log_cli = true
+log_cli_level = "DEBUG"
