@@ -1,11 +1,14 @@
 """Event management functionality."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import EventError
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Event:
