@@ -279,8 +279,15 @@ DESCRIPTION: Detailed description of interpretation idea
                     selected_index = i
                     break
             
+            # Validate interpretation data exists
+            if not interp_data:
+                raise OracleError(f"Interpretation set {interpretation_set_id} not found")
+            
+            if "interpretations" not in interp_data:
+                raise OracleError(f"Invalid interpretation set format: missing interpretations")
+
             if not selected:
-                raise OracleError(f"Interpretation {interpretation_id} not found")
+                raise OracleError(f"Interpretation {interpretation_id} not found in set {interpretation_set_id}")
             
             # Update interpretation set with selection
             interp_data["selected_interpretation"] = selected_index

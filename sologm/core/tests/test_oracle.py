@@ -171,7 +171,8 @@ DESCRIPTION: Test Description 2
         test_events: dict
     ) -> None:
         """Test getting interpretations."""
-        mock_anthropic_client.send_message.return_value = """=== BEGIN INTERPRETATIONS ===
+        # Configure mock to return string response
+        response_text = """=== BEGIN INTERPRETATIONS ===
 
 --- INTERPRETATION 1 ---
 TITLE: Test Title
@@ -179,6 +180,7 @@ DESCRIPTION: Test Description
 --- END INTERPRETATION 1 ---
 
 === END INTERPRETATIONS ==="""
+        mock_anthropic_client.send_message.return_value = response_text
 
         result = oracle_manager.get_interpretations(
             "test-game",
