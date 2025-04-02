@@ -105,3 +105,15 @@ Completed: 2025-04-02
 - [x] Run dice system tests and verify all tests pass successfully
 
 Test Results: All 11 dice system tests passed successfully with full coverage
+
+### Part 3.4: Dice CLI Commands
+Completed: 2025-04-02
+
+#### Steps:
+- [x] Implement cli/dice.py with dice-related commands
+- [x] Add dice roll command with optional reason
+- [x] Create colored output for dice results
+- [x] Write tests for dice commands
+- [x] Run dice CLI tests and verify all tests pass successfully
+
+Test Results: All 4 dice CLI command tests passed successfully
