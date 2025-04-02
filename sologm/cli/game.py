@@ -60,6 +60,7 @@ from rich.console import Console
 from sologm.core.game import GameManager
 from sologm.utils.errors import GameError
 from sologm.cli.main import handle_errors
+from sologm.utils.logger import logger
 
 game_app = typer.Typer(help="Game management commands")
 console = Console()
@@ -73,8 +74,10 @@ def create_game(
     ),
 ) -> None:
     """Create a new game."""
+    logger.debug(f"Creating game with name='{name}', description='{description}'")
     game_manager = GameManager()
     game = game_manager.create_game(name=name, description=description)
+    logger.debug(f"Created game: {game}")
     console.print(f"Created game: {game.name} ({game.id})")
     console.print(f"Description: {game.description}")
     console.print(f"Status: {game.status}")

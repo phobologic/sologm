@@ -7,7 +7,9 @@ import pytest
 from typer.testing import CliRunner
 
 from sologm.cli.main import app
+from sologm.core.game import GameManager
 from sologm.storage.file_manager import FileManager
+from sologm.utils.logger import logger
 
 runner = CliRunner()
 
@@ -19,15 +21,23 @@ def temp_base_dir():
 
 def test_create_game(temp_base_dir, monkeypatch):
     """Test creating a game via CLI."""
-    monkeypatch.setattr("sologm.core.game.FileManager", 
-                       lambda: FileManager(temp_base_dir))
-    monkeypatch.setattr("sologm.cli.game.GameManager",
-                       lambda: GameManager(FileManager(temp_base_dir)))
+    logger.debug(f"Setting up test with temp_base_dir={temp_base_dir}")
+    file_manager = FileManager(temp_base_dir)
+    game_manager = GameManager(file_manager)
     
+    monkeypatch.setattr("sologm.core.game.FileManager", 
+                       lambda: file_manager)
+    monkeypatch.setattr("sologm.cli.game.GameManager",
+                       lambda: game_manager)
+    
+    logger.debug("Invoking create game command")
     result = runner.invoke(
         app, 
-        ["game", "create", "--name", "Test Game", "--description", "A test game"]
+        ["game", "create", "--name", "Test Game", "--description", "A test game"],
+        catch_exceptions=False
     )
+    logger.debug(f"Command result: exit_code={result.exit_code}, stdout={result.stdout}")
+    
     assert result.exit_code == 0
     assert "Created game: Test Game" in result.stdout
     assert "Description: A test game" in result.stdout
