@@ -286,3 +286,61 @@ DESCRIPTION: Test Description
                 "nonexistent-interp"
             )
         assert "not found" in str(exc.value)
+
+    def test_get_interpretations_with_retry(
+        self,
+        oracle_manager: OracleManager,
+        mock_anthropic_client: MagicMock,
+        test_game: dict,
+        test_scene: dict
+    ) -> None:
+        """Test getting interpretations with retry attempt."""
+        # Configure mock to return string response
+        response_text = """=== BEGIN INTERPRETATIONS ===
+
+--- INTERPRETATION 1 ---
+TITLE: Test Title
+DESCRIPTION: Test Description
+--- END INTERPRETATION 1 ---
+
+=== END INTERPRETATIONS ==="""
+        mock_anthropic_client.send_message.return_value = response_text
+
+        # First interpretation request
+        result1 = oracle_manager.get_interpretations(
+            "test-game",
+            "test-scene",
+            "What happens?",
+            "Mystery",
+            1
+        )
+        
+        # Verify current interpretation was set
+        game_data = oracle_manager.file_manager.read_yaml(
+            oracle_manager.file_manager.get_game_path("test-game")
+        )
+        assert "current_interpretation" in game_data
+        assert game_data["current_interpretation"]["id"] == result1.id
+        assert game_data["current_interpretation"]["retry_count"] == 0
+
+        # Retry interpretation
+        result2 = oracle_manager.get_interpretations(
+            "test-game",
+            "test-scene",
+            "What happens?",
+            "Mystery",
+            1,
+            retry_attempt=1
+        )
+
+        # Verify retry count was updated
+        game_data = oracle_manager.file_manager.read_yaml(
+            oracle_manager.file_manager.get_game_path("test-game")
+        )
+        assert game_data["current_interpretation"]["id"] == result2.id
+        assert game_data["current_interpretation"]["retry_count"] == 1
+
+        # Verify different prompt was used for retry
+        retry_call = mock_anthropic_client.send_message.call_args_list[1]
+        assert "retry attempt #2" in retry_call[0][0].lower()
+        assert "different" in retry_call[0][0].lower()

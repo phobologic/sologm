@@ -150,3 +150,33 @@ class TestGameManager:
         with pytest.raises(GameError) as exc:
             self.game_manager.activate_game("nonexistent-game")
         assert "Game not found" in str(exc.value)
+
+    def test_current_interpretation_tracking(self):
+        """Test tracking current interpretation in game data."""
+        # Create a game
+        game = self.game_manager.create_game(
+            name="Test Game",
+            description="A test game"
+        )
+
+        # Get the game path
+        game_path = self.file_manager.get_game_path(game.id)
+
+        # Read initial game data
+        game_data = self.file_manager.read_yaml(game_path)
+        assert "current_interpretation" not in game_data
+
+        # Update game data with current interpretation
+        game_data["current_interpretation"] = {
+            "id": "test-interp-1",
+            "context": "Test context",
+            "results": "Test results",
+            "retry_count": 0
+        }
+        self.file_manager.write_yaml(game_path, game_data)
+
+        # Read updated game data
+        updated_data = self.file_manager.read_yaml(game_path)
+        assert "current_interpretation" in updated_data
+        assert updated_data["current_interpretation"]["id"] == "test-interp-1"
+        assert updated_data["current_interpretation"]["retry_count"] == 0
