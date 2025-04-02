@@ -31,9 +31,14 @@ def create_game(
     ),
 ) -> None:
     """Create a new game."""
+    logger.debug(f"Creating game with name='{name}', description='{description}'")
+    game_manager = GameManager()
+    game = game_manager.create_game(name=name, description=description)
+    
     console.print("[bold green]Game created successfully![/]")
-    console.print(f"Name: {name}")
-    console.print(f"Description: {description}")
+    console.print(f"Name: {game.name} ({game.id})")
+    console.print(f"Description: {game.description}")
+    console.print(f"Status: {game.status}")
 
 
 @handle_errors
@@ -65,12 +70,32 @@ def activate_game(
     game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
 ) -> None:
     """Activate a game."""
-    console.print(f"[bold green]Game {game_id} activated![/]")
+    logger.debug(f"Activating game with id='{game_id}'")
+    game_manager = GameManager()
+    game = game_manager.activate_game(game_id)
+    
+    console.print("[bold green]Game activated successfully![/]")
+    console.print(f"Name: {game.name} ({game.id})")
+    console.print(f"Description: {game.description}")
+    console.print(f"Status: {game.status}")
 
 
 @handle_errors
 @game_app.command("info")
 def game_info() -> None:
     """Show information about the active game."""
-    console.print("[bold]Active Game:[/]")
-    console.print("No active game. Activate one with 'sologm game activate'.")
+    logger.debug("Getting active game info")
+    game_manager = GameManager()
+    game = game_manager.get_active_game()
+    
+    if not game:
+        console.print("No active game. Use 'sologm game activate' to set one.")
+        return
+    
+    console.print("\n[bold]Active Game:[/]")
+    console.print(f"Name: {game.name} ({game.id})")
+    console.print(f"Description: {game.description}")
+    console.print(f"Status: {game.status}")
+    console.print(f"Created: {game.created_at}")
+    console.print(f"Modified: {game.modified_at}")
+    console.print(f"Scenes: {len(game.scenes)}")
