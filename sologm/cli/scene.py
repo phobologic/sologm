@@ -34,7 +34,8 @@ def create_scene(
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set one.")
+        raise GameError("No active game. Use 'sologm game activate' to set "
+                        "one.")
 
     # Create the scene
     scene = scene_manager.create_scene(
@@ -60,15 +61,18 @@ def list_scenes() -> None:
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set one.")
+        raise GameError("No active game. Use 'sologm game activate' to set "
+                        "one.")
 
     # Get scenes and current scene ID
     scenes = scene_manager.list_scenes(active_game.id)
     if not scenes:
-        console.print("No scenes found. Create one with 'sologm scene create'.")
+        console.print("No scenes found. Create one with 'sologm scene "
+                      "create'.")
         return
 
-    current_scene_id = scene_manager.file_manager.get_active_scene_id(active_game.id)
+    current_scene_id = scene_manager.file_manager.get_active_scene_id(
+            active_game.id)
 
     # Create table
     table = Table(title=f"Scenes in {active_game.name}")
@@ -102,12 +106,14 @@ def scene_info() -> None:
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set one.")
+        raise GameError("No active game. Use 'sologm game activate' to set "
+                        "one.")
 
     # Get active scene
     active_scene = scene_manager.get_active_scene(active_game.id)
     if not active_scene:
-        console.print("No active scene. Create one with 'sologm scene create'.")
+        console.print("No active scene. Create one with 'sologm scene "
+                      "create'.")
         return
 
     console.print("[bold]Active Scene:[/]")
@@ -130,7 +136,8 @@ def complete_scene() -> None:
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set one.")
+        raise GameError("No active game. Use 'sologm game activate' to set "
+                        "one.")
 
     # Get active scene
     active_scene = scene_manager.get_active_scene(active_game.id)
@@ -138,14 +145,17 @@ def complete_scene() -> None:
         raise SceneError("No active scene to complete.")
 
     # Complete the scene
-    completed_scene = scene_manager.complete_scene(active_game.id, active_scene.id)
+    completed_scene = scene_manager.complete_scene(active_game.id,
+                                                   active_scene.id)
     console.print("[bold green]Scene completed successfully![/]")
     console.print(f"Completed scene: {completed_scene.title}")
+
 
 @handle_errors
 @scene_app.command("set-current")
 def set_current_scene(
-    scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current")
+    scene_id: str = typer.Option(..., "--id",
+                                 help="ID of the scene to make current")
 ) -> None:
     """Set which scene is currently being played."""
     game_manager = GameManager()
@@ -154,7 +164,8 @@ def set_current_scene(
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set one.")
+        raise GameError("No active game. Use 'sologm game activate' to set "
+                        "one.")
 
     # Get list of valid scenes first
     scenes = scene_manager.list_scenes(active_game.id)

@@ -3,6 +3,7 @@
 import logging
 import sys
 from typing import Optional
+from functools import wraps
 
 import typer
 from rich.console import Console
@@ -42,7 +43,8 @@ def main(
         False, "--debug", help="Enable debug mode with verbose output."
     ),
     version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback, help="Show version and exit."
+        None, "--version", callback=version_callback,
+        help="Show version and exit."
     ),
     config_path: Optional[str] = typer.Option(
         None, "--config", help="Path to configuration file."
@@ -66,15 +68,6 @@ def main(
         config = Config(Path(config_path))
 
 
-# Import subcommands first
-from sologm.cli.game import game_app
-import sologm.cli.scene  # noqa
-import sologm.cli.event  # noqa
-import sologm.cli.oracle  # noqa
-import sologm.cli.dice  # noqa
-
-from functools import wraps
-
 def handle_errors(func):
     """Decorator to handle errors in CLI commands.
 
@@ -90,7 +83,8 @@ def handle_errors(func):
     def wrapper(*args, **kwargs):
         logger.debug(f"Entering error handler wrapper for {func.__name__}")
         try:
-            logger.debug(f"Calling {func.__name__} with args={args}, kwargs={kwargs}")
+            logger.debug(f"Calling {func.__name__} with args={args}, "
+                         "kwargs={kwargs}")
             result = func(*args, **kwargs)
             logger.debug(f"Successfully completed {func.__name__}")
             return result
@@ -121,7 +115,11 @@ def handle_errors(func):
 
     return wrapper
 
-
+from sologm.cli.game import game_app # noqa
+import sologm.cli.scene  # noqa
+import sologm.cli.event  # noqa
+import sologm.cli.oracle  # noqa
+import sologm.cli.dice  # noqa
 
 if __name__ == "__main__":
     app()
