@@ -65,7 +65,7 @@ class GameManager:
                 raise GameError(f"Failed to generate unique ID for game: {name}")
         
         # Create the game instance
-        now = datetime.now()
+        now = datetime.now(UTC)
         game = Game(
             id=game_id,
             name=name,
@@ -161,7 +161,6 @@ class GameManager:
                 id=game_data["id"],
                 name=game_data["name"],
                 description=game_data["description"],
-                status=game_data["status"],
                 created_at=datetime.fromisoformat(game_data["created_at"]),
                 modified_at=datetime.fromisoformat(game_data["modified_at"]),
                 scenes=game_data["scenes"]
