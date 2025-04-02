@@ -151,8 +151,8 @@ def create_scene(game_id: str, title: str, description: str) -> Scene:
 def list_scenes(game_id: str) -> list[Scene]:
     """List all scenes for the specified game."""
     
-def get_active_scene(game_id: str) -> Optional[Scene]:
-    """Get the active scene for the specified game."""
+def get_current_scene(game_id: str) -> Optional[Scene]:
+    """Get the current scene for the specified game."""
     
 def complete_scene(game_id: str, scene_id: str) -> Scene:
     """Mark a scene as complete."""
