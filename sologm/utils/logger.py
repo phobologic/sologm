@@ -8,17 +8,14 @@ from typing import Optional
 from sologm.utils.config import config
 
 
-def setup_logger(debug: Optional[bool] = None) -> logging.Logger:
-    """Set up the logger for the application.
+def setup_root_logger(debug: Optional[bool] = None) -> None:
+    """Configure the root logger for the application.
 
     When debug mode is enabled, logs will be sent to stdout.
     Otherwise, only error logs will be displayed.
 
     Args:
         debug: Override debug setting from config.
-
-    Returns:
-        Configured logger.
     """
     # Check environment variable first, then parameter, then config
     debug_env = os.environ.get("SOLOGM_DEBUG")
@@ -27,11 +24,11 @@ def setup_logger(debug: Optional[bool] = None) -> logging.Logger:
     elif debug is None:
         debug = config.get("debug", False)
 
-    logger = logging.getLogger("sologm")
-    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    root_logger = logging.getLogger("sologm")
+    root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     # Clear existing handlers
-    logger.handlers = []
+    root_logger.handlers = []
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
@@ -43,10 +40,16 @@ def setup_logger(debug: Optional[bool] = None) -> logging.Logger:
     ) if debug else logging.Formatter("%(levelname)s: %(message)s")
 
     console_handler.setFormatter(console_formatter)
-    logger.addHandler(console_handler)
-
-    return logger
+    root_logger.addHandler(console_handler)
 
 
-# Global logger instance
-logger = setup_logger()
+def get_logger(name: str) -> logging.Logger:
+    """Get a logger for a specific module.
+
+    Args:
+        name: Usually __name__ from the calling module.
+
+    Returns:
+        Logger instance for the module.
+    """
+    return logging.getLogger(f"sologm.{name}")
