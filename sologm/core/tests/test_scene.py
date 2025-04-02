@@ -197,24 +197,24 @@ class TestSceneManager:
     def test_complete_scene(
         self, scene_manager: SceneManager, test_game: dict
     ) -> None:
-        """Test completing a scene."""
-        scene = scene_manager.create_scene(
+        """Test completing a scene without changing current scene."""
+        scene1 = scene_manager.create_scene(
             game_id=test_game["id"],
-            title="Test Scene",
-            description="To be completed",
+            title="First Scene",
+            description="Scene 1",
+        )
+        scene2 = scene_manager.create_scene(
+            game_id=test_game["id"],
+            title="Second Scene",
+            description="Scene 2",
         )
         
-        completed_scene = scene_manager.complete_scene(
-            test_game["id"], scene.id
-        )
+        # Complete scene1 and verify it doesn't change current scene
+        completed_scene = scene_manager.complete_scene(test_game["id"], scene1.id)
         assert completed_scene.status == "completed"
         
-        # Verify scene was updated in storage
-        scene_data = scene_manager.file_manager.read_yaml(
-            scene_manager.file_manager.get_scene_path(test_game["id"], scene.id)
-            / "scene.yaml"
-        )
-        assert scene_data["status"] == "completed"
+        current_scene = scene_manager.get_active_scene(test_game["id"])
+        assert current_scene.id == scene2.id  # Should still be scene2 as it was made current on creation
 
     def test_complete_scene_nonexistent(
         self, scene_manager: SceneManager, test_game: dict
@@ -246,10 +246,10 @@ class TestSceneManager:
         ):
             scene_manager.complete_scene(test_game["id"], scene.id)
 
-    def test_complete_scene_activates_next(
+    def test_set_current_scene(
         self, scene_manager: SceneManager, test_game: dict
     ) -> None:
-        """Test completing a scene activates the next available scene."""
+        """Test setting which scene is current without changing status."""
         scene1 = scene_manager.create_scene(
             game_id=test_game["id"],
             title="First Scene",
@@ -261,23 +261,10 @@ class TestSceneManager:
             description="Scene 2",
         )
         
-        scene_manager.complete_scene(test_game["id"], scene1.id)
-        active_scene = scene_manager.get_active_scene(test_game["id"])
+        # Complete scene2 but keep it as current
+        scene_manager.complete_scene(test_game["id"], scene2.id)
+        scene_manager.set_current_scene(test_game["id"], scene2.id)
         
-        assert active_scene is not None
-        assert active_scene.id == scene2.id
-
-    def test_complete_last_scene(
-        self, scene_manager: SceneManager, test_game: dict
-    ) -> None:
-        """Test completing the last scene clears active scene."""
-        scene = scene_manager.create_scene(
-            game_id=test_game["id"],
-            title="Only Scene",
-            description="The only scene",
-        )
-        
-        scene_manager.complete_scene(test_game["id"], scene.id)
-        active_scene = scene_manager.get_active_scene(test_game["id"])
-        
-        assert active_scene is None
+        current_scene = scene_manager.get_active_scene(test_game["id"])
+        assert current_scene.id == scene2.id
+        assert current_scene.status == "completed"  # Status remains completed

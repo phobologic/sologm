@@ -138,9 +138,21 @@ def complete_scene() -> None:
     console.print("[bold green]Scene completed successfully![/]")
     console.print(f"Completed scene: {completed_scene.title}")
 
-    # Check if a new scene was activated
-    new_active_scene = scene_manager.get_active_scene(active_game.id)
-    if new_active_scene:
-        console.print(f"New active scene: {new_active_scene.title}")
-    else:
-        console.print("No more scenes available.")
+@handle_errors
+@scene_app.command("set-current")
+def set_current_scene(
+    scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current")
+) -> None:
+    """Set which scene is currently being played."""
+    game_manager = GameManager()
+    scene_manager = SceneManager()
+
+    # Get active game
+    active_game = game_manager.get_active_game()
+    if not active_game:
+        raise GameError("No active game. Use 'sologm game activate' to set one.")
+
+    # Set the current scene
+    new_current = scene_manager.set_current_scene(active_game.id, scene_id)
+    console.print("[bold green]Current scene updated successfully![/]")
+    console.print(f"Current scene: {new_current.title}")

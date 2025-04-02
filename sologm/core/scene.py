@@ -180,7 +180,7 @@ class SceneManager:
         return None
 
     def complete_scene(self, game_id: str, scene_id: str) -> Scene:
-        """Mark a scene as complete.
+        """Mark a scene as complete without changing which scene is current.
 
         Args:
             game_id: ID of the game the scene belongs to.
@@ -217,15 +217,26 @@ class SceneManager:
         }
         self.file_manager.write_yaml(scene_path / "scene.yaml", scene_data)
         
-        # If this was the active scene, try to activate the next scene
-        active_scene_id = self.file_manager.get_active_scene_id(game_id)
-        if active_scene_id == scene_id:
-            scenes = self.list_scenes(game_id)
-            next_scenes = [s for s in scenes if s.sequence > scene.sequence and s.status != "completed"]
-            if next_scenes:
-                self.file_manager.set_active_scene_id(game_id, next_scenes[0].id)
-            else:
-                self.file_manager.set_active_scene_id(game_id, "")
-        
         logger.debug(f"Completed scene {scene_id} in game {game_id}")
+        return scene
+
+    def set_current_scene(self, game_id: str, scene_id: str) -> Scene:
+        """Set which scene is currently being played without changing its status.
+
+        Args:
+            game_id: ID of the game the scene belongs to.
+            scene_id: ID of the scene to make current.
+
+        Returns:
+            The Scene object that was made current.
+
+        Raises:
+            SceneError: If there's an error setting the current scene.
+        """
+        scene = self.get_scene(game_id, scene_id)
+        if not scene:
+            raise SceneError(f"Scene {scene_id} not found in game {game_id}")
+
+        self.file_manager.set_active_scene_id(game_id, scene_id)
+        logger.debug(f"Set scene {scene_id} as current in game {game_id}")
         return scene
