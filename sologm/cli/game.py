@@ -2,6 +2,7 @@
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
@@ -45,22 +46,31 @@ def list_games() -> None:
     games = game_manager.list_games()
 
     if not games:
-        console.print("No games found.")
+        console.print("No games found. Create one with 'sologm game create'.")
         return
 
     scene_manager = SceneManager()
-    console.print("\nGames:")
     active_game = game_manager.get_active_game()
+
+    # Create table
+    table = Table(title="Games")
+    table.add_column("ID", style="cyan")
+    table.add_column("Name", style="magenta")
+    table.add_column("Description")
+    table.add_column("Scenes", justify="right")
+    table.add_column("Current", style="yellow", justify="center")
+
     for game in games:
-        active = ""
-        if active_game and game.id == active_game.id:
-            active = " [green](active)[/green]"
-        # Get actual scene count from disk
         scenes = scene_manager.list_scenes(game.id)
-        console.print(f"- {game.name} ({game.id}){active}")
-        console.print(f"  Description: {game.description}")
-        console.print(f"  Scenes: {len(scenes)}")
-        console.print()
+        table.add_row(
+            game.id,
+            game.name,
+            game.description,
+            str(len(scenes)),
+            "✓" if active_game and game.id == active_game.id else ""
+        )
+
+    console.print(table)
 
 
 @game_app.command("activate")
