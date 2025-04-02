@@ -75,10 +75,15 @@ def handle_errors(func):
     Returns:
         Decorated function.
     """
+    logger.debug(f"Registering error handler for function: {func.__name__}")
 
     def wrapper(*args, **kwargs):
+        logger.debug(f"Entering error handler wrapper for {func.__name__}")
         try:
-            return func(*args, **kwargs)
+            logger.debug(f"Calling {func.__name__} with args={args}, kwargs={kwargs}")
+            result = func(*args, **kwargs)
+            logger.debug(f"Successfully completed {func.__name__}")
+            return result
         except SoloGMError as e:
             logger.error("Command error: %s", str(e))
             if config.get("debug", False):
