@@ -93,9 +93,14 @@ def game_info() -> None:
         console.print("No active game. Use 'sologm game activate' to set one.")
         return
 
+    # Get scenes and active scene
+    scene_manager = SceneManager()
+    scenes = scene_manager.list_scenes(game.id)  # This will clean up missing scenes
+    active_scene = scene_manager.get_active_scene(game.id)
+
     console.print("\n[bold]Active Game:[/]")
     console.print(f"Name: {game.name} ({game.id})")
     console.print(f"Description: {game.description}")
     console.print(f"Created: {game.created_at}")
     console.print(f"Modified: {game.modified_at}")
-    console.print(f"Scenes: {len(game.scenes)}")
+    console.print(f"Scenes: {len(scenes)}")  # Use actual scene count
