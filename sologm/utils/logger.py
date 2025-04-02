@@ -1,6 +1,7 @@
 """Logging utilities for Solo RPG Helper."""
 
 import logging
+import os
 import sys
 from typing import Optional
 
@@ -19,8 +20,11 @@ def setup_logger(debug: Optional[bool] = None) -> logging.Logger:
     Returns:
         Configured logger.
     """
-    # Use debug parameter if provided, otherwise use config
-    if debug is None:
+    # Check environment variable first, then parameter, then config
+    debug_env = os.environ.get("SOLOGM_DEBUG")
+    if debug_env is not None:
+        debug = debug_env.lower() in ("1", "true", "yes")
+    elif debug is None:
         debug = config.get("debug", False)
 
     logger = logging.getLogger("sologm")
@@ -31,15 +35,12 @@ def setup_logger(debug: Optional[bool] = None) -> logging.Logger:
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
-
-    if debug:
-        console_handler.setLevel(logging.DEBUG)
-        console_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-    else:
-        console_handler.setLevel(logging.ERROR)  # Only show errors in normal mode
-        console_formatter = logging.Formatter("%(levelname)s: %(message)s")
+    console_handler.setLevel(logging.DEBUG if debug else logging.ERROR)
+    
+    # Always use debug format when debug is enabled
+    console_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    ) if debug else logging.Formatter("%(levelname)s: %(message)s")
 
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
