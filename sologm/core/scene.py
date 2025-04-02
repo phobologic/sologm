@@ -52,7 +52,7 @@ class SceneManager:
         """
         # Get the game's scenes to determine sequence number
         game_path = self.file_manager.get_game_path(game_id)
-        game_data = self.file_manager.read_yaml(game_path / "game.yaml")
+        game_data = self.file_manager.read_yaml(game_path)
         
         if not game_data:
             raise SceneError(f"Game {game_id} not found")
@@ -93,7 +93,7 @@ class SceneManager:
         # Update game's scene list
         scenes.append(scene_id)
         game_data["scenes"] = scenes
-        self.file_manager.write_yaml(game_path / "game.yaml", game_data)
+        self.file_manager.write_yaml(game_path, game_data)
         
         # Set as active scene
         self.file_manager.set_active_scene_id(game_id, scene_id)
@@ -114,7 +114,7 @@ class SceneManager:
             SceneError: If there's an error listing the scenes.
         """
         game_path = self.file_manager.get_game_path(game_id)
-        game_data = self.file_manager.read_yaml(game_path / "game.yaml")
+        game_data = self.file_manager.read_yaml(game_path)
         
         if not game_data:
             raise SceneError(f"Game {game_id} not found")

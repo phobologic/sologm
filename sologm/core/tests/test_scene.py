@@ -48,7 +48,7 @@ def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
     }
     
     game_path = file_manager.get_game_path(game_id)
-    file_manager.write_yaml(game_path / "game.yaml", game_data)
+    file_manager.write_yaml(game_path, game_data)
     
     yield game_data
 
