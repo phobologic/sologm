@@ -9,7 +9,7 @@ from rich.console import Console
 from sologm import __version__
 from sologm.utils.config import config
 from sologm.utils.errors import SoloGMError
-from sologm.utils.logger import setup_logger
+from sologm.utils.logger import setup_root_logger
 
 # Create Typer app
 app = typer.Typer(
