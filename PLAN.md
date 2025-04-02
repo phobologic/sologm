@@ -296,8 +296,6 @@ sologm dice roll 1d100
 2. Add oracle interpret command
 3. Add oracle select command with interactive selection
 4. Create user-friendly interpretation display
-5. Write tests for oracle commands
-6. **Run oracle CLI tests and verify all tests pass successfully**
 
 ### Demo 4: Oracle Interpretation
 ```bash
