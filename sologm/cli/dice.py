@@ -29,7 +29,8 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
-        logger.debug(f"Rolling dice with notation: {notation}, reason: {reason}")
+        logger.debug(f"Rolling dice with notation: {notation}, reason: "
+                     f"{reason}")
         result = roll_dice(notation, reason)
 
         logger.debug(f"Creating formatted output for roll result: {result}")
