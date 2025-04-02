@@ -60,7 +60,9 @@ from rich.console import Console
 from sologm.core.game import GameManager
 from sologm.utils.errors import GameError
 from sologm.cli.main import handle_errors
-from sologm.utils.logger import logger
+import logging
+
+logger = logging.getLogger(__name__)
 
 game_app = typer.Typer(help="Game management commands")
 console = Console()

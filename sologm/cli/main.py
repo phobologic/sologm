@@ -49,8 +49,8 @@ def main(
 
     Manage games, scenes, and events. Roll dice and interpret oracle results.
     """
-    # Set up logger with debug flag
-    setup_logger(debug)
+    # Set up root logger with debug flag
+    setup_root_logger(debug)
 
     # Update config path if provided
     if config_path:

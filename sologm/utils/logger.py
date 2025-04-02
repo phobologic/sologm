@@ -11,11 +11,12 @@ from sologm.utils.config import config
 def setup_root_logger(debug: Optional[bool] = None) -> None:
     """Configure the root logger for the application.
 
-    When debug mode is enabled, logs will be sent to stdout.
+    When debug mode is enabled, logs will be sent to stdout with debug level.
     Otherwise, only error logs will be displayed.
 
     Args:
-        debug: Override debug setting from config.
+        debug: Override debug setting from config. If None, will check
+            environment variable SOLOGM_DEBUG and then config file.
     """
     # Check environment variable first, then parameter, then config
     debug_env = os.environ.get("SOLOGM_DEBUG")
@@ -24,20 +25,21 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
     elif debug is None:
         debug = config.get("debug", False)
 
-    root_logger = logging.getLogger("sologm")
-    root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    # Configure the root logger for the sologm package
+    logger = logging.getLogger("sologm")
+    logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
-    # Clear existing handlers
-    root_logger.handlers = []
+    # Remove any existing handlers
+    logger.handlers = []
 
-    # Console handler
+    # Add console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.DEBUG if debug else logging.ERROR)
-    
-    # Always use debug format when debug is enabled
-    console_formatter = logging.Formatter(
+
+    # Use detailed format in debug mode, simple format otherwise
+    formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     ) if debug else logging.Formatter("%(levelname)s: %(message)s")
 
-    console_handler.setFormatter(console_formatter)
-    root_logger.addHandler(console_handler)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
