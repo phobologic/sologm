@@ -11,8 +11,10 @@ from sologm.utils.errors import APIError
 @pytest.fixture
 def mock_anthropic():
     """Create a mock Anthropic client."""
-    with patch("anthropic.Anthropic") as mock:
-        yield mock
+    with patch("sologm.integrations.anthropic.Anthropic") as mock:
+        mock_instance = MagicMock()
+        mock.return_value = mock_instance
+        yield mock, mock_instance
 
 @pytest.fixture
 def mock_response():
@@ -23,14 +25,16 @@ def mock_response():
 
 def test_init_with_api_key(mock_anthropic):
     """Test initializing client with explicit API key."""
+    mock_class, mock_instance = mock_anthropic
     client = AnthropicClient(api_key="test_key")
-    mock_anthropic.assert_called_once_with(api_key="test_key")
+    mock_class.assert_called_once_with(api_key="test_key")
 
 def test_init_with_env_var(mock_anthropic, monkeypatch):
     """Test initializing client with API key from environment."""
+    mock_class, mock_instance = mock_anthropic
     monkeypatch.setenv("ANTHROPIC_API_KEY", "env_test_key")
     client = AnthropicClient()
-    mock_anthropic.assert_called_once_with(api_key="env_test_key")
+    mock_class.assert_called_once_with(api_key="env_test_key")
 
 def test_init_no_api_key(mock_anthropic, monkeypatch):
     """Test initialization fails without API key."""
@@ -41,13 +45,14 @@ def test_init_no_api_key(mock_anthropic, monkeypatch):
 
 def test_send_message(mock_anthropic, mock_response):
     """Test sending a message to Claude."""
-    mock_anthropic.return_value.messages.create.return_value = mock_response
+    mock_class, mock_instance = mock_anthropic
+    mock_instance.messages.create.return_value = mock_response
     
     client = AnthropicClient(api_key="test_key")
     response = client.send_message("Test prompt")
     
     assert response == "Test response from Claude"
-    mock_anthropic.return_value.messages.create.assert_called_once_with(
+    mock_instance.messages.create.assert_called_once_with(
         model="claude-3-sonnet-20240229",
         max_tokens=1000,
         temperature=0.7,
@@ -57,7 +62,8 @@ def test_send_message(mock_anthropic, mock_response):
 
 def test_send_message_with_options(mock_anthropic, mock_response):
     """Test sending a message with custom options."""
-    mock_anthropic.return_value.messages.create.return_value = mock_response
+    mock_class, mock_instance = mock_anthropic
+    mock_instance.messages.create.return_value = mock_response
     
     client = AnthropicClient(api_key="test_key")
     response = client.send_message(
@@ -68,7 +74,7 @@ def test_send_message_with_options(mock_anthropic, mock_response):
     )
     
     assert response == "Test response from Claude"
-    mock_anthropic.return_value.messages.create.assert_called_once_with(
+    mock_instance.messages.create.assert_called_once_with(
         model="claude-3-sonnet-20240229",
         max_tokens=500,
         temperature=0.5,
