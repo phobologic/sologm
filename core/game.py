@@ -92,7 +92,7 @@ class GameManager:
             return game
             
         except Exception as e:
-            raise GameError(f"Failed to create game: {str(e)}")
+            raise GameError(f"Failed to create game: {str(e)}") from e
     
     def list_games(self) -> List[Game]:
         """List all games in the system.
@@ -128,7 +128,7 @@ class GameManager:
             return sorted(games, key=lambda g: g.created_at)
             
         except Exception as e:
-            raise GameError(f"Failed to list games: {str(e)}")
+            raise GameError(f"Failed to list games: {str(e)}") from e
     
     def get_game(self, game_id: str) -> Optional[Game]:
         """Get a specific game by ID.
@@ -159,7 +159,7 @@ class GameManager:
             )
             
         except Exception as e:
-            raise GameError(f"Failed to get game {game_id}: {str(e)}")
+            raise GameError(f"Failed to get game {game_id}: {str(e)}") from e
     
     def get_active_game(self) -> Optional[Game]:
         """Get the currently active game.
@@ -177,7 +177,7 @@ class GameManager:
             return self.get_game(game_id)
             
         except Exception as e:
-            raise GameError(f"Failed to get active game: {str(e)}")
+            raise GameError(f"Failed to get active game: {str(e)}") from e
     
     def activate_game(self, game_id: str) -> Game:
         """Set a game as active.
@@ -200,4 +200,4 @@ class GameManager:
             return game
             
         except Exception as e:
-            raise GameError(f"Failed to activate game {game_id}: {str(e)}")
+            raise GameError(f"Failed to activate game {game_id}: {str(e)}") from e
