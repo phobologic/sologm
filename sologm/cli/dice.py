@@ -1,4 +1,5 @@
 """Dice rolling commands for Solo RPG Helper."""
+import logging
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -8,6 +9,7 @@ from typing import Optional
 from sologm.core.dice import roll_dice
 from sologm.utils.errors import DiceError
 
+logger = logging.getLogger(__name__)
 dice_app = typer.Typer(help="Dice rolling commands")
 console = Console()
 
@@ -27,8 +29,10 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
+        logger.debug(f"Rolling dice with notation: {notation}, reason: {reason}")
         result = roll_dice(notation, reason)
 
+        logger.debug(f"Creating formatted output for roll result: {result}")
         # Create formatted output
         title = Text()
         if reason:

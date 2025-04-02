@@ -43,9 +43,13 @@ def parse_dice_notation(notation: str) -> tuple[int, int, int]:
     sides = int(match.group(2))
     modifier = int(match.group(3) or 0)
     
+    logger.debug(f"Parsing dice notation - count: {count}, sides: {sides}, modifier: {modifier}")
+    
     if count < 1:
+        logger.error(f"Invalid dice count: {count}")
         raise DiceError("Must roll at least 1 die")
     if sides < 2:
+        logger.error(f"Invalid sides count: {sides}")
         raise DiceError("Die must have at least 2 sides")
         
     logger.debug(f"Parsed {notation} as {count}d{sides}{modifier:+d}")
@@ -66,11 +70,12 @@ def roll_dice(notation: str, reason: str | None = None) -> DiceRoll:
     """
     count, sides, modifier = parse_dice_notation(notation)
     
-    logger.debug(f"Rolling {count}d{sides}{modifier:+d}")
+    logger.debug(f"Rolling {count} dice with {sides} sides and modifier {modifier:+d}")
     individual_results = [random.randint(1, sides) for _ in range(count)]
-    total = sum(individual_results) + modifier
+    logger.debug(f"Individual dice results: {individual_results}")
     
-    logger.debug(f"Rolled {individual_results} + {modifier} = {total}")
+    total = sum(individual_results) + modifier
+    logger.debug(f"Final result: {individual_results} + {modifier} = {total}")
     
     return DiceRoll(
         notation=notation,
