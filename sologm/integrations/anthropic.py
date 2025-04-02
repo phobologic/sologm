@@ -76,6 +76,7 @@ class AnthropicClient:
         try:
             logger.debug(f"Sending message to Claude with {max_tokens} max tokens")
             
+            logger.debug(f"Sending message to Claude with prompt length: {len(prompt)}")
             response = self.client.messages.create(
                 model="claude-3-sonnet-20240229",
                 max_tokens=max_tokens,
@@ -86,8 +87,9 @@ class AnthropicClient:
                 ]
             )
             
-            logger.debug("Successfully received response from Claude")
-            return response.content[0].text
+            response_text = response.content[0].text
+            logger.debug(f"Successfully received response from Claude (length: {len(response_text)})")
+            return response_text
             
         except Exception as e:
             logger.error(f"Failed to get response from Claude: {e}")

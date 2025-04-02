@@ -87,14 +87,18 @@ def interpret_oracle(
     try:
         manager = OracleManager()
         
+        logger.debug("Getting active game ID")
         # Get active game and scene
         game_id = manager.file_manager.get_active_game_id()
         if not game_id:
+            logger.debug("No active game found")
             console.print("[red]No active game found. Use 'game activate' first.[/red]")
             raise typer.Exit(1)
         
+        logger.debug(f"Getting active scene ID for game {game_id}")
         scene_id = manager.file_manager.get_active_scene_id(game_id)
         if not scene_id:
+            logger.debug("No active scene found")
             console.print("[red]No active scene found. Create or set a scene first.[/red]")
             raise typer.Exit(1)
         

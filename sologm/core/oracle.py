@@ -147,10 +147,12 @@ DESCRIPTION: Detailed description of interpretation idea
             OracleError: If interpretation generation fails.
         """
         try:
+            logger.debug(f"Getting game data for game_id: {game_id}")
             # Get game and scene details
             game_data = self.file_manager.read_yaml(
                 self.file_manager.get_game_path(game_id)
             )
+            logger.debug("Successfully loaded game data")
             scene_data = self.file_manager.read_yaml(
                 self.file_manager.get_scene_path(game_id, scene_id)
             )
@@ -168,6 +170,7 @@ DESCRIPTION: Detailed description of interpretation idea
                 )[:5]
             ]
             
+            logger.debug("Building prompt for Claude API")
             # Build prompt and get response
             prompt = self._build_prompt(
                 game_data["description"],
@@ -178,8 +181,11 @@ DESCRIPTION: Detailed description of interpretation idea
                 count
             )
             
+            logger.debug("Sending prompt to Claude API")
             response = self.anthropic_client.send_message(prompt)
+            logger.debug("Parsing interpretations from response")
             parsed = self._parse_interpretations(response)
+            logger.debug(f"Found {len(parsed)} interpretations")
             
             # Create interpretation objects
             now = datetime.now(timezone.utc)
