@@ -114,13 +114,13 @@ def scene_info() -> None:
         return
 
     console.print("[bold]Active Scene:[/]")
-    console.print(f"ID: {active_scene.id}")
-    console.print(f"Title: {active_scene.title}")
-    console.print(f"Description: {active_scene.description}")
-    console.print(f"Status: {active_scene.status}")
-    console.print(f"Sequence: {active_scene.sequence}")
-    console.print(f"Created: {active_scene.created_at}")
-    console.print(f"Modified: {active_scene.modified_at}")
+    console.print(f"  ID: {active_scene.id}")
+    console.print(f"  Title: {active_scene.title}")
+    console.print(f"  Description: {active_scene.description}")
+    console.print(f"  Status: {active_scene.status}")
+    console.print(f"  Sequence: {active_scene.sequence}")
+    console.print(f"  Created: {active_scene.created_at}")
+    console.print(f"  Modified: {active_scene.modified_at}")
 
 
 @scene_app.command("complete")
