@@ -87,6 +87,8 @@ Completed: 2025-04-02
 - [x] Implement cli/event.py with event-related commands
 - [x] Add event add command with text and source options
 - [x] Add event list command with table formatting
-- [x] Write tests for event commands
+- [x] Add debug logging to CLI and core event modules
+- [x] Add event subcommands to main CLI app
+- [x] Fix logger configuration and imports
 
-Test Results: Event CLI commands implemented with rich table output
+Test Results: Event CLI commands implemented with rich table output and debug logging
