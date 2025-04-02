@@ -224,7 +224,7 @@ class FileManager:
         Returns:
             Path to the scene's YAML file.
         """
-        return self.base_dir / "games" / game_id / "scenes" / scene_id / "scene.yaml"
+        return self.base_dir / "games" / game_id / scene_id / "scene.yaml"
     
     def get_events_path(self, game_id: str, scene_id: str) -> Path:
         """Get the path to a scene's events YAML file.
@@ -236,7 +236,7 @@ class FileManager:
         Returns:
             Path to the scene's events YAML file.
         """
-        return self.base_dir / "games" / game_id / "scenes" / scene_id / "events.yaml"
+        return self.base_dir / "games" / game_id / scene_id / "events.yaml"
     
     def get_interpretations_dir(self, game_id: str, scene_id: str) -> Path:
         """Get the path to a scene's interpretations directory.
@@ -248,7 +248,7 @@ class FileManager:
         Returns:
             Path to the scene's interpretations directory.
         """
-        return self.base_dir / "games" / game_id / "scenes" / scene_id / "interpretations"
+        return self.base_dir / "games" / game_id / scene_id / "interpretations"
     
     def create_timestamp_filename(self, prefix: str, suffix: str = ".yaml") -> str:
         """Create a filename with a timestamp.
