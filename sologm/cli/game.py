@@ -4,6 +4,7 @@ import typer
 from rich.console import Console
 
 from sologm.core.game import GameManager
+from sologm.core.scene import SceneManager
 from sologm.cli.main import app, handle_errors
 
 import logging
