@@ -7,8 +7,6 @@ import typer
 from rich.console import Console
 
 from sologm import __version__
-from sologm.utils.config import config
-from sologm.utils.errors import SoloGMError
 from sologm.utils.logger import setup_root_logger
 
 logger = logging.getLogger(__name__)
@@ -70,13 +68,14 @@ def main(
 from sologm.cli.game import game_app  # noqa
 from sologm.cli.scene import scene_app  # noqa
 from sologm.cli.event import event_app  # noqa
+from sologm.cli.dice import dice_app  # noqa
 import sologm.cli.oracle  # noqa
-import sologm.cli.dice  # noqa
 
 # Add subcommands
 app.add_typer(game_app, name="game")
 app.add_typer(scene_app, name="scene")
 app.add_typer(event_app, name="event")
+app.add_typer(dice_app, name="dice")
 
 if __name__ == "__main__":
     app()
