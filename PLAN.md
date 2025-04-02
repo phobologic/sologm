@@ -137,19 +137,21 @@ sologm nonexistent-command
 4. Add game activate and info commands
 
 ### Part 2.4: Scene Models and Logic
-1. Create Scene data model
+1. Create Scene data model with separate status and current tracking
 2. Implement core/scene.py functionality
-3. Add create_scene, list_scenes, and complete_scene functions
-4. Write tests for scene management functions
-5. **Run scene logic tests and verify all tests pass successfully**
+3. Add create_scene, list_scenes, complete_scene, and set_current_scene functions
+4. Add functions to track current scene separately from scene status
+5. Write tests for scene management functions including status/current separation
+6. **Run scene logic tests and verify all tests pass successfully**
 
 ### Part 2.5: Scene CLI Commands
 1. Implement cli/scene.py with scene-related commands
 2. Add scene create command
-3. Add scene list and info commands
-4. Add scene complete command
-5. Write tests for scene commands
-6. **Run scene CLI tests and verify all tests pass successfully**
+3. Add scene list and info commands showing both status and current indicators
+4. Add scene complete command that only changes status
+5. Add scene set-current command that only changes which scene is current
+6. Write tests for scene commands verifying status/current separation
+7. **Run scene CLI tests and verify all tests pass successfully**
 
 ### Demo 2: Game and Scene Management
 ```bash
@@ -189,9 +191,13 @@ sologm scene list
 sologm scene info
 # Should display details of the active scene
 
-# Complete the active scene
+# Complete the current scene
 sologm scene complete
-# Should mark scene as complete and activate the next scene if available
+# Should mark scene as complete without changing which scene is current
+
+# Switch to a different scene
+sologm scene set-current --id forest-path
+# Should set Forest Path as current scene without changing its status
 
 # Show directory structure to demonstrate storage
 ls -la ~/.sologm/
