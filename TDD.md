@@ -202,7 +202,74 @@ def select_interpretation(
     """Select an interpretation and add it as an event."""
 ```
 
-#### 3.5.3 Claude API Integration
+#### 3.5.3 Oracle Interpretation Management
+The system will track the current interpretation and handle retries:
+
+```python
+def set_current_interpretation(
+    self,
+    game_id: str,
+    interpretation_set_id: str,
+    context: str,
+    oracle_results: str
+) -> None:
+    """Set the current interpretation for a game."""
+    game_data = self.file_manager.read_yaml(
+        self.file_manager.get_game_path(game_id)
+    )
+    game_data["current_interpretation"] = {
+        "id": interpretation_set_id,
+        "context": context,
+        "results": oracle_results,
+        "retry_count": 0
+    }
+    self.file_manager.write_yaml(
+        self.file_manager.get_game_path(game_id),
+        game_data
+    )
+
+def get_current_interpretation(
+    self,
+    game_id: str
+) -> Optional[dict]:
+    """Get the current interpretation data for a game."""
+    game_data = self.file_manager.read_yaml(
+        self.file_manager.get_game_path(game_id)
+    )
+    return game_data.get("current_interpretation")
+
+def retry_interpretation(
+    self,
+    game_id: str,
+    scene_id: str
+) -> InterpretationSet:
+    """Generate new interpretations for the current context/results."""
+    current = self.get_current_interpretation(game_id)
+    if not current:
+        raise OracleError("No current interpretation to retry")
+    
+    # Increment retry count
+    current["retry_count"] += 1
+    game_data = self.file_manager.read_yaml(
+        self.file_manager.get_game_path(game_id)
+    )
+    game_data["current_interpretation"] = current
+    self.file_manager.write_yaml(
+        self.file_manager.get_game_path(game_id),
+        game_data
+    )
+    
+    # Get new interpretations with retry context
+    return self.get_interpretations(
+        game_id,
+        scene_id,
+        current["context"],
+        current["results"],
+        retry_attempt=current["retry_count"]
+    )
+```
+
+#### 3.5.4 Claude API Integration
 The system will use Anthropic's Python SDK to interact with Claude:
 
 ```python
@@ -214,13 +281,16 @@ def generate_interpretations(
     recent_events: list[str],
     context: str,
     oracle_results: str,
-    count: int
+    count: int,
+    retry_attempt: int = 0
 ) -> list[Interpretation]:
     """Generate interpretations using Claude API."""
     
     client = Anthropic(api_key=get_api_key())
     
     # Construct prompt with all relevant context
+    retry_context = f"This is attempt #{retry_attempt + 1} for this context/results pair. Please provide different interpretations from previous attempts." if retry_attempt > 0 else ""
+    
     prompt = f"""
     You are interpreting oracle results for a solo RPG player.
     
@@ -230,6 +300,7 @@ def generate_interpretations(
     
     Player's Question/Context: {context}
     Oracle Results: {oracle_results}
+    {retry_context}
     
     Please provide {count} different interpretations of these oracle results.
     Format your response exactly as follows:

@@ -50,6 +50,7 @@ The application will provide a command-line interface, allowing users to manage 
   - Game description (providing genre, setting, tone, and background)
   - Current Scene description (location, situation, characters present)
   - Last 5 Scene Events descriptions (if they exist) to provide narrative continuity
+- The system tracks the most recently generated interpretation set as the "current" interpretation
 - AI should return the requested number of possible interpretations in a simple, parseable plaintext format:
   ```
   === BEGIN INTERPRETATIONS ===
@@ -70,11 +71,13 @@ The application will provide a command-line interface, allowing users to manage 
   ```
 - The user will select from the presented interpretations through numbered options
 - If none of the interpretations work:
-  - The user can try again with additional context
-  - The system should suggest adding more context to improve results
+  - The user can request new interpretations using the same context and results
+  - The system will instruct the AI to provide different interpretations
+  - The system tracks the number of retry attempts for the current interpretation
 - If a specific interpretation is selected:
   - The selected interpretation is displayed with the original context/question
   - The interpretation is added as an event to the current scene
+  - The interpretation set remains "current" until a new one is generated
 
 #### 2.1.5 Dice System
 - Support for standard dice notation (e.g., "2d6+3")
@@ -181,6 +184,9 @@ The application will provide a command-line interface, allowing users to manage 
 - As a player, I want to specify how many interpretation options I receive
 - As a player, I want to select the interpretation that best fits my narrative
 - As a player, I want the selected interpretation to be automatically added as a scene event
+- As a player, I want the system to remember my last oracle interpretation request so I can easily work with it
+- As a player, I want to get different interpretations for the same oracle results if the first set wasn't helpful
+- As a player, I want to select from the current interpretation set without having to specify its ID
 
 ### 3.5 Dice Rolling
 - As a player, I want to roll dice using standard notation to determine outcomes
@@ -207,6 +213,11 @@ The application will provide a command-line interface, allowing users to manage 
   - Name, description
   - Created/modified dates
   - List of all scene IDs
+  - Current interpretation data:
+    - Interpretation set ID
+    - Original context/question
+    - Oracle results
+    - Number of retry attempts
 - Active game tracking:
   - Current active game ID stored in `~/.sologm/active_game`
   - This file contains only the game ID of the currently active game
@@ -234,6 +245,16 @@ The application will provide a command-line interface, allowing users to manage 
   - Oracle results provided
   - AI response with all interpretations
   - Reference to selected interpretation (if any)
+  - Number of retry attempts for this context/results pair
+- Current interpretation tracking:
+  - Each game stores reference to its current interpretation set in game.yaml:
+    ```yaml
+    current_interpretation:
+      id: "interpretation_set_id"
+      context: "Original question/context"
+      results: "Original oracle results"
+      retry_count: 1
+    ```
 
 ### 4.2 Command Structure
 
@@ -265,8 +286,9 @@ sologm game list
 - `sologm scene info` - Show details of current active scene
 - `sologm event add --text "Event description"` - Add an event to the current scene
 - `sologm event list` - List recent events in current scene
-- `sologm oracle interpret --context "Your question" --results "Oracle result" --count 5` - Submit oracle results for AI interpretation
-- `sologm oracle select --id [interpretation_id]` - Select an interpretation to add as an event
+- `sologm oracle interpret --context "Your question" --results "Oracle result" --count 5` - Submit oracle results for AI interpretation (becomes current)
+- `sologm oracle select [--id interpretation_id]` - Select an interpretation to add as an event (uses current if no ID provided)
+- `sologm oracle retry` - Request new interpretations using current context and results
 - `sologm dice roll [notation] --reason "Reason for roll"` - Roll dice with specified notation and optional reason
 
 ### 4.3 External Integrations
