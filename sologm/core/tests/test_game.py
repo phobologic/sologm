@@ -36,7 +36,6 @@ class TestGameManager:
         assert isinstance(game, Game)
         assert game.name == "Test Game"
         assert game.description == "A test game"
-        assert game.status == "active"
         assert isinstance(game.created_at, datetime)
         assert isinstance(game.modified_at, datetime)
         assert game.scenes == []
@@ -50,7 +49,6 @@ class TestGameManager:
             data = yaml.safe_load(f)
             assert data["name"] == "Test Game"
             assert data["description"] == "A test game"
-            assert data["status"] == "active"
             assert data["scenes"] == []
 
         # Verify game was set as active

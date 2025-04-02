@@ -38,7 +38,6 @@ def create_game(
     console.print("[bold green]Game created successfully![/]")
     console.print(f"Name: {game.name} ({game.id})")
     console.print(f"Description: {game.description}")
-    console.print(f"Status: {game.status}")
 
 
 @handle_errors
@@ -59,7 +58,6 @@ def list_games() -> None:
         active = " [green](active)[/green]" if active_game and game.id == active_game.id else ""
         console.print(f"- {game.name} ({game.id}){active}")
         console.print(f"  Description: {game.description}")
-        console.print(f"  Status: {game.status}")
         console.print(f"  Scenes: {len(game.scenes)}")
         console.print()
 

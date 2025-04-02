@@ -19,7 +19,6 @@ class Game:
     id: str
     name: str
     description: str
-    status: str  # active, inactive, completed, abandoned
     created_at: datetime
     modified_at: datetime
     scenes: List[str]
@@ -71,7 +70,6 @@ class GameManager:
             id=game_id,
             name=name,
             description=description,
-            status="active",
             created_at=now,
             modified_at=now,
             scenes=[]
@@ -85,7 +83,6 @@ class GameManager:
                     "id": game.id,
                     "name": game.name,
                     "description": game.description,
-                    "status": game.status,
                     "created_at": game.created_at.isoformat(),
                     "modified_at": game.modified_at.isoformat(),
                     "scenes": game.scenes
