@@ -1,5 +1,6 @@
 """Game management functionality."""
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -8,6 +9,8 @@ from typing import List, Optional
 
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import GameError
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Game:
@@ -48,15 +51,18 @@ class GameManager:
         """
         # Generate a URL-friendly ID from the name
         game_id = "-".join(name.lower().split())
+        logger.debug(f"Initial game ID generated: {game_id}")
         
         # Ensure uniqueness by adding a UUID suffix if needed
         base_id = game_id
         counter = 1
         while Path(self.file_manager.get_game_path(game_id)).exists():
+            logger.debug(f"Game ID {game_id} already exists, trying with UUID suffix")
             suffix = str(uuid.uuid4())[:8]
             game_id = f"{base_id}-{suffix}"
             counter += 1
             if counter > 10:  # Prevent infinite loops
+                logger.error(f"Failed to generate unique ID for game: {name} after {counter} attempts")
                 raise GameError(f"Failed to generate unique ID for game: {name}")
         
         # Create the game instance
@@ -89,9 +95,11 @@ class GameManager:
             # Set as active game
             self.file_manager.set_active_game_id(game_id)
             
+            logger.debug(f"Created game {game_id}: {name}")
             return game
             
         except Exception as e:
+            logger.error(f"Failed to create game {name}: {str(e)}")
             raise GameError(f"Failed to create game: {str(e)}") from e
     
     def list_games(self) -> List[Game]:
@@ -125,9 +133,12 @@ class GameManager:
                             scenes=game_data["scenes"]
                         ))
             
-            return sorted(games, key=lambda g: g.created_at)
+            games = sorted(games, key=lambda g: g.created_at)
+            logger.debug(f"Listed {len(games)} games")
+            return games
             
         except Exception as e:
+            logger.error(f"Failed to list games: {str(e)}")
             raise GameError(f"Failed to list games: {str(e)}") from e
     
     def get_game(self, game_id: str) -> Optional[Game]:
@@ -145,9 +156,11 @@ class GameManager:
         try:
             game_path = self.file_manager.get_game_path(game_id)
             if not game_path.exists():
+                logger.debug(f"Game {game_id} not found")
                 return None
                 
             game_data = self.file_manager.read_yaml(game_path)
+            logger.debug(f"Retrieved game {game_id}")
             return Game(
                 id=game_data["id"],
                 name=game_data["name"],
@@ -173,10 +186,13 @@ class GameManager:
         try:
             game_id = self.file_manager.get_active_game_id()
             if not game_id:
+                logger.debug("No active game set")
                 return None
+            logger.debug(f"Getting active game: {game_id}")
             return self.get_game(game_id)
             
         except Exception as e:
+            logger.error(f"Failed to get active game: {str(e)}")
             raise GameError(f"Failed to get active game: {str(e)}") from e
     
     def activate_game(self, game_id: str) -> Game:
@@ -194,10 +210,13 @@ class GameManager:
         try:
             game = self.get_game(game_id)
             if not game:
+                logger.error(f"Cannot activate nonexistent game: {game_id}")
                 raise GameError(f"Game not found: {game_id}")
             
             self.file_manager.set_active_game_id(game_id)
+            logger.debug(f"Activated game: {game_id}")
             return game
             
         except Exception as e:
+            logger.error(f"Failed to activate game {game_id}: {str(e)}")
             raise GameError(f"Failed to activate game {game_id}: {str(e)}") from e
