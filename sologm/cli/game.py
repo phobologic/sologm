@@ -36,9 +36,9 @@ def create_game(
     console.print(f"Description: {description}")
 
 
-@game_app.command()
 @handle_errors
-def list() -> None:
+@game_app.command("list")
+def list_games() -> None:
     """List all games."""
     logger.debug("Listing all games")
     game_manager = GameManager()
