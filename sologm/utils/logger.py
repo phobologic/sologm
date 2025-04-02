@@ -41,15 +41,3 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
 
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
-
-
-def get_logger(name: str) -> logging.Logger:
-    """Get a logger for a specific module.
-
-    Args:
-        name: Usually __name__ from the calling module.
-
-    Returns:
-        Logger instance for the module.
-    """
-    return logging.getLogger(f"sologm.{name}")
