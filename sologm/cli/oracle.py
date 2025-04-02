@@ -138,13 +138,76 @@ def interpret_oracle(
         console.print(f"[red]Error: {str(e)}[/red]")
         raise typer.Exit(1)
 
+@oracle_app.command("retry")
+def retry_interpretation() -> None:
+    """Request new interpretations using current context and results."""
+    try:
+        manager = OracleManager()
+        
+        # Get active game and scene
+        game_id = manager.file_manager.get_active_game_id()
+        if not game_id:
+            console.print("[red]No active game found. Use 'game activate' first.[/red]")
+            raise typer.Exit(1)
+        
+        scene_id = manager.file_manager.get_active_scene_id(game_id)
+        if not scene_id:
+            console.print("[red]No active scene found. Create or set a scene first.[/red]")
+            raise typer.Exit(1)
+            
+        # Get current interpretation data
+        game_data = manager.file_manager.read_yaml(
+            manager.file_manager.get_game_path(game_id)
+        )
+        current = game_data.get("current_interpretation")
+        
+        if not current:
+            console.print("[red]No current interpretation to retry. Run 'oracle interpret' first.[/red]")
+            raise typer.Exit(1)
+            
+        # Get new interpretations with incremented retry count
+        console.print("\nGenerating new interpretations...", style="bold blue")
+        interp_set = manager.get_interpretations(
+            game_id,
+            scene_id,
+            current["context"],
+            current["results"],
+            retry_attempt=current["retry_count"] + 1
+        )
+        
+        # Display results
+        console.print("\n[bold]Oracle Interpretations (Retry)[/bold]")
+        console.print(f"Context: {current['context']}")
+        console.print(f"Results: {current['results']}\n")
+        
+        for i, interp in enumerate(interp_set.interpretations, 1):
+            panel = Panel(
+                Text.from_markup(
+                    f"[bold]{interp.title}[/bold]\n\n{interp.description}"
+                ),
+                title=f"Interpretation {i} [dim][{interp.id}][/dim]",
+                border_style="blue"
+            )
+            console.print(panel)
+            console.print()
+        
+        console.print(
+            f"\nInterpretation set ID: [bold]{interp_set.id}[/bold] "
+            "(use this ID to select an interpretation)"
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to retry interpretation: {e}")
+        console.print(f"[red]Error: {str(e)}[/red]")
+        raise typer.Exit(1)
+
 @oracle_app.command("select")
 def select_interpretation(
-    interpretation_set_id: str = typer.Option(
-        ..., "--set-id", "-s", help="ID of the interpretation set"
-    ),
     interpretation_id: str = typer.Option(
-        ..., "--id", "-i", help="ID of the interpretation to select"
+        None, "--id", "-i", help="ID of the interpretation to select"
+    ),
+    interpretation_set_id: str = typer.Option(
+        None, "--set-id", "-s", help="ID of the interpretation set (uses current if not specified)"
     ),
 ) -> None:
     """Select an interpretation to add as an event."""
@@ -161,7 +224,22 @@ def select_interpretation(
         if not scene_id:
             console.print("[red]No active scene found. Create or set a scene first.[/red]")
             raise typer.Exit(1)
-        
+
+        # If no set ID provided, use current interpretation
+        if not interpretation_set_id:
+            game_data = manager.file_manager.read_yaml(
+                manager.file_manager.get_game_path(game_id)
+            )
+            current = game_data.get("current_interpretation")
+            if not current:
+                console.print("[red]No current interpretation set. Specify --set-id or run 'oracle interpret' first.[/red]")
+                raise typer.Exit(1)
+            interpretation_set_id = current["id"]
+            
+        if not interpretation_id:
+            console.print("[red]Please specify which interpretation to select with --id.[/red]")
+            raise typer.Exit(1)
+            
         # Select interpretation
         selected = manager.select_interpretation(
             game_id,

@@ -210,6 +210,13 @@ DESCRIPTION: Detailed description of interpretation idea
                 selected_interpretation=None,
                 created_at=now
             )
+
+            # If this is a retry, modify the prompt to request different interpretations
+            if retry_attempt > 0:
+                prompt = prompt.replace(
+                    "Please provide",
+                    f"This is retry attempt #{retry_attempt + 1}. Please provide DIFFERENT"
+                )
             
             # Update game's current interpretation
             game_data = self.file_manager.read_yaml(
