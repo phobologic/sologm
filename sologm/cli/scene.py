@@ -62,11 +62,13 @@ def list_scenes() -> None:
     if not active_game:
         raise GameError("No active game. Use 'sologm game activate' to set one.")
 
-    # Get scenes
+    # Get scenes and current scene ID
     scenes = scene_manager.list_scenes(active_game.id)
     if not scenes:
         console.print("No scenes found. Create one with 'sologm scene create'.")
         return
+
+    current_scene_id = scene_manager.file_manager.get_active_scene_id(active_game.id)
 
     # Create table
     table = Table(title=f"Scenes in {active_game.name}")
@@ -74,6 +76,7 @@ def list_scenes() -> None:
     table.add_column("Title", style="magenta")
     table.add_column("Description")
     table.add_column("Status", style="green")
+    table.add_column("Current", style="yellow", justify="center")
     table.add_column("Sequence", justify="right")
 
     for scene in scenes:
@@ -82,6 +85,7 @@ def list_scenes() -> None:
             scene.title,
             scene.description,
             scene.status,
+            "✓" if scene.id == current_scene_id else "",
             str(scene.sequence)
         )
 
