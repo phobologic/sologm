@@ -17,30 +17,15 @@ The application will provide a command-line interface, allowing users to manage 
 
 #### 2.1.1 Game Management
 - Users should be able to create a Game with a description
-- Only one "active" game should exist at a time in the local environment
-- Games can be deactivated, completed, or abandoned (state change, not deletion)
+- Only one game can be the "active game" at a time
 - Users should be able to list all their games
 - Users should be able to switch between games easily
 
-##### Active Game vs. Game Status
-The concept of an "active game" is distinct from a game's status:
+##### Active Game Concept
 - The active game is the currently selected game that commands operate on
 - Only one game can be the active game at any time
-- This is tracked separately from the game's status
-- The active game is stored in ~/.sologm/active_game
-
-##### Game Status Values
-Games can have the following status values:
-- Active: Game is in progress and actively being played
-- Inactive: Game is temporarily paused but intended to be resumed later
-- Completed: Game has reached its narrative conclusion successfully
-- Abandoned: Game has been permanently stopped before conclusion
-
-##### Game Status Workflow Rules
-- Only games with status "active" or "inactive" can be made the active game
-- Completed or abandoned games can be viewed but not made active
-- When creating a new game, it should have status="active"
-- When creating a new game, prompt whether to make it the active game
+- The active game is tracked in ~/.sologm/active_game
+- When creating a new game, it becomes the active game by default unless specified otherwise
 
 #### 2.1.2 Scene Management
 - Users should be able to create Scenes with descriptions
@@ -175,13 +160,9 @@ Games can have the following status values:
 
 ### 3.1 Game Creation and Management
 - As a player, I want to create a new solo RPG game so that I can start tracking my gameplay
-- As a player, I want to see the current status and description of my active game
+- As a player, I want to see information about my active game
 - As a player, I want to list all my games
 - As a player, I want to switch between different games easily
-- As a player, I want to mark a game as inactive when I'm taking a break from it
-- As a player, I want to mark a game as completed when the story has concluded
-- As a player, I want to mark a game as abandoned when I don't plan to continue it
-- As a player, I want to resume an inactive game when I'm ready to continue playing
 
 ### 3.2 Scene Management
 - As a player, I want to create a new scene with a description to advance my story
@@ -220,13 +201,12 @@ Games can have the following status values:
 #### 4.1.2 Game Data
 - Each game has a unique identifier (UUID or slug)
 - Game metadata stored in `game.yaml` with:
-  - Name, description, status (active/inactive/completed/abandoned)
+  - Name, description
   - Created/modified dates
   - List of all scene IDs
 - Active game tracking:
   - Current active game ID stored in `~/.sologm/active_game`
   - This file contains only the game ID of the currently active game
-  - This is separate from the game's status field
   - When empty, no game is currently active
 
 #### 4.1.3 Scene Data
@@ -255,45 +235,27 @@ Games can have the following status values:
 ### 4.2 Command Structure
 
 #### 4.2.1 Commands
-- `sologm game create --name "Game Name" --description "Game description" [--make-active]` - Create a new game
-- `sologm game list` - List all games with their status and active indicator
-- `sologm game activate --id [game_id]` - Set a game as active (must be status active/inactive)
+- `sologm game create --name "Game Name" --description "Game description" [--no-activate]` - Create a new game
+- `sologm game list` - List all games showing which is active
+- `sologm game activate --id [game_id]` - Set a game as active
 - `sologm game info` - Show details of current active game
-- `sologm game pause` - Change active game status to "inactive"
-- `sologm game resume` - Change game status from "inactive" to "active"
-- `sologm game complete` - Change active game status to "completed"
-- `sologm game abandon` - Change active game status to "abandoned"
 
 Example command sequence:
 ```bash
 # Create and manage multiple games
-sologm game create --name "Fantasy Quest" --description "A magical journey" --make-active
+sologm game create --name "Fantasy Quest" --description "A magical journey"
 sologm game create --name "Space Adventure" --description "Exploring the stars"
 sologm game list
 # Shows:
-# - Fantasy Quest (active) [active game]
-# - Space Adventure (active)
+# - Fantasy Quest
+# - Space Adventure [active game]
 
-# Pause first game and switch to second
-sologm game pause  # Changes Fantasy Quest to inactive
-sologm game activate --id space-adventure
-sologm game list
-# Shows:
-# - Fantasy Quest (inactive)
-# - Space Adventure (active) [active game]
-
-# Complete second game and try to activate it
-sologm game complete  # Changes Space Adventure to completed
-sologm game activate --id space-adventure
-# Error: Cannot activate completed game
-
-# Resume first game
+# Switch active game
 sologm game activate --id fantasy-quest
-sologm game resume  # Changes Fantasy Quest back to active
 sologm game list
 # Shows:
-# - Fantasy Quest (active) [active game]
-# - Space Adventure (completed)
+# - Fantasy Quest [active game]
+# - Space Adventure
 ```
 - `sologm scene create --title "Scene Title" --description "Scene description"` - Create a new scene in active game
 - `sologm scene list` - List all scenes in active game

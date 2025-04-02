@@ -322,7 +322,6 @@ def roll_dice(notation: str, reason: Optional[str] = None) -> DiceRoll:
 id: "unique-game-id"
 name: "Game Name"
 description: "Game description"
-status: "active"  # active, inactive, completed, abandoned
 created_at: "2025-04-01T12:00:00Z"
 modified_at: "2025-04-01T14:30:00Z"
 scenes:
