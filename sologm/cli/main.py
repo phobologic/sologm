@@ -63,7 +63,12 @@ def main(
         config = Config(Path(config_path))
 
 
-from sologm.cli.game import game_app  # type: ignore # noqa: F401
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typer import Typer
+    game_app: Typer
+else:
+    from sologm.cli.game import game_app  # type: ignore # noqa: F401
 from sologm.cli.scene import scene_app  # noqa
 from sologm.cli.event import event_app  # noqa
 from sologm.cli.dice import dice_app  # noqa
