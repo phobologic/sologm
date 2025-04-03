@@ -59,7 +59,7 @@ class AnthropicClient:
         prompt: str,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-        system: str = NOT_GIVEN,
+        system: Optional[str] = None,
     ) -> str:
         """Send a message to Claude and get the response.
 
@@ -90,6 +90,9 @@ class AnthropicClient:
                 messages=[{"role": "user", "content": prompt}],
             )
 
+            # Extract text from the first content block
+            if not response.content or not hasattr(response.content[0], 'text'):
+                raise APIError("Unexpected response format from Claude")
             response_text = response.content[0].text
             logger.debug(
                 f"Successfully received response from Claude "

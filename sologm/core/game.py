@@ -114,7 +114,7 @@ class GameManager:
         """
         try:
             games_dir = self.file_manager.base_dir / "games"
-            games = []
+            games: List[Game] = []
 
             if not games_dir.exists():
                 return games

@@ -5,7 +5,9 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from sologm.cli.main import app
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from sologm.cli.main import app
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.utils.errors import GameError, SceneError

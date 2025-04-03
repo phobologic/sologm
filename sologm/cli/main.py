@@ -58,12 +58,12 @@ def main(
         from pathlib import Path
         from sologm.utils.config import Config
 
-        global config
+        from sologm.utils.config import config
         logger.debug("Loading config from %s", config_path)
         config = Config(Path(config_path))
 
 
-from sologm.cli.game import game_app  # noqa
+from sologm.cli.game import game_app  # type: ignore
 from sologm.cli.scene import scene_app  # noqa
 from sologm.cli.event import event_app  # noqa
 from sologm.cli.dice import dice_app  # noqa
