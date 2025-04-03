@@ -95,7 +95,7 @@ class TestSceneManager:
         assert scene.game_id == test_game["id"]
         assert scene.title == "First Scene"
         assert scene.description == "The beginning"
-        assert scene.status == "active"
+        assert scene.status == SceneStatus.ACTIVE
         assert scene.sequence == 1
 
         # Verify scene was saved
