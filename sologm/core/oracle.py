@@ -3,14 +3,37 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import OracleError
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar('T')
+
+def oracle_operation(operation_name: str) -> Callable:
+    """Decorator for oracle operations with error handling.
+    
+    Args:
+        operation_name: Name of the operation for error messages.
+    """
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> T:
+            try:
+                logger.debug(f"Starting oracle operation: {operation_name}")
+                result = func(*args, **kwargs)
+                logger.debug(f"Completed oracle operation: {operation_name}")
+                return result
+            except Exception as e:
+                logger.error(f"Failed to {operation_name}: {e}")
+                raise OracleError(f"Failed to {operation_name}: {str(e)}")
+        return wrapper
+    return decorator
 
 
 @dataclass
@@ -52,6 +75,119 @@ class OracleManager:
         """
         self.file_manager = file_manager or FileManager()
         self.anthropic_client = anthropic_client or AnthropicClient()
+        
+    def _read_game_data(self, game_id: str) -> dict:
+        """Read and return game data.
+        
+        Args:
+            game_id: ID of the game to read.
+            
+        Returns:
+            dict: The game data.
+        """
+        logger.debug(f"Reading game data for game_id: {game_id}")
+        return self.file_manager.read_yaml(
+            self.file_manager.get_game_path(game_id)
+        )
+
+    def _read_scene_data(self, game_id: str, scene_id: str) -> dict:
+        """Read and return scene data.
+        
+        Args:
+            game_id: ID of the game.
+            scene_id: ID of the scene to read.
+            
+        Returns:
+            dict: The scene data.
+        """
+        logger.debug(f"Reading scene data for scene_id: {scene_id}")
+        return self.file_manager.read_yaml(
+            self.file_manager.get_scene_path(game_id, scene_id)
+        )
+
+    def _read_events_data(self, game_id: str, scene_id: str) -> dict:
+        """Read and return events data.
+        
+        Args:
+            game_id: ID of the game.
+            scene_id: ID of the scene.
+            
+        Returns:
+            dict: The events data.
+        """
+        logger.debug(f"Reading events data for scene_id: {scene_id}")
+        return self.file_manager.read_yaml(
+            self.file_manager.get_events_path(game_id, scene_id)
+        )
+        
+    def _create_interpretation(
+        self, 
+        id: str, 
+        title: str, 
+        description: str, 
+        created_at: datetime
+    ) -> Interpretation:
+        """Create an Interpretation object.
+        
+        Args:
+            id: Interpretation ID.
+            title: Interpretation title.
+            description: Interpretation description.
+            created_at: Creation timestamp.
+            
+        Returns:
+            Interpretation: The created interpretation object.
+        """
+        logger.debug(f"Creating interpretation object with id: {id}")
+        return Interpretation(
+            id=id,
+            title=title,
+            description=description,
+            created_at=created_at
+        )
+        
+    def _validate_interpretation_set(self, interp_data: dict, set_id: str) -> None:
+        """Validate interpretation set data.
+        
+        Args:
+            interp_data: The interpretation set data to validate.
+            set_id: ID of the interpretation set.
+            
+        Raises:
+            OracleError: If validation fails.
+        """
+        logger.debug(f"Validating interpretation set: {set_id}")
+        if not interp_data:
+            raise OracleError(f"Interpretation set {set_id} not found")
+        if "interpretations" not in interp_data:
+            raise OracleError(
+                "Invalid interpretation set format: missing interpretations"
+            )
+            
+    def _create_event_data(
+        self, 
+        events_data: dict, 
+        interpretation: Interpretation,
+        scene_id: str
+    ) -> dict:
+        """Create event data from interpretation.
+        
+        Args:
+            events_data: Existing events data.
+            interpretation: The interpretation to create event from.
+            scene_id: ID of the scene.
+            
+        Returns:
+            dict: The created event data.
+        """
+        logger.debug("Creating event data from interpretation")
+        return {
+            "id": f"event-{len(events_data['events'])+1}",
+            "description": f"{interpretation.title}: {interpretation.description}",
+            "source": "oracle",
+            "scene_id": scene_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
 
     def _build_prompt(
         self,
