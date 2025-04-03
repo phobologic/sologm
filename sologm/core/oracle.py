@@ -336,6 +336,7 @@ DESCRIPTION: Detailed description of interpretation idea
                 "id": f"event-{len(events_data['events'])+1}",
                 "description": f"{selected.title}: {selected.description}",
                 "source": "oracle",
+                "scene_id": scene_id,
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
             
