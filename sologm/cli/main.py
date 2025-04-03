@@ -1,13 +1,21 @@
 """Main CLI entry point for Solo RPG Helper."""
 
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import typer
 from rich.console import Console
 
 from sologm import __version__
 from sologm.utils.logger import setup_root_logger
+
+if TYPE_CHECKING:
+
+    game_app: typer.Typer
+else:
+    from sologm.cli.game import game_app  # type: ignore # noqa: F401
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +46,7 @@ def main(
     debug: bool = typer.Option(
         False, "--debug", help="Enable debug mode with verbose output."
     ),
-    version: Optional[bool] = typer.Option(
+    version: Optional[bool] = typer.Option( # noqa
         None, "--version", callback=version_callback, help="Show version and exit."
     ),
     config_path: Optional[str] = typer.Option(
@@ -57,20 +65,12 @@ def main(
     if config_path:
         from pathlib import Path
 
-        from sologm.utils.config import Config, config
+        from sologm.utils.config import Config
 
         logger.debug("Loading config from %s", config_path)
         config = Config(Path(config_path))
 
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typer import Typer
-
-    game_app: Typer
-else:
-    from sologm.cli.game import game_app  # type: ignore # noqa: F401
 
 from sologm.cli.dice import dice_app  # noqa
 from sologm.cli.event import event_app  # noqa

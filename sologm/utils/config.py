@@ -37,7 +37,7 @@ class Config:
             with open(self.config_path, "r") as f:
                 self._config = yaml.safe_load(f) or {}
         except Exception as e:
-            raise ConfigError(f"Failed to load configuration: {e}")
+            raise ConfigError(f"Failed to load configuration: {e}") from e
 
     def _create_default_config(self) -> None:
         """Create default configuration file."""
@@ -52,7 +52,7 @@ class Config:
                 yaml.dump(default_config, f, default_flow_style=False)
             self._config = default_config
         except Exception as e:
-            raise ConfigError(f"Failed to create default configuration: {e}")
+            raise ConfigError(f"Failed to create default configuration: {e}") from e
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value.
@@ -97,8 +97,7 @@ class Config:
             with open(self.config_path, "w") as f:
                 yaml.dump(self._config, f, default_flow_style=False)
         except Exception as e:
-            raise ConfigError(f"Failed to save configuration: {e}")
-
+            raise ConfigError(f"Failed to save configuration: {e}") from e
 
 # Global configuration instance
 config = Config()
