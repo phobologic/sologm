@@ -80,6 +80,79 @@ class OracleManager:
         self.file_manager = file_manager or FileManager()
         self.anthropic_client = anthropic_client or AnthropicClient()
 
+    def validate_active_context(self) -> tuple[str, str]:
+        """Validate active game and scene exist.
+
+        Returns:
+            tuple[str, str]: game_id, scene_id
+
+        Raises:
+            OracleError: If game or scene not active
+        """
+        game_id = self.file_manager.get_active_game_id()
+        if not game_id:
+            raise OracleError("No active game found")
+
+        scene_id = self.file_manager.get_active_scene_id(game_id)
+        if not scene_id:
+            raise OracleError("No active scene found")
+
+        return game_id, scene_id
+
+    def get_current_interpretation(self, game_id: str) -> Optional[dict]:
+        """Get current interpretation data if it exists.
+
+        Args:
+            game_id: ID of the game to check
+
+        Returns:
+            Optional[dict]: Current interpretation data or None
+        """
+        game_data = self._read_game_data(game_id)
+        return game_data.get("current_interpretation")
+
+    def get_interpretation_set(
+        self, game_id: str, scene_id: str, set_id: str
+    ) -> InterpretationSet:
+        """Get an interpretation set by ID.
+
+        Args:
+            game_id: ID of the game
+            scene_id: ID of the scene
+            set_id: ID of the interpretation set
+
+        Returns:
+            InterpretationSet: The requested interpretation set
+
+        Raises:
+            OracleError: If set not found
+        """
+        interp_path = Path(
+            self.file_manager.get_interpretations_dir(game_id, scene_id),
+            f"{set_id}.yaml",
+        )
+        try:
+            data = self.file_manager.read_yaml(interp_path)
+            return InterpretationSet(
+                id=data["id"],
+                scene_id=data["scene_id"],
+                context=data["context"],
+                oracle_results=data["oracle_results"],
+                interpretations=[
+                    self._create_interpretation(
+                        interpretation_id=i["id"],
+                        title=i["title"],
+                        description=i["description"],
+                        created_at=datetime.fromisoformat(i["created_at"]),
+                    )
+                    for i in data["interpretations"]
+                ],
+                selected_interpretation=data["selected_interpretation"],
+                created_at=datetime.fromisoformat(data["created_at"]),
+            )
+        except Exception as e:
+            raise OracleError(f"Failed to load interpretation set: {e}")
+
     def _read_game_data(self, game_id: str) -> dict:
         """Read and return game data.
 

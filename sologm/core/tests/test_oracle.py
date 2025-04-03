@@ -53,6 +53,7 @@ def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
     }
 
     file_manager.write_yaml(file_manager.get_game_path("test-game"), game_data)
+    file_manager.set_active_game_id("test-game")
 
     yield game_data
 
@@ -75,6 +76,7 @@ def test_scene(
     file_manager.write_yaml(
         file_manager.get_scene_path("test-game", "test-scene"), scene_data
     )
+    file_manager.set_active_scene_id("test-game", "test-scene")
 
     yield scene_data
 
@@ -110,6 +112,52 @@ def test_events(
 
 class TestOracle:
     """Tests for oracle interpretation system."""
+
+    def test_validate_active_context(
+        self, oracle_manager: OracleManager, test_game: dict, test_scene: dict
+    ) -> None:
+        """Test validating active game and scene."""
+        game_id, scene_id = oracle_manager.validate_active_context()
+        assert game_id == "test-game"
+        assert scene_id == "test-scene"
+
+    def test_validate_active_context_no_game(
+        self, oracle_manager: OracleManager
+    ) -> None:
+        """Test validation with no active game."""
+        with pytest.raises(OracleError) as exc:
+            oracle_manager.validate_active_context()
+        assert "No active game found" in str(exc.value)
+
+    def test_validate_active_context_no_scene(
+        self, oracle_manager: OracleManager, test_game: dict
+    ) -> None:
+        """Test validation with no active scene."""
+        with pytest.raises(OracleError) as exc:
+            oracle_manager.validate_active_context()
+        assert "No active scene found" in str(exc.value)
+
+    def test_get_current_interpretation(
+        self, oracle_manager: OracleManager, test_game: dict
+    ) -> None:
+        """Test getting current interpretation."""
+        # Set up test data
+        game_data = oracle_manager._read_game_data("test-game")
+        game_data["current_interpretation"] = {
+            "id": "test-interp",
+            "context": "test context",
+            "results": "test results",
+            "retry_count": 0,
+        }
+        oracle_manager.file_manager.write_yaml(
+            oracle_manager.file_manager.get_game_path("test-game"), game_data
+        )
+
+        current = oracle_manager.get_current_interpretation("test-game")
+        assert current["id"] == "test-interp"
+        assert current["context"] == "test context"
+        assert current["results"] == "test results"
+        assert current["retry_count"] == 0
 
     def test_build_prompt(self, oracle_manager: OracleManager) -> None:
         """Test building prompts for Claude."""
@@ -201,6 +249,54 @@ DESCRIPTION: Test Description
                 "test-game", "test-scene", "What happens?", "Mystery", 1
             )
         assert "Failed to get interpretations" in str(exc.value)
+
+    def test_get_interpretation_set(
+        self,
+        oracle_manager: OracleManager,
+        test_game: dict,
+        test_scene: dict,
+    ) -> None:
+        """Test getting an interpretation set by ID."""
+        # Create test interpretation set
+        interp_data = {
+            "id": "test-interp-set",
+            "scene_id": "test-scene",
+            "context": "test context",
+            "oracle_results": "test results",
+            "created_at": "2025-04-02T12:00:00Z",
+            "selected_interpretation": None,
+            "retry_attempt": 0,
+            "interpretations": [
+                {
+                    "id": "interp-1",
+                    "title": "Test Title",
+                    "description": "Test Description",
+                    "created_at": "2025-04-02T12:00:00Z",
+                }
+            ],
+        }
+        oracle_manager.file_manager.write_yaml(
+            Path(
+                oracle_manager.file_manager.get_interpretations_dir(
+                    "test-game", "test-scene"
+                ),
+                "test-interp-set.yaml",
+            ),
+            interp_data,
+        )
+
+        result = oracle_manager.get_interpretation_set(
+            "test-game", "test-scene", "test-interp-set"
+        )
+
+        assert isinstance(result, InterpretationSet)
+        assert result.id == "test-interp-set"
+        assert result.scene_id == "test-scene"
+        assert result.context == "test context"
+        assert result.oracle_results == "test results"
+        assert len(result.interpretations) == 1
+        assert result.interpretations[0].title == "Test Title"
+        assert result.interpretations[0].description == "Test Description"
 
     def test_select_interpretation(
         self,
