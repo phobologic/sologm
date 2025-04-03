@@ -447,10 +447,6 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
-]
-
-[package.dev-dependencies]
-dev = [
     { name = "types-pyyaml" },
 ]
 
@@ -465,10 +461,8 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.3.5" },
     { name = "typer", specifier = ">=0.9.0" },
+    { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.12.20250402" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "types-pyyaml", specifier = ">=6.0.12.20250402" }]
 
 [[package]]
 name = "typer"

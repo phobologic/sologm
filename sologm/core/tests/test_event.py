@@ -1,12 +1,13 @@
 """Tests for event management functionality."""
 
-import pytest
 from datetime import datetime
 from pathlib import Path
 from typing import Generator
 
-from sologm.storage.file_manager import FileManager
+import pytest
+
 from sologm.core.event import Event, EventManager
+from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import EventError
 
 

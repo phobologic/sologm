@@ -1,11 +1,12 @@
 """Scene management commands for Solo RPG Helper."""
 
 import logging
+from typing import TYPE_CHECKING
+
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typer import Typer
     app: Typer

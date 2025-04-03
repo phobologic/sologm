@@ -1,14 +1,15 @@
 """Tests for oracle interpretation system."""
 
-import pytest
 from datetime import datetime
 from pathlib import Path
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
-from sologm.core.oracle import OracleManager, Interpretation, InterpretationSet
-from sologm.storage.file_manager import FileManager
+import pytest
+
+from sologm.core.oracle import Interpretation, InterpretationSet, OracleManager
 from sologm.integrations.anthropic import AnthropicClient
+from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import OracleError
 
 

@@ -1,11 +1,12 @@
 """Dice rolling commands for Solo RPG Helper."""
 
 import logging
+from typing import Optional
+
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
-from typing import Optional
 
 from sologm.core.dice import roll_dice
 from sologm.utils.errors import DiceError

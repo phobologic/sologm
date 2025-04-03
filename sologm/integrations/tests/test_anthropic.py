@@ -1,10 +1,11 @@
 """Tests for Anthropic API client."""
 
 import os
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from anthropic._types import NOT_GIVEN
+
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.utils.errors import APIError
 

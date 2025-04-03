@@ -1,9 +1,10 @@
 import logging
 import os
-import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+
+import yaml
 
 from sologm.utils.errors import StorageError
 

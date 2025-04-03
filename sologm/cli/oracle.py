@@ -1,13 +1,13 @@
 """Oracle interpretation commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 
 from sologm.core.oracle import OracleManager

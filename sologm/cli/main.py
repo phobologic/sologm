@@ -56,23 +56,24 @@ def main(
     # Update config path if provided
     if config_path:
         from pathlib import Path
-        from sologm.utils.config import Config
 
-        from sologm.utils.config import config
+        from sologm.utils.config import Config, config
         logger.debug("Loading config from %s", config_path)
         config = Config(Path(config_path))
 
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typer import Typer
     game_app: Typer
 else:
     from sologm.cli.game import game_app  # type: ignore # noqa: F401
-from sologm.cli.scene import scene_app  # noqa
-from sologm.cli.event import event_app  # noqa
+
 from sologm.cli.dice import dice_app  # noqa
+from sologm.cli.event import event_app  # noqa
 from sologm.cli.oracle import oracle_app  # noqa
+from sologm.cli.scene import scene_app  # noqa
 
 # Add subcommands
 app.add_typer(game_app, name="game")

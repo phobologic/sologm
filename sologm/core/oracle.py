@@ -3,8 +3,8 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.storage.file_manager import FileManager
