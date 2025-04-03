@@ -181,6 +181,13 @@ DESCRIPTION: Detailed description of interpretation idea
                 oracle_results,
                 count
             )
+
+            # If this is a retry, modify the prompt to request different interpretations
+            if retry_attempt > 0:
+                prompt = prompt.replace(
+                    "Please provide",
+                    f"This is retry attempt #{retry_attempt + 1}. Please provide DIFFERENT"
+                )
             
             logger.debug("Sending prompt to Claude API")
             response = self.anthropic_client.send_message(prompt)
@@ -200,13 +207,6 @@ DESCRIPTION: Detailed description of interpretation idea
                 for i, interp in enumerate(parsed)
             ]
             
-            # If this is a retry, modify the prompt to request different interpretations
-            if retry_attempt > 0:
-                prompt = prompt.replace(
-                    "Please provide",
-                    f"This is retry attempt #{retry_attempt + 1}. Please provide DIFFERENT"
-                )
-
             # Create and save interpretation set
             interp_set = InterpretationSet(
                 id=self.file_manager.create_timestamp_filename("interp", "")[:-5],
