@@ -7,7 +7,8 @@ from rich.table import Table
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from sologm.cli.main import app
+    from typer import Typer
+    app: Typer
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.utils.errors import GameError, SceneError

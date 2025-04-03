@@ -82,11 +82,14 @@ class AnthropicClient:
                 f"Sending message to Claude with prompt length: " f"{len(prompt)}"
             )
             logger.debug(f"Prompt: {prompt}")
+            # Handle system message
+            system_param = system if system is not None else NOT_GIVEN
+            
             response = self.client.messages.create(
                 model="claude-3-5-sonnet-latest",
                 max_tokens=max_tokens,
                 temperature=temperature,
-                system=system,
+                system=system_param,
                 messages=[{"role": "user", "content": prompt}],
             )
 
