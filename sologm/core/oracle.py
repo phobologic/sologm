@@ -331,6 +331,10 @@ DESCRIPTION: Detailed description of interpretation idea
                 self.add_interpretation_event(game_id, scene_id, selected)
             
             return selected
+            
+        except Exception as e:
+            logger.error(f"Failed to select interpretation: {e}")
+            raise OracleError(f"Failed to select interpretation: {str(e)}")
 
     def add_interpretation_event(
         self,
@@ -345,22 +349,23 @@ DESCRIPTION: Detailed description of interpretation idea
             scene_id: ID of the current scene.
             interpretation: The interpretation to add as an event.
         """
-        events_path = self.file_manager.get_events_path(game_id, scene_id)
-        events_data = self.file_manager.read_yaml(events_path)
-        
-        if "events" not in events_data:
-            events_data["events"] = []
-        
-        events_data["events"].append({
-            "id": f"event-{len(events_data['events'])+1}",
-            "description": f"{interpretation.title}: {interpretation.description}",
-            "source": "oracle",
-            "scene_id": scene_id,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        
-        self.file_manager.write_yaml(events_path, events_data)
+        try:
+            events_path = self.file_manager.get_events_path(game_id, scene_id)
+            events_data = self.file_manager.read_yaml(events_path)
+            
+            if "events" not in events_data:
+                events_data["events"] = []
+            
+            events_data["events"].append({
+                "id": f"event-{len(events_data['events'])+1}",
+                "description": f"{interpretation.title}: {interpretation.description}",
+                "source": "oracle",
+                "scene_id": scene_id,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            
+            self.file_manager.write_yaml(events_path, events_data)
             
         except Exception as e:
-            logger.error(f"Failed to select interpretation: {e}")
-            raise OracleError(f"Failed to select interpretation: {str(e)}")
+            logger.error(f"Failed to add interpretation event: {e}")
+            raise OracleError(f"Failed to add interpretation event: {str(e)}")
