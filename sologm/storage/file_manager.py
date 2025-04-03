@@ -1,8 +1,7 @@
 import logging
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import yaml
 
@@ -39,7 +38,7 @@ class FileManager:
             games_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             logger.error("Failed to create directory structure: %s", str(e))
-            raise StorageError(f"Failed to create directory structure: {str(e)}")
+            raise StorageError(f"Failed to create directory structure: {str(e)}") from e
 
     def read_yaml(self, path: Path) -> Dict[str, Any]:
         """Read YAML file and return its contents as a dictionary.
@@ -65,7 +64,7 @@ class FileManager:
                 return data
         except Exception as e:
             logger.error("Failed to read YAML file %s: %s", path, str(e))
-            raise StorageError(f"Failed to read YAML file {path}: {str(e)}")
+            raise StorageError(f"Failed to read YAML file {path}: {str(e)}") from e
 
     def _create_backup(self, path: Path) -> Optional[Path]:
         """Create a backup of a file if it exists.
@@ -87,7 +86,7 @@ class FileManager:
             path.rename(backup_path)
             return backup_path
         except Exception as e:
-            raise StorageError(f"Failed to create backup of {path}: {str(e)}")
+            raise StorageError(f"Failed to create backup of {path}: {str(e)}") from e
 
     def write_yaml(self, path: Path, data: Dict[str, Any]) -> None:
         """Write data to a YAML file.
@@ -117,7 +116,7 @@ class FileManager:
             logger.debug("Successfully wrote data to: %s", path)
         except Exception as e:
             logger.error("Failed to write YAML file %s: %s", path, str(e))
-            raise StorageError(f"Failed to write YAML file {path}: {str(e)}")
+            raise StorageError(f"Failed to write YAML file {path}: {str(e)}") from e
 
     def get_active_game_id(self) -> Optional[str]:
         """Get the ID of the active game, if any.
@@ -139,7 +138,7 @@ class FileManager:
                 return game_id
         except Exception as e:
             logger.error("Failed to read active game ID: %s", str(e))
-            raise StorageError(f"Failed to read active game ID: {str(e)}")
+            raise StorageError(f"Failed to read active game ID: {str(e)}") from e
 
     def set_active_game_id(self, game_id: str) -> None:
         """Set the ID of the active game.
@@ -159,7 +158,7 @@ class FileManager:
             logger.debug("Successfully set active game ID")
         except Exception as e:
             logger.error("Failed to set active game ID: %s", str(e))
-            raise StorageError(f"Failed to set active game ID: {str(e)}")
+            raise StorageError(f"Failed to set active game ID: {str(e)}") from e
 
     def get_active_scene_id(self, game_id: str) -> Optional[str]:
         """Get the ID of the active scene for a game, if any.
@@ -182,7 +181,7 @@ class FileManager:
             with open(active_scene_file, "r") as f:
                 return f.read().strip() or None
         except Exception as e:
-            raise StorageError(f"Failed to read active scene ID: {str(e)}")
+            raise StorageError(f"Failed to read active scene ID: {str(e)}") from e
 
     def set_active_scene_id(self, game_id: str, scene_id: str) -> None:
         """Set the ID of the active scene for a game.
@@ -202,7 +201,7 @@ class FileManager:
             with open(active_scene_file, "w") as f:
                 f.write(scene_id)
         except Exception as e:
-            raise StorageError(f"Failed to set active scene ID: {str(e)}")
+            raise StorageError(f"Failed to set active scene ID: {str(e)}") from e
 
     def get_game_path(self, game_id: str) -> Path:
         """Get the path to a game's YAML file.

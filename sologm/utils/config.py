@@ -11,17 +11,17 @@ from sologm.utils.errors import ConfigError
 
 class Config:
     """Configuration manager for Solo RPG Helper."""
-    
+
     _instance = None
-    
+
     @classmethod
     def get_instance(cls, config_path: Optional[Path] = None) -> 'Config':
         """Get or create the singleton Config instance.
-        
+
         Args:
             config_path: Optional path to config file. If provided while instance
                 exists, will reinitialize with new path.
-        
+
         Returns:
             The singleton Config instance
         """
@@ -121,7 +121,7 @@ class Config:
 
 def get_config() -> Config:
     """Get the global Config instance.
-    
+
     Returns:
         The singleton Config instance
     """

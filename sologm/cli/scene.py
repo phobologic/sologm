@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     app: Typer
 from sologm.core.game import GameManager
-from sologm.core.scene import SceneManager, SceneStatus
+from sologm.core.scene import SceneManager
 from sologm.utils.errors import GameError, SceneError
 
 # Create scene subcommand

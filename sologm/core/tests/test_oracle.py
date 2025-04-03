@@ -1,9 +1,8 @@
 """Tests for oracle interpretation system."""
 
-from datetime import datetime
 from pathlib import Path
 from typing import Generator
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 

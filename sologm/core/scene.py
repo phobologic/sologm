@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import SceneError

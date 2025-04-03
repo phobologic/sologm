@@ -64,7 +64,8 @@ class GameManager:
             counter += 1
             if counter > 10:  # Prevent infinite loops
                 logger.error(
-                    f"Failed to generate unique ID for game: {name} after {counter} attempts"
+                    f"Failed to generate unique ID for game: {name} after "
+                    f"{counter} attempts"
                 )
                 raise GameError(f"Failed to generate unique ID for game: {name}")
 

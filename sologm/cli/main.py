@@ -65,8 +65,9 @@ def main(
     # Initialize config first if custom path provided
     if config_path:
         from pathlib import Path
+
         from sologm.utils.config import Config
-        
+
         logger.debug("Loading config from %s", config_path)
         Config.get_instance(Path(config_path))
 

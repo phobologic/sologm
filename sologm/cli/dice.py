@@ -61,4 +61,4 @@ def roll_dice_command(
 
     except DiceError as e:
         console.print(f"Error: {str(e)}", style="bold red")
-        raise typer.Exit(1)
+        raise

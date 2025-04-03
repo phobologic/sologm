@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, List, Optional, TypeVar
 
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.storage.file_manager import FileManager
@@ -33,7 +33,7 @@ def oracle_operation(operation_name: str) -> Callable:
                 return result
             except Exception as e:
                 logger.error(f"Failed to {operation_name}: {e}")
-                raise OracleError(f"Failed to {operation_name}: {str(e)}")
+                raise OracleError(f"Failed to {operation_name}: {str(e)}") from e
 
         return wrapper
 
@@ -123,7 +123,7 @@ class OracleManager:
         )
 
     def _create_interpretation(
-        self, id: str, title: str, description: str, created_at: datetime
+        self, interpretation_id: str, title: str, description: str, created_at: datetime
     ) -> Interpretation:
         """Create an Interpretation object.
 
@@ -138,7 +138,8 @@ class OracleManager:
         """
         logger.debug(f"Creating interpretation object with id: {id}")
         return Interpretation(
-            id=id, title=title, description=description, created_at=created_at
+            id=interpretation_id, title=title, description=description,
+            created_at=created_at
         )
 
     def _validate_interpretation_set(self, interp_data: dict, set_id: str) -> None:
@@ -325,7 +326,7 @@ DESCRIPTION: Detailed description of interpretation idea
         now = datetime.now(timezone.utc)
         interpretations = [
             self._create_interpretation(
-                id=f"interp-{i+1}",
+                interpretation_id=f"interp-{i+1}",
                 title=interp["title"],
                 description=interp["description"],
                 created_at=now,
@@ -425,7 +426,7 @@ DESCRIPTION: Detailed description of interpretation idea
         for i, interp in enumerate(interp_data["interpretations"]):
             if interp["id"] == interpretation_id:
                 selected = self._create_interpretation(
-                    id=interp["id"],
+                    interpretation_id=interp["id"],
                     title=interp["title"],
                     description=interp["description"],
                     created_at=datetime.fromisoformat(interp["created_at"]),
@@ -435,7 +436,8 @@ DESCRIPTION: Detailed description of interpretation idea
 
         if not selected:
             raise OracleError(
-                f"Interpretation {interpretation_id} not found in set {interpretation_set_id}"
+                f"Interpretation {interpretation_id} not found in set "
+                f"{interpretation_set_id}"
             )
 
         # Update interpretation set with selection

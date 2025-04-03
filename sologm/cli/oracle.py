@@ -1,18 +1,14 @@
 """Oracle interpretation commands for Solo RPG Helper."""
 
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
 from rich.text import Text
 
 from sologm.core.oracle import OracleManager
-from sologm.utils.errors import OracleError
 
 logger = logging.getLogger(__name__)
 oracle_app = typer.Typer(help="Oracle interpretation commands")
@@ -82,7 +78,7 @@ def interpret_oracle(
     except Exception as e:
         logger.error(f"Failed to interpret oracle results: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise
 
 
 @oracle_app.command("retry")
@@ -112,7 +108,8 @@ def retry_interpretation() -> None:
 
         if not current:
             console.print(
-                "[red]No current interpretation to retry. Run 'oracle interpret' first.[/red]"
+                "[red]No current interpretation to retry. Run "
+                "'oracle interpret' first.[/red]"
             )
             raise typer.Exit(1)
 
@@ -150,7 +147,7 @@ def retry_interpretation() -> None:
     except Exception as e:
         logger.error(f"Failed to retry interpretation: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise
 
 
 @oracle_app.command("status")
@@ -216,7 +213,7 @@ def show_interpretation_status() -> None:
     except Exception as e:
         logger.error(f"Failed to show interpretation status: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise
 
 
 @oracle_app.command("select")
@@ -256,7 +253,8 @@ def select_interpretation(
             current = game_data.get("current_interpretation")
             if not current:
                 console.print(
-                    "[red]No current interpretation set. Specify --set-id or run 'oracle interpret' first.[/red]"
+                    "[red]No current interpretation set. Specify --set-id "
+                    "or run 'oracle interpret' first.[/red]"
                 )
                 raise typer.Exit(1)
             interpretation_set_id = current["id"]
@@ -293,4 +291,4 @@ def select_interpretation(
     except Exception as e:
         logger.error(f"Failed to select interpretation: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise

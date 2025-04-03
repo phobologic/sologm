@@ -4,11 +4,9 @@ import os
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
 
 from sologm.utils.config import Config
-from sologm.utils.errors import ConfigError
 
 
 def test_config_initialization():

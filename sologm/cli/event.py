@@ -55,7 +55,7 @@ def add_event(
 
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @event_app.command("list")
@@ -113,4 +113,4 @@ def list_events(
 
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

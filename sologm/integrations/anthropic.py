@@ -31,7 +31,7 @@ class AnthropicClient:
             self.client = Anthropic(api_key=self.api_key)
         except Exception as e:
             logger.error(f"Failed to initialize Anthropic client: {e}")
-            raise APIError(f"Failed to initialize Anthropic client: {str(e)}")
+            raise APIError(f"Failed to initialize Anthropic client: {str(e)}") from e
 
     def _get_api_key_from_env(self) -> str:
         """Get the Anthropic API key from environment variables.
@@ -106,4 +106,4 @@ class AnthropicClient:
 
         except Exception as e:
             logger.error(f"Failed to get response from Claude: {e}")
-            raise APIError(f"Failed to get response from Claude: {str(e)}")
+            raise APIError(f"Failed to get response from Claude: {str(e)}") from e
