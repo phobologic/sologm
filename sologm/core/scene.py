@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class SceneStatus(Enum):
     """Enumeration of possible scene statuses."""
+
     ACTIVE = "active"
     COMPLETED = "completed"
 
@@ -43,14 +44,16 @@ class SceneManager:
                 a new one will be created.
         """
         self.file_manager = file_manager or FileManager()
-        logger.debug("Initialized SceneManager with file_manager: %s", self.file_manager)
+        logger.debug(
+            "Initialized SceneManager with file_manager: %s", self.file_manager
+        )
 
     def _scene_to_dict(self, scene: Scene) -> dict:
         """Convert a Scene object to a dictionary for storage.
-        
+
         Args:
             scene: Scene object to convert
-            
+
         Returns:
             Dictionary representation of the scene
         """
@@ -68,10 +71,10 @@ class SceneManager:
 
     def _dict_to_scene(self, data: dict) -> Scene:
         """Convert a dictionary to a Scene object.
-        
+
         Args:
             data: Dictionary containing scene data
-            
+
         Returns:
             Scene object
         """
@@ -89,13 +92,13 @@ class SceneManager:
 
     def _get_game_data(self, game_id: str) -> dict:
         """Get game data from storage.
-        
+
         Args:
             game_id: ID of the game
-            
+
         Returns:
             Dictionary containing game data
-            
+
         Raises:
             SceneError: If game not found
         """
@@ -109,14 +112,14 @@ class SceneManager:
 
     def _validate_scene_exists(self, game_id: str, scene_id: str) -> Scene:
         """Validate that a scene exists and return it.
-        
+
         Args:
             game_id: ID of the game
             scene_id: ID of the scene
-            
+
         Returns:
             Scene object if found
-            
+
         Raises:
             SceneError: If scene not found
         """
@@ -129,11 +132,11 @@ class SceneManager:
 
     def _validate_unique_title(self, game_id: str, title: str) -> None:
         """Validate that a scene title is unique within a game.
-        
+
         Args:
             game_id: ID of the game
             title: Scene title to check
-            
+
         Raises:
             SceneError: If title is not unique
         """

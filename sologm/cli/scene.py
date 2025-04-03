@@ -9,6 +9,7 @@ from rich.table import Table
 
 if TYPE_CHECKING:
     from typer import Typer
+
     app: Typer
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager, SceneStatus

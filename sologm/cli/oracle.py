@@ -167,7 +167,9 @@ def show_interpretation_status() -> None:
 
         scene_id = manager.file_manager.get_active_scene_id(game_id)
         if not scene_id:
-            console.print("[red]No active scene found. Create or set a scene first.[/red]")
+            console.print(
+                "[red]No active scene found. Create or set a scene first.[/red]"
+            )
             raise typer.Exit(1)
 
         # Get current interpretation data

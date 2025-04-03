@@ -58,6 +58,7 @@ def main(
         from pathlib import Path
 
         from sologm.utils.config import Config, config
+
         logger.debug("Loading config from %s", config_path)
         config = Config(Path(config_path))
 
@@ -66,6 +67,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typer import Typer
+
     game_app: Typer
 else:
     from sologm.cli.game import game_app  # type: ignore # noqa: F401

@@ -84,7 +84,7 @@ class AnthropicClient:
             logger.debug(f"Prompt: {prompt}")
             # Handle system message
             system_param = system if system is not None else NOT_GIVEN
-            
+
             response = self.client.messages.create(
                 model="claude-3-5-sonnet-latest",
                 max_tokens=max_tokens,
@@ -94,7 +94,7 @@ class AnthropicClient:
             )
 
             # Extract text from the first content block
-            if not response.content or not hasattr(response.content[0], 'text'):
+            if not response.content or not hasattr(response.content[0], "text"):
                 raise APIError("Unexpected response format from Claude")
             response_text = response.content[0].text
             logger.debug(
