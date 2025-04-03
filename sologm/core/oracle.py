@@ -305,6 +305,8 @@ DESCRIPTION: Detailed description of interpretation idea
             # Find selected interpretation
             selected = None
             selected_index = None
+            if not interpretation_id.startswith("interp-"):
+                interpretation_id = f"interp-{interpretation_id}"
             for i, interp in enumerate(interp_data["interpretations"]):
                 if interp["id"] == interpretation_id:
                     selected = Interpretation(
