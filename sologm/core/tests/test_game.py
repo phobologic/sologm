@@ -29,8 +29,7 @@ class TestGameManager:
     def test_create_game(self):
         """Test creating a new game."""
         game = self.game_manager.create_game(
-            name="Test Game",
-            description="A test game"
+            name="Test Game", description="A test game"
         )
 
         assert isinstance(game, Game)
@@ -57,12 +56,10 @@ class TestGameManager:
     def test_create_game_with_duplicate_name(self):
         """Test creating games with the same name generates unique IDs."""
         game1 = self.game_manager.create_game(
-            name="Test Game",
-            description="First game"
+            name="Test Game", description="First game"
         )
         game2 = self.game_manager.create_game(
-            name="Test Game",
-            description="Second game"
+            name="Test Game", description="Second game"
         )
 
         assert game1.id != game2.id
@@ -77,14 +74,8 @@ class TestGameManager:
     def test_list_games(self):
         """Test listing multiple games."""
         # Create some games
-        game1 = self.game_manager.create_game(
-            name="Game 1",
-            description="First game"
-        )
-        game2 = self.game_manager.create_game(
-            name="Game 2",
-            description="Second game"
-        )
+        game1 = self.game_manager.create_game(name="Game 1", description="First game")
+        game2 = self.game_manager.create_game(name="Game 2", description="Second game")
 
         games = self.game_manager.list_games()
         assert len(games) == 2
@@ -94,8 +85,7 @@ class TestGameManager:
     def test_get_game(self):
         """Test getting a specific game."""
         created_game = self.game_manager.create_game(
-            name="Test Game",
-            description="A test game"
+            name="Test Game", description="A test game"
         )
 
         game = self.game_manager.get_game(created_game.id)
@@ -117,8 +107,7 @@ class TestGameManager:
     def test_get_active_game(self):
         """Test getting the active game."""
         created_game = self.game_manager.create_game(
-            name="Test Game",
-            description="A test game"
+            name="Test Game", description="A test game"
         )
 
         game = self.game_manager.get_active_game()
@@ -127,14 +116,8 @@ class TestGameManager:
 
     def test_activate_game(self):
         """Test activating a game."""
-        game1 = self.game_manager.create_game(
-            name="Game 1",
-            description="First game"
-        )
-        game2 = self.game_manager.create_game(
-            name="Game 2",
-            description="Second game"
-        )
+        game1 = self.game_manager.create_game(name="Game 1", description="First game")
+        game2 = self.game_manager.create_game(name="Game 2", description="Second game")
 
         # Activate the second game
         activated_game = self.game_manager.activate_game(game2.id)
@@ -155,8 +138,7 @@ class TestGameManager:
         """Test tracking current interpretation in game data."""
         # Create a game
         game = self.game_manager.create_game(
-            name="Test Game",
-            description="A test game"
+            name="Test Game", description="A test game"
         )
 
         # Get the game path
@@ -171,7 +153,7 @@ class TestGameManager:
             "id": "test-interp-1",
             "context": "Test context",
             "results": "Test results",
-            "retry_count": 0
+            "retry_count": 0,
         }
         self.file_manager.write_yaml(game_path, game_data)
 

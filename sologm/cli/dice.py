@@ -1,4 +1,5 @@
 """Dice rolling commands for Solo RPG Helper."""
+
 import logging
 import typer
 from rich.console import Console
@@ -29,8 +30,7 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
-        logger.debug(f"Rolling dice with notation: {notation}, reason: "
-                     f"{reason}")
+        logger.debug(f"Rolling dice with notation: {notation}, reason: " f"{reason}")
         result = roll_dice(notation, reason)
 
         logger.debug(f"Creating formatted output for roll result: {result}")
@@ -55,12 +55,7 @@ def roll_dice_command(
         details.append(str(result.total), style="bold green")
 
         # Display in a panel
-        panel = Panel(
-            details,
-            title=title,
-            border_style="bright_black",
-            expand=False
-        )
+        panel = Panel(details, title=title, border_style="bright_black", expand=False)
         console.print(panel)
 
     except DiceError as e:

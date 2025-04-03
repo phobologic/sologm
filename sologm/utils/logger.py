@@ -37,9 +37,11 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
     console_handler.setLevel(logging.DEBUG if debug else logging.ERROR)
 
     # Use detailed format in debug mode, simple format otherwise
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    ) if debug else logging.Formatter("%(levelname)s: %(message)s")
+    formatter = (
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        if debug
+        else logging.Formatter("%(levelname)s: %(message)s")
+    )
 
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)

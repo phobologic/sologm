@@ -39,8 +39,7 @@ def main(
         False, "--debug", help="Enable debug mode with verbose output."
     ),
     version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback,
-        help="Show version and exit."
+        None, "--version", callback=version_callback, help="Show version and exit."
     ),
     config_path: Optional[str] = typer.Option(
         None, "--config", help="Path to configuration file."
@@ -62,7 +61,6 @@ def main(
         global config
         logger.debug("Loading config from %s", config_path)
         config = Config(Path(config_path))
-
 
 
 from sologm.cli.game import game_app  # noqa

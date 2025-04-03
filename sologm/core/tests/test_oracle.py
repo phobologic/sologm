@@ -11,31 +11,34 @@ from sologm.storage.file_manager import FileManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.utils.errors import OracleError
 
+
 @pytest.fixture
 def temp_dir(tmp_path: Path) -> Path:
     """Create a temporary directory."""
     return tmp_path
+
 
 @pytest.fixture
 def file_manager(temp_dir: Path) -> FileManager:
     """Create a file manager instance."""
     return FileManager(base_dir=temp_dir)
 
+
 @pytest.fixture
 def mock_anthropic_client() -> MagicMock:
     """Create a mock Anthropic client."""
     return MagicMock(spec=AnthropicClient)
 
+
 @pytest.fixture
 def oracle_manager(
-    file_manager: FileManager,
-    mock_anthropic_client: MagicMock
+    file_manager: FileManager, mock_anthropic_client: MagicMock
 ) -> OracleManager:
     """Create an oracle manager instance."""
     return OracleManager(
-        file_manager=file_manager,
-        anthropic_client=mock_anthropic_client
+        file_manager=file_manager, anthropic_client=mock_anthropic_client
     )
+
 
 @pytest.fixture
 def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
@@ -46,20 +49,17 @@ def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
         "description": "A test game",
         "created_at": "2025-04-02T12:00:00Z",
         "modified_at": "2025-04-02T12:00:00Z",
-        "scenes": ["test-scene"]
+        "scenes": ["test-scene"],
     }
-    
-    file_manager.write_yaml(
-        file_manager.get_game_path("test-game"),
-        game_data
-    )
-    
+
+    file_manager.write_yaml(file_manager.get_game_path("test-game"), game_data)
+
     yield game_data
+
 
 @pytest.fixture
 def test_scene(
-    file_manager: FileManager,
-    test_game: dict
+    file_manager: FileManager, test_game: dict
 ) -> Generator[dict, None, None]:
     """Create a test scene."""
     scene_data = {
@@ -69,21 +69,19 @@ def test_scene(
         "description": "A test scene",
         "status": "active",
         "created_at": "2025-04-02T12:00:00Z",
-        "modified_at": "2025-04-02T12:00:00Z"
+        "modified_at": "2025-04-02T12:00:00Z",
     }
-    
+
     file_manager.write_yaml(
-        file_manager.get_scene_path("test-game", "test-scene"),
-        scene_data
+        file_manager.get_scene_path("test-game", "test-scene"), scene_data
     )
-    
+
     yield scene_data
+
 
 @pytest.fixture
 def test_events(
-    file_manager: FileManager,
-    test_game: dict,
-    test_scene: dict
+    file_manager: FileManager, test_game: dict, test_scene: dict
 ) -> Generator[dict, None, None]:
     """Create test events."""
     events_data = {
@@ -92,31 +90,28 @@ def test_events(
                 "id": "event-1",
                 "description": "Test event 1",
                 "source": "manual",
-                "created_at": "2025-04-02T12:00:00Z"
+                "created_at": "2025-04-02T12:00:00Z",
             },
             {
                 "id": "event-2",
                 "description": "Test event 2",
                 "source": "manual",
-                "created_at": "2025-04-02T12:01:00Z"
-            }
+                "created_at": "2025-04-02T12:01:00Z",
+            },
         ]
     }
-    
+
     file_manager.write_yaml(
-        file_manager.get_events_path("test-game", "test-scene"),
-        events_data
+        file_manager.get_events_path("test-game", "test-scene"), events_data
     )
-    
+
     yield events_data
+
 
 class TestOracle:
     """Tests for oracle interpretation system."""
-    
-    def test_build_prompt(
-        self,
-        oracle_manager: OracleManager
-    ) -> None:
+
+    def test_build_prompt(self, oracle_manager: OracleManager) -> None:
         """Test building prompts for Claude."""
         prompt = oracle_manager._build_prompt(
             "Test Game",
@@ -124,9 +119,9 @@ class TestOracle:
             ["Event 1", "Event 2"],
             "What happens next?",
             "Mystery, Danger",
-            3
+            3,
         )
-        
+
         assert "Test Game" in prompt
         assert "Test Scene" in prompt
         assert "Event 1" in prompt
@@ -134,11 +129,8 @@ class TestOracle:
         assert "What happens next?" in prompt
         assert "Mystery, Danger" in prompt
         assert "3 different interpretations" in prompt
-    
-    def test_parse_interpretations(
-        self,
-        oracle_manager: OracleManager
-    ) -> None:
+
+    def test_parse_interpretations(self, oracle_manager: OracleManager) -> None:
         """Test parsing Claude's response."""
         response = """=== BEGIN INTERPRETATIONS ===
 
@@ -155,20 +147,20 @@ DESCRIPTION: Test Description 2
 === END INTERPRETATIONS ==="""
 
         parsed = oracle_manager._parse_interpretations(response)
-        
+
         assert len(parsed) == 2
         assert parsed[0]["title"] == "Test Title 1"
         assert parsed[0]["description"] == "Test Description 1"
         assert parsed[1]["title"] == "Test Title 2"
         assert parsed[1]["description"] == "Test Description 2"
-    
+
     def test_get_interpretations(
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
         test_game: dict,
         test_scene: dict,
-        test_events: dict
+        test_events: dict,
     ) -> None:
         """Test getting interpretations."""
         # Configure mock to return string response
@@ -183,13 +175,9 @@ DESCRIPTION: Test Description
         mock_anthropic_client.send_message.return_value = response_text
 
         result = oracle_manager.get_interpretations(
-            "test-game",
-            "test-scene",
-            "What happens?",
-            "Mystery",
-            1
+            "test-game", "test-scene", "What happens?", "Mystery", 1
         )
-        
+
         assert isinstance(result, InterpretationSet)
         assert result.scene_id == "test-scene"
         assert result.context == "What happens?"
@@ -197,33 +185,29 @@ DESCRIPTION: Test Description
         assert len(result.interpretations) == 1
         assert result.interpretations[0].title == "Test Title"
         assert result.interpretations[0].description == "Test Description"
-    
+
     def test_get_interpretations_error(
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
         test_game: dict,
-        test_scene: dict
+        test_scene: dict,
     ) -> None:
         """Test handling errors when getting interpretations."""
         mock_anthropic_client.send_message.side_effect = Exception("API Error")
-        
+
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_interpretations(
-                "test-game",
-                "test-scene",
-                "What happens?",
-                "Mystery",
-                1
+                "test-game", "test-scene", "What happens?", "Mystery", 1
             )
         assert "Failed to get interpretations" in str(exc.value)
-    
+
     def test_select_interpretation(
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
         test_game: dict,
-        test_scene: dict
+        test_scene: dict,
     ) -> None:
         """Test selecting an interpretation."""
         # Configure mock to return string response
@@ -236,54 +220,37 @@ DESCRIPTION: Test Description
 
 === END INTERPRETATIONS ==="""
         mock_anthropic_client.send_message.return_value = response_text
-        
+
         # First create an interpretation set
         interp_set = oracle_manager.get_interpretations(
-            "test-game",
-            "test-scene",
-            "What happens?",
-            "Mystery",
-            1
+            "test-game", "test-scene", "What happens?", "Mystery", 1
         )
-        
+
         # Then select the interpretation
         selected = oracle_manager.select_interpretation(
-            "test-game",
-            "test-scene",
-            interp_set.id,
-            interp_set.interpretations[0].id
+            "test-game", "test-scene", interp_set.id, interp_set.interpretations[0].id
         )
-        
+
         assert isinstance(selected, Interpretation)
         assert selected.id == interp_set.interpretations[0].id
         assert selected.title == interp_set.interpretations[0].title
-        
+
         # Verify event was created
         events = oracle_manager.file_manager.read_yaml(
-            oracle_manager.file_manager.get_events_path(
-                "test-game",
-                "test-scene"
-            )
+            oracle_manager.file_manager.get_events_path("test-game", "test-scene")
         )
         assert any(
-            event["source"] == "oracle" and
-            selected.title in event["description"]
+            event["source"] == "oracle" and selected.title in event["description"]
             for event in events["events"]
         )
-    
+
     def test_select_interpretation_not_found(
-        self,
-        oracle_manager: OracleManager,
-        test_game: dict,
-        test_scene: dict
+        self, oracle_manager: OracleManager, test_game: dict, test_scene: dict
     ) -> None:
         """Test selecting a non-existent interpretation."""
         with pytest.raises(OracleError) as exc:
             oracle_manager.select_interpretation(
-                "test-game",
-                "test-scene",
-                "nonexistent-set",
-                "nonexistent-interp"
+                "test-game", "test-scene", "nonexistent-set", "nonexistent-interp"
             )
         assert "not found" in str(exc.value)
 
@@ -292,7 +259,7 @@ DESCRIPTION: Test Description
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
         test_game: dict,
-        test_scene: dict
+        test_scene: dict,
     ) -> None:
         """Test getting interpretations with retry attempt."""
         # Configure mock to return string response
@@ -308,13 +275,9 @@ DESCRIPTION: Test Description
 
         # First interpretation request
         result1 = oracle_manager.get_interpretations(
-            "test-game",
-            "test-scene",
-            "What happens?",
-            "Mystery",
-            1
+            "test-game", "test-scene", "What happens?", "Mystery", 1
         )
-        
+
         # Verify current interpretation was set
         game_data = oracle_manager.file_manager.read_yaml(
             oracle_manager.file_manager.get_game_path("test-game")
@@ -325,12 +288,7 @@ DESCRIPTION: Test Description
 
         # Retry interpretation
         result2 = oracle_manager.get_interpretations(
-            "test-game",
-            "test-scene",
-            "What happens?",
-            "Mystery",
-            1,
-            retry_attempt=1
+            "test-game", "test-scene", "What happens?", "Mystery", 1, retry_attempt=1
         )
 
         # Verify retry count was updated

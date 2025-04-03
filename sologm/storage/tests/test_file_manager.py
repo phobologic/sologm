@@ -76,21 +76,21 @@ class TestFileManager:
     def test_write_yaml_creates_backup(self):
         """Test that writing a YAML file creates a backup of existing file."""
         path = self.base_dir / "test.yaml"
-        
+
         # Write initial data
         initial_data = {"key": "initial"}
         self.file_manager.write_yaml(path, initial_data)
-        
+
         # Write new data
         new_data = {"key": "new"}
         self.file_manager.write_yaml(path, new_data)
-        
+
         # Check backup exists with initial data
         backup_path = path.with_suffix(".yaml.bak")
         assert backup_path.exists()
         with open(backup_path, "r") as f:
             assert yaml.safe_load(f) == initial_data
-        
+
         # Check original file has new data
         with open(path, "r") as f:
             assert yaml.safe_load(f) == new_data
@@ -127,22 +127,31 @@ class TestFileManager:
         """Test getting the path to a scene's YAML file."""
         game_id = "test-game"
         scene_id = "test-scene"
-        expected_path = self.base_dir / "games" / game_id / "scenes" / scene_id / "scene.yaml"
+        expected_path = (
+            self.base_dir / "games" / game_id / "scenes" / scene_id / "scene.yaml"
+        )
         assert self.file_manager.get_scene_path(game_id, scene_id) == expected_path
 
     def test_get_events_path(self):
         """Test getting the path to a scene's events YAML file."""
         game_id = "test-game"
         scene_id = "test-scene"
-        expected_path = self.base_dir / "games" / game_id / "scenes" / scene_id / "events.yaml"
+        expected_path = (
+            self.base_dir / "games" / game_id / "scenes" / scene_id / "events.yaml"
+        )
         assert self.file_manager.get_events_path(game_id, scene_id) == expected_path
 
     def test_get_interpretations_dir(self):
         """Test getting the path to a scene's interpretations directory."""
         game_id = "test-game"
         scene_id = "test-scene"
-        expected_path = self.base_dir / "games" / game_id / "scenes" / scene_id / "interpretations"
-        assert self.file_manager.get_interpretations_dir(game_id, scene_id) == expected_path
+        expected_path = (
+            self.base_dir / "games" / game_id / "scenes" / scene_id / "interpretations"
+        )
+        assert (
+            self.file_manager.get_interpretations_dir(game_id, scene_id)
+            == expected_path
+        )
 
     def test_create_timestamp_filename(self):
         """Test creating a filename with a timestamp."""

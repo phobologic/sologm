@@ -19,9 +19,9 @@ event_app = typer.Typer(help="Event tracking commands")
 @event_app.command("add")
 def add_event(
     text: str = typer.Option(..., "--text", "-t", help="Text of the event"),
-    source: str = typer.Option("manual", "--source", "-s",
-                               help="Source of the event (manual, oracle, "
-                                    "dice)")
+    source: str = typer.Option(
+        "manual", "--source", "-s", help="Source of the event (manual, oracle, " "dice)"
+    ),
 ) -> None:
     """Add a new event to the current scene."""
     game_manager = GameManager()
@@ -31,24 +31,23 @@ def add_event(
     # Get active game
     game = game_manager.get_active_game()
     if not game:
-        console.print("[red]Error:[/] No active game. Use 'sologm game "
-                      "activate' to set one.")
+        console.print(
+            "[red]Error:[/] No active game. Use 'sologm game " "activate' to set one."
+        )
         raise typer.Exit(1)
 
     # Get current scene
     scene = scene_manager.get_active_scene(game.id)
     if not scene:
-        console.print("[red]Error:[/] No current scene. Create one with "
-                      "'sologm scene create'.")
+        console.print(
+            "[red]Error:[/] No current scene. Create one with " "'sologm scene create'."
+        )
         raise typer.Exit(1)
 
     logger.debug(f"Adding event to game {game.id}, scene {scene.id}")
     try:
         event = event_manager.add_event(
-            game_id=game.id,
-            scene_id=scene.id,
-            description=text,
-            source=source
+            game_id=game.id, scene_id=scene.id, description=text, source=source
         )
         logger.debug(f"Added event {event.id}")
         console.print(f"\nAdded event to scene '{scene.title}':")
@@ -61,8 +60,7 @@ def add_event(
 
 @event_app.command("list")
 def list_events(
-    limit: int = typer.Option(5, "--limit", "-l",
-                              help="Number of events to show"),
+    limit: int = typer.Option(5, "--limit", "-l", help="Number of events to show"),
 ) -> None:
     """List events in the current scene."""
     game_manager = GameManager()
@@ -72,23 +70,25 @@ def list_events(
     # Get active game
     game = game_manager.get_active_game()
     if not game:
-        console.print("[red]Error:[/] No active game. Use 'sologm game "
-                      "activate' to set one.")
+        console.print(
+            "[red]Error:[/] No active game. Use 'sologm game " "activate' to set one."
+        )
         raise typer.Exit(1)
 
     # Get current scene
     scene = scene_manager.get_active_scene(game.id)
     if not scene:
-        console.print("[red]Error:[/] No current scene. Create one with "
-                      "'sologm scene create'.")
+        console.print(
+            "[red]Error:[/] No current scene. Create one with " "'sologm scene create'."
+        )
         raise typer.Exit(1)
 
-    logger.debug(f"Listing events for game {game.id}, scene {scene.id} with limit {limit}")
+    logger.debug(
+        f"Listing events for game {game.id}, scene {scene.id} with limit {limit}"
+    )
     try:
         events = event_manager.list_events(
-            game_id=game.id,
-            scene_id=scene.id,
-            limit=limit
+            game_id=game.id, scene_id=scene.id, limit=limit
         )
         logger.debug(f"Found {len(events)} events")
 
@@ -106,7 +106,7 @@ def list_events(
             table.add_row(
                 event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 event.source,
-                event.description
+                event.description,
             )
 
         console.print(table)

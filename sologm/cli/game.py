@@ -28,8 +28,7 @@ def create_game(
     ),
 ) -> None:
     """Create a new game."""
-    logger.debug(f"Creating game with name='{name}', "
-                 "description='{description}'")
+    logger.debug(f"Creating game with name='{name}', " "description='{description}'")
     game_manager = GameManager()
     game = game_manager.create_game(name=name, description=description)
 
@@ -67,7 +66,7 @@ def list_games() -> None:
             game.name,
             game.description,
             str(len(scenes)),
-            "✓" if active_game and game.id == active_game.id else ""
+            "✓" if active_game and game.id == active_game.id else "",
         )
 
     console.print(table)
@@ -75,9 +74,7 @@ def list_games() -> None:
 
 @game_app.command("activate")
 def activate_game(
-    game_id: str = typer.Option(...,
-                                "--id",
-                                help="ID of the game to activate"),
+    game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
 ) -> None:
     """Activate a game."""
     logger.debug(f"Activating game with id='{game_id}'")
