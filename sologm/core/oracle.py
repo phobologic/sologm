@@ -456,8 +456,12 @@ DESCRIPTION: Detailed description of interpretation idea
 
         return selected
 
+    @oracle_operation("add interpretation event")
     def add_interpretation_event(
-        self, game_id: str, scene_id: str, interpretation: Interpretation
+        self,
+        game_id: str,
+        scene_id: str,
+        interpretation: Interpretation
     ) -> None:
         """Add an interpretation as an event.
 
@@ -466,26 +470,13 @@ DESCRIPTION: Detailed description of interpretation idea
             scene_id: ID of the current scene.
             interpretation: The interpretation to add as an event.
         """
-        try:
-            events_path = self.file_manager.get_events_path(game_id, scene_id)
-            events_data = self.file_manager.read_yaml(events_path)
+        events_path = self.file_manager.get_events_path(game_id, scene_id)
+        events_data = self._read_events_data(game_id, scene_id)
 
-            if "events" not in events_data:
-                events_data["events"] = []
+        if "events" not in events_data:
+            events_data["events"] = []
 
-            events_data["events"].append(
-                {
-                    "id": f"event-{len(events_data['events'])+1}",
-                    "description": f"{interpretation.title}: "
-                    f"{interpretation.description}",
-                    "source": "oracle",
-                    "scene_id": scene_id,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                }
-            )
+        event_data = self._create_event_data(events_data, interpretation, scene_id)
+        events_data["events"].append(event_data)
 
-            self.file_manager.write_yaml(events_path, events_data)
-
-        except Exception as e:
-            logger.error(f"Failed to add interpretation event: {e}")
-            raise OracleError(f"Failed to add interpretation event: {str(e)}")
+        self.file_manager.write_yaml(events_path, events_data)
