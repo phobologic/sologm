@@ -195,7 +195,7 @@ class SceneManager:
             game_id=game_id,
             title=title,
             description=description,
-            status="active",
+            status=SceneStatus.ACTIVE,
             sequence=sequence,
             created_at=now,
             modified_at=now,
@@ -203,16 +203,7 @@ class SceneManager:
 
         # Save scene data
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
-        scene_data = {
-            "id": scene.id,
-            "game_id": scene.game_id,
-            "title": scene.title,
-            "description": scene.description,
-            "status": scene.status,
-            "sequence": scene.sequence,
-            "created_at": scene.created_at.isoformat(),
-            "modified_at": scene.modified_at.isoformat(),
-        }
+        scene_data = self._scene_to_dict(scene)
         self.file_manager.write_yaml(scene_path, scene_data)
 
         # Update game's scene list
@@ -254,17 +245,7 @@ class SceneManager:
             scene_data = self.file_manager.read_yaml(scene_path)
 
             if scene_data:
-                scene = Scene(
-                    id=scene_data["id"],
-                    game_id=scene_data["game_id"],
-                    title=scene_data["title"],
-                    description=scene_data["description"],
-                    status=scene_data["status"],
-                    sequence=scene_data["sequence"],
-                    created_at=datetime.fromisoformat(scene_data["created_at"]),
-                    modified_at=datetime.fromisoformat(scene_data["modified_at"]),
-                )
-                scenes.append(scene)
+                scenes.append(self._dict_to_scene(scene_data))
                 existing_scene_ids.append(scene_id)
 
         # Update game's scene list if any scenes were missing
@@ -292,16 +273,7 @@ class SceneManager:
         scene_data = self.file_manager.read_yaml(scene_path)
 
         if scene_data:
-            return Scene(
-                id=scene_data["id"],
-                game_id=scene_data["game_id"],
-                title=scene_data["title"],
-                description=scene_data["description"],
-                status=scene_data["status"],
-                sequence=scene_data["sequence"],
-                created_at=datetime.fromisoformat(scene_data["created_at"]),
-                modified_at=datetime.fromisoformat(scene_data["modified_at"]),
-            )
+            return self._dict_to_scene(scene_data)
         return None
 
     def get_active_scene(self, game_id: str) -> Optional[Scene]:
@@ -339,26 +311,17 @@ class SceneManager:
             )
             raise SceneError(f"Scene {scene_id} not found in game {game_id}")
 
-        if scene.status == "completed":
+        if scene.status == SceneStatus.COMPLETED:
             logger.error(f"Scene {scene_id} is already completed")
             raise SceneError(f"Scene {scene_id} is already completed")
 
         # Update scene status
-        scene.status = "completed"
+        scene.status = SceneStatus.COMPLETED
         scene.modified_at = datetime.now(UTC)
 
         # Save updated scene data
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
-        scene_data = {
-            "id": scene.id,
-            "game_id": scene.game_id,
-            "title": scene.title,
-            "description": scene.description,
-            "status": scene.status,
-            "sequence": scene.sequence,
-            "created_at": scene.created_at.isoformat(),
-            "modified_at": scene.modified_at.isoformat(),
-        }
+        scene_data = self._scene_to_dict(scene)
         self.file_manager.write_yaml(scene_path, scene_data)
 
         logger.debug(f"Completed scene {scene_id} in game {game_id}")

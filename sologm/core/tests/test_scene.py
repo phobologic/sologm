@@ -64,7 +64,7 @@ class TestScene:
             game_id="test-game",
             title="Test Scene",
             description="A test scene",
-            status="active",
+            status=SceneStatus.ACTIVE,
             sequence=1,
             created_at=now,
             modified_at=now,
@@ -74,7 +74,7 @@ class TestScene:
         assert scene.game_id == "test-game"
         assert scene.title == "Test Scene"
         assert scene.description == "A test scene"
-        assert scene.status == "active"
+        assert scene.status == SceneStatus.ACTIVE
         assert scene.sequence == 1
         assert scene.created_at == now
         assert scene.modified_at == now
@@ -242,7 +242,7 @@ class TestSceneManager:
 
         # Complete scene1 and verify it doesn't change current scene
         completed_scene = scene_manager.complete_scene(test_game["id"], scene1.id)
-        assert completed_scene.status == "completed"
+        assert completed_scene.status == SceneStatus.COMPLETED
 
         current_scene = scene_manager.get_active_scene(test_game["id"])
         assert (
@@ -294,4 +294,4 @@ class TestSceneManager:
 
         current_scene = scene_manager.get_active_scene(test_game["id"])
         assert current_scene.id == scene2.id
-        assert current_scene.status == "completed"  # Status remains completed
+        assert current_scene.status == SceneStatus.COMPLETED  # Status remains completed
