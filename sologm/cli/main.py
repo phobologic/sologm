@@ -62,13 +62,13 @@ def main(
     logger.debug("CLI startup with debug=%s", debug)
 
     # Update config path if provided
+    # Initialize config first if custom path provided
     if config_path:
         from pathlib import Path
-
         from sologm.utils.config import Config
-
+        
         logger.debug("Loading config from %s", config_path)
-        config = Config(Path(config_path))
+        Config.get_instance(Path(config_path))
 
 
 

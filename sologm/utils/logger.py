@@ -5,7 +5,7 @@ import os
 import sys
 from typing import Optional
 
-from sologm.utils.config import config
+from sologm.utils.config import get_config
 
 
 def setup_root_logger(debug: Optional[bool] = None) -> None:
@@ -23,7 +23,7 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
     if debug_env is not None:
         debug = debug_env.lower() in ("1", "true", "yes")
     elif debug is None:
-        debug = config.get("debug", False)
+        debug = get_config().get("debug", False)
 
     # Configure the root logger for the sologm package
     logger = logging.getLogger("sologm")
