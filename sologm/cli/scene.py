@@ -15,7 +15,6 @@ from sologm.utils.errors import GameError, SceneError
 
 # Create scene subcommand
 scene_app = typer.Typer(help="Scene management commands")
-app.add_typer(scene_app, name="scene")
 
 # Create console for rich output
 console = Console()
