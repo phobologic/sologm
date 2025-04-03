@@ -43,6 +43,108 @@ class SceneManager:
                 a new one will be created.
         """
         self.file_manager = file_manager or FileManager()
+        logger.debug("Initialized SceneManager with file_manager: %s", self.file_manager)
+
+    def _scene_to_dict(self, scene: Scene) -> dict:
+        """Convert a Scene object to a dictionary for storage.
+        
+        Args:
+            scene: Scene object to convert
+            
+        Returns:
+            Dictionary representation of the scene
+        """
+        logger.debug("Converting scene to dict: %s", scene.id)
+        return {
+            "id": scene.id,
+            "game_id": scene.game_id,
+            "title": scene.title,
+            "description": scene.description,
+            "status": scene.status.value,  # Convert enum to string
+            "sequence": scene.sequence,
+            "created_at": scene.created_at.isoformat(),
+            "modified_at": scene.modified_at.isoformat(),
+        }
+
+    def _dict_to_scene(self, data: dict) -> Scene:
+        """Convert a dictionary to a Scene object.
+        
+        Args:
+            data: Dictionary containing scene data
+            
+        Returns:
+            Scene object
+        """
+        logger.debug("Converting dict to scene: %s", data["id"])
+        return Scene(
+            id=data["id"],
+            game_id=data["game_id"],
+            title=data["title"],
+            description=data["description"],
+            status=SceneStatus(data["status"]),  # Convert string to enum
+            sequence=data["sequence"],
+            created_at=datetime.fromisoformat(data["created_at"]),
+            modified_at=datetime.fromisoformat(data["modified_at"]),
+        )
+
+    def _get_game_data(self, game_id: str) -> dict:
+        """Get game data from storage.
+        
+        Args:
+            game_id: ID of the game
+            
+        Returns:
+            Dictionary containing game data
+            
+        Raises:
+            SceneError: If game not found
+        """
+        logger.debug("Getting game data for: %s", game_id)
+        game_path = self.file_manager.get_game_path(game_id)
+        game_data = self.file_manager.read_yaml(game_path)
+        if not game_data:
+            logger.error("Game not found: %s", game_id)
+            raise SceneError(f"Game {game_id} not found")
+        return game_data
+
+    def _validate_scene_exists(self, game_id: str, scene_id: str) -> Scene:
+        """Validate that a scene exists and return it.
+        
+        Args:
+            game_id: ID of the game
+            scene_id: ID of the scene
+            
+        Returns:
+            Scene object if found
+            
+        Raises:
+            SceneError: If scene not found
+        """
+        logger.debug("Validating scene exists: %s in game %s", scene_id, game_id)
+        scene = self.get_scene(game_id, scene_id)
+        if not scene:
+            logger.error("Scene %s not found in game %s", scene_id, game_id)
+            raise SceneError(f"Scene {scene_id} not found in game {game_id}")
+        return scene
+
+    def _validate_unique_title(self, game_id: str, title: str) -> None:
+        """Validate that a scene title is unique within a game.
+        
+        Args:
+            game_id: ID of the game
+            title: Scene title to check
+            
+        Raises:
+            SceneError: If title is not unique
+        """
+        logger.debug("Validating unique title: %s in game %s", title, game_id)
+        existing_scenes = self.list_scenes(game_id)
+        for scene in existing_scenes:
+            if scene.title.lower() == title.lower():
+                logger.error("Duplicate scene title found: %s", title)
+                raise SceneError(
+                    f"A scene with title '{title}' already exists in this game"
+                )
 
     def create_scene(self, game_id: str, title: str, description: str) -> Scene:
         """Create a new scene in the specified game.
