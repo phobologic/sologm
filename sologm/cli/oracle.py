@@ -186,24 +186,32 @@ def select_interpretation(
             console.print("[red]Please specify which interpretation to select with --id.[/red]")
             raise typer.Exit(1)
             
-        # Select interpretation
+        # Select interpretation but don't add as event yet
         selected = manager.select_interpretation(
             game_id,
             scene_id,
             interpretation_set_id,
-            interpretation_id
+            interpretation_id,
+            add_event=False
         )
         
-        # Display result
+        # Display result and ask for confirmation
         panel = Panel(
             Text.from_markup(
                 f"[bold]{selected.title}[/bold]\n\n{selected.description}"
             ),
             title="Selected Interpretation",
-            border_style="green"
+            border_style="blue"
         )
-        console.print("\nAdded interpretation as event:")
+        console.print("\nSelected interpretation:")
         console.print(panel)
+        
+        # Ask if they want to add it as an event
+        if typer.confirm("\nAdd this interpretation as an event?"):
+            manager.add_interpretation_event(game_id, scene_id, selected)
+            console.print("\n[green]Added interpretation as event.[/green]")
+        else:
+            console.print("\n[yellow]Interpretation not added as event.[/yellow]")
         
     except Exception as e:
         logger.error(f"Failed to select interpretation: {e}")

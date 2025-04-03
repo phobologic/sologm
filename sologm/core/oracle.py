@@ -271,7 +271,8 @@ DESCRIPTION: Detailed description of interpretation idea
         game_id: str,
         scene_id: str,
         interpretation_set_id: str,
-        interpretation_id: str
+        interpretation_id: str,
+        add_event: bool = True
     ) -> Interpretation:
         """Select an interpretation and add it as an event.
         
@@ -325,24 +326,40 @@ DESCRIPTION: Detailed description of interpretation idea
             interp_data["selected_interpretation"] = selected_index
             self.file_manager.write_yaml(interp_path, interp_data)
             
-            # Add interpretation as event
-            events_path = self.file_manager.get_events_path(game_id, scene_id)
-            events_data = self.file_manager.read_yaml(events_path)
-            
-            if "events" not in events_data:
-                events_data["events"] = []
-            
-            events_data["events"].append({
-                "id": f"event-{len(events_data['events'])+1}",
-                "description": f"{selected.title}: {selected.description}",
-                "source": "oracle",
-                "scene_id": scene_id,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            })
-            
-            self.file_manager.write_yaml(events_path, events_data)
+            # Only add as event if requested
+            if add_event:
+                self.add_interpretation_event(game_id, scene_id, selected)
             
             return selected
+
+    def add_interpretation_event(
+        self,
+        game_id: str,
+        scene_id: str,
+        interpretation: Interpretation
+    ) -> None:
+        """Add an interpretation as an event.
+        
+        Args:
+            game_id: ID of the current game.
+            scene_id: ID of the current scene.
+            interpretation: The interpretation to add as an event.
+        """
+        events_path = self.file_manager.get_events_path(game_id, scene_id)
+        events_data = self.file_manager.read_yaml(events_path)
+        
+        if "events" not in events_data:
+            events_data["events"] = []
+        
+        events_data["events"].append({
+            "id": f"event-{len(events_data['events'])+1}",
+            "description": f"{interpretation.title}: {interpretation.description}",
+            "source": "oracle",
+            "scene_id": scene_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+        self.file_manager.write_yaml(events_path, events_data)
             
         except Exception as e:
             logger.error(f"Failed to select interpretation: {e}")
