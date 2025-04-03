@@ -3,12 +3,19 @@
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import List, Optional
+from enum import Enum
+from typing import Dict, List, Optional
 
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import SceneError
 
 logger = logging.getLogger(__name__)
+
+
+class SceneStatus(Enum):
+    """Enumeration of possible scene statuses."""
+    ACTIVE = "active"
+    COMPLETED = "completed"
 
 
 @dataclass
@@ -19,7 +26,7 @@ class Scene:
     game_id: str
     title: str
     description: str
-    status: str  # active, completed
+    status: SceneStatus
     sequence: int
     created_at: datetime
     modified_at: datetime
