@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from typer import Typer
     app: Typer
 from sologm.core.game import GameManager
-from sologm.core.scene import SceneManager
+from sologm.core.scene import SceneManager, SceneStatus
 from sologm.utils.errors import GameError, SceneError
 
 # Create scene subcommand
@@ -48,7 +48,7 @@ def create_scene(
     console.print("[bold green]Scene created successfully![/]")
     console.print(f"Title: {scene.title}")
     console.print(f"Description: {scene.description}")
-    console.print(f"Status: {scene.status}")
+    console.print(f"Status: {scene.status.value}")
     console.print(f"Sequence: {scene.sequence}")
 
 
@@ -85,7 +85,7 @@ def list_scenes() -> None:
             scene.id,
             scene.title,
             scene.description,
-            scene.status,
+            scene.status.value,
             "✓" if scene.id == current_scene_id else "",
             str(scene.sequence),
         )
@@ -114,7 +114,7 @@ def scene_info() -> None:
     console.print(f"  ID: {active_scene.id}")
     console.print(f"  Title: {active_scene.title}")
     console.print(f"  Description: {active_scene.description}")
-    console.print(f"  Status: {active_scene.status}")
+    console.print(f"  Status: {active_scene.status.value}")
     console.print(f"  Sequence: {active_scene.sequence}")
     console.print(f"  Created: {active_scene.created_at}")
     console.print(f"  Modified: {active_scene.modified_at}")
