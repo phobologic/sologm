@@ -392,6 +392,7 @@ DESCRIPTION: Detailed description of interpretation idea
 
         return interp_set
 
+    @oracle_operation("select interpretation")
     def select_interpretation(
         self,
         game_id: str,
@@ -400,74 +401,60 @@ DESCRIPTION: Detailed description of interpretation idea
         interpretation_id: str,
         add_event: bool = True,
     ) -> Interpretation:
-        """Select an interpretation and add it as an event.
+        """Select an interpretation and optionally add it as an event.
 
         Args:
             game_id: ID of the current game.
             scene_id: ID of the current scene.
             interpretation_set_id: ID of the interpretation set.
             interpretation_id: ID of the interpretation to select.
+            add_event: Whether to add the interpretation as an event.
 
         Returns:
             Interpretation: The selected interpretation.
-
-        Raises:
-            OracleError: If interpretation selection fails.
         """
-        try:
-            # Load and validate interpretation set
-            interp_path = Path(
-                self.file_manager.get_interpretations_dir(game_id, scene_id),
-                f"{interpretation_set_id}.yaml",
+        # Load and validate interpretation set
+        interp_path = Path(
+            self.file_manager.get_interpretations_dir(game_id, scene_id),
+            f"{interpretation_set_id}.yaml",
+        )
+        interp_data = self.file_manager.read_yaml(interp_path)
+        
+        # Validate interpretation data
+        self._validate_interpretation_set(interp_data, interpretation_set_id)
+
+        # Normalize interpretation ID
+        if not interpretation_id.startswith("interp-"):
+            interpretation_id = f"interp-{interpretation_id}"
+
+        # Find selected interpretation
+        selected = None
+        selected_index = None
+        for i, interp in enumerate(interp_data["interpretations"]):
+            if interp["id"] == interpretation_id:
+                selected = self._create_interpretation(
+                    id=interp["id"],
+                    title=interp["title"],
+                    description=interp["description"],
+                    created_at=datetime.fromisoformat(interp["created_at"]),
+                )
+                selected_index = i
+                break
+
+        if not selected:
+            raise OracleError(
+                f"Interpretation {interpretation_id} not found in set {interpretation_set_id}"
             )
-            interp_data = self.file_manager.read_yaml(interp_path)
 
-            # Validate interpretation data exists
-            if not interp_data:
-                raise OracleError(
-                    f"Interpretation set " f"{interpretation_set_id} not found"
-                )
+        # Update interpretation set with selection
+        interp_data["selected_interpretation"] = selected_index
+        self.file_manager.write_yaml(interp_path, interp_data)
 
-            if "interpretations" not in interp_data:
-                raise OracleError(
-                    "Invalid interpretation set format: " "missing interpretations"
-                )
+        # Only add as event if requested
+        if add_event:
+            self.add_interpretation_event(game_id, scene_id, selected)
 
-            # Find selected interpretation
-            selected = None
-            selected_index = None
-            if not interpretation_id.startswith("interp-"):
-                interpretation_id = f"interp-{interpretation_id}"
-            for i, interp in enumerate(interp_data["interpretations"]):
-                if interp["id"] == interpretation_id:
-                    selected = Interpretation(
-                        id=interp["id"],
-                        title=interp["title"],
-                        description=interp["description"],
-                        created_at=datetime.fromisoformat(interp["created_at"]),
-                    )
-                    selected_index = i
-                    break
-
-            if not selected:
-                raise OracleError(
-                    f"Interpretation {interpretation_id} not "
-                    f"found in set {interpretation_set_id}"
-                )
-
-            # Update interpretation set with selection
-            interp_data["selected_interpretation"] = selected_index
-            self.file_manager.write_yaml(interp_path, interp_data)
-
-            # Only add as event if requested
-            if add_event:
-                self.add_interpretation_event(game_id, scene_id, selected)
-
-            return selected
-
-        except Exception as e:
-            logger.error(f"Failed to select interpretation: {e}")
-            raise OracleError(f"Failed to select interpretation: {str(e)}")
+        return selected
 
     def add_interpretation_event(
         self, game_id: str, scene_id: str, interpretation: Interpretation
