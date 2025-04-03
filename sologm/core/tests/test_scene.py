@@ -8,7 +8,7 @@ from typing import Generator
 import pytest
 from pytest import MonkeyPatch
 
-from sologm.core.scene import Scene, SceneManager
+from sologm.core.scene import Scene, SceneManager, SceneStatus
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import SceneError
 
