@@ -268,6 +268,7 @@ DESCRIPTION: Detailed description of interpretation idea
 
         return interpretations
 
+    @oracle_operation("get interpretations")
     def get_interpretations(
         self,
         game_id: str,
@@ -285,132 +286,111 @@ DESCRIPTION: Detailed description of interpretation idea
             context: User's question or context.
             oracle_results: Oracle results to interpret.
             count: Number of interpretations to generate.
+            retry_attempt: Number of retry attempts made.
 
         Returns:
             InterpretationSet: Set of generated interpretations.
-
-        Raises:
-            OracleError: If interpretation generation fails.
         """
-        try:
-            logger.debug(f"Getting game data for game_id: {game_id}")
-            # Get game and scene details
-            game_data = self.file_manager.read_yaml(
-                self.file_manager.get_game_path(game_id)
-            )
-            logger.debug("Successfully loaded game data")
-            scene_data = self.file_manager.read_yaml(
-                self.file_manager.get_scene_path(game_id, scene_id)
-            )
+        # Get game and scene details
+        game_data = self._read_game_data(game_id)
+        scene_data = self._read_scene_data(game_id, scene_id)
+        events_data = self._read_events_data(game_id, scene_id)
 
-            # Get recent events
-            events_data = self.file_manager.read_yaml(
-                self.file_manager.get_events_path(game_id, scene_id)
-            )
-            recent_events = [
-                event["description"]
-                for event in sorted(
-                    events_data.get("events", []),
-                    key=lambda x: x["created_at"],
-                    reverse=True,
-                )[:5]
-            ]
+        # Get recent events
+        recent_events = [
+            event["description"]
+            for event in sorted(
+                events_data.get("events", []),
+                key=lambda x: x["created_at"],
+                reverse=True,
+            )[:5]
+        ]
 
-            logger.debug("Building prompt for Claude API")
-            # Build prompt and get response
-            prompt = self._build_prompt(
-                game_data["description"],
-                scene_data["description"],
-                recent_events,
-                context,
-                oracle_results,
-                count,
+        # Build prompt and get response
+        prompt = self._build_prompt(
+            game_data["description"],
+            scene_data["description"],
+            recent_events,
+            context,
+            oracle_results,
+            count,
+        )
+
+        # If this is a retry, modify the prompt
+        if retry_attempt > 0:
+            prompt = prompt.replace(
+                "Please provide",
+                f"This is retry attempt #{retry_attempt + 1}. Please provide DIFFERENT",
             )
 
-            # If this is a retry, modify the prompt to request different
-            # interpretations
-            if retry_attempt > 0:
-                prompt = prompt.replace(
-                    "Please provide",
-                    f"This is retry attempt #{retry_attempt + 1}. Please "
-                    "provide DIFFERENT",
-                )
+        # Get and parse response
+        logger.debug("Sending prompt to Claude API")
+        response = self.anthropic_client.send_message(prompt)
+        parsed = self._parse_interpretations(response)
+        logger.debug(f"Found {len(parsed)} interpretations")
 
-            logger.debug("Sending prompt to Claude API")
-            response = self.anthropic_client.send_message(prompt)
-            logger.debug("Parsing interpretations from response")
-            parsed = self._parse_interpretations(response)
-            logger.debug(f"Found {len(parsed)} interpretations")
-
-            # Create interpretation objects
-            now = datetime.now(timezone.utc)
-            interpretations = [
-                Interpretation(
-                    id=f"interp-{i+1}",
-                    title=interp["title"],
-                    description=interp["description"],
-                    created_at=now,
-                )
-                for i, interp in enumerate(parsed)
-            ]
-
-            # Create and save interpretation set
-            interp_set = InterpretationSet(
-                id=self.file_manager.create_timestamp_filename("interp", "")[:-5],
-                scene_id=scene_id,
-                context=context,
-                oracle_results=oracle_results,
-                interpretations=interpretations,
-                selected_interpretation=None,
+        # Create interpretation objects
+        now = datetime.now(timezone.utc)
+        interpretations = [
+            self._create_interpretation(
+                id=f"interp-{i+1}",
+                title=interp["title"],
+                description=interp["description"],
                 created_at=now,
             )
+            for i, interp in enumerate(parsed)
+        ]
 
-            # Update game's current interpretation
-            game_data = self.file_manager.read_yaml(
-                self.file_manager.get_game_path(game_id)
-            )
-            game_data["current_interpretation"] = {
+        # Create interpretation set
+        interp_set = InterpretationSet(
+            id=self.file_manager.create_timestamp_filename("interp", "")[:-5],
+            scene_id=scene_id,
+            context=context,
+            oracle_results=oracle_results,
+            interpretations=interpretations,
+            selected_interpretation=None,
+            created_at=now,
+        )
+
+        # Update game's current interpretation
+        game_data["current_interpretation"] = {
+            "id": interp_set.id,
+            "context": context,
+            "results": oracle_results,
+            "retry_count": retry_attempt,
+        }
+        self.file_manager.write_yaml(
+            self.file_manager.get_game_path(game_id), game_data
+        )
+
+        # Save interpretation set
+        interp_path = Path(
+            self.file_manager.get_interpretations_dir(game_id, scene_id),
+            f"{interp_set.id}.yaml",
+        )
+        self.file_manager.write_yaml(
+            interp_path,
+            {
                 "id": interp_set.id,
+                "scene_id": scene_id,
                 "context": context,
-                "results": oracle_results,
-                "retry_count": retry_attempt,
-            }
-            self.file_manager.write_yaml(
-                self.file_manager.get_game_path(game_id), game_data
-            )
+                "oracle_results": oracle_results,
+                "created_at": interp_set.created_at.isoformat(),
+                "selected_interpretation": None,
+                "retry_attempt": retry_attempt,
+                "interpretations": [
+                    {
+                        "id": i.id,
+                        "title": i.title,
+                        "description": i.description,
+                        "created_at": i.created_at.isoformat(),
+                    }
+                    for i in interpretations
+                ],
+            },
+        )
 
-            # Save interpretation set to file
-            interp_path = Path(
-                self.file_manager.get_interpretations_dir(game_id, scene_id),
-                f"{interp_set.id}.yaml",
-            )
-            self.file_manager.write_yaml(
-                interp_path,
-                {
-                    "id": interp_set.id,
-                    "scene_id": scene_id,
-                    "context": context,
-                    "oracle_results": oracle_results,
-                    "created_at": interp_set.created_at.isoformat(),
-                    "selected_interpretation": None,
-                    "retry_attempt": retry_attempt,
-                    "interpretations": [
-                        {
-                            "id": i.id,
-                            "title": i.title,
-                            "description": i.description,
-                            "created_at": i.created_at.isoformat(),
-                        }
-                        for i in interpretations
-                    ],
-                },
-            )
-
-            return interp_set
-
-        except Exception as e:
-            logger.error(f"Failed to get interpretations: {e}")
-            raise OracleError(f"Failed to get interpretations: {str(e)}")
+        return interp_set
 
     def select_interpretation(
         self,
