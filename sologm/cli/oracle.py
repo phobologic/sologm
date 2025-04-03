@@ -152,6 +152,70 @@ def retry_interpretation() -> None:
         raise typer.Exit(1)
 
 
+@oracle_app.command("status")
+def show_interpretation_status() -> None:
+    """Show current interpretation set status."""
+    try:
+        manager = OracleManager()
+
+        # Get active game and scene
+        game_id = manager.file_manager.get_active_game_id()
+        if not game_id:
+            console.print("[red]No active game found. Use 'game activate' first.[/red]")
+            raise typer.Exit(1)
+
+        scene_id = manager.file_manager.get_active_scene_id(game_id)
+        if not scene_id:
+            console.print("[red]No active scene found. Create or set a scene first.[/red]")
+            raise typer.Exit(1)
+
+        # Get current interpretation data
+        game_data = manager.file_manager.read_yaml(
+            manager.file_manager.get_game_path(game_id)
+        )
+        current = game_data.get("current_interpretation")
+
+        if not current:
+            console.print("[yellow]No current interpretation set.[/yellow]")
+            raise typer.Exit(0)
+
+        # Load interpretation set
+        interp_path = Path(
+            manager.file_manager.get_interpretations_dir(game_id, scene_id),
+            f"{current['id']}.yaml",
+        )
+        interp_data = manager.file_manager.read_yaml(interp_path)
+
+        # Display current interpretation status
+        console.print("\n[bold]Current Oracle Interpretation[/bold]")
+        console.print(f"Set ID: [bold]{current['id']}[/bold]")
+        console.print(f"Context: {current['context']}")
+        console.print(f"Results: {current['results']}")
+        console.print(f"Retry count: {current['retry_count']}\n")
+
+        # Show all interpretations in the set
+        for i, interp in enumerate(interp_data["interpretations"], 1):
+            selected = (
+                "[green](Selected)[/green] "
+                if interp_data["selected_interpretation"] == i - 1
+                else ""
+            )
+            panel = Panel(
+                Text.from_markup(
+                    f"[bold]{interp['title']}[/bold]\n\n{interp['description']}"
+                ),
+                title=f"Interpretation {i} [dim][{interp['id']}][/dim] {selected}",
+                border_style="blue",
+            )
+            console.print(panel)
+            console.print()
+
+    except Exception as e:
+        logger.error(f"Failed to show interpretation status: {e}")
+        console.print(f"[red]Error: {str(e)}[/red]")
+        raise typer.Exit(1)
+
+
 @oracle_app.command("select")
 def select_interpretation(
     interpretation_id: str = typer.Option(
