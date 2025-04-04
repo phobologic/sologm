@@ -248,21 +248,24 @@ def display_game_status(
         height=10
     )
 
-    # Right column: Recent Events
+    # Right column: Recent Events (up to 5)
     events_content = ""
     if recent_events:
-        for event in recent_events:
+        events_shown = recent_events[:5]  # Take at most 5 events
+        for event in events_shown:
             events_content += (
                 f"[cyan]{event.created_at.strftime('%Y-%m-%d %H:%M')}[/cyan] "
                 f"[magenta]({event.source})[/magenta]\n"
                 f"{event.description}\n\n"
             )
+        if len(recent_events) > 5:
+            events_content += f"[dim]...and {len(recent_events) - 5} more events[/dim]"
     else:
         events_content = "[dim]No recent events[/dim]"
 
     events_panel = Panel(
         events_content.rstrip(),
-        title="Recent Events",
+        title=f"Recent Events ({len(recent_events[:5])} of {len(recent_events)})",
         border_style="green",
         height=10
     )

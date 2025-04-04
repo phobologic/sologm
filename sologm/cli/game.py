@@ -103,7 +103,7 @@ def game_info(
             if active_scene:
                 recent_events = event_manager.list_events(
                     game.id, active_scene.id, limit=5
-                )
+                )[:5]  # Ensure we get at most 5 events
 
             oracle_manager = OracleManager()
             current_interpretation = oracle_manager.get_current_interpretation(game.id)
