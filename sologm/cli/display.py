@@ -214,34 +214,48 @@ def display_game_status(
         recent_events: Recent events (limited list)
         current_interpretation: Current interpretation data if any
     """
-    # Create a grid layout with two columns
+    # Top bar with game info
+    game_info = (
+        f"[bold]{game.name}[/bold] ({game.id})\n"
+        f"[dim]{game.description}[/dim]\n"
+        f"Created: {game.created_at.strftime('%Y-%m-%d')} • "
+        f"Scenes: {len(game.scenes)}"
+    )
+    console.print(Panel(game_info, expand=True, border_style="blue"))
+
+    # Create a grid layout with two columns for scene and events
     grid = Table.grid(expand=True, padding=(0, 1))
     grid.add_column("Left", ratio=1)
     grid.add_column("Right", ratio=1)
 
-    # Left column: Game & Scene info
-    game_panel = Panel(
-        f"[bold]{game.name}[/bold]\n[dim]{game.description}[/dim]",
-        title="Game",
-        border_style="blue",
-    )
+    # Left column: Scene info
+    scenes_content = ""
+    if active_scene:
+        scenes_content = (
+            f"[bold]{active_scene.title}[/bold]\n"
+            f"[dim]{active_scene.description}[/dim]\n\n"
+            f"Status: [italic]{active_scene.status.value}[/italic]\n"
+            f"Sequence: {active_scene.sequence}"
+        )
+        # TODO: Add previous scene info once we track that
+    else:
+        scenes_content = "[dim]No active scene[/dim]"
 
-    scene_content = (
-        f"[bold]{active_scene.title}[/bold]\n"
-        f"[dim]{active_scene.description}[/dim]\n\n"
-        f"Status: [italic]{active_scene.status.value}[/italic]"
-        if active_scene
-        else "[dim]No active scene[/dim]"
+    scenes_panel = Panel(
+        scenes_content,
+        title="Current Scene",
+        border_style="cyan",
+        height=10
     )
-    scene_panel = Panel(scene_content, title="Current Scene", border_style="cyan")
 
     # Right column: Recent Events
     events_content = ""
     if recent_events:
         for event in recent_events:
             events_content += (
-                f"[cyan]{event.created_at.strftime('%H:%M')}[/cyan] "
-                f"({event.source})\n{event.description}\n\n"
+                f"[cyan]{event.created_at.strftime('%Y-%m-%d %H:%M')}[/cyan] "
+                f"[magenta]({event.source})[/magenta]\n"
+                f"{event.description}\n\n"
             )
     else:
         events_content = "[dim]No recent events[/dim]"
@@ -249,12 +263,13 @@ def display_game_status(
     events_panel = Panel(
         events_content.rstrip(),
         title="Recent Events",
-        border_style="green"
+        border_style="green",
+        height=10
     )
 
-    # Add game and scene info to left column, events to right
-    grid.add_row(game_panel, events_panel)
-    grid.add_row(scene_panel)
+    # Add scene and events panels to grid
+    grid.add_row(scenes_panel, events_panel)
+    console.print(grid)
 
     # If there's an open interpretation, show it in a panel below
     has_open_interpretation = (
@@ -267,8 +282,7 @@ def display_game_status(
             f"Context: {current_interpretation['context']}\n"
             f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
             title="Pending Decision",
-            border_style="yellow"
+            border_style="yellow",
+            expand=True
         )
-        grid.add_row(Panel(interp_panel, expand=True))
-
-    console.print(grid)
+        console.print(interp_panel)
