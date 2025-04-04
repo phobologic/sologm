@@ -59,8 +59,48 @@ def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
 
 
 @pytest.fixture
+def _test_game(file_manager: FileManager) -> Generator[dict, None, None]:
+    """Create a test game."""
+    game_data = {
+        "id": "test-game",
+        "name": "Test Game",
+        "description": "A test game",
+        "created_at": "2025-04-02T12:00:00Z",
+        "modified_at": "2025-04-02T12:00:00Z",
+        "scenes": ["test-scene"],
+    }
+
+    file_manager.write_yaml(file_manager.get_game_path("test-game"), game_data)
+    file_manager.set_active_game_id("test-game")
+
+    yield game_data
+
+
+@pytest.fixture
 def test_scene(
-    file_manager: FileManager, _test_game: dict
+    file_manager: FileManager, test_game: dict
+    """Create a test scene."""
+    scene_data = {
+        "id": "test-scene",
+        "game_id": "test-game",
+        "title": "Test Scene",
+        "description": "A test scene",
+        "status": "active",
+        "created_at": "2025-04-02T12:00:00Z",
+        "modified_at": "2025-04-02T12:00:00Z",
+    }
+
+    file_manager.write_yaml(
+        file_manager.get_scene_path("test-game", "test-scene"), scene_data
+    )
+    file_manager.set_active_scene_id("test-game", "test-scene")
+
+    yield scene_data
+
+
+@pytest.fixture
+def _test_scene(
+    file_manager: FileManager, test_game: dict
 ) -> Generator[dict, None, None]:
     """Create a test scene."""
     scene_data = {
@@ -83,8 +123,7 @@ def test_scene(
 
 @pytest.fixture
 def test_events(
-    file_manager: FileManager, _test_game: dict, _test_scene: dict
-) -> Generator[dict, None, None]:
+    file_manager: FileManager, test_game: dict, test_scene: dict
     """Create test events."""
     events_data = {
         "events": [
@@ -114,8 +153,7 @@ class TestOracle:
     """Tests for oracle interpretation system."""
 
     def test_validate_active_context(
-        self, oracle_manager: OracleManager, _test_game: dict, _test_scene: dict
-    ) -> None:
+        self, oracle_manager: OracleManager, test_game: dict, test_scene: dict
         """Test validating active game and scene."""
         game_id, scene_id = oracle_manager.validate_active_context()
         assert game_id == "test-game"
@@ -130,16 +168,14 @@ class TestOracle:
         assert "No active game found" in str(exc.value)
 
     def test_validate_active_context_no_scene(
-        self, oracle_manager: OracleManager, _test_game: dict
-    ) -> None:
+        self, oracle_manager: OracleManager, test_game: dict
         """Test validation with no active scene."""
         with pytest.raises(OracleError) as exc:
             oracle_manager.validate_active_context()
         assert "No active scene found" in str(exc.value)
 
     def test_get_current_interpretation_reference(
-        self, oracle_manager: OracleManager, _test_game: dict
-    ) -> None:
+        self, oracle_manager: OracleManager, test_game: dict
         """Test getting current interpretation reference."""
         # Set up test data
         game_data = oracle_manager._read_game_data("test-game")
@@ -206,10 +242,9 @@ DESCRIPTION: Test Description 2
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
-        _test_events: dict,
-    ) -> None:
+        test_game: dict,
+        test_scene: dict,
+        test_events: dict,
         """Test getting interpretations."""
         # Configure mock to return string response
         response_text = """=== BEGIN INTERPRETATIONS ===
@@ -238,9 +273,8 @@ DESCRIPTION: Test Description
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
-    ) -> None:
+        test_game: dict,
+        test_scene: dict,
         """Test handling errors when getting interpretations."""
         mock_anthropic_client.send_message.side_effect = Exception("API Error")
 
@@ -253,9 +287,8 @@ DESCRIPTION: Test Description
     def test_get_interpretation_set(
         self,
         oracle_manager: OracleManager,
-        _test_game: dict,
-        _test_scene: dict,
-    ) -> None:
+        test_game: dict,
+        test_scene: dict,
         """Test getting an interpretation set by ID."""
         # Create test interpretation set
         interp_data = {
@@ -302,9 +335,8 @@ DESCRIPTION: Test Description
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
-    ) -> None:
+        test_game: dict,
+        test_scene: dict,
         """Test selecting an interpretation."""
         # Configure mock to return string response
         response_text = """=== BEGIN INTERPRETATIONS ===
@@ -348,8 +380,7 @@ DESCRIPTION: Test Description
         assert game_data["current_interpretation_reference"]["resolved"] is True
 
     def test_select_interpretation_not_found(
-        self, oracle_manager: OracleManager, _test_game: dict, _test_scene: dict
-    ) -> None:
+        self, oracle_manager: OracleManager, test_game: dict, test_scene: dict
         """Test selecting a non-existent interpretation."""
         with pytest.raises(OracleError) as exc:
             oracle_manager.select_interpretation(
@@ -361,9 +392,8 @@ DESCRIPTION: Test Description
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
-    ) -> None:
+        test_game: dict,
+        test_scene: dict,
         """Test getting interpretations with retry attempt."""
         # Configure mock to return string response
         response_text = """=== BEGIN INTERPRETATIONS ===
