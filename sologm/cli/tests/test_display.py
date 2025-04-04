@@ -2,7 +2,6 @@
 
 from datetime import datetime, timezone
 from typing import List
-
 from unittest.mock import Mock
 
 import pytest
@@ -24,7 +23,7 @@ from sologm.core.scene import Scene
 
 
 @pytest.fixture
-def mock_console(monkeypatch):
+def mock_console():
     """Create a mocked Rich console."""
     mock = Mock(spec=Console)
     return mock
