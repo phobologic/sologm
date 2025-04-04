@@ -231,7 +231,17 @@ def display_game_status(
         active_scene: Active scene if any
         recent_events: Recent events (limited list)
         current_interpretation: Current interpretation data if any
+        scene_manager: Optional scene manager for additional context
     """
+    # Get console width for responsive layout
+    console_width = console.width
+    
+    # Calculate appropriate truncation length based on console width
+    # Since we're using a two-column layout, each column gets roughly half the width
+    # Subtract some space for borders, padding, and formatting
+    column_width = max(40, (console_width // 2) - 10)
+    truncation_length = column_width
+    
     # Top bar with game info
     game_info = (
         f"[bold]{game.name}[/bold] ({game.id})\n"
@@ -291,8 +301,8 @@ def display_game_status(
 
         events_shown = recent_events[:max_events_to_show]
         for event in events_shown:
-            # Truncate long descriptions to keep events compact
-            truncated_description = truncate_text(event.description, max_length=120)
+            # Truncate long descriptions based on calculated width
+            truncated_description = truncate_text(event.description, max_length=truncation_length)
             events_content += (
                 f"[cyan]{event.created_at.strftime('%Y-%m-%d %H:%M')}[/cyan] "
                 f"[magenta]({event.source})[/magenta]\n"
