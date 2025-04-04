@@ -1,7 +1,7 @@
 """Tests for datetime utilities."""
 
-from datetime import datetime, timedelta, timezone
 import pytest
+from datetime import datetime, timedelta, timezone
 
 from freezegun import freeze_time
 
