@@ -52,6 +52,8 @@ def sample_scene() -> Scene:
         created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
         modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
         status="active",
+        game_id="test-game",
+        sequence=1,
     )
 
 
@@ -64,12 +66,16 @@ def sample_events() -> List[Event]:
             description="Test event 1",
             source="manual",
             created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            game_id="test-game",
+            scene_id="test-scene",
         ),
         Event(
             id="event-2",
             description="Test event 2",
             source="oracle",
             created_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+            game_id="test-game",
+            scene_id="test-scene",
         ),
     ]
 
@@ -107,6 +113,7 @@ def sample_interpretation_set(sample_interpretation) -> InterpretationSet:
         interpretations=[sample_interpretation],
         selected_interpretation=0,
         created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        scene_id="test-scene",
     )
 
 
