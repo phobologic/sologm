@@ -4,10 +4,11 @@ import logging
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
+from sologm.cli.display import display_games_table, display_game_info
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
+from sologm.utils.errors import GameError
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def create_game(
 ) -> None:
     """Create a new game."""
     try:
-        logger.debug(f"Creating game with name='{name}', " "description='{description}'")
+        logger.debug(f"Creating game with name='{name}', description='{description}'")
         game_manager = GameManager()
         game = game_manager.create_game(name=name, description=description)
 
@@ -75,7 +76,6 @@ def game_info() -> None:
         logger.debug("Getting active game info")
         game_manager = GameManager()
         game = game_manager.get_active_game()
-        
         if not game:
             console.print("No active game. Use 'sologm game activate' to set one.")
             return
