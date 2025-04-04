@@ -1,6 +1,7 @@
 """Dice roll model for SoloGM."""
 
 import json
+import uuid
 from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
@@ -29,7 +30,7 @@ class DiceRoll(Base, TimestampMixin):
     """SQLAlchemy model representing a dice roll result."""
 
     __tablename__ = "dice_rolls"
-    id: Column = Column(String, primary_key=True)
+    id: Column = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     notation: Column = Column(String, nullable=False)
     individual_results: Column = Column(JSONType, nullable=False)  # Store as JSON array
     modifier: Column = Column(Integer, nullable=False)
@@ -41,3 +42,38 @@ class DiceRoll(Base, TimestampMixin):
     scene_id: Column = Column(String, ForeignKey("scenes.id"), nullable=True)
 
     # Relationships will be defined in __init__.py
+    
+    @classmethod
+    def create(
+        cls,
+        notation: str,
+        individual_results: List[int],
+        modifier: int,
+        total: int,
+        reason: Optional[str] = None,
+        game_id: Optional[str] = None,
+        scene_id: Optional[str] = None
+    ) -> "DiceRoll":
+        """Create a new dice roll record.
+
+        Args:
+            notation: The dice notation (e.g., "2d6+3").
+            individual_results: List of individual die results.
+            modifier: The modifier applied to the roll.
+            total: The total result of the roll.
+            reason: Optional reason for the roll.
+            game_id: Optional ID of the game this roll belongs to.
+            scene_id: Optional ID of the scene this roll belongs to.
+        Returns:
+            A new DiceRoll instance.
+        """
+        return cls(
+            id=str(uuid.uuid4()),
+            notation=notation,
+            individual_results=individual_results,
+            modifier=modifier,
+            total=total,
+            reason=reason,
+            game_id=game_id,
+            scene_id=scene_id
+        )
