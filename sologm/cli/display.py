@@ -265,7 +265,7 @@ def display_game_status(
         events_content.rstrip(),
         title=f"Recent Events ({len(recent_events)} shown)",
         border_style="green",
-        height=10
+        height=15
     )
 
     # Add scene and events panels to grid
