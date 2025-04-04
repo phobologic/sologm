@@ -1,7 +1,8 @@
 """Tests for datetime utilities."""
 
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 from freezegun import freeze_time
 
 from sologm.utils.datetime_utils import (
