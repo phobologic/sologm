@@ -53,10 +53,7 @@ def main(
         logger.debug("Loading config from %s", config_path)
         Config.get_instance(Path(config_path))
 
-
-
-def main() -> None:
-    """Register all CLI subcommands and run the app."""
+    # Register all CLI subcommands
     from sologm.cli.dice import dice_app
     from sologm.cli.event import event_app
     from sologm.cli.game import game_app
@@ -72,5 +69,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
     app()
