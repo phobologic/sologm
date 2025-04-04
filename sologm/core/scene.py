@@ -1,10 +1,10 @@
 """Scene management functionality."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
-import logging
 
 from sologm.storage.file_manager import FileManager
 from sologm.utils.datetime_utils import get_current_time

@@ -1,11 +1,11 @@
 """Oracle interpretation system for Solo RPG Helper."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, List, Optional, TypeVar
-import logging
 
 from sologm.core.event import EventManager
 from sologm.integrations.anthropic import AnthropicClient

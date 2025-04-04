@@ -1,9 +1,9 @@
 """Event management functionality."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
-import logging
 
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
