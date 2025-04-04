@@ -1,9 +1,10 @@
 """Scene model for SoloGM."""
 
 import enum
+import uuid
 from typing import ClassVar
 
-from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import validates
 
 from sologm.models.base import Base, TimestampMixin
@@ -19,7 +20,12 @@ class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
     __tablename__: ClassVar[str] = "scenes"
-    id: Column = Column(String, primary_key=True)
+    __table_args__ = (
+        UniqueConstraint('game_id', 'slug', name='uix_game_scene_slug'),
+    )
+    
+    id: Column = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    slug: Column = Column(String, nullable=False, index=True)
     game_id: Column = Column(String, ForeignKey("games.id"), nullable=False)
     title: Column = Column(String, nullable=False)
     description: Column = Column(Text)
@@ -36,6 +42,13 @@ class Scene(Base, TimestampMixin):
         if not title or not title.strip():
             raise ValueError("Scene title cannot be empty")
         return title
+        
+    @validates('slug')
+    def validate_slug(self, _: str, slug: str) -> str:
+        """Validate the scene slug."""
+        if not slug or not slug.strip():
+            raise ValueError("Scene slug cannot be empty")
+        return slug
 
     @classmethod
     def create(
@@ -45,7 +58,7 @@ class Scene(Base, TimestampMixin):
         description: str,
         sequence: int
     ) -> "Scene":
-        """Create a new scene with a unique ID based on the title.
+        """Create a new scene with a unique ID and slug based on the title.
 
         Args:
             game_id: ID of the game this scene belongs to.
@@ -55,10 +68,12 @@ class Scene(Base, TimestampMixin):
         Returns:
             A new Scene instance.
         """
-        # Generate a URL-friendly ID from the title
-        prefix = f"scene-{sequence}-{slugify(title)}"
+        # Generate a URL-friendly slug from the title and sequence
+        scene_slug = f"scene-{sequence}-{slugify(title)}"
+        
         return cls(
-            id=prefix,  # We use the prefix directly as it's already unique enough
+            id=str(uuid.uuid4()),
+            slug=scene_slug,
             game_id=game_id,
             title=title,
             description=description,
