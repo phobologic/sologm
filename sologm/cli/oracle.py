@@ -26,7 +26,9 @@ def interpret_oracle(
         3, "--count", "-n", help="Number of interpretations to generate"
     ),
     show_prompt: bool = typer.Option(
-        False, "--show-prompt", help="Show the prompt that would be sent to the AI without sending it"
+        False, 
+        "--show-prompt", 
+        help="Show the prompt that would be sent to the AI without sending it"
     ),
 ) -> None:
     """Get interpretations for oracle results."""
