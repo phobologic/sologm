@@ -105,7 +105,9 @@ def display_events_table(
         events: List of events to display
         scene_title: Title of the scene
     """
-    logger.debug(f"Displaying events table for scene '{scene_title}' with {len(events)} events")
+    logger.debug(
+        f"Displaying events table for scene '{scene_title}' with {len(events)} events"
+    )
     if not events:
         console.print(f"\nNo events in scene '{scene_title}'")
         return
@@ -169,7 +171,10 @@ def display_game_info(
         game: Game to display
         active_scene: Active scene, if any
     """
-    logger.debug(f"Displaying game info for {game.id} with active scene: {active_scene.id if active_scene else 'None'}")
+    logger.debug(
+        f"Displaying game info for {game.id} with active scene: "
+        f"{active_scene.id if active_scene else 'None'}"
+    )
     console.print("[bold]Active Game:[/]")
     console.print(f"  Name: {game.name} ({game.id})")
     console.print(f"  Description: {game.description}")
@@ -192,7 +197,10 @@ def display_interpretation_set(
         interp_set: InterpretationSet to display
         show_context: Whether to show context information
     """
-    logger.debug(f"Displaying interpretation set {interp_set.id} with {len(interp_set.interpretations)} interpretations")
+    logger.debug(
+        f"Displaying interpretation set {interp_set.id} with "
+        f"{len(interp_set.interpretations)} interpretations"
+    )
     if show_context:
         console.print("\n[bold]Oracle Interpretations[/bold]")
         console.print(f"Context: {interp_set.context}")
@@ -248,7 +256,7 @@ def display_game_status(
         f"Displaying game status for {game.id} with {len(recent_events)} events and "
         f"active scene: {active_scene.id if active_scene else 'None'}"
     )
-    
+
     # Get console width for responsive layout
     console_width = console.width
     logger.debug(f"Console width detected: {console_width} characters")
@@ -258,7 +266,9 @@ def display_game_status(
     # Subtract some space for borders, padding, and formatting
     column_width = max(40, (console_width // 2) - 10)
     truncation_length = column_width
-    logger.debug(f"Using truncation length of {truncation_length} characters for event descriptions")
+    logger.debug(
+        f"Using truncation length of {truncation_length} characters for event descriptions"
+    )
 
     # Top bar with game info
     game_info = (
