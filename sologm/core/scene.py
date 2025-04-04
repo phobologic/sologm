@@ -208,8 +208,8 @@ class SceneManager:
             description=description,
             status=SceneStatus.ACTIVE,
             sequence=sequence,
-            created_at=now,
-            modified_at=now,
+            created_at=datetime.now(timezone.utc),
+            modified_at=datetime.now(timezone.utc),
         )
 
         # Save scene data
