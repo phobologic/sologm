@@ -329,7 +329,7 @@ DESCRIPTION: Detailed description of interpretation idea
         scene_id: str,
         context: str,
         oracle_results: str,
-        count: int = 3,
+        count: int = 5,
         retry_attempt: int = 0,
     ) -> InterpretationSet:
         """Get interpretations for oracle results.
