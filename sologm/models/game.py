@@ -1,7 +1,5 @@
 """Game model for SoloGM."""
 
-from typing import Any, Optional
-
 from sqlalchemy import Boolean, Column, String, Text
 from sqlalchemy.orm import validates
 
