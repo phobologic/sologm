@@ -264,7 +264,8 @@ def display_game_status(
         len(scenes_content.splitlines()) + 2,  # Match scene panel height
         min(
             event_lines + 2,  # Add 2 for panel borders
-            (len(scenes_content.splitlines()) + 2) * 2  # But no more than 2x scene height
+            # But no more than 2x scene height
+            (len(scenes_content.splitlines()) + 2) * 2
         )
     )
 
