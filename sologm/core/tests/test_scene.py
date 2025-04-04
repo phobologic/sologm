@@ -1,7 +1,7 @@
 """Tests for the scene management functionality."""
 
 import logging
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Generator
 
@@ -9,6 +9,7 @@ import pytest
 
 from sologm.core.scene import Scene, SceneManager, SceneStatus
 from sologm.storage.file_manager import FileManager
+from sologm.utils.datetime_utils import format_datetime, get_current_time
 from sologm.utils.errors import SceneError
 
 logger = logging.getLogger(__name__)
@@ -42,8 +43,8 @@ def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
         "description": "A game for testing",
         "status": "active",
         "scenes": [],
-        "created_at": datetime.now(UTC).isoformat(),
-        "modified_at": datetime.now(UTC).isoformat(),
+        "created_at": format_datetime(get_current_time()),
+        "modified_at": format_datetime(get_current_time()),
     }
 
     game_path = file_manager.get_game_path(game_id)
@@ -57,7 +58,7 @@ class TestScene:
 
     def test_scene_creation(self) -> None:
         """Test creating a Scene object."""
-        now = datetime.now(UTC)
+        now = get_current_time()
         scene = Scene(
             id="test-scene",
             game_id="test-game",

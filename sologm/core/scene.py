@@ -2,11 +2,12 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
 from sologm.storage.file_manager import FileManager
+from sologm.utils.datetime_utils import format_datetime, get_current_time, parse_datetime
 from sologm.utils.errors import SceneError
 
 logger = logging.getLogger(__name__)
@@ -207,8 +208,8 @@ class SceneManager:
             description=description,
             status=SceneStatus.ACTIVE,
             sequence=sequence,
-            created_at=datetime.now(timezone.utc),
-            modified_at=datetime.now(timezone.utc),
+            created_at=get_current_time(),
+            modified_at=get_current_time(),
         )
 
         # Save scene data
@@ -327,7 +328,7 @@ class SceneManager:
 
         # Update scene status
         scene.status = SceneStatus.COMPLETED
-        scene.modified_at = datetime.now(timezone.utc)
+        scene.modified_at = get_current_time()
 
         # Save updated scene data
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)

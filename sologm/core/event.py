@@ -2,12 +2,13 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Optional
 
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.storage.file_manager import FileManager
+from sologm.utils.datetime_utils import format_datetime, get_current_time, parse_datetime
 from sologm.utils.errors import EventError
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ class EventManager:
             game_id=game_id,
             description=description,
             source=source,
-            created_at=datetime.now(timezone.utc),
+            created_at=get_current_time(),
         )
 
         # Load existing events
@@ -88,7 +89,7 @@ class EventManager:
                 "game_id": event.game_id,
                 "description": event.description,
                 "source": event.source,
-                "created_at": event.created_at.isoformat(),
+                "created_at": format_datetime(event.created_at),
             }
         )
 
@@ -163,11 +164,7 @@ class EventManager:
                     game_id=event_data.get("game_id", game_id),
                     description=event_data["description"],
                     source=event_data["source"],
-                    created_at=datetime.fromisoformat(event_data["created_at"]).replace(
-                        tzinfo=timezone.utc if not datetime.fromisoformat(
-                            event_data["created_at"]
-                        ).tzinfo else None
-                    ),
+                    created_at=parse_datetime(event_data["created_at"]),
                 )
             )
 

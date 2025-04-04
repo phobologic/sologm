@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, List, Optional, TypeVar
@@ -10,6 +10,7 @@ from typing import Any, Callable, List, Optional, TypeVar
 from sologm.core.event import EventManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.storage.file_manager import FileManager
+from sologm.utils.datetime_utils import format_datetime, get_current_time, parse_datetime
 from sologm.utils.errors import OracleError
 
 logger = logging.getLogger(__name__)
@@ -147,7 +148,7 @@ class OracleManager:
                         interpretation_id=i["id"],
                         title=i["title"],
                         description=i["description"],
-                        created_at=datetime.fromisoformat(i["created_at"]),
+                        created_at=parse_datetime(i["created_at"]),
                     )
                     for i in data["interpretations"]
                 ],
@@ -379,7 +380,7 @@ DESCRIPTION: Detailed description of interpretation idea
         logger.debug(f"Found {len(parsed)} interpretations")
 
         # Create interpretation objects
-        now = datetime.now(timezone.utc)
+        now = get_current_time()
         interpretations = [
             self._create_interpretation(
                 interpretation_id=f"interp-{i+1}",
@@ -424,7 +425,7 @@ DESCRIPTION: Detailed description of interpretation idea
                 "scene_id": scene_id,
                 "context": context,
                 "oracle_results": oracle_results,
-                "created_at": interp_set.created_at.isoformat(),
+                "created_at": format_datetime(interp_set.created_at),
                 "selected_interpretation": None,
                 "retry_attempt": retry_attempt,
                 "interpretations": [
@@ -432,7 +433,7 @@ DESCRIPTION: Detailed description of interpretation idea
                         "id": i.id,
                         "title": i.title,
                         "description": i.description,
-                        "created_at": i.created_at.isoformat(),
+                        "created_at": format_datetime(i.created_at),
                     }
                     for i in interpretations
                 ],

@@ -3,11 +3,12 @@
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
 from sologm.storage.file_manager import FileManager
+from sologm.utils.datetime_utils import format_datetime, get_current_time, parse_datetime
 from sologm.utils.errors import GameError
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ class GameManager:
                 raise GameError(f"Failed to generate unique ID for game: {name}")
 
         # Create the game instance
-        now = datetime.now(UTC)
+        now = get_current_time()
         game = Game(
             id=game_id,
             name=name,
@@ -88,8 +89,8 @@ class GameManager:
                     "id": game.id,
                     "name": game.name,
                     "description": game.description,
-                    "created_at": game.created_at.isoformat(),
-                    "modified_at": game.modified_at.isoformat(),
+                    "created_at": format_datetime(game.created_at),
+                    "modified_at": format_datetime(game.modified_at),
                     "scenes": game.scenes,
                 },
             )
@@ -130,12 +131,8 @@ class GameManager:
                                 id=game_data["id"],
                                 name=game_data["name"],
                                 description=game_data["description"],
-                                created_at=datetime.fromisoformat(
-                                    game_data["created_at"]
-                                ),
-                                modified_at=datetime.fromisoformat(
-                                    game_data["modified_at"]
-                                ),
+                                created_at=parse_datetime(game_data["created_at"]),
+                                modified_at=parse_datetime(game_data["modified_at"]),
                                 scenes=game_data["scenes"],
                             )
                         )
