@@ -242,6 +242,52 @@ class OracleManager:
                 "Invalid interpretation set format: missing interpretations"
             )
 
+    @oracle_operation("get most recent interpretation")
+    def get_most_recent_interpretation(
+        self, game_id: str, scene_id: str
+    ) -> Optional[tuple[InterpretationSet, Interpretation]]:
+        """Get the most recently resolved interpretation for a game/scene.
+        
+        Args:
+            game_id: ID of the game
+            scene_id: ID of the scene
+            
+        Returns:
+            Optional tuple of (InterpretationSet, selected Interpretation) or None if none found
+        """
+        try:
+            interp_dir = self.file_manager.get_interpretations_dir(game_id, scene_id)
+            if not interp_dir.exists():
+                return None
+                
+            # Get all interpretation set files, sorted by creation time (newest first)
+            interp_files = sorted(
+                [f for f in interp_dir.glob("*.yaml")],
+                key=lambda f: f.stat().st_mtime,
+                reverse=True
+            )
+            
+            # Find the most recent one with a selected interpretation
+            for file_path in interp_files:
+                try:
+                    data = self.file_manager.read_yaml(file_path)
+                    if data.get("selected_interpretation") is not None:
+                        # We found a resolved interpretation
+                        interp_set = self.get_interpretation_set(
+                            game_id, scene_id, data["id"]
+                        )
+                        selected_idx = interp_set.selected_interpretation
+                        if selected_idx is not None and 0 <= selected_idx < len(interp_set.interpretations):
+                            return (interp_set, interp_set.interpretations[selected_idx])
+                except Exception as e:
+                    logger.warning(f"Error reading interpretation file {file_path}: {e}")
+                    continue
+                    
+            return None
+        except Exception as e:
+            logger.warning(f"Error getting most recent interpretation: {e}")
+            return None
+
 
     def _build_prompt(
         self,

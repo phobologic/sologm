@@ -1,7 +1,7 @@
 """Display helpers for CLI output."""
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from rich.console import Console
 from rich.panel import Panel
@@ -13,6 +13,9 @@ from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
 from sologm.core.scene import Scene, SceneManager
+
+if TYPE_CHECKING:
+    from sologm.core.oracle import OracleManager
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +243,7 @@ def display_game_status(
     recent_events: List[Event],
     current_interpretation_reference: Optional[dict] = None,
     scene_manager: Optional[SceneManager] = None,
+    oracle_manager: Optional["OracleManager"] = None,
 ) -> None:
     """Display comprehensive game status in a compact layout.
 
@@ -248,8 +252,9 @@ def display_game_status(
         game: Current game
         active_scene: Active scene if any
         recent_events: Recent events (limited list)
-        current_interpretation: Current interpretation data if any
+        current_interpretation_reference: Current interpretation data if any
         scene_manager: Optional scene manager for additional context
+        oracle_manager: Optional oracle manager for interpretation context
     """
     logger.debug(
         f"Displaying game status for {game.id} with {len(recent_events)} events and "
@@ -360,32 +365,71 @@ def display_game_status(
     grid.add_row(left_grid, events_panel)
     console.print(grid)
 
-    # If there's an open interpretation, show it in a panel below
+    # Oracle panel - show either active or most recent interpretation
     has_open_interpretation = (
         current_interpretation_reference
         and not current_interpretation_reference.get("resolved", False)
     )
+    
+    oracle_panel = None
+    
     if has_open_interpretation:
         # Try to load the actual interpretation set for more context
         from sologm.core.oracle import OracleManager
-        oracle_manager = OracleManager()
+        oracle_mgr = oracle_manager or OracleManager()
         try:
-            interp_set = oracle_manager.get_interpretation_set(
+            interp_set = oracle_mgr.get_interpretation_set(
                 game.id,
                 current_interpretation_reference["scene_id"],
                 current_interpretation_reference["id"]
             )
             context = interp_set.context
+            
+            # Show truncated versions of the options
+            options_text = ""
+            for i, interp in enumerate(interp_set.interpretations, 1):
+                truncated_title = truncate_text(interp.title, truncation_length // 2)
+                options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
+            
+            oracle_panel = Panel(
+                f"[yellow]Open Oracle Interpretation:[/yellow]\n"
+                f"Context: {context}\n\n"
+                f"{options_text}\n"
+                f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
+                title="Pending Oracle Decision",
+                border_style="yellow",
+                expand=True
+            )
         except Exception:
-            # If we can't load the interpretation set, just show a generic message
-            context = "Use 'sologm oracle status' to see details"
-
-        interp_panel = Panel(
-            f"[yellow]Open Oracle Interpretation:[/yellow]\n"
-            f"Context: {context}\n"
-            f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
-            title="Pending Decision",
-            border_style="yellow",
-            expand=True
-        )
-        console.print(interp_panel)
+            # Fallback if we can't load the interpretation set
+            oracle_panel = Panel(
+                f"[yellow]Open Oracle Interpretation[/yellow]\n"
+                f"[dim]Use 'sologm oracle status' to see details[/dim]",
+                title="Pending Oracle Decision",
+                border_style="yellow",
+                expand=True
+            )
+    elif active_scene and oracle_manager:
+        # Try to get the most recent resolved interpretation
+        try:
+            recent_interp = oracle_manager.get_most_recent_interpretation(
+                game.id, active_scene.id
+            )
+            if recent_interp:
+                interp_set, selected_interp = recent_interp
+                oracle_panel = Panel(
+                    f"[green]Last Oracle Interpretation:[/green]\n"
+                    f"Context: {truncate_text(interp_set.context, truncation_length)}\n"
+                    f"Selected: [bold]{selected_interp.title}[/bold]\n"
+                    f"[dim]{truncate_text(selected_interp.description, truncation_length)}[/dim]",
+                    title="Previous Oracle Decision",
+                    border_style="green",
+                    expand=True
+                )
+        except Exception as e:
+            logger.debug(f"Error getting recent interpretation: {e}")
+            # No oracle panel if we can't get a recent interpretation
+    
+    # Display the oracle panel if we have one
+    if oracle_panel:
+        console.print(oracle_panel)
