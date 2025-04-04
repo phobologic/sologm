@@ -8,7 +8,6 @@ import pytest
 from rich.console import Console
 
 from sologm.cli.display import (
-    truncate_text,
     display_dice_roll,
     display_events_table,
     display_game_info,
@@ -16,6 +15,7 @@ from sologm.cli.display import (
     display_games_table,
     display_interpretation,
     display_interpretation_set,
+    truncate_text,
 )
 from sologm.core.dice import DiceRoll
 from sologm.core.event import Event
