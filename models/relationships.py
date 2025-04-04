@@ -31,14 +31,14 @@ Event.interpretation = relationship("Interpretation", back_populates="events")
 # InterpretationSet relationships
 InterpretationSet.scene = relationship("Scene", back_populates="interpretation_sets")
 InterpretationSet.interpretations = relationship(
-    "Interpretation", 
-    back_populates="interpretation_set", 
+    "Interpretation",
+    back_populates="interpretation_set",
     cascade="all, delete-orphan"
 )
 
 # Interpretation relationships
 Interpretation.interpretation_set = relationship(
-    "InterpretationSet", 
+    "InterpretationSet",
     back_populates="interpretations"
 )
 Interpretation.events = relationship("Event", back_populates="interpretation")

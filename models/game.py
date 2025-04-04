@@ -16,22 +16,21 @@ class Game(Base, TimestampMixin):
     is_active = Column(Boolean, default=False)
 
     # Relationships will be defined in __init__.py
-    
+
     @validates('name')
-    def validate_name(self, key, name):
+    def validate_name(self, _, name):
         """Validate the game name."""
         if not name or not name.strip():
             raise ValueError("Game name cannot be empty")
         return name
-    
+
     @classmethod
     def create(cls, name, description):
         """Create a new game with a unique ID based on the name.
-        
+
         Args:
             name: Name of the game.
             description: Description of the game.
-            
         Returns:
             A new Game instance.
         """

@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import validates
 
 from sologm.models.base import Base, TimestampMixin
-from sologm.models.utils import generate_unique_id, slugify
+from sologm.models.utils import slugify
 
 class SceneStatus(enum.Enum):
     """Enumeration of possible scene statuses."""
@@ -26,24 +26,23 @@ class Scene(Base, TimestampMixin):
     is_active = Column(Boolean, default=False)
 
     # Relationships will be defined in __init__.py
-    
+
     @validates('title')
-    def validate_title(self, key, title):
+    def validate_title(self, _, title):
         """Validate the scene title."""
         if not title or not title.strip():
             raise ValueError("Scene title cannot be empty")
         return title
-    
+
     @classmethod
     def create(cls, game_id, title, description, sequence):
         """Create a new scene with a unique ID based on the title.
-        
+
         Args:
             game_id: ID of the game this scene belongs to.
             title: Title of the scene.
             description: Description of the scene.
             sequence: Sequence number of the scene.
-            
         Returns:
             A new Scene instance.
         """

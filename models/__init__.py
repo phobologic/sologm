@@ -1,14 +1,14 @@
 """SQLAlchemy models for SoloGM."""
 
+# Import relationships to ensure they're properly set up
+import sologm.models.relationships  # noqa
+
 from sologm.models.base import Base, TimestampMixin
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene, SceneStatus
-
-# Import relationships to ensure they're properly set up
-import sologm.models.relationships  # noqa
 
 __all__ = [
     "Base",

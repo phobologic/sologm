@@ -1,22 +1,23 @@
 """Dice roll model for SoloGM."""
 
 import json
+
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.types import TypeDecorator
+
+from sologm.models.base import Base, TimestampMixin
 
 class JSONType(TypeDecorator):
     """Enables JSON storage by serializing on write and deserializing on read."""
     impl = String
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value, _):
         """Convert Python object to JSON string for storage."""
         return json.dumps(value) if value is not None else None
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value, _):
         """Convert stored JSON string back to Python object."""
         return json.loads(value) if value else None
-
-from sologm.models.base import Base, TimestampMixin
 
 class DiceRoll(Base, TimestampMixin):
     """SQLAlchemy model representing a dice roll result."""

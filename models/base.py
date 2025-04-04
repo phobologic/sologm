@@ -12,8 +12,8 @@ class TimestampMixin:
     """Mixin that adds created_at and modified_at columns."""
     created_at = Column(DateTime, default=get_current_time, nullable=False)
     modified_at = Column(
-        DateTime, 
-        default=get_current_time, 
-        onupdate=get_current_time, 
+        DateTime,
+        default=get_current_time,
+        onupdate=get_current_time,
         nullable=False
     )
