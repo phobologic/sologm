@@ -70,15 +70,18 @@ class OracleManager:
         self,
         file_manager: Optional[FileManager] = None,
         anthropic_client: Optional[AnthropicClient] = None,
+        event_manager: Optional[EventManager] = None,
     ):
         """Initialize the oracle manager.
 
         Args:
             file_manager: Optional file manager instance.
             anthropic_client: Optional Anthropic client instance.
+            event_manager: Optional event manager instance.
         """
         self.file_manager = file_manager or FileManager()
         self.anthropic_client = anthropic_client or AnthropicClient()
+        self.event_manager = event_manager or EventManager(self.file_manager)
 
     def validate_active_context(self) -> tuple[str, str]:
         """Validate active game and scene exist.
@@ -233,27 +236,6 @@ class OracleManager:
                 "Invalid interpretation set format: missing interpretations"
             )
 
-    def _create_event_data(
-        self, events_data: dict, interpretation: Interpretation, scene_id: str
-    ) -> dict:
-        """Create event data from interpretation.
-
-        Args:
-            events_data: Existing events data.
-            interpretation: The interpretation to create event from.
-            scene_id: ID of the scene.
-
-        Returns:
-            dict: The created event data.
-        """
-        logger.debug("Creating event data from interpretation")
-        return {
-            "id": f"event-{len(events_data['events'])+1}",
-            "description": f"{interpretation.title}: {interpretation.description}",
-            "source": "oracle",
-            "scene_id": scene_id,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
 
     def _build_prompt(
         self,
@@ -534,13 +516,10 @@ DESCRIPTION: Detailed description of interpretation idea
             scene_id: ID of the current scene.
             interpretation: The interpretation to add as an event.
         """
-        events_path = self.file_manager.get_events_path(game_id, scene_id)
-        events_data = self._read_events_data(game_id, scene_id)
-
-        if "events" not in events_data:
-            events_data["events"] = []
-
-        event_data = self._create_event_data(events_data, interpretation, scene_id)
-        events_data["events"].append(event_data)
-
-        self.file_manager.write_yaml(events_path, events_data)
+        description = f"{interpretation.title}: {interpretation.description}"
+        self.event_manager.add_event(
+            game_id=game_id,
+            scene_id=scene_id,
+            description=description,
+            source="oracle"
+        )

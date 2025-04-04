@@ -159,7 +159,7 @@ class EventManager:
                 Event(
                     id=event_data["id"],
                     scene_id=event_data["scene_id"],
-                    game_id=event_data["game_id"],
+                    game_id=event_data.get("game_id", game_id),  # Use provided game_id as fallback
                     description=event_data["description"],
                     source=event_data["source"],
                     created_at=datetime.fromisoformat(event_data["created_at"]),
