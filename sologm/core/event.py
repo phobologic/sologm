@@ -96,6 +96,25 @@ class EventManager:
 
         return event
 
+    def validate_active_context(self, game_manager: GameManager, scene_manager: SceneManager) -> tuple[str, str]:
+        """Validate and return active game and scene IDs.
+
+        Returns:
+            Tuple of (game_id, scene_id)
+
+        Raises:
+            EventError: If no active game or scene is found
+        """
+        game = game_manager.get_active_game()
+        if not game:
+            raise EventError("No active game. Use 'sologm game activate' to set one.")
+
+        scene = scene_manager.get_active_scene(game.id)
+        if not scene:
+            raise EventError("No current scene. Create one with 'sologm scene create'.")
+
+        return game.id, scene.id
+
     def list_events(
         self, game_id: str, scene_id: str, limit: Optional[int] = None
     ) -> List[Event]:

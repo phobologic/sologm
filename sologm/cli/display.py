@@ -2,9 +2,11 @@
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 
 from sologm.core.dice import DiceRoll
+from sologm.core.event import Event
 from sologm.core.oracle import Interpretation, InterpretationSet
 
 
@@ -56,6 +58,33 @@ def display_interpretation(
     )
     console.print(panel)
     console.print()
+
+
+def display_events_table(console: Console, events: List[Event], scene_title: str) -> None:
+    """Display events in a formatted table.
+
+    Args:
+        console: Rich console instance
+        events: List of events to display
+        scene_title: Title of the scene
+    """
+    if not events:
+        console.print(f"\nNo events in scene '{scene_title}'")
+        return
+
+    table = Table(title=f"Events in scene '{scene_title}'")
+    table.add_column("Time", style="cyan")
+    table.add_column("Source", style="magenta")
+    table.add_column("Description")
+
+    for event in events:
+        table.add_row(
+            event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            event.source,
+            event.description,
+        )
+
+    console.print(table)
 
 
 def display_interpretation_set(

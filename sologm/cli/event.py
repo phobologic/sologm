@@ -4,7 +4,7 @@ import logging
 
 import typer
 from rich.console import Console
-from rich.table import Table
+from sologm.cli.display import display_events_table
 
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
@@ -20,7 +20,7 @@ event_app = typer.Typer(help="Event tracking commands")
 def add_event(
     text: str = typer.Option(..., "--text", "-t", help="Text of the event"),
     source: str = typer.Option(
-        "manual", "--source", "-s", help="Source of the event (manual, oracle, " "dice)"
+        "manual", "--source", "-s", help="Source of the event (manual, oracle, dice)"
     ),
 ) -> None:
     """Add a new event to the current scene."""
@@ -28,27 +28,12 @@ def add_event(
     scene_manager = SceneManager()
     event_manager = EventManager()
 
-    # Get active game
-    game = game_manager.get_active_game()
-    if not game:
-        console.print(
-            "[red]Error:[/] No active game. Use 'sologm game " "activate' to set one."
-        )
-        raise typer.Exit(1)
-
-    # Get current scene
-    scene = scene_manager.get_active_scene(game.id)
-    if not scene:
-        console.print(
-            "[red]Error:[/] No current scene. Create one with " "'sologm scene create'."
-        )
-        raise typer.Exit(1)
-
-    logger.debug(f"Adding event to game {game.id}, scene {scene.id}")
     try:
+        game_id, scene_id = event_manager.validate_active_context(game_manager, scene_manager)
         event = event_manager.add_event(
-            game_id=game.id, scene_id=scene.id, description=text, source=source
+            game_id=game_id, scene_id=scene_id, description=text, source=source
         )
+        scene = scene_manager.get_scene(game_id, scene_id)
         logger.debug(f"Added event {event.id}")
         console.print(f"\nAdded event to scene '{scene.title}':")
         console.print(f"[green]{event.description}[/]")
@@ -67,49 +52,12 @@ def list_events(
     scene_manager = SceneManager()
     event_manager = EventManager()
 
-    # Get active game
-    game = game_manager.get_active_game()
-    if not game:
-        console.print(
-            "[red]Error:[/] No active game. Use 'sologm game " "activate' to set one."
-        )
-        raise typer.Exit(1)
-
-    # Get current scene
-    scene = scene_manager.get_active_scene(game.id)
-    if not scene:
-        console.print(
-            "[red]Error:[/] No current scene. Create one with " "'sologm scene create'."
-        )
-        raise typer.Exit(1)
-
-    logger.debug(
-        f"Listing events for game {game.id}, scene {scene.id} with limit {limit}"
-    )
     try:
-        events = event_manager.list_events(
-            game_id=game.id, scene_id=scene.id, limit=limit
-        )
+        game_id, scene_id = event_manager.validate_active_context(game_manager, scene_manager)
+        events = event_manager.list_events(game_id=game_id, scene_id=scene_id, limit=limit)
+        scene = scene_manager.get_scene(game_id, scene_id)
         logger.debug(f"Found {len(events)} events")
-
-        if not events:
-            console.print(f"\nNo events in scene '{scene.title}'")
-            return
-
-        # Create table
-        table = Table(title=f"Events in scene '{scene.title}'")
-        table.add_column("Time", style="cyan")
-        table.add_column("Source", style="magenta")
-        table.add_column("Description")
-
-        for event in events:
-            table.add_row(
-                event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                event.source,
-                event.description,
-            )
-
-        console.print(table)
+        display_events_table(console, events, scene.title)
 
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")
