@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sologm.core.game import GameManager
@@ -70,7 +70,7 @@ class EventManager:
             game_id=game_id,
             description=description,
             source=source,
-            created_at=datetime.now(),
+            created_at=datetime.now(timezone.utc),
         )
 
         # Load existing events
@@ -163,7 +163,11 @@ class EventManager:
                     game_id=event_data.get("game_id", game_id),
                     description=event_data["description"],
                     source=event_data["source"],
-                    created_at=datetime.fromisoformat(event_data["created_at"]),
+                    created_at=datetime.fromisoformat(event_data["created_at"]).replace(
+                        tzinfo=timezone.utc if not datetime.fromisoformat(
+                            event_data["created_at"]
+                        ).tzinfo else None
+                    ),
                 )
             )
 
