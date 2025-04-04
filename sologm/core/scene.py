@@ -386,3 +386,23 @@ class SceneManager:
         self.file_manager.set_active_scene_id(game_id, scene_id)
         logger.debug(f"Set scene {scene_id} as current in game {game_id}")
         return scene
+
+    def get_previous_scene(self, game_id: str, current_scene: Scene) -> Optional[Scene]:
+        """Get the scene that comes before the current scene in sequence.
+
+        Args:
+            game_id: ID of the game
+            current_scene: Current scene to find the previous for
+
+        Returns:
+            Previous Scene object if found, None otherwise
+        """
+        logger.debug(f"Getting previous scene for {current_scene.id}")
+        if current_scene.sequence <= 1:
+            return None
+
+        scenes = self.list_scenes(game_id)
+        for scene in scenes:
+            if scene.sequence == current_scene.sequence - 1:
+                return scene
+        return None

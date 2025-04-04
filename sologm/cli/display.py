@@ -11,7 +11,7 @@ from sologm.core.dice import DiceRoll
 from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
-from sologm.core.scene import Scene
+from sologm.core.scene import Scene, SceneManager
 
 
 def display_dice_roll(console: Console, roll: DiceRoll) -> None:
@@ -204,6 +204,7 @@ def display_game_status(
     active_scene: Optional[Scene],
     recent_events: List[Event],
     current_interpretation: Optional[dict] = None,
+    scene_manager: Optional[SceneManager] = None,
 ) -> None:
     """Display comprehensive game status in a compact layout.
 
@@ -244,6 +245,23 @@ def display_game_status(
         border_style="cyan"
     )
 
+    # Previous scene panel
+    prev_scene = scene_manager.get_previous_scene(game.id, active_scene) if active_scene else None
+    prev_scene_content = ""
+    if prev_scene:
+        prev_scene_content = (
+            f"[bold]{prev_scene.title}[/bold]\n"
+            f"[dim]{prev_scene.description}[/dim]"
+        )
+    else:
+        prev_scene_content = "[dim]No previous scene[/dim]"
+
+    prev_scene_panel = Panel(
+        prev_scene_content,
+        title="Previous Scene",
+        border_style="blue"
+    )
+
     # Right column: Recent Events (up to 5)
     events_content = ""
     if recent_events:
@@ -276,8 +294,14 @@ def display_game_status(
         height=events_panel_height
     )
 
-    # Add scene and events panels to grid
-    grid.add_row(scenes_panel, events_panel)
+    # Create a nested grid for the left column to stack the scene panels
+    left_grid = Table.grid(padding=(0, 1))
+    left_grid.add_column()
+    left_grid.add_row(scenes_panel)
+    left_grid.add_row(prev_scene_panel)
+
+    # Add scene panels and events panel to main grid
+    grid.add_row(left_grid, events_panel)
     console.print(grid)
 
     # If there's an open interpretation, show it in a panel below

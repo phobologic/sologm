@@ -109,7 +109,8 @@ def game_info(
             current_interpretation = oracle_manager.get_current_interpretation(game.id)
 
             display_game_status(
-                console, game, active_scene, recent_events, current_interpretation
+                console, game, active_scene, recent_events, current_interpretation,
+                scene_manager=scene_manager
             )
         else:
             display_game_info(console, game, active_scene)
