@@ -1,5 +1,7 @@
 """Dice roll model for SoloGM."""
 
+from __future__ import annotations
+
 # Standard library imports
 import json
 from typing import Any, Dict, List, Optional, Union
