@@ -257,7 +257,11 @@ def display_game_status(
     grid.add_row(scene_panel)
 
     # If there's an open interpretation, show it in a panel below
-    if current_interpretation and current_interpretation.get("selected_interpretation") is None:
+    has_open_interpretation = (
+        current_interpretation 
+        and current_interpretation.get("selected_interpretation") is None
+    )
+    if has_open_interpretation:
         interp_panel = Panel(
             f"[yellow]Open Oracle Interpretation:[/yellow]\n"
             f"Context: {current_interpretation['context']}\n"
