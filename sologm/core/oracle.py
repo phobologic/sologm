@@ -253,7 +253,7 @@ class OracleManager:
             scene_id: ID of the scene
 
         Returns:
-            Optional tuple of (InterpretationSet, selected Interpretation) or None if 
+            Optional tuple of (InterpretationSet, selected Interpretation) or None if
             none found
         """
         try:
@@ -263,7 +263,7 @@ class OracleManager:
 
             # Get all interpretation set files, sorted by creation time (newest first)
             interp_files = sorted(
-                list(interp_dir.glob("*.yaml")),
+                interp_dir.glob("*.yaml"),
                 key=lambda f: f.stat().st_mtime,
                 reverse=True
             )
@@ -277,10 +277,10 @@ class OracleManager:
                             game_id, scene_id, data["id"]
                         )
                         selected_idx = interp_set.selected_interpretation
-                        if (selected_idx is not None and 
+                        if (selected_idx is not None and
                                 0 <= selected_idx < len(interp_set.interpretations)):
-                            return (interp_set, 
-                                   interp_set.interpretations[selected_idx])
+                            return (interp_set,
+                                    interp_set.interpretations[selected_idx])
                 except Exception as e:
                     logger.warning(
                         f"Error reading interpretation file {file_path}: {e}"

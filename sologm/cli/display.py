@@ -420,7 +420,7 @@ def display_game_status(
                     f"Context: {truncate_text(interp_set.context, truncation_length)}\n"
                     f"Selected: [bold]{selected_interp.title}[/bold]\n"
                     f"[dim]{truncate_text(selected_interp.description, truncation_length)}"
-                    f"[/dim]",
+                    "[/dim]",
                     title="Previous Oracle Decision",
                     border_style="green",
                     expand=True
