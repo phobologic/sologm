@@ -1,6 +1,6 @@
 """Display helpers for CLI output."""
 
-from typing import List
+from typing import List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -9,7 +9,9 @@ from rich.text import Text
 
 from sologm.core.dice import DiceRoll
 from sologm.core.event import Event
+from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
+from sologm.core.scene import Scene
 
 
 def display_dice_roll(console: Console, roll: DiceRoll) -> None:
@@ -97,6 +99,59 @@ def display_events_table(
         )
 
     console.print(table)
+
+
+def display_games_table(
+    console: Console, games: List[Game], active_game: Optional[Game] = None
+) -> None:
+    """Display games in a formatted table.
+
+    Args:
+        console: Rich console instance
+        games: List of games to display
+        active_game: Currently active game, if any
+    """
+    if not games:
+        console.print("No games found. Create one with 'sologm game create'.")
+        return
+
+    table = Table(title="Games")
+    table.add_column("ID", style="cyan")
+    table.add_column("Name", style="magenta")
+    table.add_column("Description")
+    table.add_column("Scenes", justify="right")
+    table.add_column("Current", style="yellow", justify="center")
+
+    for game in games:
+        table.add_row(
+            game.id,
+            game.name,
+            game.description,
+            str(len(game.scenes)),
+            "✓" if active_game and game.id == active_game.id else "",
+        )
+
+    console.print(table)
+
+
+def display_game_info(
+    console: Console, game: Game, active_scene: Optional[Scene] = None
+) -> None:
+    """Display detailed information about a game.
+
+    Args:
+        console: Rich console instance
+        game: Game to display
+        active_scene: Active scene, if any
+    """
+    console.print("[bold]Active Game:[/]")
+    console.print(f"  Name: {game.name} ({game.id})")
+    console.print(f"  Description: {game.description}")
+    console.print(f"  Created: {game.created_at}")
+    console.print(f"  Modified: {game.modified_at}")
+    console.print(f"  Scenes: {len(game.scenes)}")
+    if active_scene:
+        console.print(f"  Active Scene: {active_scene.title}")
 
 
 def display_interpretation_set(
