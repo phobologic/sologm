@@ -70,7 +70,14 @@ def activate_game(
 
 
 @game_app.command("info")
-def game_info() -> None:
+def game_info(
+    status: bool = typer.Option(
+        False,
+        "--status",
+        "-s",
+        help="Show detailed game status including recent events",
+    ),
+) -> None:
     """Show information about the active game."""
     try:
         logger.debug("Getting active game info")
@@ -82,6 +89,23 @@ def game_info() -> None:
 
         scene_manager = SceneManager()
         active_scene = scene_manager.get_active_scene(game.id)
-        display_game_info(console, game, active_scene)
+
+        if status:
+            # Get additional status information
+            event_manager = EventManager()
+            recent_events = []
+            if active_scene:
+                recent_events = event_manager.list_events(
+                    game.id, active_scene.id, limit=5
+                )
+
+            oracle_manager = OracleManager()
+            current_interpretation = oracle_manager.get_current_interpretation(game.id)
+
+            display_game_status(
+                console, game, active_scene, recent_events, current_interpretation
+            )
+        else:
+            display_game_info(console, game, active_scene)
     except GameError as e:
         console.print(f"[red]Error getting game info: {str(e)}[/red]")

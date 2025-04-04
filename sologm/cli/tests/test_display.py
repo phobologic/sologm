@@ -161,6 +161,66 @@ def test_display_game_info_no_scene(mock_console, sample_game):
     assert mock_console.print.called
 
 
+def test_display_game_status_full(
+    mock_console, sample_game, sample_scene, sample_events
+):
+    """Test displaying full game status with all components."""
+    current_interpretation = {
+        "context": "Test context",
+        "selected_interpretation": None,
+    }
+    display_game_status(
+        mock_console,
+        sample_game,
+        sample_scene,
+        sample_events,
+        current_interpretation,
+    )
+    assert mock_console.print.called
+
+
+def test_display_game_status_no_scene(mock_console, sample_game):
+    """Test displaying game status without an active scene."""
+    display_game_status(mock_console, sample_game, None, [], None)
+    assert mock_console.print.called
+
+
+def test_display_game_status_no_events(
+    mock_console, sample_game, sample_scene
+):
+    """Test displaying game status without any events."""
+    display_game_status(mock_console, sample_game, sample_scene, [], None)
+    assert mock_console.print.called
+
+
+def test_display_game_status_no_interpretation(
+    mock_console, sample_game, sample_scene, sample_events
+):
+    """Test displaying game status without a pending interpretation."""
+    display_game_status(
+        mock_console, sample_game, sample_scene, sample_events, None
+    )
+    assert mock_console.print.called
+
+
+def test_display_game_status_selected_interpretation(
+    mock_console, sample_game, sample_scene, sample_events
+):
+    """Test displaying game status with a selected interpretation."""
+    current_interpretation = {
+        "context": "Test context",
+        "selected_interpretation": 0,
+    }
+    display_game_status(
+        mock_console,
+        sample_game,
+        sample_scene,
+        sample_events,
+        current_interpretation,
+    )
+    assert mock_console.print.called
+
+
 def test_display_interpretation(mock_console, sample_interpretation):
     """Test displaying an interpretation."""
     display_interpretation(mock_console, sample_interpretation)
