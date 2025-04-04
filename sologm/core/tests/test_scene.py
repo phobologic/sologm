@@ -288,10 +288,13 @@ class TestSceneManager:
             description="Scene 2",
         )
 
-        # Complete scene1 and make scene2 current
+        # Complete both scenes
         scene_manager.complete_scene(test_game["id"], scene1.id)
+        scene_manager.complete_scene(test_game["id"], scene2.id)
+        
+        # Make scene2 current
         scene_manager.set_current_scene(test_game["id"], scene2.id)
 
         current_scene = scene_manager.get_active_scene(test_game["id"])
         assert current_scene.id == scene2.id
-        assert current_scene.status == SceneStatus.COMPLETED  # Status remains completed
+        assert current_scene.status == SceneStatus.COMPLETED  # Status should be completed
