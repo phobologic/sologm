@@ -1,16 +1,20 @@
 """Oracle interpretation system for Solo RPG Helper."""
 
-import logging
 from dataclasses import dataclass
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, List, Optional, TypeVar
+import logging
 
 from sologm.core.event import EventManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.storage.file_manager import FileManager
-from sologm.utils.datetime_utils import format_datetime, get_current_time, parse_datetime
+from sologm.utils.datetime_utils import (
+    format_datetime,
+    get_current_time,
+    parse_datetime,
+)
 from sologm.utils.errors import OracleError
 
 logger = logging.getLogger(__name__)
