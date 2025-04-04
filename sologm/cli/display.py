@@ -258,7 +258,7 @@ def display_game_status(
 
     # If there's an open interpretation, show it in a panel below
     has_open_interpretation = (
-        current_interpretation 
+        current_interpretation
         and current_interpretation.get("selected_interpretation") is None
     )
     if has_open_interpretation:
