@@ -298,9 +298,11 @@ def test_create_oracle_panel(sample_game, sample_scene):
         "id": "test-id",
         "resolved": False
     }
-    
+
     # This will use the fallback path since we don't have a real oracle manager
-    panel = _create_oracle_panel(sample_game, sample_scene, current_interpretation, None, 60)
+    panel = _create_oracle_panel(
+        sample_game, sample_scene, current_interpretation, None, 60
+    )
     assert panel is not None
     assert panel.title == "Pending Oracle Decision"
     assert panel.border_style == "yellow"
