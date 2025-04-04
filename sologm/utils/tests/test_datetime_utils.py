@@ -1,9 +1,9 @@
 """Tests for datetime utilities."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from freezegun import freeze_time
 import pytest
+from freezegun import freeze_time
 
 from sologm.utils.datetime_utils import (
     get_current_time,
@@ -70,7 +70,7 @@ def test_ensure_utc():
     # Test with non-UTC timezone
     other_tz = datetime(
         2024, 1, 1, 12, 0,
-        tzinfo=timezone(timedelta(hours=1))
+        tzinfo=timezone(offset=timedelta(hours=1))
     )
     result = ensure_utc(other_tz)
     assert result.tzinfo == timezone.utc
