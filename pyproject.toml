@@ -60,3 +60,8 @@ exclude = "test_*"
 python_files = "test_*.py"
 testpaths = ["sologm"]
 log_cli = true
+
+[dependency-groups]
+dev = [
+    "freezegun>=1.5.1",
+]
