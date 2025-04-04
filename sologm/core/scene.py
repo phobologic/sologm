@@ -200,7 +200,6 @@ class SceneManager:
         scene_id = f"scene-{sequence}-{title.lower().replace(' ', '-')}"
 
         # Create scene data
-        now = datetime.now(UTC)
         scene = Scene(
             id=scene_id,
             game_id=game_id,
@@ -328,7 +327,7 @@ class SceneManager:
 
         # Update scene status
         scene.status = SceneStatus.COMPLETED
-        scene.modified_at = datetime.now(UTC)
+        scene.modified_at = datetime.now(timezone.utc)
 
         # Save updated scene data
         scene_path = self.file_manager.get_scene_path(game_id, scene_id)
