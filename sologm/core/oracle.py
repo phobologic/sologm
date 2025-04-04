@@ -507,9 +507,10 @@ DESCRIPTION: Detailed description of interpretation idea
 
         # Mark the interpretation reference as resolved in the game data
         game_data = self._read_game_data(game_id)
-        if ("current_interpretation_reference" in game_data and
-                game_data["current_interpretation_reference"]["id"] == interpretation_set_id):
-            game_data["current_interpretation_reference"]["resolved"] = True
+        ref_key = "current_interpretation_reference"
+        if (ref_key in game_data and
+                game_data[ref_key]["id"] == interpretation_set_id):
+            game_data[ref_key]["resolved"] = True
             self.file_manager.write_yaml(
                 self.file_manager.get_game_path(game_id), game_data
             )
