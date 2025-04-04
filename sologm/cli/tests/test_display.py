@@ -194,7 +194,9 @@ def test_display_game_status_no_events(
     mock_console, sample_game, sample_scene
 ):
     """Test displaying game status without any events."""
-    display_game_status(mock_console, sample_game, sample_scene, [], None, oracle_manager=None)
+    display_game_status(
+        mock_console, sample_game, sample_scene, [], None, oracle_manager=None
+    )
     assert mock_console.print.called
 
 
@@ -203,7 +205,8 @@ def test_display_game_status_no_interpretation(
 ):
     """Test displaying game status without a pending interpretation."""
     display_game_status(
-        mock_console, sample_game, sample_scene, sample_events, None, oracle_manager=None
+        mock_console, sample_game, sample_scene, sample_events, 
+        None, oracle_manager=None
     )
     assert mock_console.print.called
 

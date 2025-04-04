@@ -1,7 +1,7 @@
 """Display helpers for CLI output."""
 
 import logging
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -370,9 +370,8 @@ def display_game_status(
         current_interpretation_reference
         and not current_interpretation_reference.get("resolved", False)
     )
-    
+
     oracle_panel = None
-    
     if has_open_interpretation:
         # Try to load the actual interpretation set for more context
         from sologm.core.oracle import OracleManager
@@ -384,13 +383,12 @@ def display_game_status(
                 current_interpretation_reference["id"]
             )
             context = interp_set.context
-            
+
             # Show truncated versions of the options
             options_text = ""
             for i, interp in enumerate(interp_set.interpretations, 1):
                 truncated_title = truncate_text(interp.title, truncation_length // 2)
                 options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
-            
             oracle_panel = Panel(
                 f"[yellow]Open Oracle Interpretation:[/yellow]\n"
                 f"Context: {context}\n\n"
@@ -403,8 +401,8 @@ def display_game_status(
         except Exception:
             # Fallback if we can't load the interpretation set
             oracle_panel = Panel(
-                f"[yellow]Open Oracle Interpretation[/yellow]\n"
-                f"[dim]Use 'sologm oracle status' to see details[/dim]",
+                "[yellow]Open Oracle Interpretation[/yellow]\n"
+                "[dim]Use 'sologm oracle status' to see details[/dim]",
                 title="Pending Oracle Decision",
                 border_style="yellow",
                 expand=True
@@ -421,7 +419,8 @@ def display_game_status(
                     f"[green]Last Oracle Interpretation:[/green]\n"
                     f"Context: {truncate_text(interp_set.context, truncation_length)}\n"
                     f"Selected: [bold]{selected_interp.title}[/bold]\n"
-                    f"[dim]{truncate_text(selected_interp.description, truncation_length)}[/dim]",
+                    f"[dim]{truncate_text(selected_interp.description, truncation_length)}"
+                    f"[/dim]",
                     title="Previous Oracle Decision",
                     border_style="green",
                     expand=True
@@ -429,7 +428,6 @@ def display_game_status(
         except Exception as e:
             logger.debug(f"Error getting recent interpretation: {e}")
             # No oracle panel if we can't get a recent interpretation
-    
     # Display the oracle panel if we have one
     if oracle_panel:
         console.print(oracle_panel)
