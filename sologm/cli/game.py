@@ -2,10 +2,10 @@
 
 import logging
 
-import typer
 from rich.console import Console
+import typer
 
-from sologm.cli.display import display_games_table, display_game_info
+from sologm.cli.display import display_game_info, display_games_table
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.utils.errors import GameError
