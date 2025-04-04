@@ -1,5 +1,6 @@
 """Display helpers for CLI output."""
 
+import logging
 from typing import List, Optional
 
 from rich.console import Console
@@ -12,6 +13,9 @@ from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
 from sologm.core.scene import Scene, SceneManager
+
+
+logger = logging.getLogger(__name__)
 
 
 def truncate_text(text: str, max_length: int = 60) -> str:
@@ -38,6 +42,7 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
         console: Rich console instance
         roll: DiceRoll to display
     """
+    logger.debug(f"Displaying dice roll: {roll.notation} (total: {roll.total})")
     title = Text()
     if roll.reason:
         title.append(f"{roll.reason}: ", style="bold blue")
@@ -71,6 +76,7 @@ def display_interpretation(
         interp: Interpretation to display
         selected: Whether this interpretation is selected
     """
+    logger.debug(f"Displaying interpretation {interp.id} (selected: {selected})")
     # Extract the numeric part of the ID (e.g., "1" from "interp-1")
     id_number = interp.id.split('-')[1]
     title_line = f"[bold]{interp.title}[/bold]"
@@ -99,6 +105,7 @@ def display_events_table(
         events: List of events to display
         scene_title: Title of the scene
     """
+    logger.debug(f"Displaying events table for scene '{scene_title}' with {len(events)} events")
     if not events:
         console.print(f"\nNo events in scene '{scene_title}'")
         return
@@ -128,6 +135,7 @@ def display_games_table(
         games: List of games to display
         active_game: Currently active game, if any
     """
+    logger.debug(f"Displaying games table with {len(games)} games")
     if not games:
         console.print("No games found. Create one with 'sologm game create'.")
         return
@@ -161,6 +169,7 @@ def display_game_info(
         game: Game to display
         active_scene: Active scene, if any
     """
+    logger.debug(f"Displaying game info for {game.id} with active scene: {active_scene.id if active_scene else 'None'}")
     console.print("[bold]Active Game:[/]")
     console.print(f"  Name: {game.name} ({game.id})")
     console.print(f"  Description: {game.description}")
@@ -183,6 +192,7 @@ def display_interpretation_set(
         interp_set: InterpretationSet to display
         show_context: Whether to show context information
     """
+    logger.debug(f"Displaying interpretation set {interp_set.id} with {len(interp_set.interpretations)} interpretations")
     if show_context:
         console.print("\n[bold]Oracle Interpretations[/bold]")
         console.print(f"Context: {interp_set.context}")
@@ -205,6 +215,7 @@ def display_scene_info(console: Console, scene: Scene) -> None:
         console: Rich console instance
         scene: Scene to display
     """
+    logger.debug(f"Displaying scene info for {scene.id} (status: {scene.status.value})")
     console.print("[bold]Active Scene:[/]")
     console.print(f"  ID: {scene.id}")
     console.print(f"  Title: {scene.title}")
@@ -233,14 +244,21 @@ def display_game_status(
         current_interpretation: Current interpretation data if any
         scene_manager: Optional scene manager for additional context
     """
+    logger.debug(
+        f"Displaying game status for {game.id} with {len(recent_events)} events and "
+        f"active scene: {active_scene.id if active_scene else 'None'}"
+    )
+    
     # Get console width for responsive layout
     console_width = console.width
+    logger.debug(f"Console width detected: {console_width} characters")
 
     # Calculate appropriate truncation length based on console width
     # Since we're using a two-column layout, each column gets roughly half the width
     # Subtract some space for borders, padding, and formatting
     column_width = max(40, (console_width // 2) - 10)
     truncation_length = column_width
+    logger.debug(f"Using truncation length of {truncation_length} characters for event descriptions")
 
     # Top bar with game info
     game_info = (
