@@ -292,7 +292,7 @@ def display_game_status(
         events_shown = recent_events[:max_events_to_show]
         for event in events_shown:
             # Truncate long descriptions to keep events compact
-            truncated_description = truncate_text(event.description, max_length=80)
+            truncated_description = truncate_text(event.description, max_length=120)
             events_content += (
                 f"[cyan]{event.created_at.strftime('%Y-%m-%d %H:%M')}[/cyan] "
                 f"[magenta]({event.source})[/magenta]\n"
@@ -301,26 +301,10 @@ def display_game_status(
     else:
         events_content = "[dim]No recent events[/dim]"
 
-    # Calculate events panel height based on content
-    # Base height on number of lines in the content plus panel borders
-    content_lines = len(events_content.splitlines()) if events_content else 1
-    scene_panel_height = len(scenes_content.splitlines()) + 2  # +2 for panel borders
-
-    # Ensure events panel is at least as tall as the scene panel
-    # but not more than 2x its height
-    events_panel_height = max(
-        scene_panel_height,  # At least as tall as scene panel
-        min(
-            content_lines + 2,  # Content height plus borders
-            scene_panel_height * 2  # But no more than 2x scene height
-        )
-    )
-
     events_panel = Panel(
         events_content.rstrip(),
         title=f"Recent Events ({len(recent_events)} shown)",
         border_style="green",
-        height=events_panel_height
     )
 
     # Create a nested grid for the left column to stack the scene panels
