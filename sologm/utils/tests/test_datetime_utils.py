@@ -70,7 +70,7 @@ def test_ensure_utc():
     # Test with non-UTC timezone
     other_tz = datetime(
         2024, 1, 1, 12, 0,
-        tzinfo=timezone(offset=timezone.timedelta(hours=1))
+        tzinfo=timezone(timedelta(hours=1))
     )
     result = ensure_utc(other_tz)
     assert result.tzinfo == timezone.utc
