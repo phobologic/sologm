@@ -247,7 +247,7 @@ def display_game_status(
         scenes_content,
         title="Current Scene",
         border_style="cyan",
-        height=SCENE_PANEL_HEIGHT
+        height=scene_panel_height
     )
 
     # Right column: Recent Events (up to 5)
