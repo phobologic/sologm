@@ -171,12 +171,6 @@ class TestSceneManager:
             description="Scene 2",
         )
 
-        # Create first scene
-        scene_manager.create_scene(
-            game_id=test_game["id"],
-            title="First Scene",
-            description="Scene 1",
-        )
         scenes = scene_manager.list_scenes(test_game["id"])
         assert len(scenes) == 2
         assert scenes[0].id == scene1.id
