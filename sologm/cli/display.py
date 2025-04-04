@@ -266,7 +266,7 @@ def display_game_status(
         truncation_length = max(40, int(console_width) - 10)
     except (TypeError, ValueError):
         # Default to a reasonable truncation length if console width is not available
-        logger.debug("Could not determine console width, using default truncation length")
+        logger.debug("Could not determine console width, using default value")
         truncation_length = 40
     logger.debug(
         f"Using truncation length of {truncation_length} "
