@@ -1,15 +1,15 @@
 """Tests for datetime utilities."""
 
 from datetime import datetime, timedelta, timezone
-
-from freezegun import freeze_time
 import pytest
 
+from freezegun import freeze_time
+
 from sologm.utils.datetime_utils import (
+    ensure_utc,
+    format_datetime,
     get_current_time,
     parse_datetime,
-    format_datetime,
-    ensure_utc,
 )
 
 
