@@ -261,7 +261,37 @@ def display_game_status(
         f"active scene: {active_scene.id if active_scene else 'None'}"
     )
 
-    # Get console width for responsive layout
+    # Calculate display dimensions
+    truncation_length = _calculate_truncation_length(console)
+    
+    # Display game header
+    console.print(_create_game_header_panel(game))
+    
+    # Create and display the main grid with scene and events info
+    grid = Table.grid(expand=True, padding=(0, 1))
+    grid.add_column("Left", ratio=1)
+    grid.add_column("Right", ratio=1)
+    
+    # Add scene panels and events panel to main grid
+    left_grid = _create_scene_panels_grid(game, active_scene, scene_manager)
+    events_panel = _create_events_panel(recent_events, truncation_length)
+    grid.add_row(left_grid, events_panel)
+    console.print(grid)
+    
+    # Display oracle panel if applicable
+    oracle_panel = _create_oracle_panel(
+        game, 
+        active_scene, 
+        current_interpretation_reference, 
+        oracle_manager, 
+        truncation_length
+    )
+    if oracle_panel:
+        console.print(oracle_panel)
+
+
+def _calculate_truncation_length(console: Console) -> int:
+    """Calculate appropriate truncation length based on console width."""
     try:
         console_width = console.width
         logger.debug(f"Console width detected: {console_width} characters")
@@ -269,30 +299,35 @@ def display_game_status(
         # Since we're using a two-column layout, each column gets roughly half the width
         # Subtract some space for borders, padding, and formatting
         truncation_length = max(40, int(console_width) - 10)
+        logger.debug(
+            f"Using truncation length of {truncation_length} "
+            f"characters for event descriptions"
+        )
+        return truncation_length
     except (TypeError, ValueError):
         # Default to a reasonable truncation length if console width is not available
         logger.debug("Could not determine console width, using default value")
-        truncation_length = 40
-    logger.debug(
-        f"Using truncation length of {truncation_length} "
-        f"characters for event descriptions"
-    )
+        return 40
 
-    # Top bar with game info
+
+def _create_game_header_panel(game: Game) -> Panel:
+    """Create the game info header panel."""
     game_info = (
         f"[bold]{game.name}[/bold] ({game.id})\n"
         f"[dim]{game.description}[/dim]\n"
         f"Created: {game.created_at.strftime('%Y-%m-%d')} • "
         f"Scenes: {len(game.scenes)}"
     )
-    console.print(Panel(game_info, expand=True, border_style="blue"))
+    return Panel(game_info, expand=True, border_style="blue")
 
-    # Create a grid layout with two columns for scene and events
-    grid = Table.grid(expand=True, padding=(0, 1))
-    grid.add_column("Left", ratio=1)
-    grid.add_column("Right", ratio=1)
 
-    # Left column: Scene info
+def _create_scene_panels_grid(
+    game: Game, 
+    active_scene: Optional[Scene], 
+    scene_manager: Optional[SceneManager]
+) -> Table:
+    """Create a grid containing current and previous scene panels."""
+    # Create current scene panel
     scenes_content = ""
     if active_scene:
         scenes_content = (
@@ -308,10 +343,11 @@ def display_game_status(
         border_style="cyan"
     )
 
-    # Previous scene panel
+    # Create previous scene panel
     prev_scene = None
     if active_scene and scene_manager:
         prev_scene = scene_manager.get_previous_scene(game.id, active_scene)
+    
     prev_scene_content = ""
     if prev_scene:
         prev_scene_content = (
@@ -327,12 +363,21 @@ def display_game_status(
         border_style="blue"
     )
 
-    # Right column: Recent Events (up to 5)
+    # Create a nested grid for the left column to stack the scene panels
+    left_grid = Table.grid(padding=(0, 1))
+    left_grid.add_column()
+    left_grid.add_row(scenes_panel)
+    left_grid.add_row(prev_scene_panel)
+    
+    return left_grid
+
+
+def _create_events_panel(recent_events: List[Event], truncation_length: int) -> Panel:
+    """Create the recent events panel."""
     events_content = ""
     if recent_events:
         # Calculate how many events we can reasonably show
         # Each event takes at least 3 lines (timestamp+source, description, blank)
-        # For longer descriptions, estimate additional lines
         max_events_to_show = min(3, len(recent_events))  # Show at most 3 events
 
         events_shown = recent_events[:max_events_to_show]
@@ -349,93 +394,117 @@ def display_game_status(
     else:
         events_content = "[dim]No recent events[/dim]"
 
-    events_panel = Panel(
+    return Panel(
         events_content.rstrip(),
         title=f"Recent Events ({len(recent_events)} shown)",
         border_style="green",
     )
 
-    # Create a nested grid for the left column to stack the scene panels
-    left_grid = Table.grid(padding=(0, 1))
-    left_grid.add_column()
-    left_grid.add_row(scenes_panel)
-    left_grid.add_row(prev_scene_panel)
 
-    # Add scene panels and events panel to main grid
-    grid.add_row(left_grid, events_panel)
-    console.print(grid)
-
-    # Oracle panel - show either active or most recent interpretation
+def _create_oracle_panel(
+    game: Game,
+    active_scene: Optional[Scene],
+    current_interpretation_reference: Optional[dict],
+    oracle_manager: Optional["OracleManager"],
+    truncation_length: int
+) -> Optional[Panel]:
+    """Create the oracle panel if applicable."""
     has_open_interpretation = (
         current_interpretation_reference
         and not current_interpretation_reference.get("resolved", False)
     )
 
-    oracle_panel = None
     if has_open_interpretation:
-        # Try to load the actual interpretation set for more context
-        from sologm.core.oracle import OracleManager
-        oracle_mgr = oracle_manager or OracleManager()
-        try:
-            interp_set = oracle_mgr.get_interpretation_set(
-                game.id,
-                current_interpretation_reference["scene_id"],
-                current_interpretation_reference["id"]
-            )
-            context = interp_set.context
-
-            # Show truncated versions of the options
-            options_text = ""
-            for i, interp in enumerate(interp_set.interpretations, 1):
-                truncated_title = truncate_text(interp.title, truncation_length // 2)
-                options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
-            oracle_panel = Panel(
-                f"[yellow]Open Oracle Interpretation:[/yellow]\n"
-                f"Context: {context}\n\n"
-                f"{options_text}\n"
-                f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
-                title="Pending Oracle Decision",
-                border_style="yellow",
-                expand=True
-            )
-        except Exception:
-            # Fallback if we can't load the interpretation set
-            oracle_panel = Panel(
-                "[yellow]Open Oracle Interpretation[/yellow]\n"
-                "[dim]Use 'sologm oracle status' to see details[/dim]",
-                title="Pending Oracle Decision",
-                border_style="yellow",
-                expand=True
-            )
+        return _create_pending_oracle_panel(
+            game, 
+            current_interpretation_reference, 
+            oracle_manager, 
+            truncation_length
+        )
     elif active_scene and oracle_manager:
-        # Try to get the most recent resolved interpretation
-        try:
-            recent_interp = oracle_manager.get_most_recent_interpretation(
-                game.id, active_scene.id
-            )
-            if recent_interp:
-                interp_set, selected_interp = recent_interp
-                # Calculate shorter truncation length for description
-                desc_trunc_len = truncation_length - 15
+        return _create_recent_oracle_panel(
+            game, 
+            active_scene, 
+            oracle_manager, 
+            truncation_length
+        )
+    return None
 
-                # Prepare truncated text components
-                truncated_context = truncate_text(interp_set.context, truncation_length)
-                truncated_description = truncate_text(
-                    selected_interp.description, desc_trunc_len
-                )
-                # Build the panel content with the prepared components
-                oracle_panel = Panel(
-                    f"[green]Last Oracle Interpretation:[/green]\n"
-                    f"Context: {truncated_context}\n"
-                    f"Selected: [bold]{selected_interp.title}[/bold]\n"
-                    f"[dim]{truncated_description}[/dim]",
-                    title="Previous Oracle Decision",
-                    border_style="green",
-                    expand=True
-                )
-        except Exception as e:
-            logger.debug(f"Error getting recent interpretation: {e}")
-            # No oracle panel if we can't get a recent interpretation
-    # Display the oracle panel if we have one
-    if oracle_panel:
-        console.print(oracle_panel)
+
+def _create_pending_oracle_panel(
+    game: Game,
+    current_interpretation_reference: dict,
+    oracle_manager: Optional["OracleManager"],
+    truncation_length: int
+) -> Panel:
+    """Create a panel for pending oracle interpretation."""
+    # Try to load the actual interpretation set for more context
+    from sologm.core.oracle import OracleManager
+    oracle_mgr = oracle_manager or OracleManager()
+    try:
+        interp_set = oracle_mgr.get_interpretation_set(
+            game.id,
+            current_interpretation_reference["scene_id"],
+            current_interpretation_reference["id"]
+        )
+        context = interp_set.context
+
+        # Show truncated versions of the options
+        options_text = ""
+        for i, interp in enumerate(interp_set.interpretations, 1):
+            truncated_title = truncate_text(interp.title, truncation_length // 2)
+            options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
+        return Panel(
+            f"[yellow]Open Oracle Interpretation:[/yellow]\n"
+            f"Context: {context}\n\n"
+            f"{options_text}\n"
+            f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
+            title="Pending Oracle Decision",
+            border_style="yellow",
+            expand=True
+        )
+    except Exception:
+        # Fallback if we can't load the interpretation set
+        return Panel(
+            "[yellow]Open Oracle Interpretation[/yellow]\n"
+            "[dim]Use 'sologm oracle status' to see details[/dim]",
+            title="Pending Oracle Decision",
+            border_style="yellow",
+            expand=True
+        )
+
+
+def _create_recent_oracle_panel(
+    game: Game,
+    active_scene: Scene,
+    oracle_manager: "OracleManager",
+    truncation_length: int
+) -> Optional[Panel]:
+    """Create a panel showing the most recent oracle interpretation."""
+    try:
+        recent_interp = oracle_manager.get_most_recent_interpretation(
+            game.id, active_scene.id
+        )
+        if recent_interp:
+            interp_set, selected_interp = recent_interp
+            # Calculate shorter truncation length for description
+            desc_trunc_len = truncation_length - 15
+
+            # Prepare truncated text components
+            truncated_context = truncate_text(interp_set.context, truncation_length)
+            truncated_description = truncate_text(
+                selected_interp.description, desc_trunc_len
+            )
+            # Build the panel content with the prepared components
+            return Panel(
+                f"[green]Last Oracle Interpretation:[/green]\n"
+                f"Context: {truncated_context}\n"
+                f"Selected: [bold]{selected_interp.title}[/bold]\n"
+                f"[dim]{truncated_description}[/dim]",
+                title="Previous Oracle Decision",
+                border_style="green",
+                expand=True
+            )
+    except Exception as e:
+        logger.debug(f"Error getting recent interpretation: {e}")
+    return None

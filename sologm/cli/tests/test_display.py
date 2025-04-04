@@ -230,6 +230,77 @@ def test_display_game_status_selected_interpretation(
     assert mock_console.print.called
 
 
+def test_calculate_truncation_length(mock_console):
+    """Test the truncation length calculation."""
+    # Test with a valid console width
+    mock_console.width = 100
+    result = _calculate_truncation_length(mock_console)
+    assert result == 90  # 100 - 10
+
+    # Test with a small console width
+    mock_console.width = 30
+    result = _calculate_truncation_length(mock_console)
+    assert result == 40  # min value
+
+    # Test with an invalid console width
+    mock_console.width = None
+    result = _calculate_truncation_length(mock_console)
+    assert result == 40  # default value
+
+
+def test_create_game_header_panel(sample_game):
+    """Test creating the game header panel."""
+    panel = _create_game_header_panel(sample_game)
+    assert panel is not None
+    assert panel.title is None
+    assert panel.border_style == "blue"
+
+
+def test_create_scene_panels_grid(sample_game, sample_scene):
+    """Test creating the scene panels grid."""
+    # Test with active scene but no scene manager
+    grid = _create_scene_panels_grid(sample_game, sample_scene, None)
+    assert grid is not None
+
+    # Test with no active scene
+    grid = _create_scene_panels_grid(sample_game, None, None)
+    assert grid is not None
+
+
+def test_create_events_panel(sample_events):
+    """Test creating the events panel."""
+    # Test with events
+    panel = _create_events_panel(sample_events, 60)
+    assert panel is not None
+    assert panel.title == f"Recent Events ({len(sample_events)} shown)"
+    assert panel.border_style == "green"
+
+    # Test with no events
+    panel = _create_events_panel([], 60)
+    assert panel is not None
+    assert panel.title == "Recent Events (0 shown)"
+
+
+def test_create_oracle_panel(sample_game, sample_scene):
+    """Test creating the oracle panel."""
+    # Test with no interpretation reference
+    panel = _create_oracle_panel(sample_game, sample_scene, None, None, 60)
+    assert panel is None
+
+    # Test with open interpretation reference
+    current_interpretation = {
+        "scene_id": "test-scene",
+        "id": "test-id",
+        "resolved": False
+    }
+    
+    # This will use the fallback path since we don't have a real oracle manager
+    panel = _create_oracle_panel(sample_game, sample_scene, current_interpretation, None, 60)
+    assert panel is not None
+    assert panel.title == "Pending Oracle Decision"
+    assert panel.border_style == "yellow"
+
+
 def test_display_interpretation(mock_console, sample_interpretation):
     """Test displaying an interpretation."""
     display_interpretation(mock_console, sample_interpretation)
