@@ -242,7 +242,7 @@ def display_game_status(
         scenes_content = "[dim]No active scene[/dim]"
 
     # Set a fixed height for scenes panel
-    SCENE_PANEL_HEIGHT = 10
+    scene_panel_height = 10
     scenes_panel = Panel(
         scenes_content,
         title="Current Scene",
@@ -267,10 +267,10 @@ def display_game_status(
     # Each event takes roughly 4 lines (timestamp, source, description, blank)
     event_lines = len(recent_events) * 4
     events_panel_height = max(
-        SCENE_PANEL_HEIGHT,  # At least as tall as scene panel
+        scene_panel_height,  # At least as tall as scene panel
         min(
             event_lines + 2,  # Add 2 for panel borders
-            SCENE_PANEL_HEIGHT * 2  # But no more than 2x scene panel height
+            scene_panel_height * 2  # But no more than 2x scene panel height
         )
     )
 
