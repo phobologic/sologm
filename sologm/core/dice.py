@@ -42,7 +42,10 @@ class DiceManager:
         """
         count, sides, modifier = self._parse_notation(notation)
 
-        self.logger.debug(f"Rolling {count} dice with {sides} sides and modifier {modifier:+d}")
+        self.logger.debug(
+            f"Rolling {count} dice with {sides} sides "
+            f"and modifier {modifier:+d}"
+        )
         individual_results = [random.randint(1, sides) for _ in range(count)]
         self.logger.debug(f"Individual dice results: {individual_results}")
 
@@ -81,7 +84,8 @@ class DiceManager:
         modifier = int(match.group(3) or 0)
 
         self.logger.debug(
-            f"Parsing dice notation - count: {count}, sides: {sides}, modifier: {modifier}"
+            f"Parsing dice notation - count: {count}, "
+            f"sides: {sides}, modifier: {modifier}"
         )
 
         if count < 1:
