@@ -78,7 +78,7 @@ def _test_game(file_manager: FileManager) -> Generator[dict, None, None]:
 
 @pytest.fixture
 def test_scene(
-    file_manager: FileManager, test_game: dict
+    file_manager: FileManager, _test_game: dict
 ) -> Generator[dict, None, None]:
     """Create a test scene."""
     scene_data = {
@@ -101,7 +101,7 @@ def test_scene(
 
 @pytest.fixture
 def _test_scene(
-    file_manager: FileManager, test_game: dict
+    file_manager: FileManager, _test_game: dict
 ) -> Generator[dict, None, None]:
     """Create a test scene."""
     scene_data = {
@@ -124,7 +124,7 @@ def _test_scene(
 
 @pytest.fixture
 def test_events(
-    file_manager: FileManager, test_game: dict, test_scene: dict
+    file_manager: FileManager, _test_game: dict, _test_scene: dict
 ) -> Generator[dict, None, None]:
     """Create test events."""
     events_data = {
@@ -155,7 +155,7 @@ class TestOracle:
     """Tests for oracle interpretation system."""
 
     def test_validate_active_context(
-        self, oracle_manager: OracleManager, test_game: dict, test_scene: dict
+        self, oracle_manager: OracleManager, _test_game: dict, _test_scene: dict
     ) -> None:
         """Test validating active game and scene."""
         game_id, scene_id = oracle_manager.validate_active_context()
@@ -171,7 +171,7 @@ class TestOracle:
         assert "No active game found" in str(exc.value)
 
     def test_validate_active_context_no_scene(
-        self, oracle_manager: OracleManager, test_game: dict
+        self, oracle_manager: OracleManager, _test_game: dict
     ) -> None:
         """Test validation with no active scene."""
         with pytest.raises(OracleError) as exc:
@@ -179,7 +179,7 @@ class TestOracle:
         assert "No active scene found" in str(exc.value)
 
     def test_get_current_interpretation_reference(
-        self, oracle_manager: OracleManager, test_game: dict
+        self, oracle_manager: OracleManager, _test_game: dict
     ) -> None:
         """Test getting current interpretation reference."""
         # Set up test data
@@ -247,9 +247,9 @@ DESCRIPTION: Test Description 2
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        test_game: dict,
-        test_scene: dict,
-        test_events: dict,
+        _test_game: dict,
+        _test_scene: dict,
+        _test_events: dict,
     ) -> None:
         """Test getting interpretations."""
         # Configure mock to return string response
@@ -279,8 +279,8 @@ DESCRIPTION: Test Description
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        test_game: dict,
-        test_scene: dict,
+        _test_game: dict,
+        _test_scene: dict,
     ) -> None:
         """Test handling errors when getting interpretations."""
         mock_anthropic_client.send_message.side_effect = Exception("API Error")
@@ -294,8 +294,8 @@ DESCRIPTION: Test Description
     def test_get_interpretation_set(
         self,
         oracle_manager: OracleManager,
-        test_game: dict,
-        test_scene: dict,
+        _test_game: dict,
+        _test_scene: dict,
     ) -> None:
         """Test getting an interpretation set by ID."""
         # Create test interpretation set
@@ -343,8 +343,8 @@ DESCRIPTION: Test Description
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        test_game: dict,
-        test_scene: dict,
+        _test_game: dict,
+        _test_scene: dict,
     ) -> None:
         """Test selecting an interpretation."""
         # Configure mock to return string response
@@ -389,7 +389,7 @@ DESCRIPTION: Test Description
         assert game_data["current_interpretation_reference"]["resolved"] is True
 
     def test_select_interpretation_not_found(
-        self, oracle_manager: OracleManager, test_game: dict, test_scene: dict
+        self, oracle_manager: OracleManager, _test_game: dict, _test_scene: dict
     ) -> None:
         """Test selecting a non-existent interpretation."""
         with pytest.raises(OracleError) as exc:
@@ -402,8 +402,8 @@ DESCRIPTION: Test Description
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        test_game: dict,
-        test_scene: dict,
+        _test_game: dict,
+        _test_scene: dict,
     ) -> None:
         """Test getting interpretations with retry attempt."""
         # Configure mock to return string response
