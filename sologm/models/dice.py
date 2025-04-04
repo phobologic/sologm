@@ -2,7 +2,7 @@
 
 # Standard library imports
 import json
-from typing import Any, Optional, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 # Third-party imports
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
@@ -15,11 +15,15 @@ class JSONType(TypeDecorator):
     """Enables JSON storage by serializing on write and deserializing on read."""
     impl = String
 
-    def process_bind_param(self, value: Optional[Union[Dict[str, Any], List[Any]]], _: Any) -> Optional[str]:
+    def process_bind_param(
+        self, value: Optional[Union[Dict[str, Any], List[Any]]], _: Any
+    ) -> Optional[str]:
         """Convert Python object to JSON string for storage."""
         return json.dumps(value) if value is not None else None
 
-    def process_result_value(self, value: Optional[str], _: Any) -> Optional[Union[Dict[str, Any], List[Any]]]:
+    def process_result_value(
+        self, value: Optional[str], _: Any
+    ) -> Optional[Union[Dict[str, Any], List[Any]]]:
         """Convert stored JSON string back to Python object."""
         return json.loads(value) if value else None
 
