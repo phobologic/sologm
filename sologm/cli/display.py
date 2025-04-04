@@ -246,7 +246,9 @@ def display_game_status(
     )
 
     # Previous scene panel
-    prev_scene = scene_manager.get_previous_scene(game.id, active_scene) if active_scene else None
+    prev_scene = None
+    if active_scene and scene_manager:
+        prev_scene = scene_manager.get_previous_scene(game.id, active_scene)
     prev_scene_content = ""
     if prev_scene:
         prev_scene_content = (
