@@ -3,6 +3,7 @@
 from typing import List, Optional
 
 from rich.console import Console
+from rich.measure import Measurement
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -12,6 +13,23 @@ from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
 from sologm.core.scene import Scene, SceneManager
+
+
+def truncate_text(text: str, max_length: int = 60) -> str:
+    """Truncate text to max_length and add ellipsis if needed.
+    
+    Args:
+        text: The text to truncate
+        max_length: Maximum length before truncation
+        
+    Returns:
+        Truncated text with ellipsis if needed
+    """
+    if max_length <= 3:
+        return "..."
+    if len(text) <= max_length:
+        return text
+    return text[:max_length-3] + "..."
 
 
 def display_dice_roll(console: Console, roll: DiceRoll) -> None:
@@ -95,7 +113,7 @@ def display_events_table(
         table.add_row(
             event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             event.source,
-            event.description,
+            truncate_text(event.description, max_length=80),
         )
 
     console.print(table)
@@ -267,25 +285,35 @@ def display_game_status(
     # Right column: Recent Events (up to 5)
     events_content = ""
     if recent_events:
-        events_shown = recent_events  # We already limited to 5 in game.py
+        # Calculate how many events we can reasonably show
+        # Each event takes at least 3 lines (timestamp+source, description, blank)
+        # For longer descriptions, estimate additional lines
+        max_events_to_show = min(3, len(recent_events))  # Show at most 3 events
+        
+        events_shown = recent_events[:max_events_to_show]
         for event in events_shown:
+            # Truncate long descriptions to keep events compact
+            truncated_description = truncate_text(event.description, max_length=80)
             events_content += (
                 f"[cyan]{event.created_at.strftime('%Y-%m-%d %H:%M')}[/cyan] "
                 f"[magenta]({event.source})[/magenta]\n"
-                f"{event.description}\n\n"
+                f"{truncated_description}\n\n"
             )
     else:
         events_content = "[dim]No recent events[/dim]"
 
     # Calculate events panel height based on content
-    # Each event takes roughly 4 lines (timestamp, source, description, blank)
-    event_lines = len(recent_events) * 4
+    # Base height on number of lines in the content plus panel borders
+    content_lines = len(events_content.splitlines()) if events_content else 1
+    scene_panel_height = len(scenes_content.splitlines()) + 2  # +2 for panel borders
+    
+    # Ensure events panel is at least as tall as the scene panel
+    # but not more than 2x its height
     events_panel_height = max(
-        len(scenes_content.splitlines()) + 2,  # Match scene panel height
+        scene_panel_height,  # At least as tall as scene panel
         min(
-            event_lines + 2,  # Add 2 for panel borders
-            # But no more than 2x scene height
-            (len(scenes_content.splitlines()) + 2) * 2
+            content_lines + 2,  # Content height plus borders
+            scene_panel_height * 2  # But no more than 2x scene height
         )
     )
 

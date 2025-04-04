@@ -7,6 +7,8 @@ from unittest.mock import Mock
 import pytest
 from rich.console import Console
 
+from sologm.cli.display import truncate_text
+
 from sologm.cli.display import (
     display_dice_roll,
     display_events_table,
@@ -248,3 +250,16 @@ def test_display_interpretation_set_no_context(
         mock_console, sample_interpretation_set, show_context=False
     )
     assert mock_console.print.called
+
+
+def test_truncate_text():
+    """Test the truncate_text function."""
+    # Short text should remain unchanged
+    assert truncate_text("Short text", 20) == "Short text"
+    
+    # Long text should be truncated with ellipsis
+    long_text = "This is a very long text that should be truncated"
+    assert truncate_text(long_text, 20) == "This is a very lon..."
+    
+    # Edge case: max_length <= 3
+    assert truncate_text("Any text", 3) == "..."
