@@ -2,8 +2,8 @@
 
 import logging
 
-from rich.console import Console
 import typer
+from rich.console import Console
 
 from sologm.cli.display import display_game_info, display_games_table
 from sologm.core.game import GameManager
