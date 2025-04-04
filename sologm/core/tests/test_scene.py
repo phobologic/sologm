@@ -160,8 +160,7 @@ class TestSceneManager:
     def test_list_scenes(self, scene_manager: SceneManager, test_game: dict) -> None:
         """Test listing scenes in a game."""
         # Create some test scenes
-        # Create another scene that won't be used
-        scene_manager.create_scene(
+        scene1 = scene_manager.create_scene(
             game_id=test_game["id"],
             title="First Scene",
             description="Scene 1",
@@ -277,6 +276,7 @@ class TestSceneManager:
         self, scene_manager: SceneManager, test_game: dict
     ) -> None:
         """Test setting which scene is current without changing status."""
+        # Create two scenes
         scene1 = scene_manager.create_scene(
             game_id=test_game["id"],
             title="First Scene",
@@ -288,8 +288,8 @@ class TestSceneManager:
             description="Scene 2",
         )
 
-        # Complete scene2 but keep it as current
-        scene_manager.complete_scene(test_game["id"], scene2.id)
+        # Complete scene1 and make scene2 current
+        scene_manager.complete_scene(test_game["id"], scene1.id)
         scene_manager.set_current_scene(test_game["id"], scene2.id)
 
         current_scene = scene_manager.get_active_scene(test_game["id"])
