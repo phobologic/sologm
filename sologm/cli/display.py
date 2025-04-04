@@ -14,7 +14,6 @@ from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
 from sologm.core.scene import Scene, SceneManager
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -264,8 +263,7 @@ def display_game_status(
     # Calculate appropriate truncation length based on console width
     # Since we're using a two-column layout, each column gets roughly half the width
     # Subtract some space for borders, padding, and formatting
-    column_width = max(40, (console_width // 2) - 10)
-    truncation_length = column_width
+    truncation_length = max(40, (console_width) - 10)
     logger.debug(
         f"Using truncation length of {truncation_length} "
         f"characters for event descriptions"
