@@ -263,27 +263,27 @@ def display_game_status(
 
     # Calculate display dimensions
     truncation_length = _calculate_truncation_length(console)
-    
+
     # Display game header
     console.print(_create_game_header_panel(game))
-    
+
     # Create and display the main grid with scene and events info
     grid = Table.grid(expand=True, padding=(0, 1))
     grid.add_column("Left", ratio=1)
     grid.add_column("Right", ratio=1)
-    
+
     # Add scene panels and events panel to main grid
     left_grid = _create_scene_panels_grid(game, active_scene, scene_manager)
     events_panel = _create_events_panel(recent_events, truncation_length)
     grid.add_row(left_grid, events_panel)
     console.print(grid)
-    
+
     # Display oracle panel if applicable
     oracle_panel = _create_oracle_panel(
-        game, 
-        active_scene, 
-        current_interpretation_reference, 
-        oracle_manager, 
+        game,
+        active_scene,
+        current_interpretation_reference,
+        oracle_manager,
         truncation_length
     )
     if oracle_panel:
@@ -322,8 +322,8 @@ def _create_game_header_panel(game: Game) -> Panel:
 
 
 def _create_scene_panels_grid(
-    game: Game, 
-    active_scene: Optional[Scene], 
+    game: Game,
+    active_scene: Optional[Scene],
     scene_manager: Optional[SceneManager]
 ) -> Table:
     """Create a grid containing current and previous scene panels."""
@@ -347,7 +347,7 @@ def _create_scene_panels_grid(
     prev_scene = None
     if active_scene and scene_manager:
         prev_scene = scene_manager.get_previous_scene(game.id, active_scene)
-    
+
     prev_scene_content = ""
     if prev_scene:
         prev_scene_content = (
@@ -368,7 +368,7 @@ def _create_scene_panels_grid(
     left_grid.add_column()
     left_grid.add_row(scenes_panel)
     left_grid.add_row(prev_scene_panel)
-    
+
     return left_grid
 
 
@@ -416,16 +416,16 @@ def _create_oracle_panel(
 
     if has_open_interpretation:
         return _create_pending_oracle_panel(
-            game, 
-            current_interpretation_reference, 
-            oracle_manager, 
+            game,
+            current_interpretation_reference,
+            oracle_manager,
             truncation_length
         )
     elif active_scene and oracle_manager:
         return _create_recent_oracle_panel(
-            game, 
-            active_scene, 
-            oracle_manager, 
+            game,
+            active_scene,
+            oracle_manager,
             truncation_length
         )
     return None

@@ -8,6 +8,11 @@ import pytest
 from rich.console import Console
 
 from sologm.cli.display import (
+    _calculate_truncation_length,
+    _create_events_panel,
+    _create_game_header_panel,
+    _create_oracle_panel,
+    _create_scene_panels_grid,
     display_dice_roll,
     display_events_table,
     display_game_info,
