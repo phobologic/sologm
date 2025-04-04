@@ -1,6 +1,6 @@
 """Core business logic for Solo RPG Helper."""
 
-from .dice import DiceRoll, roll_dice
+from .dice import DiceManager, DiceRoll
 from .event import Event, EventManager
 from .game import Game, GameManager
 from .scene import Scene, SceneManager
@@ -13,5 +13,5 @@ __all__ = [
     "Event",
     "EventManager",
     "DiceRoll",
-    "roll_dice",
+    "DiceManager",
 ]
