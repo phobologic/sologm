@@ -27,6 +27,7 @@ class DatabaseSession:
         if cls._instance is None:
             cls._instance = DatabaseSession(db_path)
         return cls._instance
+
     def __init__(self, db_path: Optional[str] = None) -> None:
         """Initialize the database session.
         Args:
@@ -41,6 +42,7 @@ class DatabaseSession:
         self.engine: Engine = create_engine(f"sqlite:///{db_path}")
         self.session_factory: Any = sessionmaker(bind=self.engine)
         self.Session: scoped_session = scoped_session(self.session_factory)
+
     def create_tables(self) -> None:
         """Create all tables defined in the models."""
         Base.metadata.create_all(self.engine)
