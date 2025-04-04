@@ -233,21 +233,15 @@ def display_game_status(
     if active_scene:
         scenes_content = (
             f"[bold]{active_scene.title}[/bold]\n"
-            f"[dim]{active_scene.description}[/dim]\n\n"
-            f"Status: [italic]{active_scene.status.value}[/italic]\n"
-            f"Sequence: {active_scene.sequence}"
+            f"[dim]{active_scene.description}[/dim]"
         )
-        # TODO: Add previous scene info once we track that
     else:
         scenes_content = "[dim]No active scene[/dim]"
 
-    # Set a fixed height for scenes panel
-    scene_panel_height = 10
     scenes_panel = Panel(
         scenes_content,
         title="Current Scene",
-        border_style="cyan",
-        height=scene_panel_height
+        border_style="cyan"
     )
 
     # Right column: Recent Events (up to 5)
@@ -267,10 +261,10 @@ def display_game_status(
     # Each event takes roughly 4 lines (timestamp, source, description, blank)
     event_lines = len(recent_events) * 4
     events_panel_height = max(
-        scene_panel_height,  # At least as tall as scene panel
+        len(scenes_content.splitlines()) + 2,  # Match scene panel height
         min(
             event_lines + 2,  # Add 2 for panel borders
-            scene_panel_height * 2  # But no more than 2x scene panel height
+            (len(scenes_content.splitlines()) + 2) * 2  # But no more than 2x scene height
         )
     )
 
