@@ -8,8 +8,6 @@ from typing import List
 
 from sologm.utils.errors import DiceError
 
-logger = logging.getLogger(__name__)
-
 
 @dataclass
 class DiceRoll:
@@ -22,70 +20,76 @@ class DiceRoll:
     reason: str | None = None
 
 
-def parse_dice_notation(notation: str) -> tuple[int, int, int]:
-    """Parse XdY+Z notation into components.
+class DiceManager:
+    """Manages dice rolling operations."""
 
-    Args:
-        notation: Dice notation string (e.g., "2d6+3")
+    def __init__(self):
+        """Initialize DiceManager."""
+        self.logger = logging.getLogger(__name__)
 
-    Returns:
-        Tuple of (number of dice, sides per die, modifier)
+    def roll(self, notation: str, reason: str | None = None) -> DiceRoll:
+        """Roll dice according to the specified notation.
 
-    Raises:
-        DiceError: If notation is invalid
-    """
-    pattern = r"^(\d+)d(\d+)([+-]\d+)?$"
-    match = re.match(pattern, notation)
+        Args:
+            notation: Dice notation string (e.g., "2d6+3")
+            reason: Optional reason for the roll
 
-    if not match:
-        logger.error(f"Invalid dice notation: {notation}")
-        raise DiceError(f"Invalid dice notation: {notation}")
+        Returns:
+            DiceRoll object with results
 
-    count = int(match.group(1))
-    sides = int(match.group(2))
-    modifier = int(match.group(3) or 0)
+        Raises:
+            DiceError: If notation is invalid
+        """
+        count, sides, modifier = self._parse_notation(notation)
 
-    logger.debug(
-        f"Parsing dice notation - count: {count}, sides: {sides}, modifier: {modifier}"
-    )
+        self.logger.debug(f"Rolling {count} dice with {sides} sides and modifier {modifier:+d}")
+        individual_results = [random.randint(1, sides) for _ in range(count)]
+        self.logger.debug(f"Individual dice results: {individual_results}")
 
-    if count < 1:
-        logger.error(f"Invalid dice count: {count}")
-        raise DiceError("Must roll at least 1 die")
-    if sides < 2:
-        logger.error(f"Invalid sides count: {sides}")
-        raise DiceError("Die must have at least 2 sides")
+        total = sum(individual_results) + modifier
+        self.logger.debug(f"Final result: {individual_results} + {modifier} = {total}")
 
-    logger.debug(f"Parsed {notation} as {count}d{sides}{modifier:+d}")
-    return count, sides, modifier
+        return DiceRoll(
+            notation=notation,
+            individual_results=individual_results,
+            modifier=modifier,
+            total=total,
+            reason=reason,
+        )
 
+    def _parse_notation(self, notation: str) -> tuple[int, int, int]:
+        """Parse XdY+Z notation into components.
 
-def roll_dice(notation: str, reason: str | None = None) -> DiceRoll:
-    """Roll dice according to the specified notation.
+        Args:
+            notation: Dice notation string (e.g., "2d6+3")
 
-    Args:
-        notation: Dice notation string (e.g., "2d6+3")
-        reason: Optional reason for the roll
+        Returns:
+            Tuple of (number of dice, sides per die, modifier)
 
-    Returns:
-        DiceRoll object with results
+        Raises:
+            DiceError: If notation is invalid
+        """
+        pattern = r"^(\d+)d(\d+)([+-]\d+)?$"
+        match = re.match(pattern, notation)
 
-    Raises:
-        DiceError: If notation is invalid
-    """
-    count, sides, modifier = parse_dice_notation(notation)
+        if not match:
+            self.logger.error(f"Invalid dice notation: {notation}")
+            raise DiceError(f"Invalid dice notation: {notation}")
 
-    logger.debug(f"Rolling {count} dice with {sides} sides and modifier {modifier:+d}")
-    individual_results = [random.randint(1, sides) for _ in range(count)]
-    logger.debug(f"Individual dice results: {individual_results}")
+        count = int(match.group(1))
+        sides = int(match.group(2))
+        modifier = int(match.group(3) or 0)
 
-    total = sum(individual_results) + modifier
-    logger.debug(f"Final result: {individual_results} + {modifier} = {total}")
+        self.logger.debug(
+            f"Parsing dice notation - count: {count}, sides: {sides}, modifier: {modifier}"
+        )
 
-    return DiceRoll(
-        notation=notation,
-        individual_results=individual_results,
-        modifier=modifier,
-        total=total,
-        reason=reason,
-    )
+        if count < 1:
+            self.logger.error(f"Invalid dice count: {count}")
+            raise DiceError("Must roll at least 1 die")
+        if sides < 2:
+            self.logger.error(f"Invalid sides count: {sides}")
+            raise DiceError("Die must have at least 2 sides")
+
+        self.logger.debug(f"Parsed {notation} as {count}d{sides}{modifier:+d}")
+        return count, sides, modifier

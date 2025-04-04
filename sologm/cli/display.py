@@ -4,7 +4,38 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
+from sologm.core.dice import DiceRoll
 from sologm.core.oracle import Interpretation, InterpretationSet
+
+
+def display_dice_roll(console: Console, roll: DiceRoll) -> None:
+    """Display a dice roll result.
+
+    Args:
+        console: Rich console instance
+        roll: DiceRoll to display
+    """
+    title = Text()
+    if roll.reason:
+        title.append(f"{roll.reason}: ", style="bold blue")
+    title.append(roll.notation, style="bold")
+
+    details = Text()
+    if len(roll.individual_results) > 1:
+        details.append("Rolls: ", style="dim")
+        details.append(str(roll.individual_results), style="cyan")
+        details.append("\n")
+
+    if roll.modifier != 0:
+        details.append("Modifier: ", style="dim")
+        details.append(f"{roll.modifier:+d}", style="yellow")
+        details.append("\n")
+
+    details.append("Result: ", style="dim")
+    details.append(str(roll.total), style="bold green")
+
+    panel = Panel(details, title=title, border_style="bright_black", expand=False)
+    console.print(panel)
 
 
 def display_interpretation(

@@ -5,10 +5,9 @@ from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
 
-from sologm.core.dice import roll_dice
+from sologm.cli import display
+from sologm.core.dice import DiceManager
 from sologm.utils.errors import DiceError
 
 logger = logging.getLogger(__name__)
@@ -31,34 +30,11 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
-        logger.debug(f"Rolling dice with notation: {notation}, reason: " f"{reason}")
-        result = roll_dice(notation, reason)
-
-        logger.debug(f"Creating formatted output for roll result: {result}")
-        # Create formatted output
-        title = Text()
-        if reason:
-            title.append(f"{reason}: ", style="bold blue")
-        title.append(result.notation, style="bold")
-
-        details = Text()
-        if len(result.individual_results) > 1:
-            details.append("Rolls: ", style="dim")
-            details.append(str(result.individual_results), style="cyan")
-            details.append("\n")
-
-        if result.modifier != 0:
-            details.append("Modifier: ", style="dim")
-            details.append(f"{result.modifier:+d}", style="yellow")
-            details.append("\n")
-
-        details.append("Result: ", style="dim")
-        details.append(str(result.total), style="bold green")
-
-        # Display in a panel
-        panel = Panel(details, title=title, border_style="bright_black", expand=False)
-        console.print(panel)
+        logger.debug(f"Rolling dice with notation: {notation}, reason: {reason}")
+        manager = DiceManager()
+        result = manager.roll(notation, reason)
+        display.display_dice_roll(console, result)
 
     except DiceError as e:
         console.print(f"Error: {str(e)}", style="bold red")
-        raise
+        raise typer.Exit(1)
