@@ -1,7 +1,7 @@
 """Scene model for SoloGM."""
 
 import enum
-from typing import Optional, ClassVar
+from typing import ClassVar
 
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import validates
@@ -23,7 +23,8 @@ class Scene(Base, TimestampMixin):
     game_id: Column = Column(String, ForeignKey("games.id"), nullable=False)
     title: Column = Column(String, nullable=False)
     description: Column = Column(Text)
-    status: Column = Column(Enum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE)
+    status: Column = Column(Enum(SceneStatus), nullable=False,
+                            default=SceneStatus.ACTIVE)
     sequence: Column = Column(Integer, nullable=False)
     is_active: Column = Column(Boolean, default=False)
 
@@ -37,7 +38,13 @@ class Scene(Base, TimestampMixin):
         return title
 
     @classmethod
-    def create(cls, game_id: str, title: str, description: str, sequence: int) -> "Scene":
+    def create(
+        cls,
+        game_id: str,
+        title: str,
+        description: str,
+        sequence: int
+    ) -> "Scene":
         """Create a new scene with a unique ID based on the title.
 
         Args:
