@@ -28,6 +28,8 @@ from sologm.core.scene import Scene, SceneStatus
 def mock_console():
     """Create a mocked Rich console."""
     mock = Mock(spec=Console)
+    # Set a default width for the console to avoid type errors
+    mock.width = 80
     return mock
 
 

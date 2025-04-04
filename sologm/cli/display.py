@@ -257,13 +257,17 @@ def display_game_status(
     )
 
     # Get console width for responsive layout
-    console_width = console.width
-    logger.debug(f"Console width detected: {console_width} characters")
-
-    # Calculate appropriate truncation length based on console width
-    # Since we're using a two-column layout, each column gets roughly half the width
-    # Subtract some space for borders, padding, and formatting
-    truncation_length = max(40, (console_width) - 10)
+    try:
+        console_width = console.width
+        logger.debug(f"Console width detected: {console_width} characters")
+        # Calculate appropriate truncation length based on console width
+        # Since we're using a two-column layout, each column gets roughly half the width
+        # Subtract some space for borders, padding, and formatting
+        truncation_length = max(40, int(console_width) - 10)
+    except (TypeError, ValueError):
+        # Default to a reasonable truncation length if console width is not available
+        logger.debug("Could not determine console width, using default truncation length")
+        truncation_length = 40
     logger.debug(
         f"Using truncation length of {truncation_length} "
         f"characters for event descriptions"
