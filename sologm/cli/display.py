@@ -27,6 +27,7 @@ def truncate_text(text: str, max_length: int = 60) -> str:
         return "..."
     if len(text) <= max_length:
         return text
+    # Ensure we keep exactly max_length characters including the ellipsis
     return text[:max_length-3] + "..."
 
 
