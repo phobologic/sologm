@@ -1,33 +1,15 @@
 """Main CLI entry point for Solo RPG Helper."""
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 import typer
-from rich.console import Console
 
 from sologm import __version__
+from sologm.cli.app import app, console
 from sologm.utils.logger import setup_root_logger
 
-if TYPE_CHECKING:
-
-    game_app: typer.Typer
-else:
-    from sologm.cli.game import game_app  # type: ignore # noqa: F401
-
-
-
 logger = logging.getLogger(__name__)
-
-# Create Typer app
-app = typer.Typer(
-    name="sologm",
-    help="Solo RPG Helper command-line application",
-    add_completion=True,
-)
-
-# Create console for rich output
-console = Console()
 
 
 def version_callback(value: bool) -> None:
@@ -73,17 +55,22 @@ def main(
 
 
 
-from sologm.cli.dice import dice_app  # noqa
-from sologm.cli.event import event_app  # noqa
-from sologm.cli.oracle import oracle_app  # noqa
-from sologm.cli.scene import scene_app  # noqa
+def main() -> None:
+    """Register all CLI subcommands and run the app."""
+    from sologm.cli.dice import dice_app
+    from sologm.cli.event import event_app
+    from sologm.cli.game import game_app
+    from sologm.cli.oracle import oracle_app
+    from sologm.cli.scene import scene_app
 
-# Add subcommands
-app.add_typer(game_app, name="game")
-app.add_typer(scene_app, name="scene")
-app.add_typer(event_app, name="event")
-app.add_typer(dice_app, name="dice")
-app.add_typer(oracle_app, name="oracle")
+    # Add subcommands
+    app.add_typer(game_app, name="game")
+    app.add_typer(scene_app, name="scene")
+    app.add_typer(event_app, name="event")
+    app.add_typer(dice_app, name="dice")
+    app.add_typer(oracle_app, name="oracle")
+
 
 if __name__ == "__main__":
+    main()
     app()

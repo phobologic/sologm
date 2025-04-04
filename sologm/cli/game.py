@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from sologm.cli.main import app
+from sologm.cli.app import app
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 
@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 # Create game subcommand
 game_app = typer.Typer(help="Game management commands")
-app.add_typer(game_app, name="game")
 
 # Create console for rich output
 console = Console()
