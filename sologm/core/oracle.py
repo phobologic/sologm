@@ -507,12 +507,12 @@ DESCRIPTION: Detailed description of interpretation idea
 
         # Mark the interpretation reference as resolved in the game data
         game_data = self._read_game_data(game_id)
-        if "current_interpretation_reference" in game_data:
-            if game_data["current_interpretation_reference"]["id"] == interpretation_set_id:
-                game_data["current_interpretation_reference"]["resolved"] = True
-                self.file_manager.write_yaml(
-                    self.file_manager.get_game_path(game_id), game_data
-                )
+        if ("current_interpretation_reference" in game_data and
+                game_data["current_interpretation_reference"]["id"] == interpretation_set_id):
+            game_data["current_interpretation_reference"]["resolved"] = True
+            self.file_manager.write_yaml(
+                self.file_manager.get_game_path(game_id), game_data
+            )
 
         # Only add as event if requested
         if add_event:

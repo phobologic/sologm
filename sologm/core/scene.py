@@ -225,7 +225,7 @@ class SceneManager:
 
         # Set as active scene
         self.file_manager.set_active_scene_id(game_id, scene_id)
-        
+
         # Clear any current interpretation reference
         game_data = self._get_game_data(game_id)
         if "current_interpretation_reference" in game_data:

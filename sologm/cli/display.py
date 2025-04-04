@@ -375,7 +375,7 @@ def display_game_status(
         except Exception:
             # If we can't load the interpretation set, just show a generic message
             context = "Use 'sologm oracle status' to see details"
-            
+        
         interp_panel = Panel(
             f"[yellow]Open Oracle Interpretation:[/yellow]\n"
             f"Context: {context}\n"

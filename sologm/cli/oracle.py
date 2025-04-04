@@ -93,13 +93,13 @@ def retry_interpretation() -> None:
                 "'oracle interpret' first.[/red]"
             )
             raise typer.Exit(1)
-            
+        
         # Get the actual interpretation set
         try:
             interp_set = manager.get_interpretation_set(
                 game_id, current_ref["scene_id"], current_ref["id"]
             )
-            
+        
             console.print("\nGenerating new interpretations...", style="bold blue")
             new_interp_set = manager.get_interpretations(
                 game_id,
@@ -110,10 +110,10 @@ def retry_interpretation() -> None:
             )
 
             display.display_interpretation_set(console, new_interp_set)
-            
+        
         except Exception as e:
             console.print(f"[red]Error loading interpretation set: {str(e)}[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     except OracleError as e:
         logger.error(f"Failed to retry interpretation: {e}")

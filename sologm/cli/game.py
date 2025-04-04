@@ -106,11 +106,11 @@ def game_info(
                 )[:5]  # Ensure we get at most 5 events
 
             oracle_manager = OracleManager()
-            current_interpretation_reference = oracle_manager.get_current_interpretation_reference(game.id)
+            current_interp_ref = oracle_manager.get_current_interpretation_reference(game.id)
 
             display_game_status(
-                console, game, active_scene, recent_events, current_interpretation_reference,
-                scene_manager=scene_manager
+                console, game, active_scene, recent_events, 
+                current_interp_ref, scene_manager=scene_manager
             )
         else:
             display_game_info(console, game, active_scene)
