@@ -267,7 +267,8 @@ def display_game_status(
     column_width = max(40, (console_width // 2) - 10)
     truncation_length = column_width
     logger.debug(
-        f"Using truncation length of {truncation_length} characters for event descriptions"
+        f"Using truncation length of {truncation_length} "
+        f"characters for event descriptions"
     )
 
     # Top bar with game info
