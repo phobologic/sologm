@@ -20,7 +20,7 @@ from sologm.core.dice import DiceRoll
 from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
-from sologm.core.scene import Scene
+from sologm.core.scene import Scene, SceneStatus
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ def sample_scene() -> Scene:
         description="A test scene",
         created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
         modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        status="active",
+        status=SceneStatus.ACTIVE,
         game_id="test-game",
         sequence=1,
     )
