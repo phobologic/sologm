@@ -49,7 +49,9 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
         roll: DiceRoll to display
     """
     logger.debug(f"Displaying dice roll: {roll.notation} (total: {roll.total})")
-    logger.debug(f"Individual results: {roll.individual_results}, modifier: {roll.modifier}")
+    logger.debug(
+        f"Individual results: {roll.individual_results}, modifier: {roll.modifier}"
+    )
     title = Text()
     if roll.reason:
         title.append(f"{roll.reason}: ", style="bold blue")
@@ -84,7 +86,9 @@ def display_interpretation(
         selected: Whether this interpretation is selected
     """
     logger.debug(f"Displaying interpretation {interp.id} (selected: {selected})")
-    logger.debug(f"Interpretation title: '{interp.title}', created: {interp.created_at}")
+    logger.debug(
+        f"Interpretation title: '{interp.title}', created: {interp.created_at}"
+    )
     # Extract the numeric part of the ID (e.g., "1" from "interp-1")
     id_number = interp.id.split('-')[1]
     title_line = f"[bold]{interp.title}[/bold]"
@@ -120,7 +124,7 @@ def display_events_table(
         logger.debug(f"No events to display for scene '{scene_title}'")
         console.print(f"\nNo events in scene '{scene_title}'")
         return
-    
+
     logger.debug(f"Creating table with {len(events)} events")
 
     table = Table(title=f"Events in scene '{scene_title}'")
@@ -215,7 +219,10 @@ def display_interpretation_set(
         f"Displaying interpretation set {interp_set.id} with "
         f"{len(interp_set.interpretations)} interpretations"
     )
-    logger.debug(f"Show context: {show_context}, selected interpretation index: {interp_set.selected_interpretation}")
+    logger.debug(
+        f"Show context: {show_context}, "
+        f"selected interpretation index: {interp_set.selected_interpretation}"
+    )
     if show_context:
         console.print("\n[bold]Oracle Interpretations[/bold]")
         console.print(f"Context: {interp_set.context}")
@@ -239,7 +246,10 @@ def display_scene_info(console: Console, scene: Scene) -> None:
         scene: Scene to display
     """
     logger.debug(f"Displaying scene info for {scene.id} (status: {scene.status.value})")
-    logger.debug(f"Scene details: title='{scene.title}', sequence={scene.sequence}, game_id={scene.game_id}")
+    logger.debug(
+        f"Scene details: title='{scene.title}', sequence={scene.sequence}, "
+        f"game_id={scene.game_id}"
+    )
     console.print("[bold]Active Scene:[/]")
     console.print(f"  ID: {scene.id}")
     console.print(f"  Title: {scene.title}")
@@ -321,7 +331,9 @@ def _calculate_truncation_length(console: Console) -> int:
         return truncation_length
     except (TypeError, ValueError) as e:
         # Default to a reasonable truncation length if console width is not available
-        logger.debug(f"Could not determine console width due to error: {e}, using default value")
+        logger.debug(
+            f"Could not determine console width due to error: {e}, using default value"
+        )
         return 40
 
 
@@ -366,7 +378,9 @@ def _create_scene_panels_grid(
     # Create previous scene panel
     prev_scene = None
     if active_scene and scene_manager:
-        logger.debug(f"Attempting to get previous scene for active scene {active_scene.id}")
+        logger.debug(
+            f"Attempting to get previous scene for active scene {active_scene.id}"
+        )
         prev_scene = scene_manager.get_previous_scene(game.id, active_scene)
 
     prev_scene_content = ""
@@ -437,12 +451,12 @@ def _create_oracle_panel(
 ) -> Optional[Panel]:
     """Create the oracle panel if applicable."""
     logger.debug(f"Creating oracle panel for game {game.id}")
-    
+
     has_open_interpretation = (
         current_interpretation_reference
         and not current_interpretation_reference.get("resolved", False)
     )
-    
+
     logger.debug(f"Has open interpretation: {has_open_interpretation}")
 
     if has_open_interpretation:
@@ -477,14 +491,19 @@ def _create_pending_oracle_panel(
     from sologm.core.oracle import OracleManager
     oracle_mgr = oracle_manager or OracleManager()
     try:
-        logger.debug(f"Attempting to load interpretation set {current_interpretation_reference['id']}")
+        logger.debug(
+            f"Attempting to load interpretation set {current_interpretation_reference['id']}"
+        )
         interp_set = oracle_mgr.get_interpretation_set(
             game.id,
             current_interpretation_reference["scene_id"],
             current_interpretation_reference["id"]
         )
         context = interp_set.context
-        logger.debug(f"Successfully loaded interpretation set with {len(interp_set.interpretations)} interpretations")
+        logger.debug(
+            f"Successfully loaded interpretation set with "
+            f"{len(interp_set.interpretations)} interpretations"
+        )
 
         # Show truncated versions of the options
         options_text = ""
@@ -520,7 +539,9 @@ def _create_recent_oracle_panel(
     truncation_length: int
 ) -> Optional[Panel]:
     """Create a panel showing the most recent oracle interpretation."""
-    logger.debug(f"Creating recent oracle panel for game {game.id}, scene {active_scene.id}")
+    logger.debug(
+        f"Creating recent oracle panel for game {game.id}, scene {active_scene.id}"
+    )
     try:
         logger.debug("Attempting to get most recent interpretation")
         recent_interp = oracle_manager.get_most_recent_interpretation(
@@ -528,8 +549,10 @@ def _create_recent_oracle_panel(
         )
         if recent_interp:
             interp_set, selected_interp = recent_interp
-            logger.debug(f"Found recent interpretation: set {interp_set.id}, interpretation {selected_interp.id}")
-            
+            logger.debug(
+                f"Found recent interpretation: set {interp_set.id}, "
+                f"interpretation {selected_interp.id}"
+            )
             # Calculate shorter truncation length for description
             desc_trunc_len = truncation_length - 15
             logger.debug(f"Using description truncation length of {desc_trunc_len}")
@@ -540,7 +563,6 @@ def _create_recent_oracle_panel(
                 selected_interp.description, desc_trunc_len
             )
             logger.debug("Created truncated text components for panel")
-            
             # Build the panel content with the prepared components
             return Panel(
                 f"[green]Last Oracle Interpretation:[/green]\n"
