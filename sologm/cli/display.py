@@ -458,6 +458,8 @@ def _create_oracle_panel(
     )
 
     logger.debug(f"Has open interpretation: {has_open_interpretation}")
+    logger.debug(f"Has active scene: {active_scene}, "
+                 f"oracle_manager: {oracle_manager}")
 
     if has_open_interpretation:
         logger.debug("Creating pending oracle panel")
@@ -554,22 +556,14 @@ def _create_recent_oracle_panel(
                 f"Found recent interpretation: set {interp_set.id}, "
                 f"interpretation {selected_interp.id}"
             )
-            # Calculate shorter truncation length for description
-            desc_trunc_len = truncation_length - 15
-            logger.debug(f"Using description truncation length of {desc_trunc_len}")
 
-            # Prepare truncated text components
-            truncated_context = truncate_text(interp_set.context, truncation_length)
-            truncated_description = truncate_text(
-                selected_interp.description, desc_trunc_len
-            )
-            logger.debug("Created truncated text components for panel")
             # Build the panel content with the prepared components
             return Panel(
                 f"[green]Last Oracle Interpretation:[/green]\n"
-                f"Context: {truncated_context}\n"
-                f"Selected: [bold]{selected_interp.title}[/bold]\n"
-                f"[dim]{truncated_description}[/dim]",
+                f"[bold]Oracle Results:[/bold] {interp_set.oracle_results}\n"
+                f"[bold]Context:[/bold] {interp_set.context}\n"
+                f"[bold]Selected:[/bold] {selected_interp.title}\n"
+                f"[dim]{selected_interp.description}[/dim]",
                 title="Previous Oracle Decision",
                 border_style="green",
                 expand=True

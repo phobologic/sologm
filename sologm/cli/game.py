@@ -88,6 +88,7 @@ def game_info(
     try:
         logger.debug("Getting active game info")
         game_manager = GameManager()
+        oracle_manager = OracleManager()
         game = game_manager.get_active_game()
         if not game:
             console.print("No active game. Use 'sologm game activate' to set one.")
@@ -112,7 +113,8 @@ def game_info(
 
             display_game_status(
                 console, game, active_scene, recent_events,
-                current_interp_ref, scene_manager=scene_manager
+                current_interp_ref, scene_manager=scene_manager,
+                oracle_manager=oracle_manager
             )
         else:
             display_game_info(console, game, active_scene)
