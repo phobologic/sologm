@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
@@ -86,8 +86,16 @@ class SceneManager:
             description=data["description"],
             status=SceneStatus(data["status"]),  # Convert string to enum
             sequence=data["sequence"],
-            created_at=datetime.fromisoformat(data["created_at"]),
-            modified_at=datetime.fromisoformat(data["modified_at"]),
+            created_at=datetime.fromisoformat(data["created_at"]).replace(
+                tzinfo=timezone.utc if not datetime.fromisoformat(
+                    data["created_at"]
+                ).tzinfo else None
+            ),
+            modified_at=datetime.fromisoformat(data["modified_at"]).replace(
+                tzinfo=timezone.utc if not datetime.fromisoformat(
+                    data["modified_at"]
+                ).tzinfo else None
+            ),
         )
 
     def _get_game_data(self, game_id: str) -> dict:
