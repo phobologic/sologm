@@ -6,6 +6,7 @@ from sqlalchemy.orm import validates
 from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import generate_unique_id, slugify
 
+
 class Game(Base, TimestampMixin):
     """SQLAlchemy model representing a game in the system."""
 

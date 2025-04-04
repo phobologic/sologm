@@ -10,8 +10,6 @@ from sologm.models.scene import Scene
 
 # Game relationships
 Game.scenes = relationship("Scene", back_populates="game", cascade="all, delete-orphan")
-Game.events = relationship("Event", back_populates="game")
-Game.dice_rolls = relationship("DiceRoll", back_populates="game")
 
 # Scene relationships
 Scene.game = relationship("Game", back_populates="scenes")
@@ -25,8 +23,6 @@ Scene.dice_rolls = relationship("DiceRoll", back_populates="scene")
 
 # Event relationships
 Event.scene = relationship("Scene", back_populates="events")
-Event.game = relationship("Game", back_populates="events")
-Event.interpretation = relationship("Interpretation", back_populates="events")
 
 # InterpretationSet relationships
 InterpretationSet.scene = relationship("Scene", back_populates="interpretation_sets")
@@ -44,5 +40,4 @@ Interpretation.interpretation_set = relationship(
 Interpretation.events = relationship("Event", back_populates="interpretation")
 
 # DiceRoll relationships
-DiceRoll.game = relationship("Game", back_populates="dice_rolls")
 DiceRoll.scene = relationship("Scene", back_populates="dice_rolls")

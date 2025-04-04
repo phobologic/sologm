@@ -8,6 +8,7 @@ from sqlalchemy.types import TypeDecorator
 
 from sologm.models.base import Base, TimestampMixin
 
+
 class JSONType(TypeDecorator):
     """Enables JSON storage by serializing on write and deserializing on read."""
     impl = String

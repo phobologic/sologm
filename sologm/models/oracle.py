@@ -4,6 +4,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
 
 from sologm.models.base import Base, TimestampMixin
 
+
 class InterpretationSet(Base, TimestampMixin):
     """SQLAlchemy model representing a set of oracle interpretations."""
 

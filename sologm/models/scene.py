@@ -8,6 +8,7 @@ from sqlalchemy.orm import validates
 from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
+
 class SceneStatus(enum.Enum):
     """Enumeration of possible scene statuses."""
     ACTIVE = "active"

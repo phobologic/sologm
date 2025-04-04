@@ -1,11 +1,11 @@
 """Database session management for SoloGM."""
 
 import os
-from typing import Optional, Any
+from typing import Any, Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import scoped_session, sessionmaker, Session
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from sologm.models.base import Base
 
@@ -14,7 +14,7 @@ class DatabaseSession:
     """Manages database connections and sessions."""
 
     _instance: Optional['DatabaseSession'] = None
-    
+
     @classmethod
     def get_instance(cls, db_path: Optional[str] = None) -> 'DatabaseSession':
         """Get or create the singleton instance of DatabaseSession.
@@ -44,14 +44,14 @@ class DatabaseSession:
     def create_tables(self) -> None:
         """Create all tables defined in the models."""
         Base.metadata.create_all(self.engine)
-        
+
     def get_session(self) -> Session:
         """Get a new session.
         Returns:
             A new SQLAlchemy session.
         """
         return self.Session()
-        
+
     def close_session(self) -> None:
         """Close the current session."""
         self.Session.remove()

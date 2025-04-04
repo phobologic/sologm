@@ -4,6 +4,7 @@ from sqlalchemy import Column, ForeignKey, String, Text
 
 from sologm.models.base import Base, TimestampMixin
 
+
 class Event(Base, TimestampMixin):
     """SQLAlchemy model representing a game event."""
 
