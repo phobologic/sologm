@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 
+from sologm.core.game import GameManager
+from sologm.core.scene import SceneManager
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import EventError
 
@@ -96,7 +98,9 @@ class EventManager:
 
         return event
 
-    def validate_active_context(self, game_manager: GameManager, scene_manager: SceneManager) -> tuple[str, str]:
+    def validate_active_context(
+        self, game_manager: GameManager, scene_manager: SceneManager
+    ) -> tuple[str, str]:
         """Validate and return active game and scene IDs.
 
         Returns:

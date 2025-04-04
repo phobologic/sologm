@@ -5,7 +5,6 @@ import logging
 import typer
 from rich.console import Console
 from sologm.cli.display import display_events_table
-
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
@@ -29,7 +28,9 @@ def add_event(
     event_manager = EventManager()
 
     try:
-        game_id, scene_id = event_manager.validate_active_context(game_manager, scene_manager)
+        game_id, scene_id = event_manager.validate_active_context(
+            game_manager, scene_manager
+        )
         event = event_manager.add_event(
             game_id=game_id, scene_id=scene_id, description=text, source=source
         )
@@ -53,8 +54,12 @@ def list_events(
     event_manager = EventManager()
 
     try:
-        game_id, scene_id = event_manager.validate_active_context(game_manager, scene_manager)
-        events = event_manager.list_events(game_id=game_id, scene_id=scene_id, limit=limit)
+        game_id, scene_id = event_manager.validate_active_context(
+            game_manager, scene_manager
+        )
+        events = event_manager.list_events(
+            game_id=game_id, scene_id=scene_id, limit=limit
+        )
         scene = scene_manager.get_scene(game_id, scene_id)
         logger.debug(f"Found {len(events)} events")
         display_events_table(console, events, scene.title)

@@ -1,5 +1,7 @@
 """Display helpers for CLI output."""
 
+from typing import List
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -60,7 +62,9 @@ def display_interpretation(
     console.print()
 
 
-def display_events_table(console: Console, events: List[Event], scene_title: str) -> None:
+def display_events_table(
+    console: Console, events: List[Event], scene_title: str
+) -> None:
     """Display events in a formatted table.
 
     Args:
