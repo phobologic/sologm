@@ -151,7 +151,7 @@ class OracleManager:
                 created_at=datetime.fromisoformat(data["created_at"]),
             )
         except Exception as e:
-            raise OracleError(f"Failed to load interpretation set: {e}")
+            raise OracleError(f"Failed to load interpretation set: {e}") from e
 
     def _read_game_data(self, game_id: str) -> dict:
         """Read and return game data.

@@ -1,7 +1,6 @@
 """Oracle interpretation commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -42,7 +41,7 @@ def interpret_oracle(
     except OracleError as e:
         logger.error(f"Failed to interpret oracle results: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @oracle_app.command("retry")
@@ -74,7 +73,7 @@ def retry_interpretation() -> None:
     except OracleError as e:
         logger.error(f"Failed to retry interpretation: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @oracle_app.command("status")
@@ -104,7 +103,7 @@ def show_interpretation_status() -> None:
     except OracleError as e:
         logger.error(f"Failed to show interpretation status: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @oracle_app.command("select")
@@ -156,4 +155,4 @@ def select_interpretation(
     except OracleError as e:
         logger.error(f"Failed to select interpretation: {e}")
         console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
