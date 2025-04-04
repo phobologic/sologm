@@ -11,9 +11,10 @@ if TYPE_CHECKING:
     from typer import Typer
 
     app: Typer
+from sologm.cli.display import display_scene_info
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
-from sologm.utils.errors import GameError, SceneError
+from sologm.utils.errors import SceneError
 
 # Create scene subcommand
 scene_app = typer.Typer(help="Scene management commands")
@@ -100,25 +101,11 @@ def scene_info() -> None:
     game_manager = GameManager()
     scene_manager = SceneManager()
 
-    # Get active game
-    active_game = game_manager.get_active_game()
-    if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set " "one.")
-
-    # Get active scene
-    active_scene = scene_manager.get_active_scene(active_game.id)
-    if not active_scene:
-        console.print("No active scene. Create one with 'sologm scene " "create'.")
-        return
-
-    console.print("[bold]Active Scene:[/]")
-    console.print(f"  ID: {active_scene.id}")
-    console.print(f"  Title: {active_scene.title}")
-    console.print(f"  Description: {active_scene.description}")
-    console.print(f"  Status: {active_scene.status.value}")
-    console.print(f"  Sequence: {active_scene.sequence}")
-    console.print(f"  Created: {active_scene.created_at}")
-    console.print(f"  Modified: {active_scene.modified_at}")
+    try:
+        _, active_scene = scene_manager.validate_active_context(game_manager)
+        display_scene_info(console, active_scene)
+    except SceneError as e:
+        console.print(f"[bold red]Error:[/] {str(e)}")
 
 
 @scene_app.command("complete")
@@ -127,20 +114,13 @@ def complete_scene() -> None:
     game_manager = GameManager()
     scene_manager = SceneManager()
 
-    # Get active game
-    active_game = game_manager.get_active_game()
-    if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set " "one.")
-
-    # Get active scene
-    active_scene = scene_manager.get_active_scene(active_game.id)
-    if not active_scene:
-        raise SceneError("No active scene to complete.")
-
-    # Complete the scene
-    completed_scene = scene_manager.complete_scene(active_game.id, active_scene.id)
-    console.print("[bold green]Scene completed successfully![/]")
-    console.print(f"Completed scene: {completed_scene.title}")
+    try:
+        game_id, active_scene = scene_manager.validate_active_context(game_manager)
+        completed_scene = scene_manager.complete_scene(game_id, active_scene.id)
+        console.print("[bold green]Scene completed successfully![/]")
+        console.print(f"Completed scene: {completed_scene.title}")
+    except SceneError as e:
+        console.print(f"[bold red]Error:[/] {str(e)}")
 
 
 @scene_app.command("set-current")

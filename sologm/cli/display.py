@@ -179,3 +179,20 @@ def display_interpretation_set(
         f"\nInterpretation set ID: [bold]{interp_set.id}[/bold] "
         "(use this ID to select an interpretation)"
     )
+
+
+def display_scene_info(console: Console, scene: Scene) -> None:
+    """Display detailed information about a scene.
+
+    Args:
+        console: Rich console instance
+        scene: Scene to display
+    """
+    console.print("[bold]Active Scene:[/]")
+    console.print(f"  ID: {scene.id}")
+    console.print(f"  Title: {scene.title}")
+    console.print(f"  Description: {scene.description}")
+    console.print(f"  Status: {scene.status.value}")
+    console.print(f"  Sequence: {scene.sequence}")
+    console.print(f"  Created: {scene.created_at}")
+    console.print(f"  Modified: {scene.modified_at}")

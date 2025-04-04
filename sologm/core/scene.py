@@ -338,6 +338,28 @@ class SceneManager:
         logger.debug(f"Completed scene {scene_id} in game {game_id}")
         return scene
 
+    def validate_active_context(self, game_manager: GameManager) -> tuple[str, Scene]:
+        """Validate active game and scene context.
+
+        Args:
+            game_manager: GameManager instance to check active game
+
+        Returns:
+            Tuple of (game_id, active_scene)
+
+        Raises:
+            SceneError: If no active game or scene
+        """
+        active_game = game_manager.get_active_game()
+        if not active_game:
+            raise SceneError("No active game. Use 'sologm game activate' to set one.")
+        
+        active_scene = self.get_active_scene(active_game.id)
+        if not active_scene:
+            raise SceneError("No active scene. Create one with 'sologm scene create'.")
+        
+        return active_game.id, active_scene
+
     def set_current_scene(self, game_id: str, scene_id: str) -> Scene:
         """Set which scene is currently being played without changing its
            status.
