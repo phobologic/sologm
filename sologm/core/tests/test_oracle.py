@@ -137,27 +137,27 @@ class TestOracle:
             oracle_manager.validate_active_context()
         assert "No active scene found" in str(exc.value)
 
-    def test_get_current_interpretation(
+    def test_get_current_interpretation_reference(
         self, oracle_manager: OracleManager, test_game: dict
     ) -> None:
-        """Test getting current interpretation."""
+        """Test getting current interpretation reference."""
         # Set up test data
         game_data = oracle_manager._read_game_data("test-game")
-        game_data["current_interpretation"] = {
+        game_data["current_interpretation_reference"] = {
             "id": "test-interp",
-            "context": "test context",
-            "results": "test results",
+            "scene_id": "test-scene",
+            "resolved": False,
             "retry_count": 0,
         }
         oracle_manager.file_manager.write_yaml(
             oracle_manager.file_manager.get_game_path("test-game"), game_data
         )
 
-        current = oracle_manager.get_current_interpretation("test-game")
-        assert current["id"] == "test-interp"
-        assert current["context"] == "test context"
-        assert current["results"] == "test results"
-        assert current["retry_count"] == 0
+        current_ref = oracle_manager.get_current_interpretation_reference("test-game")
+        assert current_ref["id"] == "test-interp"
+        assert current_ref["scene_id"] == "test-scene"
+        assert current_ref["resolved"] is False
+        assert current_ref["retry_count"] == 0
 
     def test_build_prompt(self, oracle_manager: OracleManager) -> None:
         """Test building prompts for Claude."""
@@ -339,6 +339,13 @@ DESCRIPTION: Test Description
             event["source"] == "oracle" and selected.title in event["description"]
             for event in events["events"]
         )
+        
+        # Verify interpretation reference was marked as resolved
+        game_data = oracle_manager.file_manager.read_yaml(
+            oracle_manager.file_manager.get_game_path("test-game")
+        )
+        assert "current_interpretation_reference" in game_data
+        assert game_data["current_interpretation_reference"]["resolved"] is True
 
     def test_select_interpretation_not_found(
         self, oracle_manager: OracleManager, test_game: dict, test_scene: dict
@@ -374,13 +381,15 @@ DESCRIPTION: Test Description
             "test-game", "test-scene", "What happens?", "Mystery", 1
         )
 
-        # Verify current interpretation was set
+        # Verify current interpretation reference was set
         game_data = oracle_manager.file_manager.read_yaml(
             oracle_manager.file_manager.get_game_path("test-game")
         )
-        assert "current_interpretation" in game_data
-        assert game_data["current_interpretation"]["id"] == result1.id
-        assert game_data["current_interpretation"]["retry_count"] == 0
+        assert "current_interpretation_reference" in game_data
+        assert game_data["current_interpretation_reference"]["id"] == result1.id
+        assert game_data["current_interpretation_reference"]["scene_id"] == "test-scene"
+        assert game_data["current_interpretation_reference"]["resolved"] is False
+        assert game_data["current_interpretation_reference"]["retry_count"] == 0
 
         # Retry interpretation
         result2 = oracle_manager.get_interpretations(
@@ -391,8 +400,8 @@ DESCRIPTION: Test Description
         game_data = oracle_manager.file_manager.read_yaml(
             oracle_manager.file_manager.get_game_path("test-game")
         )
-        assert game_data["current_interpretation"]["id"] == result2.id
-        assert game_data["current_interpretation"]["retry_count"] == 1
+        assert game_data["current_interpretation_reference"]["id"] == result2.id
+        assert game_data["current_interpretation_reference"]["retry_count"] == 1
 
         # Verify different prompt was used for retry
         retry_call = mock_anthropic_client.send_message.call_args_list[1]

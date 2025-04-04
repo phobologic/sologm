@@ -238,7 +238,7 @@ def display_game_status(
     game: Game,
     active_scene: Optional[Scene],
     recent_events: List[Event],
-    current_interpretation: Optional[dict] = None,
+    current_interpretation_reference: Optional[dict] = None,
     scene_manager: Optional[SceneManager] = None,
 ) -> None:
     """Display comprehensive game status in a compact layout.
@@ -358,13 +358,27 @@ def display_game_status(
 
     # If there's an open interpretation, show it in a panel below
     has_open_interpretation = (
-        current_interpretation
-        and current_interpretation.get("selected_interpretation") is None
+        current_interpretation_reference
+        and not current_interpretation_reference.get("resolved", False)
     )
     if has_open_interpretation:
+        # Try to load the actual interpretation set for more context
+        from sologm.core.oracle import OracleManager
+        oracle_manager = OracleManager()
+        try:
+            interp_set = oracle_manager.get_interpretation_set(
+                game.id,
+                current_interpretation_reference["scene_id"],
+                current_interpretation_reference["id"]
+            )
+            context = interp_set.context
+        except Exception:
+            # If we can't load the interpretation set, just show a generic message
+            context = "Use 'sologm oracle status' to see details"
+            
         interp_panel = Panel(
             f"[yellow]Open Oracle Interpretation:[/yellow]\n"
-            f"Context: {current_interpretation['context']}\n"
+            f"Context: {context}\n"
             f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
             title="Pending Decision",
             border_style="yellow",

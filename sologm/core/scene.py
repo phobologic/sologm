@@ -225,6 +225,12 @@ class SceneManager:
 
         # Set as active scene
         self.file_manager.set_active_scene_id(game_id, scene_id)
+        
+        # Clear any current interpretation reference
+        game_data = self._get_game_data(game_id)
+        if "current_interpretation_reference" in game_data:
+            del game_data["current_interpretation_reference"]
+            self.file_manager.write_yaml(game_path, game_data)
 
         logger.debug(f"Created scene {scene_id} in game {game_id}")
         return scene

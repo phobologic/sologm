@@ -108,17 +108,17 @@ class OracleManager:
 
         return game_id, scene_id
 
-    def get_current_interpretation(self, game_id: str) -> Optional[dict]:
-        """Get current interpretation data if it exists.
+    def get_current_interpretation_reference(self, game_id: str) -> Optional[dict]:
+        """Get current interpretation reference if it exists.
 
         Args:
             game_id: ID of the game to check
 
         Returns:
-            Optional[dict]: Current interpretation data or None
+            Optional[dict]: Current interpretation reference or None
         """
         game_data = self._read_game_data(game_id)
-        return game_data.get("current_interpretation")
+        return game_data.get("current_interpretation_reference")
 
     def get_interpretation_set(
         self, game_id: str, scene_id: str, set_id: str
@@ -406,11 +406,11 @@ DESCRIPTION: Detailed description of interpretation idea
             created_at=now,
         )
 
-        # Update game's current interpretation
-        game_data["current_interpretation"] = {
+        # Update game with reference to current interpretation
+        game_data["current_interpretation_reference"] = {
             "id": interp_set.id,
-            "context": context,
-            "results": oracle_results,
+            "scene_id": scene_id,
+            "resolved": False,
             "retry_count": retry_attempt,
         }
         self.file_manager.write_yaml(
@@ -504,6 +504,15 @@ DESCRIPTION: Detailed description of interpretation idea
         # Update interpretation set with selection
         interp_data["selected_interpretation"] = selected_index
         self.file_manager.write_yaml(interp_path, interp_data)
+
+        # Mark the interpretation reference as resolved in the game data
+        game_data = self._read_game_data(game_id)
+        if "current_interpretation_reference" in game_data:
+            if game_data["current_interpretation_reference"]["id"] == interpretation_set_id:
+                game_data["current_interpretation_reference"]["resolved"] = True
+                self.file_manager.write_yaml(
+                    self.file_manager.get_game_path(game_id), game_data
+                )
 
         # Only add as event if requested
         if add_event:

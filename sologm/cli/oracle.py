@@ -86,24 +86,34 @@ def retry_interpretation() -> None:
         manager = OracleManager()
         game_id, scene_id = manager.validate_active_context()
 
-        current = manager.get_current_interpretation(game_id)
-        if not current:
+        current_ref = manager.get_current_interpretation_reference(game_id)
+        if not current_ref:
             console.print(
                 "[red]No current interpretation to retry. Run "
                 "'oracle interpret' first.[/red]"
             )
             raise typer.Exit(1)
+            
+        # Get the actual interpretation set
+        try:
+            interp_set = manager.get_interpretation_set(
+                game_id, current_ref["scene_id"], current_ref["id"]
+            )
+            
+            console.print("\nGenerating new interpretations...", style="bold blue")
+            new_interp_set = manager.get_interpretations(
+                game_id,
+                scene_id,
+                interp_set.context,
+                interp_set.oracle_results,
+                retry_attempt=current_ref["retry_count"] + 1,
+            )
 
-        console.print("\nGenerating new interpretations...", style="bold blue")
-        interp_set = manager.get_interpretations(
-            game_id,
-            scene_id,
-            current["context"],
-            current["results"],
-            retry_attempt=current["retry_count"] + 1,
-        )
-
-        display.display_interpretation_set(console, interp_set)
+            display.display_interpretation_set(console, new_interp_set)
+            
+        except Exception as e:
+            console.print(f"[red]Error loading interpretation set: {str(e)}[/red]")
+            raise typer.Exit(1)
 
     except OracleError as e:
         logger.error(f"Failed to retry interpretation: {e}")
@@ -118,20 +128,21 @@ def show_interpretation_status() -> None:
         manager = OracleManager()
         game_id, scene_id = manager.validate_active_context()
 
-        current = manager.get_current_interpretation(game_id)
-        if not current:
+        current_ref = manager.get_current_interpretation_reference(game_id)
+        if not current_ref:
             console.print("[yellow]No current interpretation set.[/yellow]")
             raise typer.Exit(0)
 
         interp_set = manager.get_interpretation_set(
-            game_id, scene_id, current["id"]
+            game_id, current_ref["scene_id"], current_ref["id"]
         )
 
         console.print("\n[bold]Current Oracle Interpretation[/bold]")
-        console.print(f"Set ID: [bold]{current['id']}[/bold]")
-        console.print(f"Context: {current['context']}")
-        console.print(f"Results: {current['results']}")
-        console.print(f"Retry count: {current['retry_count']}\n")
+        console.print(f"Set ID: [bold]{current_ref['id']}[/bold]")
+        console.print(f"Context: {interp_set.context}")
+        console.print(f"Results: {interp_set.oracle_results}")
+        console.print(f"Retry count: {current_ref['retry_count']}")
+        console.print(f"Resolved: {current_ref['resolved']}\n")
 
         display.display_interpretation_set(console, interp_set, show_context=False)
 
@@ -159,14 +170,15 @@ def select_interpretation(
         game_id, scene_id = manager.validate_active_context()
 
         if not interpretation_set_id:
-            current = manager.get_current_interpretation(game_id)
-            if not current:
+            current_ref = manager.get_current_interpretation_reference(game_id)
+            if not current_ref:
                 console.print(
                     "[red]No current interpretation set. Specify --set-id "
                     "or run 'oracle interpret' first.[/red]"
                 )
                 raise typer.Exit(1)
-            interpretation_set_id = current["id"]
+            interpretation_set_id = current_ref["id"]
+            scene_id = current_ref["scene_id"]
 
         if not interpretation_id:
             console.print(
