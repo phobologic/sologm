@@ -2,8 +2,8 @@
 
 from datetime import datetime, timezone
 
-import pytest
 from freezegun import freeze_time
+import pytest
 
 from sologm.utils.datetime_utils import (
     get_current_time,
