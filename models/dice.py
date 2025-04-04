@@ -1,8 +1,10 @@
 """Dice roll model for SoloGM."""
 
 import json
+
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.types import TypeDecorator
+
 from sologm.models.base import Base, TimestampMixin
 
 class JSONType(TypeDecorator):
