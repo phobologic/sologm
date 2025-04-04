@@ -54,11 +54,13 @@ def display_interpretation(
     """
     # Extract the numeric part of the ID (e.g., "1" from "interp-1")
     id_number = interp.id.split('-')[1]
-    selected_text = "[green](Selected)[/green] " if selected else ""
-    status_line = f"{selected_text}"
+    title_line = f"[bold]{interp.title}[/bold]"
+    if selected:
+        title_line += " [green](Selected)[/green]"
+
     panel = Panel(
         Text.from_markup(
-            f"{status_line}\n[bold]{interp.title}[/bold]\n\n{interp.description}"
+            f"{title_line}\n{interp.description}"
         ),
         title=Text.from_markup(f"[cyan]Interpretation {interp.id} "
                                f"({id_number})[/cyan]"),
