@@ -196,3 +196,75 @@ def display_scene_info(console: Console, scene: Scene) -> None:
     console.print(f"  Sequence: {scene.sequence}")
     console.print(f"  Created: {scene.created_at}")
     console.print(f"  Modified: {scene.modified_at}")
+
+
+def display_game_status(
+    console: Console,
+    game: Game,
+    active_scene: Optional[Scene],
+    recent_events: List[Event],
+    current_interpretation: Optional[dict] = None,
+) -> None:
+    """Display comprehensive game status in a compact layout.
+
+    Args:
+        console: Rich console instance
+        game: Current game
+        active_scene: Active scene if any
+        recent_events: Recent events (limited list)
+        current_interpretation: Current interpretation data if any
+    """
+    # Create a grid layout with two columns
+    grid = Table.grid(expand=True, padding=(0, 1))
+    grid.add_column("Left", ratio=1)
+    grid.add_column("Right", ratio=1)
+
+    # Left column: Game & Scene info
+    game_panel = Panel(
+        f"[bold]{game.name}[/bold]\n[dim]{game.description}[/dim]",
+        title="Game",
+        border_style="blue",
+    )
+
+    scene_content = (
+        f"[bold]{active_scene.title}[/bold]\n"
+        f"[dim]{active_scene.description}[/dim]\n\n"
+        f"Status: [italic]{active_scene.status.value}[/italic]"
+        if active_scene
+        else "[dim]No active scene[/dim]"
+    )
+    scene_panel = Panel(scene_content, title="Current Scene", border_style="cyan")
+
+    # Right column: Recent Events
+    events_content = ""
+    if recent_events:
+        for event in recent_events:
+            events_content += (
+                f"[cyan]{event.created_at.strftime('%H:%M')}[/cyan] "
+                f"({event.source})\n{event.description}\n\n"
+            )
+    else:
+        events_content = "[dim]No recent events[/dim]"
+
+    events_panel = Panel(
+        events_content.rstrip(),
+        title="Recent Events",
+        border_style="green"
+    )
+
+    # Add game and scene info to left column, events to right
+    grid.add_row(game_panel, events_panel)
+    grid.add_row(scene_panel)
+
+    # If there's an open interpretation, show it in a panel below
+    if current_interpretation and current_interpretation.get("selected_interpretation") is None:
+        interp_panel = Panel(
+            f"[yellow]Open Oracle Interpretation:[/yellow]\n"
+            f"Context: {current_interpretation['context']}\n"
+            f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
+            title="Pending Decision",
+            border_style="yellow"
+        )
+        grid.add_row(Panel(interp_panel, expand=True))
+
+    console.print(grid)
