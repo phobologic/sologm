@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
+from sologm.core.game import GameManager
 from sologm.storage.file_manager import FileManager
 from sologm.utils.datetime_utils import get_current_time
 from sologm.utils.errors import SceneError
@@ -353,11 +354,11 @@ class SceneManager:
         active_game = game_manager.get_active_game()
         if not active_game:
             raise SceneError("No active game. Use 'sologm game activate' to set one.")
-        
+
         active_scene = self.get_active_scene(active_game.id)
         if not active_scene:
             raise SceneError("No active scene. Create one with 'sologm scene create'.")
-        
+
         return active_game.id, active_scene
 
     def set_current_scene(self, game_id: str, scene_id: str) -> Scene:

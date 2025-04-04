@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 from sologm.cli.display import display_scene_info
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
-from sologm.utils.errors import SceneError
+from sologm.utils.errors import GameError, SceneError
 
 # Create scene subcommand
 scene_app = typer.Typer(help="Scene management commands")
