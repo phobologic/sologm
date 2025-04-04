@@ -1,10 +1,13 @@
 """Dice roll model for SoloGM."""
 
+# Standard library imports
 import json
 
+# Third-party imports
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.types import TypeDecorator
 
+# Local application imports
 from sologm.models.base import Base, TimestampMixin
 
 class JSONType(TypeDecorator):
