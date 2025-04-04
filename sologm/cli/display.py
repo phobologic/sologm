@@ -29,11 +29,15 @@ def truncate_text(text: str, max_length: int = 60) -> str:
     Returns:
         Truncated text with ellipsis if needed
     """
+    logger.debug(f"Truncating text of length {len(text)} to max_length {max_length}")
     if max_length <= 3:
+        logger.debug("Max length too small, returning ellipsis only")
         return "..."
     if len(text) <= max_length:
+        logger.debug("Text already within max length, returning unchanged")
         return text
     # Ensure we keep exactly max_length characters including the ellipsis
+    logger.debug(f"Truncating text to {max_length-3} chars plus ellipsis")
     return text[:max_length-3] + "..."
 
 
@@ -45,6 +49,7 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
         roll: DiceRoll to display
     """
     logger.debug(f"Displaying dice roll: {roll.notation} (total: {roll.total})")
+    logger.debug(f"Individual results: {roll.individual_results}, modifier: {roll.modifier}")
     title = Text()
     if roll.reason:
         title.append(f"{roll.reason}: ", style="bold blue")
@@ -79,6 +84,7 @@ def display_interpretation(
         selected: Whether this interpretation is selected
     """
     logger.debug(f"Displaying interpretation {interp.id} (selected: {selected})")
+    logger.debug(f"Interpretation title: '{interp.title}', created: {interp.created_at}")
     # Extract the numeric part of the ID (e.g., "1" from "interp-1")
     id_number = interp.id.split('-')[1]
     title_line = f"[bold]{interp.title}[/bold]"
@@ -111,8 +117,11 @@ def display_events_table(
         f"Displaying events table for scene '{scene_title}' with {len(events)} events"
     )
     if not events:
+        logger.debug(f"No events to display for scene '{scene_title}'")
         console.print(f"\nNo events in scene '{scene_title}'")
         return
+    
+    logger.debug(f"Creating table with {len(events)} events")
 
     table = Table(title=f"Events in scene '{scene_title}'")
     table.add_column("Time", style="cyan")
@@ -140,7 +149,9 @@ def display_games_table(
         active_game: Currently active game, if any
     """
     logger.debug(f"Displaying games table with {len(games)} games")
+    logger.debug(f"Active game: {active_game.id if active_game else 'None'}")
     if not games:
+        logger.debug("No games found to display")
         console.print("No games found. Create one with 'sologm game create'.")
         return
 
@@ -177,6 +188,7 @@ def display_game_info(
         f"Displaying game info for {game.id} with active scene: "
         f"{active_scene.id if active_scene else 'None'}"
     )
+    logger.debug(f"Game details: name='{game.name}', scenes={len(game.scenes)}")
     console.print("[bold]Active Game:[/]")
     console.print(f"  Name: {game.name} ({game.id})")
     console.print(f"  Description: {game.description}")
@@ -203,6 +215,7 @@ def display_interpretation_set(
         f"Displaying interpretation set {interp_set.id} with "
         f"{len(interp_set.interpretations)} interpretations"
     )
+    logger.debug(f"Show context: {show_context}, selected interpretation index: {interp_set.selected_interpretation}")
     if show_context:
         console.print("\n[bold]Oracle Interpretations[/bold]")
         console.print(f"Context: {interp_set.context}")
@@ -226,6 +239,7 @@ def display_scene_info(console: Console, scene: Scene) -> None:
         scene: Scene to display
     """
     logger.debug(f"Displaying scene info for {scene.id} (status: {scene.status.value})")
+    logger.debug(f"Scene details: title='{scene.title}', sequence={scene.sequence}, game_id={scene.game_id}")
     console.print("[bold]Active Scene:[/]")
     console.print(f"  ID: {scene.id}")
     console.print(f"  Title: {scene.title}")
@@ -292,6 +306,7 @@ def display_game_status(
 
 def _calculate_truncation_length(console: Console) -> int:
     """Calculate appropriate truncation length based on console width."""
+    logger.debug("Calculating appropriate truncation length for console")
     try:
         console_width = console.width
         logger.debug(f"Console width detected: {console_width} characters")
@@ -304,20 +319,22 @@ def _calculate_truncation_length(console: Console) -> int:
             f"characters for event descriptions"
         )
         return truncation_length
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as e:
         # Default to a reasonable truncation length if console width is not available
-        logger.debug("Could not determine console width, using default value")
+        logger.debug(f"Could not determine console width due to error: {e}, using default value")
         return 40
 
 
 def _create_game_header_panel(game: Game) -> Panel:
     """Create the game info header panel."""
+    logger.debug(f"Creating game header panel for game {game.id}")
     game_info = (
         f"[bold]{game.name}[/bold] ({game.id})\n"
         f"[dim]{game.description}[/dim]\n"
         f"Created: {game.created_at.strftime('%Y-%m-%d')} • "
         f"Scenes: {len(game.scenes)}"
     )
+    logger.debug("Game header panel created")
     return Panel(game_info, expand=True, border_style="blue")
 
 
@@ -327,14 +344,17 @@ def _create_scene_panels_grid(
     scene_manager: Optional[SceneManager]
 ) -> Table:
     """Create a grid containing current and previous scene panels."""
+    logger.debug(f"Creating scene panels grid for game {game.id}")
     # Create current scene panel
     scenes_content = ""
     if active_scene:
+        logger.debug(f"Including active scene {active_scene.id} in panel")
         scenes_content = (
             f"[bold]{active_scene.title}[/bold]\n"
             f"[dim]{active_scene.description}[/dim]"
         )
     else:
+        logger.debug("No active scene to display")
         scenes_content = "[dim]No active scene[/dim]"
 
     scenes_panel = Panel(
@@ -346,15 +366,18 @@ def _create_scene_panels_grid(
     # Create previous scene panel
     prev_scene = None
     if active_scene and scene_manager:
+        logger.debug(f"Attempting to get previous scene for active scene {active_scene.id}")
         prev_scene = scene_manager.get_previous_scene(game.id, active_scene)
 
     prev_scene_content = ""
     if prev_scene:
+        logger.debug(f"Including previous scene {prev_scene.id} in panel")
         prev_scene_content = (
             f"[bold]{prev_scene.title}[/bold]\n"
             f"[dim]{prev_scene.description}[/dim]"
         )
     else:
+        logger.debug("No previous scene to display")
         prev_scene_content = "[dim]No previous scene[/dim]"
 
     prev_scene_panel = Panel(
@@ -374,14 +397,17 @@ def _create_scene_panels_grid(
 
 def _create_events_panel(recent_events: List[Event], truncation_length: int) -> Panel:
     """Create the recent events panel."""
+    logger.debug(f"Creating events panel with {len(recent_events)} events")
     events_content = ""
     if recent_events:
         # Calculate how many events we can reasonably show
         # Each event takes at least 3 lines (timestamp+source, description, blank)
         max_events_to_show = min(3, len(recent_events))  # Show at most 3 events
+        logger.debug(f"Showing {max_events_to_show} of {len(recent_events)} events")
 
         events_shown = recent_events[:max_events_to_show]
         for event in events_shown:
+            logger.debug(f"Adding event {event.id} to panel (source: {event.source})")
             # Truncate long descriptions based on calculated width
             truncated_description = truncate_text(
                 event.description, max_length=truncation_length
@@ -392,6 +418,7 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
                 f"{truncated_description}\n\n"
             )
     else:
+        logger.debug("No events to display in panel")
         events_content = "[dim]No recent events[/dim]"
 
     return Panel(
@@ -409,12 +436,17 @@ def _create_oracle_panel(
     truncation_length: int
 ) -> Optional[Panel]:
     """Create the oracle panel if applicable."""
+    logger.debug(f"Creating oracle panel for game {game.id}")
+    
     has_open_interpretation = (
         current_interpretation_reference
         and not current_interpretation_reference.get("resolved", False)
     )
+    
+    logger.debug(f"Has open interpretation: {has_open_interpretation}")
 
     if has_open_interpretation:
+        logger.debug("Creating pending oracle panel")
         return _create_pending_oracle_panel(
             game,
             current_interpretation_reference,
@@ -422,12 +454,14 @@ def _create_oracle_panel(
             truncation_length
         )
     elif active_scene and oracle_manager:
+        logger.debug(f"Creating recent oracle panel for scene {active_scene.id}")
         return _create_recent_oracle_panel(
             game,
             active_scene,
             oracle_manager,
             truncation_length
         )
+    logger.debug("No oracle panel needed")
     return None
 
 
@@ -438,20 +472,24 @@ def _create_pending_oracle_panel(
     truncation_length: int
 ) -> Panel:
     """Create a panel for pending oracle interpretation."""
+    logger.debug(f"Creating pending oracle panel for game {game.id}")
     # Try to load the actual interpretation set for more context
     from sologm.core.oracle import OracleManager
     oracle_mgr = oracle_manager or OracleManager()
     try:
+        logger.debug(f"Attempting to load interpretation set {current_interpretation_reference['id']}")
         interp_set = oracle_mgr.get_interpretation_set(
             game.id,
             current_interpretation_reference["scene_id"],
             current_interpretation_reference["id"]
         )
         context = interp_set.context
+        logger.debug(f"Successfully loaded interpretation set with {len(interp_set.interpretations)} interpretations")
 
         # Show truncated versions of the options
         options_text = ""
         for i, interp in enumerate(interp_set.interpretations, 1):
+            logger.debug(f"Adding interpretation option {i}: {interp.id}")
             truncated_title = truncate_text(interp.title, truncation_length // 2)
             options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
         return Panel(
@@ -463,7 +501,8 @@ def _create_pending_oracle_panel(
             border_style="yellow",
             expand=True
         )
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to load interpretation set: {e}, using fallback panel")
         # Fallback if we can't load the interpretation set
         return Panel(
             "[yellow]Open Oracle Interpretation[/yellow]\n"
@@ -481,20 +520,27 @@ def _create_recent_oracle_panel(
     truncation_length: int
 ) -> Optional[Panel]:
     """Create a panel showing the most recent oracle interpretation."""
+    logger.debug(f"Creating recent oracle panel for game {game.id}, scene {active_scene.id}")
     try:
+        logger.debug("Attempting to get most recent interpretation")
         recent_interp = oracle_manager.get_most_recent_interpretation(
             game.id, active_scene.id
         )
         if recent_interp:
             interp_set, selected_interp = recent_interp
+            logger.debug(f"Found recent interpretation: set {interp_set.id}, interpretation {selected_interp.id}")
+            
             # Calculate shorter truncation length for description
             desc_trunc_len = truncation_length - 15
+            logger.debug(f"Using description truncation length of {desc_trunc_len}")
 
             # Prepare truncated text components
             truncated_context = truncate_text(interp_set.context, truncation_length)
             truncated_description = truncate_text(
                 selected_interp.description, desc_trunc_len
             )
+            logger.debug("Created truncated text components for panel")
+            
             # Build the panel content with the prepared components
             return Panel(
                 f"[green]Last Oracle Interpretation:[/green]\n"
@@ -505,6 +551,8 @@ def _create_recent_oracle_panel(
                 border_style="green",
                 expand=True
             )
+        else:
+            logger.debug("No recent interpretation found")
     except Exception as e:
         logger.debug(f"Error getting recent interpretation: {e}")
     return None
