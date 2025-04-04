@@ -415,11 +415,13 @@ def display_game_status(
             )
             if recent_interp:
                 interp_set, selected_interp = recent_interp
+                # Calculate a shorter truncation length for the description to avoid line length issues
+                desc_trunc_len = truncation_length - 15
                 oracle_panel = Panel(
                     f"[green]Last Oracle Interpretation:[/green]\n"
                     f"Context: {truncate_text(interp_set.context, truncation_length)}\n"
                     f"Selected: [bold]{selected_interp.title}[/bold]\n"
-                    f"[dim]{truncate_text(selected_interp.description, truncation_length - 5)}[/dim]",
+                    f"[dim]{truncate_text(selected_interp.description, desc_trunc_len)}[/dim]",
                     title="Previous Oracle Decision",
                     border_style="green",
                     expand=True
