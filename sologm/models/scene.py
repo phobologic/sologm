@@ -1,6 +1,7 @@
 """Scene model for SoloGM."""
 
 import enum
+from typing import Optional, ClassVar
 
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import validates
@@ -17,26 +18,26 @@ class SceneStatus(enum.Enum):
 class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
-    __tablename__ = "scenes"
-    id = Column(String, primary_key=True)
-    game_id = Column(String, ForeignKey("games.id"), nullable=False)
-    title = Column(String, nullable=False)
-    description = Column(Text)
-    status = Column(Enum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE)
-    sequence = Column(Integer, nullable=False)
-    is_active = Column(Boolean, default=False)
+    __tablename__: ClassVar[str] = "scenes"
+    id: Column = Column(String, primary_key=True)
+    game_id: Column = Column(String, ForeignKey("games.id"), nullable=False)
+    title: Column = Column(String, nullable=False)
+    description: Column = Column(Text)
+    status: Column = Column(Enum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE)
+    sequence: Column = Column(Integer, nullable=False)
+    is_active: Column = Column(Boolean, default=False)
 
     # Relationships will be defined in __init__.py
 
     @validates('title')
-    def validate_title(self, _, title):
+    def validate_title(self, _: str, title: str) -> str:
         """Validate the scene title."""
         if not title or not title.strip():
             raise ValueError("Scene title cannot be empty")
         return title
 
     @classmethod
-    def create(cls, game_id, title, description, sequence):
+    def create(cls, game_id: str, title: str, description: str, sequence: int) -> "Scene":
         """Create a new scene with a unique ID based on the title.
 
         Args:
