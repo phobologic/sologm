@@ -258,7 +258,7 @@ def test_truncate_text():
 
     # Long text should be truncated with ellipsis
     long_text = "This is a very long text that should be truncated"
-    assert truncate_text(long_text, 20) == "This is a very lon..."
+    assert truncate_text(long_text, 20) == "This is a very lo..."
 
     # Edge case: max_length <= 3
     assert truncate_text("Any text", 3) == "..."
