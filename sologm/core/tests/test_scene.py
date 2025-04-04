@@ -160,6 +160,7 @@ class TestSceneManager:
     def test_list_scenes(self, scene_manager: SceneManager, test_game: dict) -> None:
         """Test listing scenes in a game."""
         # Create some test scenes
+        # Create another scene that won't be used
         scene_manager.create_scene(
             game_id=test_game["id"],
             title="First Scene",
