@@ -249,7 +249,6 @@ DESCRIPTION: Test Description 2
         mock_anthropic_client: MagicMock,
         _test_game: dict,
         _test_scene: dict,
-        test_events: dict,
     ) -> None:
         """Test getting interpretations."""
         # Configure mock to return string response
