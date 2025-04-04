@@ -25,11 +25,44 @@ def interpret_oracle(
     count: int = typer.Option(
         3, "--count", "-n", help="Number of interpretations to generate"
     ),
+    show_prompt: bool = typer.Option(
+        False, "--show-prompt", help="Show the prompt that would be sent to the AI without sending it"
+    ),
 ) -> None:
     """Get interpretations for oracle results."""
     try:
         manager = OracleManager()
         game_id, scene_id = manager.validate_active_context()
+
+        # Get game and scene details for prompt building
+        game_data = manager._read_game_data(game_id)
+        scene_data = manager._read_scene_data(game_id, scene_id)
+        events_data = manager._read_events_data(game_id, scene_id)
+
+        # Get recent events
+        recent_events = [
+            event["description"]
+            for event in sorted(
+                events_data.get("events", []),
+                key=lambda x: x["created_at"],
+                reverse=True,
+            )[:5]
+        ]
+
+        # Build prompt
+        prompt = manager._build_prompt(
+            game_data["description"],
+            scene_data["description"],
+            recent_events,
+            context,
+            results,
+            count,
+        )
+
+        if show_prompt:
+            console.print("\n[bold blue]Prompt that would be sent to AI:[/bold blue]")
+            console.print(prompt)
+            return
 
         console.print("\nGenerating interpretations...", style="bold blue")
         interp_set = manager.get_interpretations(
