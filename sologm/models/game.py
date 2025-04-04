@@ -1,6 +1,7 @@
 """Game model for SoloGM."""
 
 import uuid
+
 from sqlalchemy import Boolean, Column, String, Text
 from sqlalchemy.orm import validates
 
@@ -26,7 +27,7 @@ class Game(Base, TimestampMixin):
         if not name or not name.strip():
             raise ValueError("Game name cannot be empty")
         return name
-    
+
     @validates('slug')
     def validate_slug(self, _: str, slug: str) -> str:
         """Validate the game slug."""
@@ -46,10 +47,10 @@ class Game(Base, TimestampMixin):
         """
         # Generate a URL-friendly slug from the name
         base_slug = slugify(name)
-        
+
         # Create a unique ID
         unique_id = str(uuid.uuid4())
-        
+
         return cls(
             id=unique_id,
             slug=base_slug,
