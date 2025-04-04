@@ -11,6 +11,7 @@ from sologm.cli.display import (
     display_dice_roll,
     display_events_table,
     display_game_info,
+    display_game_status,
     display_games_table,
     display_interpretation,
     display_interpretation_set,
