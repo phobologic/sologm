@@ -7,6 +7,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, List, Optional, TypeVar
 
+from sologm.core.event import EventManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.storage.file_manager import FileManager
 from sologm.utils.errors import OracleError
