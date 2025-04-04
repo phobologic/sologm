@@ -16,6 +16,7 @@ class Event(Base, TimestampMixin):
     source = Column(String, nullable=False)  # manual, oracle, dice
 
     # Optional link to interpretation if this event was created from one
-    interpretation_id = Column(String, ForeignKey("interpretations.id"), nullable=True)
+    interpretation_id = Column(String, ForeignKey("interpretations.id"),
+                               nullable=True)
 
     # Relationships will be defined in __init__.py
