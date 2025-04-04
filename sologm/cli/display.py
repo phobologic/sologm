@@ -3,7 +3,6 @@
 from typing import List, Optional
 
 from rich.console import Console
-from rich.measure import Measurement
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -17,11 +16,10 @@ from sologm.core.scene import Scene, SceneManager
 
 def truncate_text(text: str, max_length: int = 60) -> str:
     """Truncate text to max_length and add ellipsis if needed.
-    
+
     Args:
         text: The text to truncate
         max_length: Maximum length before truncation
-        
     Returns:
         Truncated text with ellipsis if needed
     """
@@ -289,7 +287,7 @@ def display_game_status(
         # Each event takes at least 3 lines (timestamp+source, description, blank)
         # For longer descriptions, estimate additional lines
         max_events_to_show = min(3, len(recent_events))  # Show at most 3 events
-        
+
         events_shown = recent_events[:max_events_to_show]
         for event in events_shown:
             # Truncate long descriptions to keep events compact
@@ -306,7 +304,7 @@ def display_game_status(
     # Base height on number of lines in the content plus panel borders
     content_lines = len(events_content.splitlines()) if events_content else 1
     scene_panel_height = len(scenes_content.splitlines()) + 2  # +2 for panel borders
-    
+
     # Ensure events panel is at least as tall as the scene panel
     # but not more than 2x its height
     events_panel_height = max(
