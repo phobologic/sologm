@@ -2,8 +2,8 @@
 
 import logging
 
-from rich.console import Console
 import typer
+from rich.console import Console
 
 from sologm.cli.display import display_events_table
 from sologm.core.event import EventManager
