@@ -492,7 +492,8 @@ def _create_pending_oracle_panel(
     oracle_mgr = oracle_manager or OracleManager()
     try:
         logger.debug(
-            f"Attempting to load interpretation set {current_interpretation_reference['id']}"
+            f"Attempting to load interpretation set "
+            f"{current_interpretation_reference['id']}"
         )
         interp_set = oracle_mgr.get_interpretation_set(
             game.id,
