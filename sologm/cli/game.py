@@ -2,10 +2,14 @@
 
 import logging
 
-import typer
 from rich.console import Console
+import typer
 
-from sologm.cli.display import display_game_info, display_game_status, display_games_table
+from sologm.cli.display import (
+    display_game_info,
+    display_game_status,
+    display_games_table,
+)
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
