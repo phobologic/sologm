@@ -241,11 +241,13 @@ def display_game_status(
     else:
         scenes_content = "[dim]No active scene[/dim]"
 
+    # Set a fixed height for scenes panel
+    SCENE_PANEL_HEIGHT = 10
     scenes_panel = Panel(
         scenes_content,
         title="Current Scene",
         border_style="cyan",
-        height=10
+        height=SCENE_PANEL_HEIGHT
     )
 
     # Right column: Recent Events (up to 5)
@@ -261,11 +263,22 @@ def display_game_status(
     else:
         events_content = "[dim]No recent events[/dim]"
 
+    # Calculate events panel height based on content
+    # Each event takes roughly 4 lines (timestamp, source, description, blank)
+    event_lines = len(recent_events) * 4
+    events_panel_height = max(
+        SCENE_PANEL_HEIGHT,  # At least as tall as scene panel
+        min(
+            event_lines + 2,  # Add 2 for panel borders
+            SCENE_PANEL_HEIGHT * 2  # But no more than 2x scene panel height
+        )
+    )
+
     events_panel = Panel(
         events_content.rstrip(),
         title=f"Recent Events ({len(recent_events)} shown)",
         border_style="green",
-        height=15
+        height=events_panel_height
     )
 
     # Add scene and events panels to grid
