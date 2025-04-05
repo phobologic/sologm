@@ -195,9 +195,7 @@ def test_display_game_status_no_scene(mock_console, sample_game):
     assert mock_console.print.called
 
 
-def test_display_game_status_no_events(
-    mock_console, sample_game, sample_scene
-):
+def test_display_game_status_no_events(mock_console, sample_game, sample_scene):
     """Test displaying game status without any events."""
     display_game_status(
         mock_console, sample_game, sample_scene, [], None, oracle_manager=None
@@ -210,8 +208,12 @@ def test_display_game_status_no_interpretation(
 ):
     """Test displaying game status without a pending interpretation."""
     display_game_status(
-        mock_console, sample_game, sample_scene, sample_events,
-        None, oracle_manager=None
+        mock_console,
+        sample_game,
+        sample_scene,
+        sample_events,
+        None,
+        oracle_manager=None,
     )
     assert mock_console.print.called
 
@@ -296,7 +298,7 @@ def test_create_oracle_panel(sample_game, sample_scene):
     current_interpretation = {
         "scene_id": "test-scene",
         "id": "test-id",
-        "resolved": False
+        "resolved": False,
     }
 
     # This will use the fallback path since we don't have a real oracle manager
@@ -326,9 +328,7 @@ def test_display_interpretation_set(mock_console, sample_interpretation_set):
     assert mock_console.print.called
 
 
-def test_display_interpretation_set_no_context(
-    mock_console, sample_interpretation_set
-):
+def test_display_interpretation_set_no_context(mock_console, sample_interpretation_set):
     """Test displaying an interpretation set without context."""
     display_interpretation_set(
         mock_console, sample_interpretation_set, show_context=False
