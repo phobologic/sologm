@@ -120,9 +120,13 @@ def game_info(
             )
 
             display_game_status(
-                console, game, active_scene, recent_events,
-                current_interp_ref, scene_manager=scene_manager,
-                oracle_manager=oracle_manager
+                console,
+                game,
+                active_scene,
+                recent_events,
+                current_interp_ref,
+                scene_manager=scene_manager,
+                oracle_manager=oracle_manager,
             )
         else:
             display_game_info(console, game, active_scene)
