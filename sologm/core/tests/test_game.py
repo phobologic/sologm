@@ -68,14 +68,14 @@ class TestGameManager:
         """Test getting a nonexistent game."""
         game = game_manager.get_game("nonexistent-game")
         assert game is None
-        
+
     def test_create_game_with_duplicate_name_fails(self, game_manager) -> None:
         """Test creating a game with a duplicate name raises an error."""
         game_manager.create_game(name="Duplicate Name", description="First game")
-        
+
         with pytest.raises(GameError) as exc:
             game_manager.create_game(name="Duplicate Name", description="Second game")
-        
+
         assert "already exists" in str(exc.value).lower()
 
     def test_get_active_game_none(self, game_manager, db_session) -> None:
