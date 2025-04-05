@@ -32,16 +32,20 @@ class DiceRoll(Base, TimestampMixin):
     """SQLAlchemy model representing a dice roll result."""
 
     __tablename__ = "dice_rolls"
-    
+
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     notation: Mapped[str] = mapped_column(nullable=False)
-    individual_results: Mapped[List[int]] = mapped_column(JSONType, nullable=False)  # Store as JSON array
+    # Store as JSON array
+    individual_results: Mapped[List[int]] = mapped_column(JSONType, nullable=False)
     modifier: Mapped[int] = mapped_column(Integer, nullable=False)
     total: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Optional link to game and scene
-    scene_id: Mapped[Optional[str]] = mapped_column(ForeignKey("scenes.id"), nullable=True)
+    scene_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("scenes.id"), 
+        nullable=True
+    )
 
     # Relationships will be defined in relationships.py
 

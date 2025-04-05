@@ -1,7 +1,6 @@
 """Oracle interpretation models for SoloGM."""
 
 import uuid
-from typing import Optional
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -13,7 +12,7 @@ class InterpretationSet(Base, TimestampMixin):
     """SQLAlchemy model representing a set of oracle interpretations."""
 
     __tablename__ = "interpretation_sets"
-    
+
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
     context: Mapped[str] = mapped_column(Text, nullable=False)
@@ -59,9 +58,12 @@ class Interpretation(Base, TimestampMixin):
     """SQLAlchemy model representing a single oracle interpretation."""
 
     __tablename__ = "interpretations"
-    
+
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
-    set_id: Mapped[str] = mapped_column(ForeignKey("interpretation_sets.id"), nullable=False)
+    set_id: Mapped[str] = mapped_column(
+        ForeignKey("interpretation_sets.id"), 
+        nullable=False
+    )
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_selected: Mapped[bool] = mapped_column(Boolean, default=False)

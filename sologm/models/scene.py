@@ -2,7 +2,7 @@
 
 import enum
 import uuid
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, validates
@@ -30,8 +30,11 @@ class Scene(Base, TimestampMixin):
     game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(Text)
-    status: Mapped[SceneStatus] = mapped_column(Enum(SceneStatus), nullable=False, 
-                                               default=SceneStatus.ACTIVE)
+    status: Mapped[SceneStatus] = mapped_column(
+        Enum(SceneStatus), 
+        nullable=False,
+        default=SceneStatus.ACTIVE
+    )
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=False)
 

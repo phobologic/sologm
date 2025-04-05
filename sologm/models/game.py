@@ -14,7 +14,7 @@ class Game(Base, TimestampMixin):
     """SQLAlchemy model representing a game in the system."""
 
     __tablename__ = "games"
-    
+
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     slug: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(nullable=False)

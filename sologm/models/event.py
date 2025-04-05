@@ -13,7 +13,7 @@ class Event(Base, TimestampMixin):
     """SQLAlchemy model representing a game event."""
 
     __tablename__ = "events"
-    
+
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
     game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
