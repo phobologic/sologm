@@ -50,7 +50,7 @@ class EventManager(BaseManager[Event, Event]):
             source: str,
             interpretation_id: Optional[str],
         ) -> Event:
-            # Verify scene exists
+            # Verify scene exists and belongs to the game
             from sologm.models.scene import Scene
 
             scene = session.query(Scene).filter(Scene.id == scene_id).first()
@@ -131,7 +131,7 @@ class EventManager(BaseManager[Event, Event]):
         def _list_events(
             session: Session, game_id: str, scene_id: str, limit: Optional[int]
         ) -> List[Event]:
-            # Verify scene exists
+            # Verify scene exists and belongs to the game
             from sologm.models.scene import Scene
 
             scene = session.query(Scene).filter(Scene.id == scene_id).first()

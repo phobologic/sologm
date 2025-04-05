@@ -173,8 +173,8 @@ def display_games_table(
     table.add_column("Current", style="yellow", justify="center")
 
     for game in games:
-        # Ensure scenes relationship is loaded
-        scene_count = len(game.scenes) if hasattr(game, "scenes") else 0
+        # Access scenes relationship directly
+        scene_count = len(game.scenes)
 
         table.add_row(
             game.id,
@@ -202,7 +202,7 @@ def display_game_info(
         f"{active_scene.id if active_scene else 'None'}"
     )
 
-    # Access scenes relationship
+    # Access scenes relationship directly
     scene_count = len(game.scenes)
     logger.debug(f"Game details: name='{game.name}', scenes={scene_count}")
 
@@ -228,7 +228,7 @@ def display_interpretation_set(
         interp_set: InterpretationSet to display
         show_context: Whether to show context information
     """
-    # Access interpretations relationship
+    # Access interpretations relationship directly
     interpretation_count = len(interp_set.interpretations)
 
     logger.debug(
