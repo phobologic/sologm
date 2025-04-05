@@ -1,8 +1,9 @@
 """Event management functionality."""
 
 import logging
-from sqlalchemy.orm import Session
 from typing import List, Optional, Tuple
+
+from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.core.game import GameManager
@@ -17,8 +18,12 @@ class EventManager(BaseManager[Event, Event]):
     """Manages event operations."""
 
     def add_event(
-        self, game_id: str, scene_id: str, description: str, source: str = "manual",
-        interpretation_id: Optional[str] = None
+        self,
+        game_id: str,
+        scene_id: str,
+        description: str,
+        source: str = "manual",
+        interpretation_id: Optional[str] = None,
     ) -> Event:
         """Add a new event to the specified scene.
 
@@ -36,12 +41,18 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the game or scene is not found.
         """
+
         def _add_event(
-            session: Session, game_id: str, scene_id: str, description: str,
-            source: str, interpretation_id: Optional[str]
+            session: Session,
+            game_id: str,
+            scene_id: str,
+            description: str,
+            source: str,
+            interpretation_id: Optional[str],
         ) -> Event:
             # Verify scene exists
             from sologm.models.scene import Scene
+
             scene = session.query(Scene).filter(Scene.id == scene_id).first()
             if not scene:
                 raise EventError(f"Scene {scene_id} not found in game {game_id}")
@@ -56,13 +67,14 @@ class EventManager(BaseManager[Event, Event]):
                 scene_id=scene_id,
                 description=description,
                 source=source,
-                interpretation_id=interpretation_id
+                interpretation_id=interpretation_id,
             )
 
             session.add(event)
             session.flush()  # Generate ID before returning
 
             return event
+
         try:
             return self._execute_db_operation(
                 "add event",
@@ -71,7 +83,7 @@ class EventManager(BaseManager[Event, Event]):
                 scene_id,
                 description,
                 source,
-                interpretation_id
+                interpretation_id,
             )
         except Exception as e:
             self.logger.error(f"Failed to add event: {str(e)}")
@@ -115,11 +127,13 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the game or scene is not found.
         """
+
         def _list_events(
             session: Session, game_id: str, scene_id: str, limit: Optional[int]
         ) -> List[Event]:
             # Verify scene exists
             from sologm.models.scene import Scene
+
             scene = session.query(Scene).filter(Scene.id == scene_id).first()
             if not scene:
                 raise EventError(f"Scene {scene_id} not found in game {game_id}")
@@ -129,15 +143,17 @@ class EventManager(BaseManager[Event, Event]):
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
 
             # Query events
-            query = session.query(Event).filter(
-                Event.scene_id == scene_id,
-                Event.game_id == game_id
-            ).order_by(Event.created_at.desc())
+            query = (
+                session.query(Event)
+                .filter(Event.scene_id == scene_id, Event.game_id == game_id)
+                .order_by(Event.created_at.desc())
+            )
 
             if limit is not None:
                 query = query.limit(limit)
 
             return query.all()
+
         try:
             return self._execute_db_operation(
                 "list events", _list_events, game_id, scene_id, limit
