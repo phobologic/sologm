@@ -70,6 +70,11 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
     details.append("Result: ", style="dim")
     details.append(str(roll.total), style="bold green")
+    
+    # Add timestamp if available
+    if roll.created_at:
+        details.append("\nTime: ", style="dim")
+        details.append(roll.created_at, style="dim")
 
     panel = Panel(details, title=title, border_style="bright_black", expand=False)
     console.print(panel)
