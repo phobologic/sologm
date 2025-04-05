@@ -1,8 +1,8 @@
 """Event management functionality."""
 
 import logging
-from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
+from typing import List, Optional, Tuple
 
 from sologm.core.base_manager import BaseManager
 from sologm.core.game import GameManager
@@ -27,7 +27,8 @@ class EventManager(BaseManager[Event, Event]):
             scene_id: ID of the scene.
             description: Description of the event.
             source: Source of the event (manual, oracle, dice).
-            interpretation_id: Optional ID of the interpretation that created this event.
+            interpretation_id: Optional ID of the interpretation that created
+                               this event.
 
         Returns:
             The created Event.
@@ -36,7 +37,7 @@ class EventManager(BaseManager[Event, Event]):
             EventError: If the game or scene is not found.
         """
         def _add_event(
-            session: Session, game_id: str, scene_id: str, description: str, 
+            session: Session, game_id: str, scene_id: str, description: str,
             source: str, interpretation_id: Optional[str]
         ) -> Event:
             # Verify scene exists
@@ -44,11 +45,11 @@ class EventManager(BaseManager[Event, Event]):
             scene = session.query(Scene).filter(Scene.id == scene_id).first()
             if not scene:
                 raise EventError(f"Scene {scene_id} not found in game {game_id}")
-            
+
             # Verify game exists and scene belongs to game
             if scene.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
-            
+
             # Create event
             event = Event.create(
                 game_id=game_id,
@@ -57,19 +58,18 @@ class EventManager(BaseManager[Event, Event]):
                 source=source,
                 interpretation_id=interpretation_id
             )
-            
+
             session.add(event)
             session.flush()  # Generate ID before returning
-            
+
             return event
-        
         try:
             return self._execute_db_operation(
-                "add event", 
-                _add_event, 
-                game_id, 
-                scene_id, 
-                description, 
+                "add event",
+                _add_event,
+                game_id,
+                scene_id,
+                description,
                 source,
                 interpretation_id
             )
@@ -123,22 +123,21 @@ class EventManager(BaseManager[Event, Event]):
             scene = session.query(Scene).filter(Scene.id == scene_id).first()
             if not scene:
                 raise EventError(f"Scene {scene_id} not found in game {game_id}")
-            
+
             # Verify game exists and scene belongs to game
             if scene.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
-            
+
             # Query events
             query = session.query(Event).filter(
                 Event.scene_id == scene_id,
                 Event.game_id == game_id
             ).order_by(Event.created_at.desc())
-            
+
             if limit is not None:
                 query = query.limit(limit)
-                
+
             return query.all()
-        
         try:
             return self._execute_db_operation(
                 "list events", _list_events, game_id, scene_id, limit
