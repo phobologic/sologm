@@ -53,7 +53,7 @@ class TestRollDiceCommand:
 
         # Create a fresh runner for each test to avoid file closure issues
         fresh_runner = CliRunner(mix_stderr=True)
-        
+
         # Run the command with isolated_filesystem to avoid file closure issues
         with fresh_runner.isolated_filesystem():
             result = fresh_runner.invoke(
@@ -63,12 +63,12 @@ class TestRollDiceCommand:
 
             # Verify the command executed successfully
             assert result.exit_code == 0
-            
+
             # Verify the manager was called with correct parameters
             mock_dice_manager.roll.assert_called_once_with(
                 "2d6+3", "Test roll", "scene_123"
             )
-            
+
             # Verify output contains expected information
             assert "2d6+3" in result.stdout
             assert "Total: 12" in result.stdout
@@ -80,14 +80,14 @@ class TestRollDiceCommand:
 
         # Create a fresh runner for each test
         fresh_runner = CliRunner(mix_stderr=True)
-        
+
         # Run the command with only the notation
         with fresh_runner.isolated_filesystem():
             result = fresh_runner.invoke(dice_app, ["roll", "2d6+3"])
 
             # Verify success
             assert result.exit_code == 0
-            
+
             # Verify the manager was called with correct parameters
             mock_dice_manager.roll.assert_called_once_with("2d6+3", None, None)
 
@@ -98,7 +98,7 @@ class TestRollDiceCommand:
 
         # Create a fresh runner
         fresh_runner = CliRunner(mix_stderr=True)
-        
+
         # Run the command with isolated_filesystem
         with fresh_runner.isolated_filesystem():
             # We'll keep catch_exceptions=True to properly capture the output
@@ -119,7 +119,7 @@ class TestDiceHistoryCommand:
 
         # Create a fresh runner
         fresh_runner = CliRunner(mix_stderr=True)
-        
+
         # Run the command
         with fresh_runner.isolated_filesystem():
             result = fresh_runner.invoke(
@@ -128,12 +128,12 @@ class TestDiceHistoryCommand:
 
             # Verify success
             assert result.exit_code == 0
-            
+
             # Verify the manager was called with correct parameters
             mock_dice_manager.get_recent_rolls.assert_called_once_with(
                 scene_id="scene_123", limit=5
             )
-            
+
             # Verify output contains expected information
             assert "Recent dice rolls:" in result.stdout
             assert "2d6+3" in result.stdout
@@ -146,19 +146,19 @@ class TestDiceHistoryCommand:
 
         # Create a fresh runner
         fresh_runner = CliRunner(mix_stderr=True)
-        
+
         # Run the command
         with fresh_runner.isolated_filesystem():
             result = fresh_runner.invoke(dice_app, ["history"])
 
             # Verify success
             assert result.exit_code == 0
-            
+
             # Verify the manager was called with default parameters
             mock_dice_manager.get_recent_rolls.assert_called_once_with(
                 scene_id=None, limit=5
             )
-            
+
             # Verify output contains expected message
             assert "No dice rolls found." in result.stdout
 
@@ -169,7 +169,7 @@ class TestDiceHistoryCommand:
 
         # Create a fresh runner
         fresh_runner = CliRunner(mix_stderr=True)
-        
+
         # Run the command
         with fresh_runner.isolated_filesystem():
             result = fresh_runner.invoke(dice_app, ["history"])
