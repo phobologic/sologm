@@ -64,7 +64,7 @@ class Config:
         # Create default SQLite database path in .sologm directory
         default_db_path = self.base_dir / "sologm.db"
         default_db_url = f"sqlite:///{default_db_path}"
-        
+
         default_config = {
             "anthropic_api_key": "",
             "default_interpretations": 5,

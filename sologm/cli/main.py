@@ -60,10 +60,11 @@ def main(
     # Initialize config first if custom path provided
     if config_path:
         from pathlib import Path
+
         from sologm.utils.config import Config
         logger.debug("Loading config from %s", config_path)
         Config.get_instance(Path(config_path))
-    
+
     # Initialize database
     try:
         from sologm.database import init_db
@@ -75,7 +76,7 @@ def main(
         console.print("\nPlease configure a database URL using one of these methods:")
         console.print("1. Set the SOLOGM_DATABASE_URL environment variable")
         console.print("2. Add 'database_url' to your config file")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 if __name__ == "__main__":
