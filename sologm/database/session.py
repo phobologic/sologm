@@ -1,10 +1,10 @@
 """Database session management for SoloGM."""
 
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar, Callable
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, SessionMaker, scoped_session, sessionmaker
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from sologm.models.base import Base
@@ -17,7 +17,7 @@ class DatabaseSession:
 
     _instance: Optional['DatabaseSession'] = None
     engine: Engine
-    session_factory: SessionMaker
+    session_factory: Callable[..., Session]
     Session: scoped_session
 
     @classmethod
