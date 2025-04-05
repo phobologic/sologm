@@ -14,8 +14,12 @@ from sologm.utils.errors import DiceError
 class DiceManager(BaseManager[DiceRoll, DiceRoll]):
     """Manages dice rolling operations."""
 
-    def roll(self, notation: str, reason: Optional[str] = None,
-             scene_id: Optional[str] = None) -> DiceRoll:
+    def roll(
+        self,
+        notation: str,
+        reason: Optional[str] = None,
+        scene_id: Optional[str] = None,
+    ) -> DiceRoll:
         """Roll dice according to the specified notation and save to database.
 
         Args:
@@ -34,15 +38,15 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
             count, sides, modifier = self._parse_notation(notation)
 
             self.logger.debug(
-                f"Rolling {count} dice with {sides} sides "
-                f"and modifier {modifier:+d}"
+                f"Rolling {count} dice with {sides} sides and modifier {modifier:+d}"
             )
             individual_results = [random.randint(1, sides) for _ in range(count)]
             self.logger.debug(f"Individual dice results: {individual_results}")
 
             total = sum(individual_results) + modifier
-            self.logger.debug(f"Final result: {individual_results} + "
-                              f"{modifier} = {total}")
+            self.logger.debug(
+                f"Final result: {individual_results} + {modifier} = {total}"
+            )
 
             # Define the database operation
             def create_roll_operation(session: Session) -> DiceRoll:
@@ -53,7 +57,7 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
                     modifier=modifier,
                     total=total,
                     reason=reason,
-                    scene_id=scene_id
+                    scene_id=scene_id,
                 )
 
                 # Add to session and flush to get ID
@@ -82,6 +86,7 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         Returns:
             List of DiceRoll models
         """
+
         def get_rolls_operation(session: Session) -> List[DiceRoll]:
             # Build query
             query = session.query(DiceRoll)
@@ -89,9 +94,7 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
                 query = query.filter(DiceRoll.scene_id == scene_id)
 
             # Order by creation time and limit results
-            return query.order_by(
-                DiceRoll.created_at.desc()
-            ).limit(limit).all()
+            return query.order_by(DiceRoll.created_at.desc()).limit(limit).all()
 
         try:
             return self._execute_db_operation(
@@ -137,4 +140,3 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
 
         self.logger.debug(f"Parsed {notation} as {count}d{sides}{modifier:+d}")
         return count, sides, modifier
-
