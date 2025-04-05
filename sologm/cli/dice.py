@@ -37,7 +37,10 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
-        logger.debug(f"Rolling dice with notation: {notation}, reason: {reason}, scene_id: {scene_id}")
+        logger.debug(
+            f"Rolling dice with notation: {notation}, reason: "
+            f"{reason}, scene_id: {scene_id}"
+        )
         manager = DiceManager(session=session)
         result = manager.roll(notation, reason, scene_id)
         display.display_dice_roll(console, result)
@@ -60,16 +63,16 @@ def dice_history_command(
     try:
         manager = DiceManager(session=session)
         rolls = manager.get_recent_rolls(scene_id=scene_id, limit=limit)
-        
+
         if not rolls:
             console.print("No dice rolls found.", style="yellow")
             return
-        
-        console.print(f"Recent dice rolls:", style="bold")
+
+        console.print("Recent dice rolls:", style="bold")
         for roll in rolls:
             display.display_dice_roll(console, roll)
             console.print("---")
-            
+
     except DiceError as e:
         console.print(f"Error: {str(e)}", style="bold red")
         raise typer.Exit(1) from e
