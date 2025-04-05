@@ -1,5 +1,6 @@
 """Database session management for SoloGM."""
 
+import logging
 from typing import Any, Dict, Optional, Type, TypeVar
 
 from sqlalchemy import create_engine
@@ -8,6 +9,9 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from sologm.models.base import Base
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 T = TypeVar('T', bound='DatabaseSession')
 
@@ -52,8 +56,10 @@ class DatabaseSession:
         """
         # Use provided engine or create one from URL
         if engine is not None:
+            logger.debug("Using provided engine")
             self.engine = engine
         elif db_url is not None:
+            logger.debug(f"Creating engine with URL: {db_url}")
             self.engine = create_engine(
                 db_url,
                 poolclass=QueuePool,
@@ -64,9 +70,11 @@ class DatabaseSession:
                 **engine_kwargs
             )
         else:
+            logger.error("No engine or db_url provided")
             raise ValueError("Either db_url or engine must be provided")
 
         # Create session factory and scoped session directly
+        logger.debug("Creating session factory")
         session_factory = sessionmaker(
             bind=self.engine,
             autocommit=False,
@@ -75,25 +83,31 @@ class DatabaseSession:
         )
 
         # Create scoped session
+        logger.debug("Creating scoped session")
         self.Session = scoped_session(session_factory)
 
     def create_tables(self) -> None:
         """Create all tables defined in the models."""
+        logger.debug("Creating database tables")
         Base.metadata.create_all(self.engine)
+        logger.debug("Database tables created")
 
     def get_session(self) -> Session:
         """Get a new session.
         Returns:
             A new SQLAlchemy session.
         """
+        logger.debug("Getting new session")
         return self.Session()
 
     def close_session(self) -> None:
         """Close the current session."""
+        logger.debug("Removing session")
         self.Session.remove()
 
     def dispose(self) -> None:
         """Dispose of the engine and all its connections."""
+        logger.debug("Disposing engine connections")
         self.engine.dispose()
 
 
@@ -114,6 +128,7 @@ class SessionContext:
 
     def __enter__(self) -> Session:
         """Enter context and get a session."""
+        logger.debug("Entering session context")
         self.session = self._db.get_session()
         return self.session
 
@@ -123,12 +138,15 @@ class SessionContext:
         """Exit context and close session."""
         if exc_type is not None:
             # An exception occurred, rollback
+            logger.debug(f"Exception in session context: {exc_val}. Rolling back")
             self.session.rollback()
         else:
             # No exception, commit
+            logger.debug("Committing session")
             self.session.commit()
 
         # Always close the session
+        logger.debug("Closing session")
         self.session.close()
         self._db.close_session()
 
@@ -149,11 +167,14 @@ def initialize_database(
     Raises:
         ValueError: If neither db_url nor engine is provided
     """
+    logger.info("Initializing database")
     if db_url is None and engine is None:
+        logger.error("No db_url or engine provided to initialize_database")
         raise ValueError("Either db_url or engine must be provided")
 
     db = DatabaseSession.get_instance(db_url=db_url, engine=engine)
     db.create_tables()
+    logger.info("Database initialized successfully")
     return db
 
 
