@@ -51,17 +51,27 @@ def test_dice_history_command(cli_runner, mock_dice_manager, sample_dice_rolls):
     [
         (["roll", "1d20"], "1d20", "1d20", None),
         (["roll", "2d6+3", "--reason", "Test"], "Test", "2d6+3", "Test"),
-        (["roll", "3d8-1", "--reason", "Skill check"], "Skill check", "3d8-1", "Skill check"),
+        (
+            ["roll", "3d8-1", "--reason", "Skill check"],
+            "Skill check",
+            "3d8-1",
+            "Skill check",
+        ),
     ],
 )
 def test_dice_roll_variations(
-    cli_runner, mock_dice_manager, args, expected_output, expected_notation, expected_reason
+    cli_runner,
+    mock_dice_manager,
+    args,
+    expected_output,
+    expected_notation,
+    expected_reason,
 ):
     """Test various dice roll command variations."""
     result = cli_runner.invoke(dice_app, args)
-    
+
     assert result.exit_code == 0
     assert expected_output in result.stdout
-    
+
     mock_instance = mock_dice_manager.return_value
     mock_instance.roll.assert_called_once_with(expected_notation, expected_reason, None)

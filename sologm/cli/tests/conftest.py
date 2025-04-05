@@ -21,7 +21,7 @@ def mock_dice_manager():
     with patch("sologm.cli.dice.DiceManager") as mock:
         # Configure the mock to return a predictable dice roll
         mock_instance = mock.return_value
-        
+
         # Create a mock DiceRoll model
         mock_roll = DiceRoll(
             id="test-id",
@@ -34,7 +34,7 @@ def mock_dice_manager():
         # Add created_at attribute
         mock_roll.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
         mock_instance.roll.return_value = mock_roll
-        
+
         yield mock
 
 
@@ -75,7 +75,7 @@ def sample_dice_rolls():
         reason="Damage roll",
     )
     mock_roll2.created_at = datetime.fromisoformat("2023-01-01T12:01:00")
-    
+
     return [mock_roll1, mock_roll2]
 
 
