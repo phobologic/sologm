@@ -1,26 +1,31 @@
 """Database session management for SoloGM."""
 
-from typing import Optional
+from typing import Any, Optional, Type, TypeVar, Union, Dict
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, scoped_session, sessionmaker
+from sqlalchemy.orm import Session, scoped_session, sessionmaker, SessionMaker
 from sqlalchemy.pool import QueuePool
 
 from sologm.models.base import Base
+
+T = TypeVar('T', bound='DatabaseSession')
 
 
 class DatabaseSession:
     """Manages database connections and sessions."""
 
     _instance: Optional['DatabaseSession'] = None
+    engine: Engine
+    session_factory: SessionMaker
+    Session: scoped_session
 
     @classmethod
     def get_instance(
-        cls,
+        cls: Type[T],
         db_url: Optional[str] = None,
         engine: Optional[Engine] = None
-    ) -> 'DatabaseSession':
+    ) -> T:
         """Get or create the singleton instance of DatabaseSession.
 
         Args:
@@ -36,7 +41,8 @@ class DatabaseSession:
     def __init__(
         self,
         db_url: str = "sqlite:///sologm.db",
-        engine: Optional[Engine] = None
+        engine: Optional[Engine] = None,
+        **engine_kwargs: Dict[str, Any]
     ) -> None:
         """Initialize the database session.
         
@@ -51,7 +57,8 @@ class DatabaseSession:
             pool_size=5,
             max_overflow=10,
             pool_timeout=30,
-            pool_recycle=1800  # Recycle connections after 30 minutes
+            pool_recycle=1800,  # Recycle connections after 30 minutes
+            **engine_kwargs
         )
 
         # Create session factory with reasonable defaults
@@ -89,9 +96,10 @@ class DatabaseSession:
 class SessionContext:
     """Context manager for database sessions."""
 
-    session: Optional['Session'] = None
+    session: Optional[Session] = None
+    db_session: DatabaseSession
 
-    def __init__(self, db_session: Optional[DatabaseSession] = None):
+    def __init__(self, db_session: Optional[DatabaseSession] = None) -> None:
         """Initialize with optional database session.
 
         Args:
@@ -106,7 +114,9 @@ class SessionContext:
         self.session = session
         return session
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Optional[Type[BaseException]], 
+                exc_val: Optional[BaseException], 
+                exc_tb: Optional[Any]) -> None:
         """Exit context and close session."""
         if exc_type is not None:
             # An exception occurred, rollback
