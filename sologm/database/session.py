@@ -1,10 +1,10 @@
 """Database session management for SoloGM."""
 
-from typing import Any, Optional, Type, TypeVar, Union, Dict
+from typing import Any, Dict, Optional, Type, TypeVar
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, scoped_session, sessionmaker, SessionMaker
+from sqlalchemy.orm import Session, SessionMaker, scoped_session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from sologm.models.base import Base
@@ -114,8 +114,8 @@ class SessionContext:
         self.session = session
         return session
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]], 
-                exc_val: Optional[BaseException], 
+    def __exit__(self, exc_type: Optional[Type[BaseException]],
+                exc_val: Optional[BaseException],
                 exc_tb: Optional[Any]) -> None:
         """Exit context and close session."""
         if exc_type is not None:
