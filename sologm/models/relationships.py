@@ -23,6 +23,7 @@ Scene.dice_rolls = relationship("DiceRoll", back_populates="scene")
 
 # Event relationships
 Event.scene = relationship("Scene", back_populates="events")
+Event.interpretation = relationship("Interpretation", back_populates="events")
 
 # InterpretationSet relationships
 InterpretationSet.scene = relationship("Scene", back_populates="interpretation_sets")
@@ -34,6 +35,7 @@ InterpretationSet.interpretations = relationship(
 Interpretation.interpretation_set = relationship(
     "InterpretationSet", back_populates="interpretations"
 )
+Interpretation.events = relationship("Event", back_populates="interpretation")
 Interpretation.events = relationship("Event", back_populates="interpretation")
 
 # DiceRoll relationships

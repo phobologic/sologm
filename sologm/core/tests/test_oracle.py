@@ -1,27 +1,17 @@
 """Tests for oracle interpretation system."""
 
-from pathlib import Path
-from typing import Generator
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy.orm import Session
 
-from sologm.core.oracle import Interpretation, InterpretationSet, OracleManager
+from sologm.core.oracle import OracleManager
 from sologm.integrations.anthropic import AnthropicClient
-from sologm.storage.file_manager import FileManager
+from sologm.models.event import Event
+from sologm.models.game import Game
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene, SceneStatus
 from sologm.utils.errors import OracleError
-
-
-@pytest.fixture
-def temp_dir(tmp_path: Path) -> Path:
-    """Create a temporary directory."""
-    return tmp_path
-
-
-@pytest.fixture
-def file_manager(temp_dir: Path) -> FileManager:
-    """Create a file manager instance."""
-    return FileManager(base_dir=temp_dir)
 
 
 @pytest.fixture
@@ -32,173 +22,112 @@ def mock_anthropic_client() -> MagicMock:
 
 @pytest.fixture
 def oracle_manager(
-    file_manager: FileManager, mock_anthropic_client: MagicMock
+    mock_anthropic_client: MagicMock, session: Session
 ) -> OracleManager:
     """Create an oracle manager instance."""
     return OracleManager(
-        file_manager=file_manager, anthropic_client=mock_anthropic_client
+        anthropic_client=mock_anthropic_client, session=session
     )
 
 
 @pytest.fixture
-def test_game(file_manager: FileManager) -> Generator[dict, None, None]:
+def test_game(session: Session) -> Game:
     """Create a test game."""
-    game_data = {
-        "id": "test-game",
-        "name": "Test Game",
-        "description": "A test game",
-        "created_at": "2025-04-02T12:00:00Z",
-        "modified_at": "2025-04-02T12:00:00Z",
-        "scenes": ["test-scene"],
-    }
-
-    file_manager.write_yaml(file_manager.get_game_path("test-game"), game_data)
-    file_manager.set_active_game_id("test-game")
-
-    yield game_data
-
-
-@pytest.fixture
-def _test_game(file_manager: FileManager) -> Generator[dict, None, None]:
-    """Create a test game."""
-    game_data = {
-        "id": "test-game",
-        "name": "Test Game",
-        "description": "A test game",
-        "created_at": "2025-04-02T12:00:00Z",
-        "modified_at": "2025-04-02T12:00:00Z",
-        "scenes": ["test-scene"],
-    }
-
-    file_manager.write_yaml(file_manager.get_game_path("test-game"), game_data)
-    file_manager.set_active_game_id("test-game")
-
-    yield game_data
-
-
-@pytest.fixture
-def test_scene(
-    file_manager: FileManager, _test_game: dict
-) -> Generator[dict, None, None]:
-    """Create a test scene."""
-    scene_data = {
-        "id": "test-scene",
-        "game_id": "test-game",
-        "title": "Test Scene",
-        "description": "A test scene",
-        "status": "active",
-        "created_at": "2025-04-02T12:00:00Z",
-        "modified_at": "2025-04-02T12:00:00Z",
-    }
-
-    file_manager.write_yaml(
-        file_manager.get_scene_path("test-game", "test-scene"), scene_data
+    game = Game.create(
+        name="Test Game",
+        description="A test game",
     )
-    file_manager.set_active_scene_id("test-game", "test-scene")
-
-    yield scene_data
+    game.is_active = True
+    session.add(game)
+    session.commit()
+    return game
 
 
 @pytest.fixture
-def _test_scene(
-    file_manager: FileManager, _test_game: dict
-) -> Generator[dict, None, None]:
+def test_scene(session: Session, test_game: Game) -> Scene:
     """Create a test scene."""
-    scene_data = {
-        "id": "test-scene",
-        "game_id": "test-game",
-        "title": "Test Scene",
-        "description": "A test scene",
-        "status": "active",
-        "created_at": "2025-04-02T12:00:00Z",
-        "modified_at": "2025-04-02T12:00:00Z",
-    }
-
-    file_manager.write_yaml(
-        file_manager.get_scene_path("test-game", "test-scene"), scene_data
+    scene = Scene.create(
+        game_id=test_game.id,
+        title="Test Scene",
+        description="A test scene",
+        sequence=1,
     )
-    file_manager.set_active_scene_id("test-game", "test-scene")
-
-    yield scene_data
+    scene.status = SceneStatus.ACTIVE
+    scene.is_current = True
+    session.add(scene)
+    session.commit()
+    return scene
 
 
 @pytest.fixture
-def test_events(
-    file_manager: FileManager, _test_game: dict, _test_scene: dict
-) -> Generator[dict, None, None]:
+def test_events(session: Session, test_game: Game, test_scene: Scene) -> list[Event]:
     """Create test events."""
-    events_data = {
-        "events": [
-            {
-                "id": "event-1",
-                "description": "Test event 1",
-                "source": "manual",
-                "created_at": "2025-04-02T12:00:00Z",
-            },
-            {
-                "id": "event-2",
-                "description": "Test event 2",
-                "source": "manual",
-                "created_at": "2025-04-02T12:01:00Z",
-            },
-        ]
-    }
-
-    file_manager.write_yaml(
-        file_manager.get_events_path("test-game", "test-scene"), events_data
-    )
-
-    yield events_data
+    events = [
+        Event.create(
+            game_id=test_game.id,
+            scene_id=test_scene.id,
+            description=f"Test event {i}",
+            source="manual",
+        )
+        for i in range(1, 3)
+    ]
+    session.add_all(events)
+    session.commit()
+    return events
 
 
 class TestOracle:
     """Tests for oracle interpretation system."""
 
     def test_validate_active_context(
-        self, oracle_manager: OracleManager, _test_game: dict, _test_scene: dict
+        self, oracle_manager: OracleManager, test_game: Game, test_scene: Scene, session: Session
     ) -> None:
         """Test validating active game and scene."""
-        game_id, scene_id = oracle_manager.validate_active_context()
-        assert game_id == "test-game"
-        assert scene_id == "test-scene"
+        from sologm.core.game import GameManager
+        from sologm.core.scene import SceneManager
+        
+        game_manager = GameManager(session=session)
+        scene_manager = SceneManager(session=session)
+        
+        game_id, scene_id = oracle_manager.validate_active_context(game_manager, scene_manager)
+        assert game_id == test_game.id
+        assert scene_id == test_scene.id
 
     def test_validate_active_context_no_game(
-        self, oracle_manager: OracleManager
+        self, oracle_manager: OracleManager, session: Session
     ) -> None:
         """Test validation with no active game."""
+        from sologm.core.game import GameManager
+        from sologm.core.scene import SceneManager
+        
+        game_manager = GameManager(session=session)
+        scene_manager = SceneManager(session=session)
+        
+        # Make sure no game is active
+        session.query(Game).update({Game.is_active: False})
+        session.commit()
+        
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context()
+            oracle_manager.validate_active_context(game_manager, scene_manager)
         assert "No active game found" in str(exc.value)
 
     def test_validate_active_context_no_scene(
-        self, oracle_manager: OracleManager, _test_game: dict
+        self, oracle_manager: OracleManager, test_game: Game, session: Session
     ) -> None:
         """Test validation with no active scene."""
+        from sologm.core.game import GameManager
+        from sologm.core.scene import SceneManager
+        
+        game_manager = GameManager(session=session)
+        scene_manager = SceneManager(session=session)
+        
+        # Make sure no scene is current
+        session.query(Scene).update({Scene.is_current: False})
+        session.commit()
+        
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context()
+            oracle_manager.validate_active_context(game_manager, scene_manager)
         assert "No active scene found" in str(exc.value)
-
-    def test_get_current_interpretation_reference(
-        self, oracle_manager: OracleManager, _test_game: dict
-    ) -> None:
-        """Test getting current interpretation reference."""
-        # Set up test data
-        game_data = oracle_manager._read_game_data("test-game")
-        game_data["current_interpretation_reference"] = {
-            "id": "test-interp",
-            "scene_id": "test-scene",
-            "resolved": False,
-            "retry_count": 0,
-        }
-        oracle_manager.file_manager.write_yaml(
-            oracle_manager.file_manager.get_game_path("test-game"), game_data
-        )
-
-        current_ref = oracle_manager.get_current_interpretation_reference("test-game")
-        assert current_ref["id"] == "test-interp"
-        assert current_ref["scene_id"] == "test-scene"
-        assert current_ref["resolved"] is False
-        assert current_ref["retry_count"] == 0
 
     def test_build_prompt(self, oracle_manager: OracleManager) -> None:
         """Test building prompts for Claude."""
@@ -247,8 +176,8 @@ DESCRIPTION: Test Description 2
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
+        test_game: Game,
+        test_scene: Scene,
     ) -> None:
         """Test getting interpretations."""
         # Configure mock to return string response
@@ -263,87 +192,41 @@ DESCRIPTION: Test Description
         mock_anthropic_client.send_message.return_value = response_text
 
         result = oracle_manager.get_interpretations(
-            "test-game", "test-scene", "What happens?", "Mystery", 1
+            test_game.id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         assert isinstance(result, InterpretationSet)
-        assert result.scene_id == "test-scene"
+        assert result.scene_id == test_scene.id
         assert result.context == "What happens?"
         assert result.oracle_results == "Mystery"
         assert len(result.interpretations) == 1
         assert result.interpretations[0].title == "Test Title"
         assert result.interpretations[0].description == "Test Description"
+        assert result.is_current is True
 
     def test_get_interpretations_error(
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
+        test_game: Game,
+        test_scene: Scene,
     ) -> None:
         """Test handling errors when getting interpretations."""
         mock_anthropic_client.send_message.side_effect = Exception("API Error")
 
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_interpretations(
-                "test-game", "test-scene", "What happens?", "Mystery", 1
+                test_game.id, test_scene.id, "What happens?", "Mystery", 1
             )
         assert "Failed to get interpretations" in str(exc.value)
-
-    def test_get_interpretation_set(
-        self,
-        oracle_manager: OracleManager,
-        _test_game: dict,
-        _test_scene: dict,
-    ) -> None:
-        """Test getting an interpretation set by ID."""
-        # Create test interpretation set
-        interp_data = {
-            "id": "test-interp-set",
-            "scene_id": "test-scene",
-            "context": "test context",
-            "oracle_results": "test results",
-            "created_at": "2025-04-02T12:00:00Z",
-            "selected_interpretation": None,
-            "retry_attempt": 0,
-            "interpretations": [
-                {
-                    "id": "interp-1",
-                    "title": "Test Title",
-                    "description": "Test Description",
-                    "created_at": "2025-04-02T12:00:00Z",
-                }
-            ],
-        }
-        oracle_manager.file_manager.write_yaml(
-            Path(
-                oracle_manager.file_manager.get_interpretations_dir(
-                    "test-game", "test-scene"
-                ),
-                "test-interp-set.yaml",
-            ),
-            interp_data,
-        )
-
-        result = oracle_manager.get_interpretation_set(
-            "test-game", "test-scene", "test-interp-set"
-        )
-
-        assert isinstance(result, InterpretationSet)
-        assert result.id == "test-interp-set"
-        assert result.scene_id == "test-scene"
-        assert result.context == "test context"
-        assert result.oracle_results == "test results"
-        assert len(result.interpretations) == 1
-        assert result.interpretations[0].title == "Test Title"
-        assert result.interpretations[0].description == "Test Description"
 
     def test_select_interpretation(
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
+        test_game: Game,
+        test_scene: Scene,
+        session: Session,
     ) -> None:
         """Test selecting an interpretation."""
         # Configure mock to return string response
@@ -359,41 +242,37 @@ DESCRIPTION: Test Description
 
         # First create an interpretation set
         interp_set = oracle_manager.get_interpretations(
-            "test-game", "test-scene", "What happens?", "Mystery", 1
+            test_game.id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         # Then select the interpretation
         selected = oracle_manager.select_interpretation(
-            "test-game", "test-scene", interp_set.id, interp_set.interpretations[0].id
+            interp_set.id, interp_set.interpretations[0].id, add_event=True
         )
 
         assert isinstance(selected, Interpretation)
         assert selected.id == interp_set.interpretations[0].id
         assert selected.title == interp_set.interpretations[0].title
+        assert selected.is_selected is True
 
         # Verify event was created
-        events = oracle_manager.file_manager.read_yaml(
-            oracle_manager.file_manager.get_events_path("test-game", "test-scene")
-        )
-        assert any(
-            event["source"] == "oracle" and selected.title in event["description"]
-            for event in events["events"]
-        )
-
-        # Verify interpretation reference was marked as resolved
-        game_data = oracle_manager.file_manager.read_yaml(
-            oracle_manager.file_manager.get_game_path("test-game")
-        )
-        assert "current_interpretation_reference" in game_data
-        assert game_data["current_interpretation_reference"]["resolved"] is True
+        events = session.query(Event).filter(
+            Event.game_id == test_game.id,
+            Event.scene_id == test_scene.id,
+            Event.source == "oracle",
+            Event.interpretation_id == selected.id
+        ).all()
+        
+        assert len(events) == 1
+        assert selected.title in events[0].description
 
     def test_select_interpretation_not_found(
-        self, oracle_manager: OracleManager, _test_game: dict, _test_scene: dict
+        self, oracle_manager: OracleManager, test_game: Game, test_scene: Scene
     ) -> None:
         """Test selecting a non-existent interpretation."""
         with pytest.raises(OracleError) as exc:
             oracle_manager.select_interpretation(
-                "test-game", "test-scene", "nonexistent-set", "nonexistent-interp"
+                "nonexistent-set", "nonexistent-interp"
             )
         assert "not found" in str(exc.value)
 
@@ -401,8 +280,8 @@ DESCRIPTION: Test Description
         self,
         oracle_manager: OracleManager,
         mock_anthropic_client: MagicMock,
-        _test_game: dict,
-        _test_scene: dict,
+        test_game: Game,
+        test_scene: Scene,
     ) -> None:
         """Test getting interpretations with retry attempt."""
         # Configure mock to return string response
@@ -418,30 +297,20 @@ DESCRIPTION: Test Description
 
         # First interpretation request
         result1 = oracle_manager.get_interpretations(
-            "test-game", "test-scene", "What happens?", "Mystery", 1
+            test_game.id, test_scene.id, "What happens?", "Mystery", 1
         )
-
-        # Verify current interpretation reference was set
-        game_data = oracle_manager.file_manager.read_yaml(
-            oracle_manager.file_manager.get_game_path("test-game")
-        )
-        assert "current_interpretation_reference" in game_data
-        assert game_data["current_interpretation_reference"]["id"] == result1.id
-        assert game_data["current_interpretation_reference"]["scene_id"] == "test-scene"
-        assert game_data["current_interpretation_reference"]["resolved"] is False
-        assert game_data["current_interpretation_reference"]["retry_count"] == 0
+        assert result1.retry_attempt == 0
+        assert result1.is_current is True
 
         # Retry interpretation
         result2 = oracle_manager.get_interpretations(
-            "test-game", "test-scene", "What happens?", "Mystery", 1, retry_attempt=1
+            test_game.id, test_scene.id, "What happens?", "Mystery", 1, retry_attempt=1
         )
-
-        # Verify retry count was updated
-        game_data = oracle_manager.file_manager.read_yaml(
-            oracle_manager.file_manager.get_game_path("test-game")
-        )
-        assert game_data["current_interpretation_reference"]["id"] == result2.id
-        assert game_data["current_interpretation_reference"]["retry_count"] == 1
+        assert result2.retry_attempt == 1
+        assert result2.is_current is True
+        
+        # Verify first set is no longer current
+        assert result1.is_current is False
 
         # Verify different prompt was used for retry
         retry_call = mock_anthropic_client.send_message.call_args_list[1]

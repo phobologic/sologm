@@ -90,14 +90,14 @@ def display_interpretation(
         interp: Interpretation to display
         selected: Whether this interpretation is selected
     """
-    logger.debug(f"Displaying interpretation {interp.id} (selected: {selected})")
+    logger.debug(f"Displaying interpretation {interp.id} (selected: {interp.is_selected})")
     logger.debug(
         f"Interpretation title: '{interp.title}', created: {interp.created_at}"
     )
-    # Extract the numeric part of the ID (e.g., "1" from "interp-1")
-    id_number = interp.id.split("-")[1]
+    # Extract the numeric part of the ID if it follows the pattern "interp-N"
+    id_number = interp.id.split("-")[1] if "-" in interp.id else interp.id[:8]
     title_line = f"[bold]{interp.title}[/bold]"
-    if selected:
+    if interp.is_selected or selected:
         title_line += " [green](Selected)[/green]"
 
     panel = Panel(
@@ -223,18 +223,14 @@ def display_interpretation_set(
         f"Displaying interpretation set {interp_set.id} with "
         f"{len(interp_set.interpretations)} interpretations"
     )
-    logger.debug(
-        f"Show context: {show_context}, "
-        f"selected interpretation index: {interp_set.selected_interpretation}"
-    )
+    
     if show_context:
         console.print("\n[bold]Oracle Interpretations[/bold]")
         console.print(f"Context: {interp_set.context}")
         console.print(f"Results: {interp_set.oracle_results}\n")
 
     for i, interp in enumerate(interp_set.interpretations, 1):
-        selected = interp_set.selected_interpretation == i - 1
-        display_interpretation(console, interp, selected)
+        display_interpretation(console, interp)
 
     console.print(
         f"\nInterpretation set ID: [bold]{interp_set.id}[/bold] "
@@ -269,7 +265,6 @@ def display_game_status(
     game: Game,
     active_scene: Optional[Scene],
     recent_events: List[Event],
-    current_interpretation_reference: Optional[dict] = None,
     scene_manager: Optional[SceneManager] = None,
     oracle_manager: Optional["OracleManager"] = None,
 ) -> None:
@@ -310,7 +305,6 @@ def display_game_status(
     oracle_panel = _create_oracle_panel(
         game,
         active_scene,
-        current_interpretation_reference,
         oracle_manager,
         truncation_length,
     )
@@ -471,94 +465,48 @@ def _create_oracle_panel(
 
 
 def _create_pending_oracle_panel(
-    game: Game,
-    current_interpretation_reference: dict,
-    oracle_manager: Optional["OracleManager"],
+    interp_set: InterpretationSet,
     truncation_length: int,
 ) -> Panel:
     """Create a panel for pending oracle interpretation."""
-    logger.debug(f"Creating pending oracle panel for game {game.id}")
-    # Try to load the actual interpretation set for more context
-    from sologm.core.oracle import OracleManager
-
-    oracle_mgr = oracle_manager or OracleManager()
-    try:
-        logger.debug(
-            f"Attempting to load interpretation set "
-            f"{current_interpretation_reference['id']}"
-        )
-        interp_set = oracle_mgr.get_interpretation_set(
-            game.id,
-            current_interpretation_reference["scene_id"],
-            current_interpretation_reference["id"],
-        )
-        context = interp_set.context
-        logger.debug(
-            f"Successfully loaded interpretation set with "
-            f"{len(interp_set.interpretations)} interpretations"
-        )
-
-        # Show truncated versions of the options
-        options_text = ""
-        for i, interp in enumerate(interp_set.interpretations, 1):
-            logger.debug(f"Adding interpretation option {i}: {interp.id}")
-            truncated_title = truncate_text(interp.title, truncation_length // 2)
-            options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
-        return Panel(
-            f"[yellow]Open Oracle Interpretation:[/yellow]\n"
-            f"Context: {context}\n\n"
-            f"{options_text}\n"
-            f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
-            title="Pending Oracle Decision",
-            border_style="yellow",
-            expand=True,
-        )
-    except Exception as e:
-        logger.debug(f"Failed to load interpretation set: {e}, using fallback panel")
-        # Fallback if we can't load the interpretation set
-        return Panel(
-            "[yellow]Open Oracle Interpretation[/yellow]\n"
-            "[dim]Use 'sologm oracle status' to see details[/dim]",
-            title="Pending Oracle Decision",
-            border_style="yellow",
-            expand=True,
-        )
+    logger.debug(f"Creating pending oracle panel for set {interp_set.id}")
+    
+    # Show truncated versions of the options
+    options_text = ""
+    for i, interp in enumerate(interp_set.interpretations, 1):
+        logger.debug(f"Adding interpretation option {i}: {interp.id}")
+        truncated_title = truncate_text(interp.title, truncation_length // 2)
+        options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
+    
+    return Panel(
+        f"[yellow]Open Oracle Interpretation:[/yellow]\n"
+        f"Context: {interp_set.context}\n\n"
+        f"{options_text}\n"
+        f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
+        title="Pending Oracle Decision",
+        border_style="yellow",
+        expand=True,
+    )
 
 
 def _create_recent_oracle_panel(
-    game: Game,
-    active_scene: Scene,
-    oracle_manager: "OracleManager",
-) -> Optional[Panel]:
+    interp_set: InterpretationSet,
+    selected_interp: Interpretation,
+) -> Panel:
     """Create a panel showing the most recent oracle interpretation."""
     logger.debug(
-        f"Creating recent oracle panel for game {game.id}, scene {active_scene.id}"
+        f"Creating recent oracle panel for set {interp_set.id}, "
+        f"interpretation {selected_interp.id}"
     )
-    try:
-        logger.debug("Attempting to get most recent interpretation")
-        recent_interp = oracle_manager.get_most_recent_interpretation(
-            game.id, active_scene.id
-        )
-        if recent_interp:
-            interp_set, selected_interp = recent_interp
-            logger.debug(
-                f"Found recent interpretation: set {interp_set.id}, "
-                f"interpretation {selected_interp.id}"
-            )
 
-            # Build the panel content with the prepared components
-            return Panel(
-                f"[green]Last Oracle Interpretation:[/green]\n"
-                f"[bold]Oracle Results:[/bold] {interp_set.oracle_results}\n"
-                f"[bold]Context:[/bold] {interp_set.context}\n"
-                f"[bold]Selected:[/bold] {selected_interp.title}\n"
-                f"[dim]{selected_interp.description}[/dim]",
-                title="Previous Oracle Decision",
-                border_style="green",
-                expand=True,
-            )
-        else:
-            logger.debug("No recent interpretation found")
-    except Exception as e:
-        logger.debug(f"Error getting recent interpretation: {e}")
-    return None
+    # Build the panel content with the prepared components
+    return Panel(
+        f"[green]Last Oracle Interpretation:[/green]\n"
+        f"[bold]Oracle Results:[/bold] {interp_set.oracle_results}\n"
+        f"[bold]Context:[/bold] {interp_set.context}\n"
+        f"[bold]Selected:[/bold] {selected_interp.title}\n"
+        f"[dim]{selected_interp.description}[/dim]",
+        title="Previous Oracle Decision",
+        border_style="green",
+        expand=True,
+    )
