@@ -2,14 +2,26 @@
 
 This document outlines the conventions for coding in the SoloGM project.
 
-## CLI Database Access Pattern
+## CLI and Database Access Architecture
 
-- Always use the `@with_db_session` (from `sologm.cli.db_helpers`)decorator for CLI commands that need database access
-- Never create database sessions directly in CLI functions
-- Access the session via the injected `session` parameter
-- Delegate all database operations to manager classes
-- Handle exceptions from managers and display user-friendly error messages
-- Don't commit or rollback transactions in CLI code; let the decorator handle it
+### CLI Layer Responsibilities
+- CLI commands should focus solely on user interaction (input/output)
+- CLI commands should not handle database sessions directly
+- CLI commands should delegate all business logic to manager classes
+- CLI commands should handle exceptions from managers and display user-friendly error messages
+- CLI code should never directly interact with database sessions
+
+### Manager Layer Responsibilities
+- Managers are responsible for all business logic
+- Managers handle their own database session creation and management
+- Managers should use `self._execute_db_operation()` for all database operations
+- Managers should provide clear, domain-specific error messages
+
+### Database Session Management
+- Database sessions should be created and managed by the `BaseManager` class
+- The `_execute_db_operation()` method handles session creation, commits, rollbacks, and cleanup
+- For testing, managers can accept an optional session parameter in their constructor
+- CLI code should never directly interact with database sessions
 
 ## Manager Database Access Pattern
 
@@ -44,6 +56,13 @@ This document outlines the conventions for coding in the SoloGM project.
 - Include context in error messages for easier debugging
 - Log errors at appropriate levels before raising them
 - In CLI commands, catch domain-specific exceptions and display user-friendly messages
+- Use `typer.Exit(code)` to terminate CLI commands with appropriate exit codes
+
+## Testing Strategy
+- Mock manager classes when testing CLI commands
+- Test CLI commands by verifying they call the correct manager methods with the right parameters
+- Test CLI output formatting and error handling
+- Test managers separately with database session mocks or test databases
 
 ## Transaction Management
 
@@ -62,7 +81,6 @@ This document outlines the conventions for coding in the SoloGM project.
 
 ## Session Lifecycle
 
-- Let `with_db_session` decorator handle session lifecycle in CLI commands
 - Let `_execute_db_operation` handle session lifecycle in manager methods
 - For testing, inject sessions and manage their lifecycle in test fixtures
 - Never leave sessions open after operations complete
