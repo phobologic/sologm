@@ -24,7 +24,7 @@ class DatabaseSession:
         cls: Type[T],
         db_url: Optional[str] = None,
         engine: Optional[Engine] = None
-    ) -> T:
+    ) -> 'DatabaseSession':
         """Get or create the singleton instance of DatabaseSession.
 
         Args:
@@ -151,7 +151,7 @@ def initialize_database(
     """
     if db_url is None and engine is None:
         raise ValueError("Either db_url or engine must be provided")
-        
+
     db = DatabaseSession.get_instance(db_url=db_url, engine=engine)
     db.create_tables()
     return db
