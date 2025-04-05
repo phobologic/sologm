@@ -6,14 +6,11 @@ from typing import TYPE_CHECKING
 import typer
 from rich.console import Console
 from rich.table import Table
-from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
     from typer import Typer
 
     app: Typer
-
-from sologm.cli.db_helpers import with_db_session
 from sologm.cli.display import display_scene_info
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
@@ -28,17 +25,15 @@ logger = logging.getLogger(__name__)
 
 
 @scene_app.command("create")
-@with_db_session
 def create_scene(
     title: str = typer.Option(..., "--title", "-t", help="Title of the scene"),
     description: str = typer.Option(
         ..., "--description", "-d", help="Description of the scene"
     ),
-    session: Session = None,
 ) -> None:
     """Create a new scene in the active game."""
-    game_manager = GameManager(session)
-    scene_manager = SceneManager(session)
+    game_manager = GameManager()
+    scene_manager = SceneManager()
 
     # Get active game
     active_game = game_manager.get_active_game()
@@ -60,11 +55,10 @@ def create_scene(
 
 
 @scene_app.command("list")
-@with_db_session
-def list_scenes(session: Session = None) -> None:
+def list_scenes() -> None:
     """List all scenes in the active game."""
-    game_manager = GameManager(session)
-    scene_manager = SceneManager(session)
+    game_manager = GameManager()
+    scene_manager = SceneManager()
 
     # Get active game
     active_game = game_manager.get_active_game()
@@ -104,11 +98,10 @@ def list_scenes(session: Session = None) -> None:
 
 
 @scene_app.command("info")
-@with_db_session
-def scene_info(session: Session = None) -> None:
+def scene_info() -> None:
     """Show information about the active scene."""
-    game_manager = GameManager(session)
-    scene_manager = SceneManager(session)
+    game_manager = GameManager()
+    scene_manager = SceneManager()
 
     try:
         _, active_scene = scene_manager.validate_active_context(game_manager)
@@ -118,11 +111,10 @@ def scene_info(session: Session = None) -> None:
 
 
 @scene_app.command("complete")
-@with_db_session
-def complete_scene(session: Session = None) -> None:
+def complete_scene() -> None:
     """Complete the active scene."""
-    game_manager = GameManager(session)
-    scene_manager = SceneManager(session)
+    game_manager = GameManager()
+    scene_manager = SceneManager()
 
     try:
         game_id, active_scene = scene_manager.validate_active_context(game_manager)
@@ -134,14 +126,12 @@ def complete_scene(session: Session = None) -> None:
 
 
 @scene_app.command("set-current")
-@with_db_session
 def set_current_scene(
     scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current"),
-    session: Session = None,
 ) -> None:
     """Set which scene is currently being played."""
-    game_manager = GameManager(session)
-    scene_manager = SceneManager(session)
+    game_manager = GameManager()
+    scene_manager = SceneManager()
 
     # Get active game
     active_game = game_manager.get_active_game()

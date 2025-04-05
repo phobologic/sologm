@@ -4,10 +4,8 @@ import logging
 
 import typer
 from rich.console import Console
-from sqlalchemy.orm import Session
 
 from sologm.cli import display
-from sologm.cli.db_helpers import with_db_session
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
@@ -19,7 +17,6 @@ console = Console()
 
 
 @oracle_app.command("interpret")
-@with_db_session
 def interpret_oracle(
     context: str = typer.Option(
         ..., "--context", "-c", help="Context or question for interpretation"
@@ -35,13 +32,12 @@ def interpret_oracle(
         "--show-prompt",
         help="Show the prompt that would be sent to the AI without sending it",
     ),
-    session: Session = None,
 ) -> None:
     """Get interpretations for oracle results."""
     try:
-        game_manager = GameManager(session=session)
-        scene_manager = SceneManager(session=session)
-        oracle_manager = OracleManager(session=session)
+        game_manager = GameManager()
+        scene_manager = SceneManager()
+        oracle_manager = OracleManager()
 
         game_id, scene_id = oracle_manager.validate_active_context(
             game_manager, scene_manager
@@ -54,7 +50,7 @@ def interpret_oracle(
         # Get recent events
         from sologm.core.event import EventManager
 
-        event_manager = EventManager(session=session)
+        event_manager = EventManager()
         recent_events = event_manager.list_events(game_id, scene_id, limit=5)
         recent_event_descriptions = [event.description for event in recent_events]
 
@@ -87,13 +83,12 @@ def interpret_oracle(
 
 
 @oracle_app.command("retry")
-@with_db_session
-def retry_interpretation(session: Session = None) -> None:
+def retry_interpretation() -> None:
     """Request new interpretations using current context and results."""
     try:
-        game_manager = GameManager(session=session)
-        scene_manager = SceneManager(session=session)
-        oracle_manager = OracleManager(session=session)
+        game_manager = GameManager()
+        scene_manager = SceneManager()
+        oracle_manager = OracleManager()
 
         game_id, scene_id = oracle_manager.validate_active_context(
             game_manager, scene_manager
@@ -125,13 +120,12 @@ def retry_interpretation(session: Session = None) -> None:
 
 
 @oracle_app.command("status")
-@with_db_session
-def show_interpretation_status(session: Session = None) -> None:
+def show_interpretation_status() -> None:
     """Show current interpretation set status."""
     try:
-        game_manager = GameManager(session=session)
-        scene_manager = SceneManager(session=session)
-        oracle_manager = OracleManager(session=session)
+        game_manager = GameManager()
+        scene_manager = SceneManager()
+        oracle_manager = OracleManager()
 
         game_id, scene_id = oracle_manager.validate_active_context(
             game_manager, scene_manager
@@ -165,7 +159,6 @@ def show_interpretation_status(session: Session = None) -> None:
 
 
 @oracle_app.command("select")
-@with_db_session
 def select_interpretation(
     interpretation_id: str = typer.Option(
         None, "--id", "-i", help="ID of the interpretation to select"
@@ -176,13 +169,12 @@ def select_interpretation(
         "-s",
         help="ID of the interpretation set (uses current if not specified)",
     ),
-    session: Session = None,
 ) -> None:
     """Select an interpretation to add as an event."""
     try:
-        game_manager = GameManager(session=session)
-        scene_manager = SceneManager(session=session)
-        oracle_manager = OracleManager(session=session)
+        game_manager = GameManager()
+        scene_manager = SceneManager()
+        oracle_manager = OracleManager()
 
         game_id, scene_id = oracle_manager.validate_active_context(
             game_manager, scene_manager
