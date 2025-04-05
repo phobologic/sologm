@@ -38,7 +38,7 @@ def sample_dice_roll():
     mock_roll.reason = "Test roll"
     mock_roll.scene_id = "scene_123"
     mock_roll.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
-    
+
     return mock_roll
 
 
