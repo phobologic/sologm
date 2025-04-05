@@ -187,7 +187,7 @@ def test_display_game_status_full(
     # Create a mock SceneManager
     scene_manager = MagicMock(spec=SceneManager)
     scene_manager.get_previous_scene.return_value = None
-    
+
     current_interpretation = {
         "context": "Test context",
         "selected_interpretation": None,
@@ -240,7 +240,7 @@ def test_display_game_status_selected_interpretation(
     # Create a mock SceneManager
     scene_manager = MagicMock(spec=SceneManager)
     scene_manager.get_previous_scene.return_value = None
-    
+
     current_interpretation = {
         "context": "Test context",
         "selected_interpretation": 0,
