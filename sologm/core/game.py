@@ -3,6 +3,7 @@
 import logging
 from typing import List, Optional
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
@@ -47,6 +48,20 @@ class GameManager(BaseManager[Game, Game]):
             return self._execute_db_operation(
                 "create game", _create_game, name, description
             )
+        except IntegrityError as e:
+            logger.error(f"Failed to create game {name}: {str(e)}")
+            
+            error_msg = str(e).lower()
+            
+            if "unique constraint" in error_msg:
+                if "name" in error_msg:
+                    raise GameError(f"A game with the name '{name}' already exists") from e
+                elif "slug" in error_msg:
+                    raise GameError(f"A game with a similar name already exists") from e
+                else:
+                    raise GameError(f"Could not create game due to a uniqueness constraint") from e
+            else:
+                raise GameError(f"Failed to create game: {str(e)}") from e
         except Exception as e:
             logger.error(f"Failed to create game {name}: {str(e)}")
             raise GameError(f"Failed to create game: {str(e)}") from e

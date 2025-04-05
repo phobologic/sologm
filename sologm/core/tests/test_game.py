@@ -27,14 +27,14 @@ class TestGameManager:
         assert db_game.description == "A test game"
         assert db_game.is_active is True
 
-    def test_create_game_with_duplicate_name(self, game_manager) -> None:
-        """Test creating games with the same name generates unique slugs."""
+    def test_create_game_with_different_names(self, game_manager) -> None:
+        """Test creating games with different names generates different slugs."""
         game1 = game_manager.create_game(name="Test Game", description="First game")
-        game2 = game_manager.create_game(name="Test Game", description="Second game")
+        game2 = game_manager.create_game(name="Test Game 2", description="Second game")
 
         assert game1.id != game2.id
         assert game1.slug == "test-game"
-        assert game2.slug != game1.slug  # Should have a unique slug
+        assert game2.slug == "test-game-2"  # Different slug for different name
 
     def test_list_games_empty(self, game_manager) -> None:
         """Test listing games when none exist."""
@@ -68,6 +68,15 @@ class TestGameManager:
         """Test getting a nonexistent game."""
         game = game_manager.get_game("nonexistent-game")
         assert game is None
+        
+    def test_create_game_with_duplicate_name_fails(self, game_manager) -> None:
+        """Test creating a game with a duplicate name raises an error."""
+        game_manager.create_game(name="Duplicate Name", description="First game")
+        
+        with pytest.raises(GameError) as exc:
+            game_manager.create_game(name="Duplicate Name", description="Second game")
+        
+        assert "already exists" in str(exc.value).lower()
 
     def test_get_active_game_none(self, game_manager, db_session) -> None:
         """Test getting active game when none is set."""
@@ -123,11 +132,12 @@ class TestGameManager:
         game = Game.create(name="Test Game", description="Test")
         assert game.slug == "test-game"
 
-        # Test duplicate slug handling
+        # Test name uniqueness
         db_session.add(game)
         db_session.commit()
 
-        game2 = Game.create(name="Test Game", description="Another test")
-        db_session.add(game2)
-        db_session.commit()
-        assert game2.slug != game.slug  # Should have a unique suffix
+        with pytest.raises(Exception) as exc:
+            game2 = Game.create(name="Test Game", description="Another test")
+            db_session.add(game2)
+            db_session.commit()
+        assert "unique constraint" in str(exc.value).lower()

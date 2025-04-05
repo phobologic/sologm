@@ -20,7 +20,7 @@ class Game(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     slug: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
-    name: Mapped[str] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column(unique=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(default=False)
 
@@ -40,7 +40,7 @@ class Game(Base, TimestampMixin):
     def validate_slug(self, _: str, slug: str) -> str:
         """Validate the game slug."""
         if not slug or not slug.strip():
-            raise ValueError("Game slug cannot be empty")
+            raise ValueError("Slug cannot be empty")
         return slug
 
     @classmethod
