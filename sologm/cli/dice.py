@@ -5,10 +5,8 @@ from typing import Optional
 
 import typer
 from rich.console import Console
-from sqlalchemy.orm import Session
 
 from sologm.cli import display
-from sologm.cli.db_helpers import with_db_session
 from sologm.core.dice import DiceManager
 from sologm.utils.errors import DiceError
 
@@ -18,7 +16,6 @@ console = Console()
 
 
 @dice_app.command("roll")
-@with_db_session
 def roll_dice_command(
     notation: str = typer.Argument(..., help="Dice notation (e.g., 2d6+3)"),
     reason: Optional[str] = typer.Option(
@@ -27,7 +24,6 @@ def roll_dice_command(
     scene_id: Optional[str] = typer.Option(
         None, "--scene-id", "-s", help="ID of the scene for this roll"
     ),
-    session: Optional[Session] = None,  # Added by decorator
 ) -> None:
     """Roll dice using standard notation (XdY+Z).
 
@@ -41,7 +37,7 @@ def roll_dice_command(
             f"Rolling dice with notation: {notation}, reason: "
             f"{reason}, scene_id: {scene_id}"
         )
-        manager = DiceManager(session=session)
+        manager = DiceManager()
         result = manager.roll(notation, reason, scene_id)
         display.display_dice_roll(console, result)
 
@@ -51,17 +47,15 @@ def roll_dice_command(
 
 
 @dice_app.command("history")
-@with_db_session
 def dice_history_command(
     limit: int = typer.Option(5, "--limit", "-l", help="Number of rolls to show"),
     scene_id: Optional[str] = typer.Option(
         None, "--scene-id", "-s", help="Filter by scene ID"
     ),
-    session: Optional[Session] = None,  # Added by decorator
 ) -> None:
     """Show recent dice roll history."""
     try:
-        manager = DiceManager(session=session)
+        manager = DiceManager()
         rolls = manager.get_recent_rolls(scene_id=scene_id, limit=limit)
 
         if not rolls:
