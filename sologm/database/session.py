@@ -1,6 +1,7 @@
 """Database session management for SoloGM."""
 
 from typing import Optional
+
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
@@ -16,7 +17,7 @@ class DatabaseSession:
 
     @classmethod
     def get_instance(
-        cls, 
+        cls,
         db_url: Optional[str] = None,
         engine: Optional[Engine] = None
     ) -> 'DatabaseSession':
@@ -33,7 +34,7 @@ class DatabaseSession:
         return cls._instance
 
     def __init__(
-        self, 
+        self,
         db_url: str = "sqlite:///sologm.db",
         engine: Optional[Engine] = None
     ) -> None:
@@ -52,7 +53,7 @@ class DatabaseSession:
             pool_timeout=30,
             pool_recycle=1800  # Recycle connections after 30 minutes
         )
-        
+
         # Create session factory with reasonable defaults
         self.session_factory = sessionmaker(
             bind=self.engine,
@@ -60,7 +61,7 @@ class DatabaseSession:
             autoflush=False,
             expire_on_commit=False  # Prevents detached instance errors
         )
-        
+
         # Create scoped session
         self.Session = scoped_session(self.session_factory)
 
@@ -78,7 +79,7 @@ class DatabaseSession:
     def close_session(self) -> None:
         """Close the current session."""
         self.Session.remove()
-    
+
     def dispose(self) -> None:
         """Dispose of the engine and all its connections."""
         self.engine.dispose()
@@ -87,22 +88,25 @@ class DatabaseSession:
 # Context manager for session handling
 class SessionContext:
     """Context manager for database sessions."""
-    
+
+    session: Optional['Session'] = None
+
     def __init__(self, db_session: Optional[DatabaseSession] = None):
         """Initialize with optional database session.
-        
+
         Args:
             db_session: Database session to use (uses singleton if None)
         """
         self.db_session = db_session or DatabaseSession.get_instance()
         self.session = None
-        
+
     def __enter__(self) -> Session:
         """Enter context and get a session."""
-        self.session = self.db_session.get_session()
-        return self.session
-        
-    def __exit__(self, exc_type, exc_val, exc_tb):
+        session: Session = self.db_session.get_session()
+        self.session = session
+        return session
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit context and close session."""
         if exc_type is not None:
             # An exception occurred, rollback
@@ -110,7 +114,7 @@ class SessionContext:
         else:
             # No exception, commit
             self.session.commit()
-        
+
         # Always close the session
         self.session.close()
         self.db_session.close_session()
