@@ -1,137 +1,46 @@
 """Tests for oracle interpretation system."""
 
-from unittest.mock import MagicMock
-
 import pytest
-from sqlalchemy.orm import Session
 
-from sologm.core.oracle import OracleManager
-from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus
+from sologm.models.scene import Scene
 from sologm.utils.errors import OracleError
-
-
-@pytest.fixture
-def mock_anthropic_client() -> MagicMock:
-    """Create a mock Anthropic client."""
-    return MagicMock(spec=AnthropicClient)
-
-
-@pytest.fixture
-def oracle_manager(mock_anthropic_client: MagicMock, session: Session) -> OracleManager:
-    """Create an oracle manager instance."""
-    return OracleManager(anthropic_client=mock_anthropic_client, session=session)
-
-
-@pytest.fixture
-def test_game(session: Session) -> Game:
-    """Create a test game."""
-    game = Game.create(
-        name="Test Game",
-        description="A test game",
-    )
-    game.is_active = True
-    session.add(game)
-    session.commit()
-    return game
-
-
-@pytest.fixture
-def test_scene(session: Session, test_game: Game) -> Scene:
-    """Create a test scene."""
-    scene = Scene.create(
-        game_id=test_game.id,
-        title="Test Scene",
-        description="A test scene",
-        sequence=1,
-    )
-    scene.status = SceneStatus.ACTIVE
-    scene.is_current = True
-    session.add(scene)
-    session.commit()
-    return scene
-
-
-@pytest.fixture
-def test_events(session: Session, test_game: Game, test_scene: Scene) -> list[Event]:
-    """Create test events."""
-    events = [
-        Event.create(
-            game_id=test_game.id,
-            scene_id=test_scene.id,
-            description=f"Test event {i}",
-            source="manual",
-        )
-        for i in range(1, 3)
-    ]
-    session.add_all(events)
-    session.commit()
-    return events
 
 
 class TestOracle:
     """Tests for oracle interpretation system."""
 
-    def test_validate_active_context(
-        self,
-        oracle_manager: OracleManager,
-        test_game: Game,
-        test_scene: Scene,
-        session: Session,
-    ) -> None:
+    def test_validate_active_context(self, oracle_manager, test_game, test_scene, game_manager, scene_manager) -> None:
         """Test validating active game and scene."""
-        from sologm.core.game import GameManager
-        from sologm.core.scene import SceneManager
-
-        game_manager = GameManager(session=session)
-        scene_manager = SceneManager(session=session)
-
         game_id, scene_id = oracle_manager.validate_active_context(
             game_manager, scene_manager
         )
         assert game_id == test_game.id
         assert scene_id == test_scene.id
 
-    def test_validate_active_context_no_game(
-        self, oracle_manager: OracleManager, session: Session
-    ) -> None:
+    def test_validate_active_context_no_game(self, oracle_manager, game_manager, scene_manager, db_session) -> None:
         """Test validation with no active game."""
-        from sologm.core.game import GameManager
-        from sologm.core.scene import SceneManager
-
-        game_manager = GameManager(session=session)
-        scene_manager = SceneManager(session=session)
-
         # Make sure no game is active
-        session.query(Game).update({Game.is_active: False})
-        session.commit()
+        db_session.query(Game).update({Game.is_active: False})
+        db_session.commit()
 
         with pytest.raises(OracleError) as exc:
             oracle_manager.validate_active_context(game_manager, scene_manager)
         assert "No active game found" in str(exc.value)
 
-    def test_validate_active_context_no_scene(
-        self, oracle_manager: OracleManager, test_game: Game, session: Session
-    ) -> None:
+    def test_validate_active_context_no_scene(self, oracle_manager, test_game, game_manager, scene_manager, db_session) -> None:
         """Test validation with no active scene."""
-        from sologm.core.game import GameManager
-        from sologm.core.scene import SceneManager
-
-        game_manager = GameManager(session=session)
-        scene_manager = SceneManager(session=session)
-
-        # Make sure no scene is current
-        session.query(Scene).update({Scene.is_current: False})
-        session.commit()
+        # Make sure no scene is active
+        db_session.query(Scene).update({Scene.is_active: False})
+        db_session.commit()
 
         with pytest.raises(OracleError) as exc:
             oracle_manager.validate_active_context(game_manager, scene_manager)
         assert "No active scene found" in str(exc.value)
 
-    def test_build_prompt(self, oracle_manager: OracleManager) -> None:
+    def test_build_prompt(self, oracle_manager) -> None:
         """Test building prompts for Claude."""
         prompt = oracle_manager._build_prompt(
             "Test Game",
@@ -150,7 +59,7 @@ class TestOracle:
         assert "Mystery, Danger" in prompt
         assert "3 different interpretations" in prompt
 
-    def test_parse_interpretations(self, oracle_manager: OracleManager) -> None:
+    def test_parse_interpretations(self, oracle_manager) -> None:
         """Test parsing Claude's response."""
         response = """=== BEGIN INTERPRETATIONS ===
 
@@ -174,13 +83,7 @@ DESCRIPTION: Test Description 2
         assert parsed[1]["title"] == "Test Title 2"
         assert parsed[1]["description"] == "Test Description 2"
 
-    def test_get_interpretations(
-        self,
-        oracle_manager: OracleManager,
-        mock_anthropic_client: MagicMock,
-        test_game: Game,
-        test_scene: Scene,
-    ) -> None:
+    def test_get_interpretations(self, oracle_manager, mock_anthropic_client, test_game, test_scene) -> None:
         """Test getting interpretations."""
         # Configure mock to return string response
         response_text = """=== BEGIN INTERPRETATIONS ===
@@ -206,13 +109,7 @@ DESCRIPTION: Test Description
         assert result.interpretations[0].description == "Test Description"
         assert result.is_current is True
 
-    def test_get_interpretations_error(
-        self,
-        oracle_manager: OracleManager,
-        mock_anthropic_client: MagicMock,
-        test_game: Game,
-        test_scene: Scene,
-    ) -> None:
+    def test_get_interpretations_error(self, oracle_manager, mock_anthropic_client, test_game, test_scene) -> None:
         """Test handling errors when getting interpretations."""
         mock_anthropic_client.send_message.side_effect = Exception("API Error")
 
@@ -222,14 +119,7 @@ DESCRIPTION: Test Description
             )
         assert "Failed to get interpretations" in str(exc.value)
 
-    def test_select_interpretation(
-        self,
-        oracle_manager: OracleManager,
-        mock_anthropic_client: MagicMock,
-        test_game: Game,
-        test_scene: Scene,
-        session: Session,
-    ) -> None:
+    def test_select_interpretation(self, oracle_manager, mock_anthropic_client, test_game, test_scene, db_session) -> None:
         """Test selecting an interpretation."""
         # Configure mock to return string response
         response_text = """=== BEGIN INTERPRETATIONS ===
@@ -259,7 +149,7 @@ DESCRIPTION: Test Description
 
         # Verify event was created
         events = (
-            session.query(Event)
+            db_session.query(Event)
             .filter(
                 Event.game_id == test_game.id,
                 Event.scene_id == test_scene.id,
@@ -272,9 +162,7 @@ DESCRIPTION: Test Description
         assert len(events) == 1
         assert selected.title in events[0].description
 
-    def test_select_interpretation_not_found(
-        self, oracle_manager: OracleManager, test_game: Game, test_scene: Scene
-    ) -> None:
+    def test_select_interpretation_not_found(self, oracle_manager, test_game, test_scene) -> None:
         """Test selecting a non-existent interpretation."""
         with pytest.raises(OracleError) as exc:
             oracle_manager.select_interpretation(
@@ -282,13 +170,7 @@ DESCRIPTION: Test Description
             )
         assert "not found" in str(exc.value)
 
-    def test_get_interpretations_with_retry(
-        self,
-        oracle_manager: OracleManager,
-        mock_anthropic_client: MagicMock,
-        test_game: Game,
-        test_scene: Scene,
-    ) -> None:
+    def test_get_interpretations_with_retry(self, oracle_manager, mock_anthropic_client, test_game, test_scene) -> None:
         """Test getting interpretations with retry attempt."""
         # Configure mock to return string response
         response_text = """=== BEGIN INTERPRETATIONS ===
@@ -316,9 +198,40 @@ DESCRIPTION: Test Description
         assert result2.is_current is True
 
         # Verify first set is no longer current
+        db_session = oracle_manager._session
+        db_session.refresh(result1)
         assert result1.is_current is False
 
         # Verify different prompt was used for retry
         retry_call = mock_anthropic_client.send_message.call_args_list[1]
         assert "retry attempt #2" in retry_call[0][0].lower()
         assert "different" in retry_call[0][0].lower()
+        
+    def test_oracle_manager_get_interpretations_detailed(self, oracle_manager, mock_anthropic_client, test_game, test_scene):
+        """Test detailed interpretation generation and parsing."""
+        # Configure mock with a more complex response
+        response_text = """=== BEGIN INTERPRETATIONS ===
+
+--- INTERPRETATION 1 ---
+TITLE: First Interpretation
+DESCRIPTION: This is the first interpretation with multiple lines
+and some formatting.
+--- END INTERPRETATION 1 ---
+
+--- INTERPRETATION 2 ---
+TITLE: Second Interpretation
+DESCRIPTION: This is the second interpretation.
+It also has multiple lines.
+--- END INTERPRETATION 2 ---
+
+=== END INTERPRETATIONS ==="""
+        mock_anthropic_client.send_message.return_value = response_text
+        
+        result = oracle_manager.get_interpretations(
+            test_game.id, test_scene.id, "What happens?", "Mystery, Danger", 2
+        )
+        
+        assert len(result.interpretations) == 2
+        assert result.interpretations[0].title == "First Interpretation"
+        assert "multiple lines" in result.interpretations[0].description
+        assert result.interpretations[1].title == "Second Interpretation"

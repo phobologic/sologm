@@ -1,190 +1,118 @@
 """Tests for event management functionality."""
 
-from datetime import datetime
-from pathlib import Path
-from typing import Generator
-
 import pytest
 
-from sologm.core.event import Event, EventManager
-from sologm.storage.file_manager import FileManager
+from sologm.models.event import Event
 from sologm.utils.errors import EventError
-
-
-@pytest.fixture
-def temp_dir(tmp_path: Path) -> Path:
-    """Create a temporary directory for testing."""
-    return tmp_path
-
-
-@pytest.fixture
-def file_manager(temp_dir: Path) -> FileManager:
-    """Create a FileManager instance for testing."""
-    return FileManager(base_dir=temp_dir)
-
-
-@pytest.fixture
-def event_manager(file_manager: FileManager) -> EventManager:
-    """Create an EventManager instance for testing."""
-    return EventManager(file_manager=file_manager)
-
-
-@pytest.fixture
-def test_scene(file_manager: FileManager) -> Generator[dict, None, None]:
-    """Create a test scene for testing."""
-    game_id = "test-game"
-    scene_id = "test-scene"
-
-    # Create game
-    game_data = {
-        "id": game_id,
-        "name": "Test Game",
-        "description": "A test game",
-        "created_at": datetime.now().isoformat(),
-        "modified_at": datetime.now().isoformat(),
-        "scenes": [scene_id],
-    }
-    file_manager.write_yaml(file_manager.get_game_path(game_id), game_data)
-
-    # Create scene
-    scene_data = {
-        "id": scene_id,
-        "game_id": game_id,
-        "title": "Test Scene",
-        "description": "A test scene",
-        "status": "active",
-        "sequence": 1,
-        "created_at": datetime.now().isoformat(),
-        "modified_at": datetime.now().isoformat(),
-    }
-    file_manager.write_yaml(file_manager.get_scene_path(game_id, scene_id), scene_data)
-
-    yield {"game_id": game_id, "scene_id": scene_id}
-
-
-class TestEvent:
-    """Tests for the Event class."""
-
-    def test_event_creation(self) -> None:
-        """Test creating an Event object."""
-        event = Event(
-            id="test-event",
-            scene_id="test-scene",
-            game_id="test-game",
-            description="Test event",
-            source="manual",
-            created_at=datetime.now(),
-        )
-
-        assert event.id == "test-event"
-        assert event.scene_id == "test-scene"
-        assert event.game_id == "test-game"
-        assert event.description == "Test event"
-        assert event.source == "manual"
-        assert isinstance(event.created_at, datetime)
 
 
 class TestEventManager:
     """Tests for the EventManager class."""
 
-    def test_add_event(self, event_manager: EventManager, test_scene: dict) -> None:
+    def test_add_event(self, event_manager, test_game, test_scene, db_session):
         """Test adding an event."""
         event = event_manager.add_event(
-            game_id=test_scene["game_id"],
-            scene_id=test_scene["scene_id"],
+            game_id=test_game.id,
+            scene_id=test_scene.id,
             description="Test event",
             source="manual",
         )
 
-        assert event.scene_id == test_scene["scene_id"]
-        assert event.game_id == test_scene["game_id"]
+        assert event.scene_id == test_scene.id
+        assert event.game_id == test_game.id
         assert event.description == "Test event"
         assert event.source == "manual"
 
-        # Verify event was saved
-        events = event_manager.list_events(
-            game_id=test_scene["game_id"], scene_id=test_scene["scene_id"]
-        )
-        assert len(events) == 1
-        assert events[0].id == event.id
+        # Verify event was saved to database
+        db_event = db_session.query(Event).filter(Event.id == event.id).first()
+        assert db_event is not None
+        assert db_event.description == "Test event"
 
-    def test_add_event_nonexistent_scene(
-        self, event_manager: EventManager, test_scene: dict
-    ) -> None:
+    def test_add_event_nonexistent_scene(self, event_manager, test_game):
         """Test adding an event to a nonexistent scene."""
         with pytest.raises(EventError) as exc:
             event_manager.add_event(
-                game_id=test_scene["game_id"],
+                game_id=test_game.id,
                 scene_id="nonexistent-scene",
                 description="Test event",
             )
         assert "Scene nonexistent-scene not found" in str(exc.value)
 
-    def test_list_events_empty(
-        self, event_manager: EventManager, test_scene: dict
-    ) -> None:
+    def test_list_events_empty(self, event_manager, test_game, test_scene):
         """Test listing events when none exist."""
         events = event_manager.list_events(
-            game_id=test_scene["game_id"], scene_id=test_scene["scene_id"]
+            game_id=test_game.id, scene_id=test_scene.id
         )
         assert len(events) == 0
 
-    def test_list_events(self, event_manager: EventManager, test_scene: dict) -> None:
+    def test_list_events(self, event_manager, test_game, test_scene, create_test_event):
         """Test listing multiple events."""
         # Add some events
-        event_manager.add_event(
-            game_id=test_scene["game_id"],
-            scene_id=test_scene["scene_id"],
-            description="First event",
-        )
-        event_manager.add_event(
-            game_id=test_scene["game_id"],
-            scene_id=test_scene["scene_id"],
-            description="Second event",
-        )
+        create_test_event(test_game.id, test_scene.id, "First event")
+        create_test_event(test_game.id, test_scene.id, "Second event")
 
         events = event_manager.list_events(
-            game_id=test_scene["game_id"], scene_id=test_scene["scene_id"]
+            game_id=test_game.id, scene_id=test_scene.id
         )
         assert len(events) == 2
-        # Events should be in reverse chronological order
+        # Events should be in reverse chronological order (newest first)
         assert events[0].description == "Second event"
         assert events[1].description == "First event"
 
-    def test_list_events_with_limit(
-        self, event_manager: EventManager, test_scene: dict
-    ) -> None:
+    def test_list_events_with_limit(self, event_manager, test_game, test_scene, create_test_event):
         """Test listing events with a limit."""
         # Add some events
-        event_manager.add_event(
-            game_id=test_scene["game_id"],
-            scene_id=test_scene["scene_id"],
-            description="First event",
-        )
-        event_manager.add_event(
-            game_id=test_scene["game_id"],
-            scene_id=test_scene["scene_id"],
-            description="Second event",
-        )
-        event_manager.add_event(
-            game_id=test_scene["game_id"],
-            scene_id=test_scene["scene_id"],
-            description="Third event",
-        )
+        create_test_event(test_game.id, test_scene.id, "First event")
+        create_test_event(test_game.id, test_scene.id, "Second event")
+        create_test_event(test_game.id, test_scene.id, "Third event")
 
         events = event_manager.list_events(
-            game_id=test_scene["game_id"], scene_id=test_scene["scene_id"], limit=2
+            game_id=test_game.id, scene_id=test_scene.id, limit=2
         )
         assert len(events) == 2
         assert events[0].description == "Third event"
         assert events[1].description == "Second event"
 
-    def test_list_events_nonexistent_scene(
-        self, event_manager: EventManager, test_scene: dict
-    ) -> None:
+    def test_list_events_nonexistent_scene(self, event_manager, test_game):
         """Test listing events for a nonexistent scene."""
         with pytest.raises(EventError) as exc:
             event_manager.list_events(
-                game_id=test_scene["game_id"], scene_id="nonexistent-scene"
+                game_id=test_game.id, scene_id="nonexistent-scene"
             )
         assert "Scene nonexistent-scene not found" in str(exc.value)
+        
+    def test_validate_active_context(self, event_manager, game_manager, scene_manager, test_game, test_scene):
+        """Test validating active game and scene context."""
+        game_id, scene_id = event_manager.validate_active_context(game_manager, scene_manager)
+        assert game_id == test_game.id
+        assert scene_id == test_scene.id
+
+    def test_validate_active_context_no_game(self, event_manager, game_manager, scene_manager, db_session):
+        """Test validation with no active game."""
+        # Deactivate all games
+        db_session.query(Game).update({Game.is_active: False})
+        db_session.commit()
+        
+        with pytest.raises(EventError) as exc:
+            event_manager.validate_active_context(game_manager, scene_manager)
+        assert "No active game" in str(exc.value)
+        
+    def test_add_event_from_interpretation(self, event_manager, test_game, test_scene, 
+                                          test_interpretation_set, test_interpretations, db_session):
+        """Test adding an event from an interpretation."""
+        interpretation = test_interpretations[0]
+        
+        event = event_manager.add_event(
+            game_id=test_game.id,
+            scene_id=test_scene.id,
+            description="Event from interpretation",
+            source="oracle",
+            interpretation_id=interpretation.id
+        )
+        
+        assert event.interpretation_id == interpretation.id
+        
+        # Verify relationship works
+        db_session.refresh(event)
+        assert event.interpretation is not None
+        assert event.interpretation.id == interpretation.id
