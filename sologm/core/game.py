@@ -1,46 +1,46 @@
 """Game management functionality."""
 
 import logging
-import uuid
-from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
 from typing import List, Optional
 
-from sologm.storage.file_manager import FileManager
-from sologm.utils.datetime_utils import (
-    format_datetime,
-    get_current_time,
-    parse_datetime,
-)
+from sqlalchemy.orm import Session
+
+from sologm.core.base_manager import BaseManager
+from sologm.models.game import Game
 from sologm.utils.errors import GameError
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Game:
-    """Represents a game in the system."""
-
-    id: str
-    name: str
-    description: str
-    created_at: datetime
-    modified_at: datetime
-    scenes: List[str]
-
-
-class GameManager:
+class GameManager(BaseManager[Game, Game]):
     """Manages game operations."""
 
-    def __init__(self, file_manager: Optional[FileManager] = None):
-        """Initialize the game manager.
-
+    def _convert_to_domain(self, db_model: Game) -> Game:
+        """Convert database model to domain model.
+        
+        In this case, the database model is the domain model.
+        
         Args:
-            file_manager: FileManager instance to use.
-                         If None, creates a new instance.
+            db_model: Database model instance
+            
+        Returns:
+            Domain model instance
         """
-        self.file_manager = file_manager or FileManager()
+        return db_model
+    
+    def _convert_to_db_model(self, domain_model: Game, db_model: Optional[Game] = None) -> Game:
+        """Convert domain model to database model.
+        
+        In this case, the domain model is the database model.
+        
+        Args:
+            domain_model: Domain model instance
+            db_model: Optional existing database model to update
+            
+        Returns:
+            Database model instance
+        """
+        return domain_model
 
     def create_game(self, name: str, description: str) -> Game:
         """Create a new game.
@@ -55,59 +55,35 @@ class GameManager:
         Raises:
             GameError: If the game cannot be created.
         """
-        # Generate a URL-friendly ID from the name
-        game_id = "-".join(name.lower().split())
-        logger.debug(f"Initial game ID generated: {game_id}")
-
-        # Ensure uniqueness by adding a UUID suffix if needed
-        base_id = game_id
-        counter = 1
-        while Path(self.file_manager.get_game_path(game_id)).exists():
-            logger.debug(f"Game ID {game_id} already exists, trying with UUID suffix")
-            suffix = str(uuid.uuid4())[:8]
-            game_id = f"{base_id}-{suffix}"
-            counter += 1
-            if counter > 10:  # Prevent infinite loops
-                logger.error(
-                    f"Failed to generate unique ID for game: {name} after "
-                    f"{counter} attempts"
-                )
-                raise GameError(f"Failed to generate unique ID for game: {name}")
-
-        # Create the game instance
-        now = get_current_time()
-        game = Game(
-            id=game_id,
-            name=name,
-            description=description,
-            created_at=now,
-            modified_at=now,
-            scenes=[],
-        )
-
-        # Save the game data
-        try:
-            self.file_manager.write_yaml(
-                self.file_manager.get_game_path(game_id),
-                {
-                    "id": game.id,
-                    "name": game.name,
-                    "description": game.description,
-                    "created_at": format_datetime(game.created_at),
-                    "modified_at": format_datetime(game.modified_at),
-                    "scenes": game.scenes,
-                },
-            )
-
-            # Set as active game
-            self.file_manager.set_active_game_id(game_id)
-
-            logger.debug(f"Created game {game_id}: {name}")
+        def _create_game(session: Session, name: str, description: str) -> Game:
+            # Use the create class method from the SQLAlchemy model
+            game = Game.create(name=name, description=description)
+            
+            # Set this as the only active game
+            self._deactivate_all_games(session)
+            game.is_active = True
+            
+            session.add(game)
+            session.flush()  # Flush to get the ID
+            
+            logger.debug(f"Created game {game.id}: {name}")
             return game
-
+        
+        try:
+            return self._execute_db_operation(
+                "create game", _create_game, name, description
+            )
         except Exception as e:
             logger.error(f"Failed to create game {name}: {str(e)}")
             raise GameError(f"Failed to create game: {str(e)}") from e
+
+    def _deactivate_all_games(self, session: Session) -> None:
+        """Deactivate all games in the database.
+        
+        Args:
+            session: SQLAlchemy session
+        """
+        session.query(Game).update({Game.is_active: False})
 
     def list_games(self) -> List[Game]:
         """List all games in the system.
@@ -118,33 +94,13 @@ class GameManager:
         Raises:
             GameError: If games cannot be listed.
         """
-        try:
-            games_dir = self.file_manager.base_dir / "games"
-            games: List[Game] = []
-
-            if not games_dir.exists():
-                return games
-
-            for game_dir in games_dir.iterdir():
-                if game_dir.is_dir():
-                    game_path = game_dir / "game.yaml"
-                    if game_path.exists():
-                        game_data = self.file_manager.read_yaml(game_path)
-                        games.append(
-                            Game(
-                                id=game_data["id"],
-                                name=game_data["name"],
-                                description=game_data["description"],
-                                created_at=parse_datetime(game_data["created_at"]),
-                                modified_at=parse_datetime(game_data["modified_at"]),
-                                scenes=game_data["scenes"],
-                            )
-                        )
-
-            games = sorted(games, key=lambda g: g.created_at)
+        def _list_games(session: Session) -> List[Game]:
+            games = session.query(Game).order_by(Game.created_at).all()
             logger.debug(f"Listed {len(games)} games")
             return games
-
+        
+        try:
+            return self._execute_db_operation("list games", _list_games)
         except Exception as e:
             logger.error(f"Failed to list games: {str(e)}")
             raise GameError(f"Failed to list games: {str(e)}") from e
@@ -161,23 +117,17 @@ class GameManager:
         Raises:
             GameError: If the game cannot be retrieved.
         """
-        try:
-            game_path = self.file_manager.get_game_path(game_id)
-            if not game_path.exists():
+        def _get_game(session: Session, game_id: str) -> Optional[Game]:
+            game = session.query(Game).filter(Game.id == game_id).first()
+            if not game:
                 logger.debug(f"Game {game_id} not found")
                 return None
-
-            game_data = self.file_manager.read_yaml(game_path)
+            
             logger.debug(f"Retrieved game {game_id}")
-            return Game(
-                id=game_data["id"],
-                name=game_data["name"],
-                description=game_data["description"],
-                created_at=datetime.fromisoformat(game_data["created_at"]),
-                modified_at=datetime.fromisoformat(game_data["modified_at"]),
-                scenes=game_data["scenes"],
-            )
-
+            return game
+        
+        try:
+            return self._execute_db_operation("get game", _get_game, game_id)
         except Exception as e:
             raise GameError(f"Failed to get game {game_id}: {str(e)}") from e
 
@@ -190,14 +140,17 @@ class GameManager:
         Raises:
             GameError: If the active game cannot be retrieved.
         """
-        try:
-            game_id = self.file_manager.get_active_game_id()
-            if not game_id:
+        def _get_active_game(session: Session) -> Optional[Game]:
+            game = session.query(Game).filter(Game.is_active == True).first()  # noqa: E712
+            if not game:
                 logger.debug("No active game set")
                 return None
-            logger.debug(f"Getting active game: {game_id}")
-            return self.get_game(game_id)
-
+            
+            logger.debug(f"Getting active game: {game.id}")
+            return game
+        
+        try:
+            return self._execute_db_operation("get active game", _get_active_game)
         except Exception as e:
             logger.error(f"Failed to get active game: {str(e)}")
             raise GameError(f"Failed to get active game: {str(e)}") from e
@@ -214,16 +167,23 @@ class GameManager:
         Raises:
             GameError: If the game cannot be activated.
         """
-        try:
-            game = self.get_game(game_id)
+        def _activate_game(session: Session, game_id: str) -> Game:
+            game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
                 logger.error(f"Cannot activate nonexistent game: {game_id}")
                 raise GameError(f"Game not found: {game_id}")
 
-            self.file_manager.set_active_game_id(game_id)
+            # Deactivate all games first
+            self._deactivate_all_games(session)
+            
+            # Activate the requested game
+            game.is_active = True
+            
             logger.debug(f"Activated game: {game_id}")
             return game
-
+        
+        try:
+            return self._execute_db_operation("activate game", _activate_game, game_id)
         except Exception as e:
             logger.error(f"Failed to activate game {game_id}: {str(e)}")
             raise GameError(f"Failed to activate game {game_id}: {str(e)}") from e

@@ -1,30 +1,47 @@
 """Tests for the game management module."""
 
-import tempfile
-from datetime import datetime
-from pathlib import Path
-
 import pytest
-import yaml
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
-from sologm.core.game import Game, GameManager
-from sologm.storage.file_manager import FileManager
+from sologm.core.game import GameManager
+from sologm.database.session import DatabaseSession
+from sologm.models.base import Base
+from sologm.models.game import Game
 from sologm.utils.errors import GameError
 
 
 class TestGameManager:
     """Tests for the GameManager class."""
 
-    def setup_method(self) -> None:
-        """Set up test fixtures."""
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.base_dir = Path(self.temp_dir.name)
-        self.file_manager = FileManager(self.base_dir)
-        self.game_manager = GameManager(self.file_manager)
-
-    def teardown_method(self) -> None:
-        """Tear down test fixtures."""
-        self.temp_dir.cleanup()
+    @pytest.fixture(autouse=True)
+    def setup_database(self):
+        """Set up an in-memory SQLite database for testing."""
+        # Create an in-memory SQLite database
+        self.engine = create_engine("sqlite:///:memory:")
+        
+        # Create all tables
+        Base.metadata.create_all(self.engine)
+        
+        # Create a session factory
+        self.session_factory = sessionmaker(bind=self.engine)
+        
+        # Create a session
+        self.session = self.session_factory()
+        
+        # Create a database session instance
+        self.db_session = DatabaseSession(engine=self.engine)
+        DatabaseSession._instance = self.db_session
+        
+        # Create a game manager with the test session
+        self.game_manager = GameManager(session=self.session)
+        
+        yield
+        
+        # Clean up
+        self.session.close()
+        Base.metadata.drop_all(self.engine)
+        DatabaseSession._instance = None
 
     def test_create_game(self) -> None:
         """Test creating a new game."""
@@ -35,26 +52,19 @@ class TestGameManager:
         assert isinstance(game, Game)
         assert game.name == "Test Game"
         assert game.description == "A test game"
-        assert isinstance(game.created_at, datetime)
-        assert isinstance(game.modified_at, datetime)
-        assert game.scenes == []
-
-        # Verify file was created
-        game_path = self.file_manager.get_game_path(game.id)
-        assert game_path.exists()
-
-        # Verify game data was saved correctly
-        with open(game_path, "r") as f:
-            data = yaml.safe_load(f)
-            assert data["name"] == "Test Game"
-            assert data["description"] == "A test game"
-            assert data["scenes"] == []
-
-        # Verify game was set as active
-        assert self.file_manager.get_active_game_id() == game.id
+        assert game.created_at is not None
+        assert game.modified_at is not None
+        assert game.is_active is True
+        
+        # Verify game was saved to database
+        db_game = self.session.query(Game).filter(Game.id == game.id).first()
+        assert db_game is not None
+        assert db_game.name == "Test Game"
+        assert db_game.description == "A test game"
+        assert db_game.is_active is True
 
     def test_create_game_with_duplicate_name(self) -> None:
-        """Test creating games with the same name generates unique IDs."""
+        """Test creating games with the same name generates unique slugs."""
         game1 = self.game_manager.create_game(
             name="Test Game", description="First game"
         )
@@ -63,8 +73,8 @@ class TestGameManager:
         )
 
         assert game1.id != game2.id
-        assert game1.id.startswith("test-game")
-        assert game2.id.startswith("test-game")
+        assert game1.slug == "test-game"
+        assert game2.slug != game1.slug  # Should have a unique slug
 
     def test_list_games_empty(self) -> None:
         """Test listing games when none exist."""
@@ -101,6 +111,10 @@ class TestGameManager:
 
     def test_get_active_game_none(self) -> None:
         """Test getting active game when none is set."""
+        # Deactivate all games first
+        self.session.query(Game).update({Game.is_active: False})
+        self.session.commit()
+        
         game = self.game_manager.get_active_game()
         assert game is None
 
@@ -116,7 +130,7 @@ class TestGameManager:
 
     def test_activate_game(self) -> None:
         """Test activating a game."""
-        game1 = self.game_manager.create_game(name="Game 1", description="First game") # noqa
+        game1 = self.game_manager.create_game(name="Game 1", description="First game")
         game2 = self.game_manager.create_game(name="Game 2", description="Second game")
 
         # Activate the second game
@@ -127,38 +141,13 @@ class TestGameManager:
         active_game = self.game_manager.get_active_game()
         assert active_game is not None
         assert active_game.id == game2.id
+        
+        # Verify the first game is no longer active
+        self.session.refresh(game1)
+        assert game1.is_active is False
 
     def test_activate_nonexistent_game(self) -> None:
         """Test activating a nonexistent game raises an error."""
         with pytest.raises(GameError) as exc:
             self.game_manager.activate_game("nonexistent-game")
         assert "Game not found" in str(exc.value)
-
-    def test_current_interpretation_tracking(self) -> None:
-        """Test tracking current interpretation in game data."""
-        # Create a game
-        game = self.game_manager.create_game(
-            name="Test Game", description="A test game"
-        )
-
-        # Get the game path
-        game_path = self.file_manager.get_game_path(game.id)
-
-        # Read initial game data
-        game_data = self.file_manager.read_yaml(game_path)
-        assert "current_interpretation" not in game_data
-
-        # Update game data with current interpretation
-        game_data["current_interpretation"] = {
-            "id": "test-interp-1",
-            "context": "Test context",
-            "results": "Test results",
-            "retry_count": 0,
-        }
-        self.file_manager.write_yaml(game_path, game_data)
-
-        # Read updated game data
-        updated_data = self.file_manager.read_yaml(game_path)
-        assert "current_interpretation" in updated_data
-        assert updated_data["current_interpretation"]["id"] == "test-interp-1"
-        assert updated_data["current_interpretation"]["retry_count"] == 0

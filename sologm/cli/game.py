@@ -5,6 +5,7 @@ import logging
 import typer
 from rich.console import Console
 
+from sologm.cli.db_helpers import with_db_session
 from sologm.cli.display import (
     display_game_info,
     display_game_status,
@@ -26,16 +27,18 @@ console = Console()
 
 
 @game_app.command("create")
+@with_db_session
 def create_game(
     name: str = typer.Option(..., "--name", "-n", help="Name of the game"),
     description: str = typer.Option(
         ..., "--description", "-d", help="Description of the game"
     ),
+    session=None,
 ) -> None:
     """Create a new game."""
     try:
         logger.debug(f"Creating game with name='{name}', description='{description}'")
-        game_manager = GameManager()
+        game_manager = GameManager(session=session)
         game = game_manager.create_game(name=name, description=description)
 
         console.print("[bold green]Game created successfully![/]")
@@ -46,11 +49,12 @@ def create_game(
 
 
 @game_app.command("list")
-def list_games() -> None:
+@with_db_session
+def list_games(session=None) -> None:
     """List all games."""
     try:
         logger.debug("Listing all games")
-        game_manager = GameManager()
+        game_manager = GameManager(session=session)
         games = game_manager.list_games()
         active_game = game_manager.get_active_game()
         display_games_table(console, games, active_game)
@@ -59,13 +63,15 @@ def list_games() -> None:
 
 
 @game_app.command("activate")
+@with_db_session
 def activate_game(
     game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
+    session=None,
 ) -> None:
     """Activate a game."""
     try:
         logger.debug(f"Activating game with id='{game_id}'")
-        game_manager = GameManager()
+        game_manager = GameManager(session=session)
         game = game_manager.activate_game(game_id)
 
         console.print("[bold green]Game activated successfully![/]")
@@ -76,6 +82,7 @@ def activate_game(
 
 
 @game_app.command("info")
+@with_db_session
 def game_info(
     status: bool = typer.Option(
         False,
@@ -83,11 +90,12 @@ def game_info(
         "-s",
         help="Show detailed game status including recent events",
     ),
+    session=None,
 ) -> None:
     """Show information about the active game."""
     try:
         logger.debug("Getting active game info")
-        game_manager = GameManager()
+        game_manager = GameManager(session=session)
         oracle_manager = OracleManager()
         game = game_manager.get_active_game()
         if not game:
