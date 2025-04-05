@@ -433,33 +433,39 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
 def _create_oracle_panel(
     game: Game,
     active_scene: Optional[Scene],
-    current_interpretation_reference: Optional[dict],
     oracle_manager: Optional["OracleManager"],
     truncation_length: int,
 ) -> Optional[Panel]:
     """Create the oracle panel if applicable."""
     logger.debug(f"Creating oracle panel for game {game.id}")
 
-    has_open_interpretation = (
-        current_interpretation_reference
-        and not current_interpretation_reference.get("resolved", False)
+    if not oracle_manager or not active_scene:
+        logger.debug("No oracle manager or active scene, skipping oracle panel")
+        return None
+    
+    # Check for current interpretation set
+    current_interp_set = oracle_manager.get_current_interpretation_set(active_scene.id)
+    
+    if current_interp_set:
+        # Check if any interpretation is selected
+        has_selection = any(interp.is_selected for interp in current_interp_set.interpretations)
+        
+        if not has_selection:
+            logger.debug("Creating pending oracle panel")
+            return _create_pending_oracle_panel(
+                current_interp_set,
+                truncation_length
+            )
+    
+    # Try to get most recent interpretation
+    recent_interp = oracle_manager.get_most_recent_interpretation(
+        game.id, active_scene.id
     )
-
-    logger.debug(f"Has open interpretation: {has_open_interpretation}")
-    logger.debug(f"Has active scene: {active_scene}, oracle_manager: {oracle_manager}")
-
-    if has_open_interpretation:
-        logger.debug("Creating pending oracle panel")
-        return _create_pending_oracle_panel(
-            game, current_interpretation_reference, oracle_manager, truncation_length
-        )
-    elif active_scene and oracle_manager:
-        logger.debug(f"Creating recent oracle panel for scene {active_scene.id}")
-        return _create_recent_oracle_panel(
-            game,
-            active_scene,
-            oracle_manager,
-        )
+    
+    if recent_interp:
+        logger.debug("Creating recent oracle panel")
+        return _create_recent_oracle_panel(recent_interp[0], recent_interp[1])
+    
     logger.debug("No oracle panel needed")
     return None
 
