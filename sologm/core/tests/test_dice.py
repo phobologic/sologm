@@ -194,6 +194,6 @@ class TestDiceManager:
         def _test_operation(session):
             raise ValueError("Test error")
 
-        with pytest.raises(DiceError) as exc:
+        with pytest.raises(ValueError) as exc:
             dice_manager._execute_db_operation("test operation", _test_operation)
-        assert "Failed to test operation" in str(exc.value)
+        assert "Test error" in str(exc.value)
