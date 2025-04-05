@@ -2,13 +2,18 @@
 
 import enum
 import uuid
-from typing import ClassVar
+from typing import ClassVar, List, TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
+
+if TYPE_CHECKING:
+    from sologm.models.event import Event
+    from sologm.models.oracle import InterpretationSet
+    from sologm.models.dice import DiceRoll
 
 
 class SceneStatus(enum.Enum):
@@ -35,7 +40,16 @@ class Scene(Base, TimestampMixin):
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=False)
 
-    # Relationships will be defined in relationships.py
+    # Relationships this model owns
+    events: Mapped[List["Event"]] = relationship(
+        "Event", back_populates="scene", cascade="all, delete-orphan"
+    )
+    interpretation_sets: Mapped[List["InterpretationSet"]] = relationship(
+        "InterpretationSet", back_populates="scene", cascade="all, delete-orphan"
+    )
+    dice_rolls: Mapped[List["DiceRoll"]] = relationship(
+        "DiceRoll", back_populates="scene"
+    )
 
     @validates("title")
     def validate_title(self, _: str, title: str) -> str:

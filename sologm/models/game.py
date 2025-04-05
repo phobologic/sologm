@@ -1,13 +1,16 @@
 """Game model for SoloGM."""
 
 import uuid
-from typing import Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from sqlalchemy import Text
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
+
+if TYPE_CHECKING:
+    from sologm.models.scene import Scene
 
 
 class Game(Base, TimestampMixin):
@@ -21,7 +24,10 @@ class Game(Base, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(default=False)
 
-    # Relationships will be defined in relationships.py
+    # Relationships this model owns
+    scenes: Mapped[List["Scene"]] = relationship(
+        "Scene", back_populates="game", cascade="all, delete-orphan"
+    )
 
     @validates("name")
     def validate_name(self, _: str, name: str) -> str:

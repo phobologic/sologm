@@ -1,11 +1,15 @@
 """Oracle interpretation models for SoloGM."""
 
 import uuid
+from typing import List, TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sologm.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from sologm.models.event import Event
 
 
 class InterpretationSet(Base, TimestampMixin):
@@ -22,7 +26,10 @@ class InterpretationSet(Base, TimestampMixin):
     # Flag for current interpretation set in a game
     is_current: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Relationships will be defined in relationships.py
+    # Relationships this model owns
+    interpretations: Mapped[List["Interpretation"]] = relationship(
+        "Interpretation", back_populates="interpretation_set", cascade="all, delete-orphan"
+    )
 
     @classmethod
     def create(
@@ -67,7 +74,10 @@ class Interpretation(Base, TimestampMixin):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_selected: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Relationships will be defined in relationships.py
+    # Relationships this model owns
+    events: Mapped[List["Event"]] = relationship(
+        "Event", back_populates="interpretation"
+    )
 
     @classmethod
     def create(
