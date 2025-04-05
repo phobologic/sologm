@@ -470,23 +470,17 @@ DESCRIPTION: Detailed description of interpretation idea
         def _add_interpretation_event(
             session: Session, scene_id: str, interpretation: Interpretation
         ) -> None:
-            # Get the interpretation set to get the game_id
-            interp_set = (
-                session.query(InterpretationSet)
-                .filter(InterpretationSet.id == interpretation.set_id)
-                .first()
-            )
-
-            if not interp_set:
-                raise OracleError(
-                    f"Interpretation set {interpretation.set_id} not found"
-                )
-
+            # Access the interpretation_set relationship directly
+            interp_set = interpretation.interpretation_set
+            
+            # Access the scene relationship from the interpretation set
+            scene = interp_set.scene
+            
             description = f"{interpretation.title}: {interpretation.description}"
 
             # Create the event
             event = Event.create(
-                game_id=interp_set.scene.game_id,
+                game_id=scene.game_id,
                 scene_id=scene_id,
                 description=description,
                 source="oracle",

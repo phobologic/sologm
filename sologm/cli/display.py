@@ -350,7 +350,7 @@ def _create_game_header_panel(game: Game) -> Panel:
     """Create the game info header panel."""
     logger.debug(f"Creating game header panel for game {game.id}")
 
-    # Access scenes relationship
+    # Access scenes relationship directly
     scene_count = len(game.scenes)
 
     game_info = (
