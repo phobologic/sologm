@@ -18,7 +18,7 @@ def cli_runner():
 @pytest.fixture(autouse=True)
 def mock_db_session_decorator():
     """Mock the with_db_session decorator to bypass database access.
-    
+
     This is applied automatically to all tests in this directory.
     """
     with patch("sologm.cli.db_helpers.with_db_session", lambda f: f):
@@ -137,23 +137,24 @@ def mock_db_session():
 @pytest.fixture
 def cli_test_base():
     """Base fixture for CLI tests that provides common mocks and utilities."""
+
     class CLITestBase:
         @staticmethod
         def assert_success(result):
             """Assert that a CLI command executed successfully."""
             assert result.exit_code == 0
-            
+
         @staticmethod
         def assert_error(result, expected_message=None):
             """Assert that a CLI command failed with an expected error message."""
             assert result.exit_code != 0
             if expected_message:
                 assert expected_message in result.stdout
-                
+
         @staticmethod
         def assert_output_contains(result, *expected_strings):
             """Assert that the command output contains all expected strings."""
             for expected in expected_strings:
                 assert expected in result.stdout
-    
+
     return CLITestBase()
