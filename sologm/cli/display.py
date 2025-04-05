@@ -90,7 +90,9 @@ def display_interpretation(
         interp: Interpretation to display
         selected: Whether this interpretation is selected
     """
-    logger.debug(f"Displaying interpretation {interp.id} (selected: {interp.is_selected})")
+    logger.debug(
+        f"Displaying interpretation {interp.id} (selected: {interp.is_selected})"
+    )
     logger.debug(
         f"Interpretation title: '{interp.title}', created: {interp.created_at}"
     )
@@ -223,7 +225,7 @@ def display_interpretation_set(
         f"Displaying interpretation set {interp_set.id} with "
         f"{len(interp_set.interpretations)} interpretations"
     )
-    
+
     if show_context:
         console.print("\n[bold]Oracle Interpretations[/bold]")
         console.print(f"Context: {interp_set.context}")
@@ -442,30 +444,29 @@ def _create_oracle_panel(
     if not oracle_manager or not active_scene:
         logger.debug("No oracle manager or active scene, skipping oracle panel")
         return None
-    
+
     # Check for current interpretation set
     current_interp_set = oracle_manager.get_current_interpretation_set(active_scene.id)
-    
+
     if current_interp_set:
         # Check if any interpretation is selected
-        has_selection = any(interp.is_selected for interp in current_interp_set.interpretations)
-        
+        has_selection = any(
+            interp.is_selected for interp in current_interp_set.interpretations
+        )
+
         if not has_selection:
             logger.debug("Creating pending oracle panel")
-            return _create_pending_oracle_panel(
-                current_interp_set,
-                truncation_length
-            )
-    
+            return _create_pending_oracle_panel(current_interp_set, truncation_length)
+
     # Try to get most recent interpretation
     recent_interp = oracle_manager.get_most_recent_interpretation(
         game.id, active_scene.id
     )
-    
+
     if recent_interp:
         logger.debug("Creating recent oracle panel")
         return _create_recent_oracle_panel(recent_interp[0], recent_interp[1])
-    
+
     logger.debug("No oracle panel needed")
     return None
 
@@ -476,14 +477,14 @@ def _create_pending_oracle_panel(
 ) -> Panel:
     """Create a panel for pending oracle interpretation."""
     logger.debug(f"Creating pending oracle panel for set {interp_set.id}")
-    
+
     # Show truncated versions of the options
     options_text = ""
     for i, interp in enumerate(interp_set.interpretations, 1):
         logger.debug(f"Adding interpretation option {i}: {interp.id}")
         truncated_title = truncate_text(interp.title, truncation_length // 2)
         options_text += f"[dim]{i}.[/dim] {truncated_title}\n"
-    
+
     return Panel(
         f"[yellow]Open Oracle Interpretation:[/yellow]\n"
         f"Context: {interp_set.context}\n\n"

@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 class GameManager(BaseManager[Game, Game]):
     """Manages game operations."""
 
-
     def create_game(self, name: str, description: str) -> Game:
         """Create a new game.
 
@@ -29,6 +28,7 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be created.
         """
+
         def _create_game(session: Session, name: str, description: str) -> Game:
             # Use the create class method from the SQLAlchemy model
             game = Game.create(name=name, description=description)
@@ -42,6 +42,7 @@ class GameManager(BaseManager[Game, Game]):
 
             logger.debug(f"Created game {game.id}: {name}")
             return game
+
         try:
             return self._execute_db_operation(
                 "create game", _create_game, name, description
@@ -67,6 +68,7 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If games cannot be listed.
         """
+
         def _list_games(session: Session) -> List[Game]:
             games = session.query(Game).order_by(Game.created_at).all()
             logger.debug(f"Listed {len(games)} games")
@@ -90,6 +92,7 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be retrieved.
         """
+
         def _get_game(session: Session, game_id: str) -> Optional[Game]:
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
@@ -113,6 +116,7 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the active game cannot be retrieved.
         """
+
         def _get_active_game(session: Session) -> Optional[Game]:
             game = session.query(Game).filter(Game.is_active == True).first()  # noqa: E712
             if not game:
@@ -140,6 +144,7 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be activated.
         """
+
         def _activate_game(session: Session, game_id: str) -> Game:
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
