@@ -3,6 +3,7 @@
 import pytest
 
 from sologm.models.event import Event
+from sologm.models.game import Game
 from sologm.utils.errors import EventError
 
 
