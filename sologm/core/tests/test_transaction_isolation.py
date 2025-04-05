@@ -8,10 +8,17 @@ from sologm.models.game import Game
 
 def test_transaction_isolation(db_engine):
     """Test that transactions are properly isolated."""
-    # Create two separate sessions
-    Session = sessionmaker(bind=db_engine)
-    session1 = Session()
-    session2 = Session()
+    # Create two separate sessions with explicit connections
+    connection1 = db_engine.connect()
+    connection2 = db_engine.connect()
+    
+    # Start explicit transactions
+    transaction1 = connection1.begin()
+    
+    # Create sessions bound to these connections
+    Session = sessionmaker()
+    session1 = Session(bind=connection1)
+    session2 = Session(bind=connection2)
 
     try:
         # In session1, create a game but don't commit
@@ -31,9 +38,13 @@ def test_transaction_isolation(db_engine):
         )
         assert game_in_session2 is None
     finally:
-        session1.rollback()
+        # Clean up
+        if transaction1.is_active:
+            transaction1.rollback()
         session1.close()
         session2.close()
+        connection1.close()
+        connection2.close()
 
 
 def test_cascade_delete_game(db_session, test_game_with_scenes):
