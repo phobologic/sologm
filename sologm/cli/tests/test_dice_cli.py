@@ -50,17 +50,18 @@ class TestRollDiceCommand:
 
         # Run the command
         result = runner.invoke(
-            dice_app, ["roll", "2d6+3", "--reason", "Test roll", "--scene-id", "scene_123"]
+            dice_app,
+            ["roll", "2d6+3", "--reason", "Test roll", "--scene-id", "scene_123"],
         )
 
         # Verify the command executed successfully
         assert result.exit_code == 0
-        
+
         # Verify the manager was called with correct parameters
         mock_dice_manager.roll.assert_called_once_with(
             "2d6+3", "Test roll", "scene_123"
         )
-        
+
         # Verify output contains expected information
         assert "2d6+3" in result.stdout
         assert "Total: 12" in result.stdout
@@ -75,7 +76,7 @@ class TestRollDiceCommand:
 
         # Verify success
         assert result.exit_code == 0
-        
+
         # Verify the manager was called with correct parameters
         mock_dice_manager.roll.assert_called_once_with("2d6+3", None, None)
 
@@ -107,12 +108,12 @@ class TestDiceHistoryCommand:
 
         # Verify success
         assert result.exit_code == 0
-        
+
         # Verify the manager was called with correct parameters
         mock_dice_manager.get_recent_rolls.assert_called_once_with(
             scene_id="scene_123", limit=5
         )
-        
+
         # Verify output contains expected information
         assert "Recent dice rolls:" in result.stdout
         assert "2d6+3" in result.stdout
@@ -128,12 +129,12 @@ class TestDiceHistoryCommand:
 
         # Verify success
         assert result.exit_code == 0
-        
+
         # Verify the manager was called with default parameters
         mock_dice_manager.get_recent_rolls.assert_called_once_with(
             scene_id=None, limit=5
         )
-        
+
         # Verify output contains expected message
         assert "No dice rolls found." in result.stdout
 
