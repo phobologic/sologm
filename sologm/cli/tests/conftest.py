@@ -38,16 +38,16 @@ def mock_dice_manager():
         # Configure the mock to return a predictable dice roll
         mock_instance = mock.return_value
 
-        # Create a mock DiceRoll model
-        mock_roll = DiceRoll(
-            id="test-id",
+        # Create a mock DiceRoll model using the create class method
+        mock_roll = DiceRoll.create(
             notation="2d6+3",
             individual_results=[4, 5],
             modifier=3,
             total=12,
             reason="Test roll",
         )
-        # Add created_at attribute
+        # Add id and created_at attributes
+        mock_roll.id = "test-id"
         mock_roll.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
         mock_instance.roll.return_value = mock_roll
 
@@ -85,14 +85,14 @@ def mock_oracle_manager():
 @pytest.fixture
 def sample_dice_roll():
     """Create a sample dice roll for testing."""
-    roll = DiceRoll(
-        id="test-id",
+    roll = DiceRoll.create(
         notation="2d6+3",
         individual_results=[4, 5],
         modifier=3,
         total=12,
         reason="Test roll",
     )
+    roll.id = "test-id"
     roll.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
     return roll
 
@@ -100,24 +100,24 @@ def sample_dice_roll():
 @pytest.fixture
 def sample_dice_rolls():
     """Create a list of sample dice rolls for testing."""
-    mock_roll1 = DiceRoll(
-        id="test-id-1",
+    mock_roll1 = DiceRoll.create(
         notation="1d20",
         individual_results=[15],
         modifier=0,
         total=15,
         reason="Attack roll",
     )
+    mock_roll1.id = "test-id-1"
     mock_roll1.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
 
-    mock_roll2 = DiceRoll(
-        id="test-id-2",
+    mock_roll2 = DiceRoll.create(
         notation="2d6+3",
         individual_results=[4, 5],
         modifier=3,
         total=12,
         reason="Damage roll",
     )
+    mock_roll2.id = "test-id-2"
     mock_roll2.created_at = datetime.fromisoformat("2023-01-01T12:01:00")
 
     return [mock_roll1, mock_roll2]
