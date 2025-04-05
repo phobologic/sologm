@@ -28,7 +28,9 @@ class InterpretationSet(Base, TimestampMixin):
 
     # Relationships this model owns
     interpretations: Mapped[List["Interpretation"]] = relationship(
-        "Interpretation", back_populates="interpretation_set", cascade="all, delete-orphan"
+        "Interpretation",
+        back_populates="interpretation_set",
+        cascade="all, delete-orphan",
     )
 
     @classmethod
