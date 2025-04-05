@@ -99,6 +99,11 @@ class GameManager(BaseManager[Game, Game]):
                 logger.debug(f"Game {game_id} not found")
                 return None
 
+            # Ensure relationships are loaded
+            if hasattr(game, 'scenes'):
+                # Access the relationship to ensure it's loaded
+                _ = len(game.scenes)
+                
             logger.debug(f"Retrieved game {game_id}")
             return game
 
