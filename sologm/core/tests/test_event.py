@@ -40,9 +40,7 @@ class TestEventManager:
 
     def test_list_events_empty(self, event_manager, test_game, test_scene):
         """Test listing events when none exist."""
-        events = event_manager.list_events(
-            game_id=test_game.id, scene_id=test_scene.id
-        )
+        events = event_manager.list_events(game_id=test_game.id, scene_id=test_scene.id)
         assert len(events) == 0
 
     def test_list_events(self, event_manager, test_game, test_scene, create_test_event):
@@ -51,15 +49,15 @@ class TestEventManager:
         create_test_event(test_game.id, test_scene.id, "First event")
         create_test_event(test_game.id, test_scene.id, "Second event")
 
-        events = event_manager.list_events(
-            game_id=test_game.id, scene_id=test_scene.id
-        )
+        events = event_manager.list_events(game_id=test_game.id, scene_id=test_scene.id)
         assert len(events) == 2
         # Events should be in reverse chronological order (newest first)
         assert events[0].description == "Second event"
         assert events[1].description == "First event"
 
-    def test_list_events_with_limit(self, event_manager, test_game, test_scene, create_test_event):
+    def test_list_events_with_limit(
+        self, event_manager, test_game, test_scene, create_test_event
+    ):
         """Test listing events with a limit."""
         # Add some events
         create_test_event(test_game.id, test_scene.id, "First event")
@@ -80,38 +78,51 @@ class TestEventManager:
                 game_id=test_game.id, scene_id="nonexistent-scene"
             )
         assert "Scene nonexistent-scene not found" in str(exc.value)
-        
-    def test_validate_active_context(self, event_manager, game_manager, scene_manager, test_game, test_scene):
+
+    def test_validate_active_context(
+        self, event_manager, game_manager, scene_manager, test_game, test_scene
+    ):
         """Test validating active game and scene context."""
-        game_id, scene_id = event_manager.validate_active_context(game_manager, scene_manager)
+        game_id, scene_id = event_manager.validate_active_context(
+            game_manager, scene_manager
+        )
         assert game_id == test_game.id
         assert scene_id == test_scene.id
 
-    def test_validate_active_context_no_game(self, event_manager, game_manager, scene_manager, db_session):
+    def test_validate_active_context_no_game(
+        self, event_manager, game_manager, scene_manager, db_session
+    ):
         """Test validation with no active game."""
         # Deactivate all games
         db_session.query(Game).update({Game.is_active: False})
         db_session.commit()
-        
+
         with pytest.raises(EventError) as exc:
             event_manager.validate_active_context(game_manager, scene_manager)
         assert "No active game" in str(exc.value)
-        
-    def test_add_event_from_interpretation(self, event_manager, test_game, test_scene, 
-                                          test_interpretation_set, test_interpretations, db_session):
+
+    def test_add_event_from_interpretation(
+        self,
+        event_manager,
+        test_game,
+        test_scene,
+        test_interpretation_set,
+        test_interpretations,
+        db_session,
+    ):
         """Test adding an event from an interpretation."""
         interpretation = test_interpretations[0]
-        
+
         event = event_manager.add_event(
             game_id=test_game.id,
             scene_id=test_scene.id,
             description="Event from interpretation",
             source="oracle",
-            interpretation_id=interpretation.id
+            interpretation_id=interpretation.id,
         )
-        
+
         assert event.interpretation_id == interpretation.id
-        
+
         # Verify relationship works
         db_session.refresh(event)
         assert event.interpretation is not None

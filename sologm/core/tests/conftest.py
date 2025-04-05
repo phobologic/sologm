@@ -36,9 +36,9 @@ def db_session(db_engine):
     connection = db_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
-    
+
     yield session
-    
+
     session.close()
     transaction.rollback()
     connection.close()
@@ -50,9 +50,9 @@ def database_session(db_engine):
     db_session = DatabaseSession(engine=db_engine)
     old_instance = DatabaseSession._instance
     DatabaseSession._instance = db_session
-    
+
     yield db_session
-    
+
     DatabaseSession._instance = old_instance
 
 
@@ -144,7 +144,7 @@ def test_interpretation_set(db_session, test_scene):
         scene_id=test_scene.id,
         context="Test context",
         oracle_results="Test results",
-        is_current=True
+        is_current=True,
     )
     db_session.add(interp_set)
     db_session.commit()
@@ -159,7 +159,7 @@ def test_interpretations(db_session, test_interpretation_set):
             set_id=test_interpretation_set.id,
             title=f"Test Interpretation {i}",
             description=f"Test description {i}",
-            is_selected=(i == 1)  # First one is selected
+            is_selected=(i == 1),  # First one is selected
         )
         for i in range(1, 3)
     ]
@@ -177,7 +177,7 @@ def test_dice_roll(db_session, test_scene):
         modifier=3,
         total=12,
         reason="Test roll",
-        scene_id=test_scene.id
+        scene_id=test_scene.id,
     )
     db_session.add(dice_roll)
     db_session.commit()
@@ -194,7 +194,7 @@ def test_game_with_scenes(db_session):
     game.is_active = True
     db_session.add(game)
     db_session.flush()
-    
+
     scenes = []
     for i in range(1, 4):
         scene = Scene.create(
@@ -203,12 +203,12 @@ def test_game_with_scenes(db_session):
             description=f"Test scene {i}",
             sequence=i,
         )
-        scene.is_active = (i == 2)  # Make the middle scene active
+        scene.is_active = i == 2  # Make the middle scene active
         scenes.append(scene)
-    
+
     db_session.add_all(scenes)
     db_session.commit()
-    
+
     return game, scenes
 
 
@@ -216,19 +216,28 @@ def test_game_with_scenes(db_session):
 @pytest.fixture
 def create_test_game(db_session):
     """Factory fixture to create test games."""
+
     def _create_game(name="Test Game", description="A test game", is_active=True):
         game = Game.create(name=name, description=description)
         game.is_active = is_active
         db_session.add(game)
         db_session.commit()
         return game
+
     return _create_game
 
 
 @pytest.fixture
 def create_test_scene(db_session):
     """Factory fixture to create test scenes."""
-    def _create_scene(game_id, title="Test Scene", description="A test scene", sequence=1, is_active=True):
+
+    def _create_scene(
+        game_id,
+        title="Test Scene",
+        description="A test scene",
+        sequence=1,
+        is_active=True,
+    ):
         scene = Scene.create(
             game_id=game_id,
             title=title,
@@ -239,20 +248,20 @@ def create_test_scene(db_session):
         db_session.add(scene)
         db_session.commit()
         return scene
+
     return _create_scene
 
 
 @pytest.fixture
 def create_test_event(db_session):
     """Factory fixture to create test events."""
+
     def _create_event(game_id, scene_id, description="Test event", source="manual"):
         event = Event.create(
-            game_id=game_id,
-            scene_id=scene_id,
-            description=description,
-            source=source
+            game_id=game_id, scene_id=scene_id, description=description, source=source
         )
         db_session.add(event)
         db_session.commit()
         return event
+
     return _create_event

@@ -11,9 +11,7 @@ class TestGameManager:
 
     def test_create_game(self, game_manager, db_session) -> None:
         """Test creating a new game."""
-        game = game_manager.create_game(
-            name="Test Game", description="A test game"
-        )
+        game = game_manager.create_game(name="Test Game", description="A test game")
 
         assert isinstance(game, Game)
         assert game.name == "Test Game"
@@ -31,12 +29,8 @@ class TestGameManager:
 
     def test_create_game_with_duplicate_name(self, game_manager) -> None:
         """Test creating games with the same name generates unique slugs."""
-        game1 = game_manager.create_game(
-            name="Test Game", description="First game"
-        )
-        game2 = game_manager.create_game(
-            name="Test Game", description="Second game"
-        )
+        game1 = game_manager.create_game(name="Test Game", description="First game")
+        game2 = game_manager.create_game(name="Test Game", description="Second game")
 
         assert game1.id != game2.id
         assert game1.slug == "test-game"
@@ -117,22 +111,22 @@ class TestGameManager:
         with pytest.raises(GameError) as exc:
             game_manager.activate_game("nonexistent-game")
         assert "Game not found" in str(exc.value)
-        
+
     def test_game_model_validation(self, db_session):
         """Test Game model validation."""
         # Test empty name validation
         with pytest.raises(ValueError) as exc:
             Game.create(name="", description="Test")
         assert "name cannot be empty" in str(exc.value).lower()
-        
+
         # Test slug generation
         game = Game.create(name="Test Game", description="Test")
         assert game.slug == "test-game"
-        
+
         # Test duplicate slug handling
         db_session.add(game)
         db_session.commit()
-        
+
         game2 = Game.create(name="Test Game", description="Another test")
         db_session.add(game2)
         db_session.commit()

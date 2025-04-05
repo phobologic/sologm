@@ -74,7 +74,9 @@ class TestSceneManager:
                 description="Another beginning",
             )
 
-    def test_create_scene_duplicate_title_different_case(self, scene_manager, test_game) -> None:
+    def test_create_scene_duplicate_title_different_case(
+        self, scene_manager, test_game
+    ) -> None:
         """Test creating a scene with a duplicate title in different case fails."""
         # Create first scene
         scene_manager.create_scene(
@@ -249,7 +251,7 @@ class TestSceneManager:
         assert current_scene.id == scene1.id
         # Status should be completed
         assert current_scene.status == SceneStatus.COMPLETED
-        
+
     def test_scene_sequence_management(self, scene_manager, test_game):
         """Test that scene sequences are managed correctly."""
         # Create multiple scenes
@@ -268,16 +270,16 @@ class TestSceneManager:
             title="Third Scene",
             description="Scene 3",
         )
-        
+
         # Verify sequences
         assert scene1.sequence == 1
         assert scene2.sequence == 2
         assert scene3.sequence == 3
-        
+
         # Test get_previous_scene
         prev_scene = scene_manager.get_previous_scene(test_game.id, scene3)
         assert prev_scene.id == scene2.id
-        
+
     def test_validate_active_context(self, scene_manager, game_manager, test_game):
         """Test validating active game and scene context."""
         # Create a scene to be active
@@ -286,17 +288,19 @@ class TestSceneManager:
             title="Active Scene",
             description="Currently active",
         )
-        
+
         game_id, active_scene = scene_manager.validate_active_context(game_manager)
         assert game_id == test_game.id
         assert active_scene.id == scene.id
-        
-    def test_validate_active_context_no_game(self, scene_manager, game_manager, db_session):
+
+    def test_validate_active_context_no_game(
+        self, scene_manager, game_manager, db_session
+    ):
         """Test validation with no active game."""
         # Deactivate all games
         db_session.query(Game).update({Game.is_active: False})
         db_session.commit()
-        
+
         with pytest.raises(SceneError) as exc:
             scene_manager.validate_active_context(game_manager)
         assert "No active game" in str(exc.value)

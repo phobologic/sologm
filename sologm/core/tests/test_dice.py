@@ -151,7 +151,7 @@ class TestDiceManager:
         assert all(roll.scene_id == scene_id for roll in rolls)
         assert rolls[0].reason == "Roll 3"  # Most recent first
         assert rolls[1].reason == "Roll 2"
-        
+
     def test_dice_roll_randomness(self, dice_manager):
         """Test that dice rolls produce random results within expected range."""
         # Roll a large number of d6
@@ -159,36 +159,41 @@ class TestDiceManager:
         for _ in range(100):
             roll = dice_manager.roll("1d6")
             results.append(roll.individual_results[0])
-        
+
         # Check we get a good distribution
         assert min(results) == 1
         assert max(results) == 6
         # Check we get at least one of each number (very unlikely to fail)
         assert set(range(1, 7)).issubset(set(results))
-        
-    @pytest.mark.parametrize("notation,expected", [
-        ("2d6", (2, 6, 0)),
-        ("3d8+2", (3, 8, 2)),
-        ("4d10-3", (4, 10, -3)),
-    ])
+
+    @pytest.mark.parametrize(
+        "notation,expected",
+        [
+            ("2d6", (2, 6, 0)),
+            ("3d8+2", (3, 8, 2)),
+            ("4d10-3", (4, 10, -3)),
+        ],
+    )
     def test_parse_notation_parametrized(self, dice_manager, notation, expected):
         """Test parsing various dice notations."""
         count, sides, modifier = dice_manager._parse_notation(notation)
         assert (count, sides, modifier) == expected
-        
+
     def test_execute_db_operation(self, dice_manager):
         """Test the _execute_db_operation method."""
+
         def _test_operation(session):
             return "success"
-        
+
         result = dice_manager._execute_db_operation("test operation", _test_operation)
         assert result == "success"
-        
+
     def test_execute_db_operation_error(self, dice_manager):
         """Test error handling in _execute_db_operation."""
+
         def _test_operation(session):
             raise ValueError("Test error")
-        
+
         with pytest.raises(DiceError) as exc:
             dice_manager._execute_db_operation("test operation", _test_operation)
         assert "Failed to test operation" in str(exc.value)
