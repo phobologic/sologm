@@ -2,7 +2,7 @@
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from sologm.core.game import GameManager
 from sologm.database.session import DatabaseSession
@@ -19,25 +19,24 @@ class TestGameManager:
         """Set up an in-memory SQLite database for testing."""
         # Create an in-memory SQLite database
         self.engine = create_engine("sqlite:///:memory:")
-        
+
         # Create all tables
         Base.metadata.create_all(self.engine)
-        
+
         # Create a session factory
         self.session_factory = sessionmaker(bind=self.engine)
-        
+
         # Create a session
         self.session = self.session_factory()
-        
+
         # Create a database session instance
         self.db_session = DatabaseSession(engine=self.engine)
         DatabaseSession._instance = self.db_session
-        
+
         # Create a game manager with the test session
         self.game_manager = GameManager(session=self.session)
-        
+
         yield
-        
         # Clean up
         self.session.close()
         Base.metadata.drop_all(self.engine)
@@ -55,7 +54,7 @@ class TestGameManager:
         assert game.created_at is not None
         assert game.modified_at is not None
         assert game.is_active is True
-        
+
         # Verify game was saved to database
         db_game = self.session.query(Game).filter(Game.id == game.id).first()
         assert db_game is not None
@@ -114,7 +113,7 @@ class TestGameManager:
         # Deactivate all games first
         self.session.query(Game).update({Game.is_active: False})
         self.session.commit()
-        
+
         game = self.game_manager.get_active_game()
         assert game is None
 
@@ -141,7 +140,7 @@ class TestGameManager:
         active_game = self.game_manager.get_active_game()
         assert active_game is not None
         assert active_game.id == game2.id
-        
+
         # Verify the first game is no longer active
         self.session.refresh(game1)
         assert game1.is_active is False

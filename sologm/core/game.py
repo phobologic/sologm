@@ -17,26 +17,28 @@ class GameManager(BaseManager[Game, Game]):
 
     def _convert_to_domain(self, db_model: Game) -> Game:
         """Convert database model to domain model.
-        
+
         In this case, the database model is the domain model.
-        
+
         Args:
             db_model: Database model instance
-            
+
         Returns:
             Domain model instance
         """
         return db_model
-    
-    def _convert_to_db_model(self, domain_model: Game, db_model: Optional[Game] = None) -> Game:
+
+    def _convert_to_db_model(
+        self, domain_model: Game, db_model: Optional[Game] = None
+    ) -> Game:
         """Convert domain model to database model.
-        
+
         In this case, the domain model is the database model.
-        
+
         Args:
             domain_model: Domain model instance
             db_model: Optional existing database model to update
-            
+
         Returns:
             Database model instance
         """
@@ -58,17 +60,16 @@ class GameManager(BaseManager[Game, Game]):
         def _create_game(session: Session, name: str, description: str) -> Game:
             # Use the create class method from the SQLAlchemy model
             game = Game.create(name=name, description=description)
-            
+
             # Set this as the only active game
             self._deactivate_all_games(session)
             game.is_active = True
-            
+
             session.add(game)
             session.flush()  # Flush to get the ID
-            
+
             logger.debug(f"Created game {game.id}: {name}")
             return game
-        
         try:
             return self._execute_db_operation(
                 "create game", _create_game, name, description
@@ -79,7 +80,7 @@ class GameManager(BaseManager[Game, Game]):
 
     def _deactivate_all_games(self, session: Session) -> None:
         """Deactivate all games in the database.
-        
+
         Args:
             session: SQLAlchemy session
         """
@@ -98,7 +99,7 @@ class GameManager(BaseManager[Game, Game]):
             games = session.query(Game).order_by(Game.created_at).all()
             logger.debug(f"Listed {len(games)} games")
             return games
-        
+
         try:
             return self._execute_db_operation("list games", _list_games)
         except Exception as e:
@@ -122,10 +123,10 @@ class GameManager(BaseManager[Game, Game]):
             if not game:
                 logger.debug(f"Game {game_id} not found")
                 return None
-            
+
             logger.debug(f"Retrieved game {game_id}")
             return game
-        
+
         try:
             return self._execute_db_operation("get game", _get_game, game_id)
         except Exception as e:
@@ -145,10 +146,10 @@ class GameManager(BaseManager[Game, Game]):
             if not game:
                 logger.debug("No active game set")
                 return None
-            
+
             logger.debug(f"Getting active game: {game.id}")
             return game
-        
+
         try:
             return self._execute_db_operation("get active game", _get_active_game)
         except Exception as e:
@@ -175,13 +176,13 @@ class GameManager(BaseManager[Game, Game]):
 
             # Deactivate all games first
             self._deactivate_all_games(session)
-            
+
             # Activate the requested game
             game.is_active = True
-            
+
             logger.debug(f"Activated game: {game_id}")
             return game
-        
+
         try:
             return self._execute_db_operation("activate game", _activate_game, game_id)
         except Exception as e:
