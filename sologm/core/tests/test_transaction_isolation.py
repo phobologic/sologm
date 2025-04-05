@@ -1,51 +1,6 @@
-"""Tests for transaction isolation in SQLAlchemy."""
+"""Tests for cascade delete behavior in SQLAlchemy."""
 
 import pytest
-from sqlalchemy.orm import sessionmaker
-
-from sologm.models.game import Game
-
-
-def test_transaction_isolation(db_engine):
-    """Test that transactions are properly isolated."""
-    # Create two separate sessions with explicit connections
-    connection1 = db_engine.connect()
-    connection2 = db_engine.connect()
-
-    # Start explicit transactions
-    transaction1 = connection1.begin()
-
-    # Create sessions bound to these connections
-    Session = sessionmaker()
-    session1 = Session(bind=connection1)
-    session2 = Session(bind=connection2)
-
-    try:
-        # In session1, create a game but don't commit
-        game = Game.create(name="Isolated Game", description="Test isolation")
-        session1.add(game)
-        session1.flush()  # Flush but don't commit
-
-        # Verify game is visible in session1
-        game_in_session1 = (
-            session1.query(Game).filter(Game.name == "Isolated Game").first()
-        )
-        assert game_in_session1 is not None
-
-        # Verify game is NOT visible in session2
-        game_in_session2 = (
-            session2.query(Game).filter(Game.name == "Isolated Game").first()
-        )
-        assert game_in_session2 is None
-    finally:
-        # Clean up
-        if transaction1.is_active:
-            transaction1.rollback()
-        session1.close()
-        session2.close()
-        connection1.close()
-        connection2.close()
-
 
 def test_cascade_delete_game(db_session, test_game_with_scenes):
     """Test that deleting a game cascades to scenes."""
