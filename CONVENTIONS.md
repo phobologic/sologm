@@ -144,3 +144,109 @@ This document outlines the conventions for coding in the SoloGM project.
 - Add contextual information to exceptions using raise ExceptionType("Context: {}".format(details)) from original_exception
 - Document which exceptions a function might raise in its docstring
 - In CLI commands, catch all expected exceptions and display user-friendly error messages
+
+## Docstring Conventions
+
+- All modules, classes, methods, and functions must have docstrings
+- Use Google-style docstring format consistently throughout the codebase
+- Module-level docstrings should explain the purpose of the module and any important concepts
+- Class docstrings should describe the class purpose, attributes, and usage patterns
+- Method/function docstrings must document:
+  - Purpose and behavior of the function
+  - All parameters with types and descriptions
+  - Return values with types and descriptions
+  - Exceptions that may be raised with conditions
+  - Usage examples for complex functions
+
+- Example of proper method docstring:
+  ```python
+  def get_active_scene(self, game_id: str) -> Optional[Scene]:
+      """Get the active scene for the specified game.
+
+      Args:
+          game_id: ID of the game to get the active scene for.
+
+      Returns:
+          Scene: Active Scene object if found, None otherwise.
+
+      Raises:
+          SceneError: If there's an error retrieving the active scene.
+          
+      Example:
+          ```
+          scene_manager = SceneManager()
+          active_scene = scene_manager.get_active_scene("game_123")
+          ```
+      """
+  ```
+
+- Keep docstrings focused and concise while providing complete information
+- For overridden methods, use `"""See base class."""` if behavior is unchanged
+- Document any side effects or state changes in method docstrings
+
+## Logging Conventions
+
+- Use the standard Python `logging` module for all logging
+- Create a module-level logger in each file using:
+  ```python
+  logger = logging.getLogger(__name__)
+  ```
+- Never use `print()` statements for debugging or information output
+- Follow these logging level guidelines:
+  - `DEBUG`: Detailed information for debugging and development
+  - `INFO`: Confirmation that things are working as expected
+  - `WARNING`: Indication that something unexpected happened but the application can continue
+  - `ERROR`: Error conditions that prevent a function from working correctly
+  - `CRITICAL`: Critical errors that may lead to application failure
+
+- Log the start and completion of significant operations at `INFO` level
+- Log all exceptions at `ERROR` level with context information
+- Include relevant context in log messages (IDs, operation names)
+- Structure log messages consistently:
+  - For operations: `"Starting operation_name for resource_type resource_id"`
+  - For errors: `"Error in operation_name for resource_type resource_id: error_details"`
+
+- Log sensitive information only at `DEBUG` level and never log credentials
+- In database operations, log the operation name before execution at `DEBUG` level
+- For manager methods, log entry and exit points at `DEBUG` level
+- At application startup, log configuration information at `INFO` level
+
+## Type Annotation Conventions
+
+- Use type annotations for all function definitions, including internal functions
+- Import required types from `typing` module at the top of each file
+- Use `TypeVar` for generic type parameters in base classes
+- For container types, always specify contained type (e.g., `List[str]`, not just `List`)
+- Use `Optional[Type]` for parameters and return values that may be `None`
+- Use `Union[Type1, Type2]` for values that could be multiple types
+- Define custom type aliases for complex types at the module level
+
+- For database models, use SQLAlchemy 2.0 style annotations:
+  ```python
+  class MyModel(Base, TimestampMixin):
+      id: Mapped[str] = mapped_column(primary_key=True)
+      name: Mapped[str] = mapped_column(String(255))
+      created_at: Mapped[datetime] = mapped_column(default=func.now())
+      relation_id: Mapped[Optional[str]] = mapped_column(ForeignKey("other.id"))
+  ```
+
+- For callback functions, use `Callable[[ParamType1, ParamType2], ReturnType]`
+- For protocol/structural typing, use `Protocol` classes for interface definitions
+- Use `Any` sparingly and only when absolutely necessary
+- When importing types only for type annotations, use:
+  ```python
+  from typing import TYPE_CHECKING
+  
+  if TYPE_CHECKING:
+      from other_module import ComplexType
+  ```
+
+- For collections with type constraints, use:
+  - `Dict[KeyType, ValueType]` for dictionaries
+  - `List[ItemType]` for lists
+  - `Set[ItemType]` for sets
+  - `Tuple[Type1, Type2]` for fixed-size tuples
+  - `Tuple[ItemType, ...]` for variable-size tuples
+
+- Use `cast()` when type checkers need help understanding type narrowing
+- Document complex type annotations with comments when necessary
