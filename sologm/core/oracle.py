@@ -38,9 +38,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self.anthropic_client = anthropic_client or AnthropicClient()
         self.event_manager = event_manager or EventManager(session=session)
 
-    def validate_active_context(self,
-                                game_manager: GameManager,
-                                scene_manager: SceneManager) -> Tuple[str, str]:
+    def validate_active_context(
+        self, game_manager: GameManager, scene_manager: SceneManager
+    ) -> Tuple[str, str]:
         """Validate active game and scene exist.
 
         Args:
@@ -476,10 +476,10 @@ DESCRIPTION: Detailed description of interpretation idea
         ) -> None:
             # Access the interpretation_set relationship directly
             interp_set = interpretation.interpretation_set
-            
+
             # Access the scene relationship from the interpretation set
             scene = interp_set.scene
-            
+
             description = f"{interpretation.title}: {interpretation.description}"
 
             # Create the event
