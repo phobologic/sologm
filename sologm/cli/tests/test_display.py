@@ -123,15 +123,16 @@ def sample_interpretation_set(sample_interpretation) -> InterpretationSet:
     interp_set.id = "set-1"
     interp_set.context = "Test context"
     interp_set.oracle_results = "Test results"
-    interp_set.interpretations = [sample_interpretation]
+    # Create a mock for interpretations that behaves like a list
+    interpretations_mock = MagicMock()
+    interpretations_mock.__len__.return_value = 1
+    interpretations_mock.__iter__.return_value = iter([sample_interpretation])
+    interpretations_mock.__getitem__.return_value = sample_interpretation
+    interp_set.interpretations = interpretations_mock
     # Instead of selected_interpretation which doesn't exist
     interp_set.selected_interpretation_id = sample_interpretation.id
     interp_set.created_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
     interp_set.scene_id = "test-scene"
-    # Make interpretations accessible as a property
-    interp_set.interpretations.__len__.return_value = 1
-    interp_set.interpretations.__iter__.return_value = iter([sample_interpretation])
-    interp_set.interpretations.__getitem__.return_value = sample_interpretation
     return interp_set
 
 
@@ -183,6 +184,10 @@ def test_display_game_status_full(
     mock_console, sample_game, sample_scene, sample_events
 ):
     """Test displaying full game status with all components."""
+    # Create a mock SceneManager
+    scene_manager = MagicMock(spec=SceneManager)
+    scene_manager.get_previous_scene.return_value = None
+    
     current_interpretation = {
         "context": "Test context",
         "selected_interpretation": None,
@@ -193,6 +198,7 @@ def test_display_game_status_full(
         sample_scene,
         sample_events,
         current_interpretation,
+        scene_manager=scene_manager,
         oracle_manager=None,
     )
     assert mock_console.print.called
@@ -231,6 +237,10 @@ def test_display_game_status_selected_interpretation(
     mock_console, sample_game, sample_scene, sample_events
 ):
     """Test displaying game status with a selected interpretation."""
+    # Create a mock SceneManager
+    scene_manager = MagicMock(spec=SceneManager)
+    scene_manager.get_previous_scene.return_value = None
+    
     current_interpretation = {
         "context": "Test context",
         "selected_interpretation": 0,
@@ -241,6 +251,7 @@ def test_display_game_status_selected_interpretation(
         sample_scene,
         sample_events,
         current_interpretation,
+        scene_manager=scene_manager,
         oracle_manager=None,
     )
     assert mock_console.print.called
@@ -300,23 +311,17 @@ def test_create_events_panel(sample_events):
 def test_create_oracle_panel(sample_game, sample_scene):
     """Test creating the oracle panel."""
     # Test with no interpretation reference
-    panel = _create_oracle_panel(sample_game, sample_scene, None, None, 60)
+    panel = _create_oracle_panel(sample_game, sample_scene, None, 60)
     assert panel is None
 
-    # Test with open interpretation reference
-    current_interpretation = {
-        "scene_id": "test-scene",
-        "id": "test-id",
-        "resolved": False,
-    }
+    # Create a mock oracle manager
+    oracle_manager = MagicMock()
+    oracle_manager.get_current_interpretation_set.return_value = None
+    oracle_manager.get_most_recent_interpretation.return_value = None
 
-    # This will use the fallback path since we don't have a real oracle manager
-    panel = _create_oracle_panel(
-        sample_game, sample_scene, current_interpretation, None, 60
-    )
-    assert panel is not None
-    assert panel.title == "Pending Oracle Decision"
-    assert panel.border_style == "yellow"
+    # Test with oracle manager
+    panel = _create_oracle_panel(sample_game, sample_scene, oracle_manager, 60)
+    assert panel is None
 
 
 def test_display_interpretation(mock_console, sample_interpretation):
