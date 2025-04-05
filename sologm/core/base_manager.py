@@ -83,19 +83,18 @@ class BaseManager(Generic[T, M]):
     def _execute_db_operation(
         self, operation_name: str, operation: callable, *args: Any, **kwargs: Any
     ) -> Any:
-        """Execute a database operation with proper session handling and error handling.
-
+        """Execute a database operation with proper session handling.
+        
+        This method ensures proper transaction management but preserves original exceptions.
+        
         Args:
             operation_name: Name of the operation (for logging)
             operation: Callable that performs the database operation
             *args: Arguments to pass to the operation
             **kwargs: Keyword arguments to pass to the operation
-
+            
         Returns:
             Result of the operation
-
-        Raises:
-            SoloGMError: If the operation fails
         """
         self.logger.debug(f"Executing database operation: {operation_name}")
         session, should_close = self._get_session()
@@ -106,11 +105,12 @@ class BaseManager(Generic[T, M]):
                 session.commit()
             return result
         except Exception as e:
+            # Only handle the transaction rollback, but re-raise the original exception
             if should_close:
                 self.logger.debug(f"Rolling back transaction for {operation_name}")
                 session.rollback()
             self.logger.error(f"Error in {operation_name}: {str(e)}")
-            raise SoloGMError(f"Failed to {operation_name}: {str(e)}") from e
+            raise  # Re-raise the original exception
         finally:
             if should_close:
                 self.logger.debug(f"Closing session for {operation_name}")
