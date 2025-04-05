@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from typer import Typer
 
     app: Typer
+
 from sologm.cli.db_helpers import with_db_session
 from sologm.cli.display import display_scene_info
 from sologm.core.game import GameManager
@@ -42,7 +43,7 @@ def create_scene(
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set " "one.")
+        raise GameError("No active game. Use 'sologm game activate' to set one.")
 
     # Create the scene
     scene = scene_manager.create_scene(
@@ -68,12 +69,12 @@ def list_scenes(session: Session = None) -> None:
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set " "one.")
+        raise GameError("No active game. Use 'sologm game activate' to set one.")
 
     # Get scenes
     scenes = scene_manager.list_scenes(active_game.id)
     if not scenes:
-        console.print("No scenes found. Create one with 'sologm scene " "create'.")
+        console.print("No scenes found. Create one with 'sologm scene create'.")
         return
 
     # Get active scene
@@ -136,7 +137,7 @@ def complete_scene(session: Session = None) -> None:
 @with_db_session
 def set_current_scene(
     scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current"),
-    session: Session = None
+    session: Session = None,
 ) -> None:
     """Set which scene is currently being played."""
     game_manager = GameManager(session)
@@ -145,7 +146,7 @@ def set_current_scene(
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set " "one.")
+        raise GameError("No active game. Use 'sologm game activate' to set one.")
 
     # Get list of valid scenes first
     scenes = scene_manager.list_scenes(active_game.id)

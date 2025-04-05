@@ -6,11 +6,11 @@ import typer
 from rich.console import Console
 from sqlalchemy.orm import Session
 
+from sologm.cli.db_helpers import with_db_session
 from sologm.cli.display import display_events_table
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
-from sologm.database.session import with_db_session
 from sologm.utils.errors import EventError
 
 logger = logging.getLogger(__name__)
