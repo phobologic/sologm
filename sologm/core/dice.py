@@ -138,17 +138,3 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         self.logger.debug(f"Parsed {notation} as {count}d{sides}{modifier:+d}")
         return count, sides, modifier
 
-    def _convert_to_domain(self, db_model: DiceRoll) -> DiceRoll:
-        """Convert database model to domain model.
-
-        Since we're using the database model directly, this is a pass-through.
-        """
-        return db_model
-
-    def _convert_to_db_model(self, domain_model: DiceRoll,
-                             db_model: Optional[DiceRoll] = None) -> DiceRoll:
-        """Convert domain model to database model.
-
-        Since we're using the database model directly, this is a pass-through.
-        """
-        return domain_model if db_model is None else db_model

@@ -53,19 +53,22 @@ class BaseManager(Generic[T, M]):
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
         
+        Default implementation assumes the database model is the domain model.
+        Override this method if your domain model differs from your database model.
+        
         Args:
             db_model: Database model instance
             
         Returns:
             Domain model instance
-            
-        Raises:
-            NotImplementedError: If not implemented in subclass
         """
-        raise NotImplementedError("Subclasses must implement _convert_to_domain")
+        return db_model  # type: ignore
     
     def _convert_to_db_model(self, domain_model: T, db_model: Optional[M] = None) -> M:
         """Convert domain model to database model.
+        
+        Default implementation assumes the domain model is the database model.
+        Override this method if your domain model differs from your database model.
         
         Args:
             domain_model: Domain model instance
@@ -73,11 +76,8 @@ class BaseManager(Generic[T, M]):
             
         Returns:
             Database model instance
-            
-        Raises:
-            NotImplementedError: If not implemented in subclass
         """
-        raise NotImplementedError("Subclasses must implement _convert_to_db_model")
+        return domain_model  # type: ignore
     
     def _execute_db_operation(self, operation_name: str, operation: callable, *args: Any, **kwargs: Any) -> Any:
         """Execute a database operation with proper session handling and error handling.

@@ -15,34 +15,6 @@ logger = logging.getLogger(__name__)
 class GameManager(BaseManager[Game, Game]):
     """Manages game operations."""
 
-    def _convert_to_domain(self, db_model: Game) -> Game:
-        """Convert database model to domain model.
-
-        In this case, the database model is the domain model.
-
-        Args:
-            db_model: Database model instance
-
-        Returns:
-            Domain model instance
-        """
-        return db_model
-
-    def _convert_to_db_model(
-        self, domain_model: Game, db_model: Optional[Game] = None
-    ) -> Game:
-        """Convert domain model to database model.
-
-        In this case, the domain model is the database model.
-
-        Args:
-            domain_model: Domain model instance
-            db_model: Optional existing database model to update
-
-        Returns:
-            Database model instance
-        """
-        return domain_model
 
     def create_game(self, name: str, description: str) -> Game:
         """Create a new game.
