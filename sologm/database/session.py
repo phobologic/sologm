@@ -97,7 +97,6 @@ class SessionContext:
     """Context manager for database sessions."""
 
     session: Optional[Session] = None
-    db_session: DatabaseSession
 
     def __init__(self, db_session: Optional[DatabaseSession] = None) -> None:
         """Initialize with optional database session.
@@ -105,14 +104,13 @@ class SessionContext:
         Args:
             db_session: Database session to use (uses singleton if None)
         """
-        self.db_session = db_session or DatabaseSession.get_instance()
+        self._db = db_session or DatabaseSession.get_instance()
         self.session = None
 
     def __enter__(self) -> Session:
         """Enter context and get a session."""
-        session: Session = self.db_session.get_session()
-        self.session = session
-        return session
+        self.session = self._db.get_session()
+        return self.session
 
     def __exit__(self, exc_type: Optional[Type[BaseException]],
                 exc_val: Optional[BaseException],
@@ -127,7 +125,7 @@ class SessionContext:
 
         # Always close the session
         self.session.close()
-        self.db_session.close_session()
+        self._db.close_session()
 
 
 # Convenience functions
