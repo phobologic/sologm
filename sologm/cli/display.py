@@ -8,7 +8,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from sologm.core.dice import DiceRoll
+from sologm.models.dice import DiceRoll
 from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
@@ -46,7 +46,7 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
     Args:
         console: Rich console instance
-        roll: DiceRoll to display
+        roll: DiceRoll model to display
     """
     logger.debug(f"Displaying dice roll: {roll.notation} (total: {roll.total})")
     logger.debug(
@@ -74,7 +74,7 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
     # Add timestamp if available
     if roll.created_at:
         details.append("\nTime: ", style="dim")
-        details.append(roll.created_at, style="dim")
+        details.append(roll.created_at.isoformat(), style="dim")
 
     panel = Panel(details, title=title, border_style="bright_black", expand=False)
     console.print(panel)

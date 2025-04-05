@@ -5,7 +5,8 @@ import pytest
 from unittest.mock import patch
 
 from sologm.cli.app import app
-from sologm.core.dice import DiceManager, DiceRoll
+from sologm.core.dice import DiceManager
+from sologm.models.dice import DiceRoll
 
 runner = CliRunner()
 
@@ -15,15 +16,19 @@ def mock_dice_manager():
     with patch('sologm.cli.dice.DiceManager') as mock:
         # Configure the mock to return a predictable dice roll
         mock_instance = mock.return_value
-        mock_instance.roll.return_value = DiceRoll(
+        # Create a mock DiceRoll model
+        mock_roll = DiceRoll(
             id="test-id",
             notation="2d6+3",
             individual_results=[4, 5],
             modifier=3,
             total=12,
-            reason="Test roll",
-            created_at="2023-01-01T12:00:00"
+            reason="Test roll"
         )
+        # Add created_at attribute
+        from datetime import datetime
+        mock_roll.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
+        mock_instance.roll.return_value = mock_roll
         yield mock
 
 def test_roll_dice_command(mock_dice_manager):
@@ -45,26 +50,29 @@ def test_dice_history_command(mock_dice_manager):
     """Test the dice history command."""
     # Configure the mock to return a list of dice rolls
     mock_instance = mock_dice_manager.return_value
-    mock_instance.get_recent_rolls.return_value = [
-        DiceRoll(
-            id="test-id-1",
-            notation="1d20",
-            individual_results=[15],
-            modifier=0,
-            total=15,
-            reason="Attack roll",
-            created_at="2023-01-01T12:00:00"
-        ),
-        DiceRoll(
-            id="test-id-2",
-            notation="2d6+3",
-            individual_results=[4, 5],
-            modifier=3,
-            total=12,
-            reason="Damage roll",
-            created_at="2023-01-01T12:01:00"
-        )
-    ]
+    # Create mock DiceRoll models
+    from datetime import datetime
+    mock_roll1 = DiceRoll(
+        id="test-id-1",
+        notation="1d20",
+        individual_results=[15],
+        modifier=0,
+        total=15,
+        reason="Attack roll"
+    )
+    mock_roll1.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
+    
+    mock_roll2 = DiceRoll(
+        id="test-id-2",
+        notation="2d6+3",
+        individual_results=[4, 5],
+        modifier=3,
+        total=12,
+        reason="Damage roll"
+    )
+    mock_roll2.created_at = datetime.fromisoformat("2023-01-01T12:01:00")
+    
+    mock_instance.get_recent_rolls.return_value = [mock_roll1, mock_roll2]
     
     result = runner.invoke(app, ["dice", "history", "--limit", "2"])
     

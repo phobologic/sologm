@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from sologm.core.dice import DiceManager, DiceRoll
+from sologm.core.dice import DiceManager
 from sologm.models.base import Base
 from sologm.models.dice import DiceRoll as DiceRollModel
 from sologm.utils.errors import DiceError
@@ -38,25 +38,6 @@ def dice_manager(db_session):
     return DiceManager(session=db_session)
 
 
-class TestDiceRoll:
-    """Tests for the DiceRoll class."""
-
-    def test_dice_roll_creation(self) -> None:
-        """Test creating a DiceRoll object."""
-        roll = DiceRoll(
-            id="test-id",
-            notation="2d6+1",
-            individual_results=[3, 4],
-            modifier=1,
-            total=8,
-            reason="Test roll",
-        )
-
-        assert roll.notation == "2d6+1"
-        assert roll.individual_results == [3, 4]
-        assert roll.modifier == 1
-        assert roll.total == 8
-        assert roll.reason == "Test roll"
 
 
 class TestDiceManager:
