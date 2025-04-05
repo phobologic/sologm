@@ -1,10 +1,10 @@
-# SoloGM Database Conventions
+# SoloGM Coding Conventions
 
-This document outlines the conventions for database usage in the SoloGM project, focusing on how we interact with the database from CLI commands and Manager classes.
+This document outlines the conventions for coding in the SoloGM project.
 
 ## CLI Database Access Pattern
 
-- Always use the `@with_db_session` decorator for CLI commands that need database access
+- Always use the `@with_db_session` (from `sologm.cli.db_helpers`)decorator for CLI commands that need database access
 - Never create database sessions directly in CLI functions
 - Access the session via the injected `session` parameter
 - Delegate all database operations to manager classes
@@ -75,11 +75,54 @@ This document outlines the conventions for database usage in the SoloGM project,
 - Include a `slug` field for human-readable identifiers where appropriate
 - Define validation logic using SQLAlchemy's `@validates` decorator
 - Implement static `create()` class methods on models for standardized instantiation
-- Define relationships in the central `relationships.py` file, not in individual model files
+- All columns should use the SQLAlchemy 2.0 ORM Declaritive Models: https://docs.sqlalchemy.org/en/20/changelog/whatsnew_20.html#orm-declarative-models
 
-## Relationships
+## Relationship Management
 
-- Define one-to-many relationships with appropriate cascade behavior
-- Use `back_populates` instead of `backref` for explicit bidirectional relationships
-- Set `cascade="all, delete-orphan"` for parent-child relationships where appropriate
-- Define foreign keys in the child model, not in the relationship definition
+- Use a hybrid approach for defining relationships between models:
+  - Define "owning" relationships directly in model classes
+  - Define "non-owning" relationships in `relationships.py`
+  - A relationship is "owned" by the model that contains the foreign key
+  - For many-to-many relationships, choose the more logical owner
+
+- In model classes:
+  - Use proper type annotations with `Mapped[Type]` or `Mapped[List[Type]]`
+  - Use `TYPE_CHECKING` to avoid circular imports
+  - Include docstrings for relationships
+  - Define cascade behavior explicitly
+
+- In `relationships.py`:
+  - Only define the non-owning side of relationships
+  - Import all model classes directly (no TYPE_CHECKING needed)
+  - Keep alphabetical ordering of models for easier navigation
+
+- Example of proper relationship definition in a model:
+  ```python
+  from typing import List, TYPE_CHECKING
+
+  if TYPE_CHECKING:
+      from sologm.models.other_model import OtherModel
+
+  class MyModel(Base, TimestampMixin):
+      # Foreign key column
+      other_id: Mapped[str] = mapped_column(ForeignKey("other_models.id"))
+
+      # Owning relationship
+      other_items: Mapped[List["OtherModel"]] = relationship(
+          "OtherModel", back_populates="my_model", cascade="all, delete-orphan"
+      )
+  ```
+
+## Exception Handling Conventions
+- Let original exceptions propagate rather than wrapping them in custom exceptions
+- Only catch exceptions when you can handle them meaningfully or need to add context
+- Use specific exception types in except clauses rather than catching all exceptions
+- When creating custom exceptions, inherit from the most specific built-in exception type
+- Log exceptions at the appropriate level before re-raising them
+- Use context managers (with statements) for resource cleanup rather than try/finally
+  where possible
+- In manager methods, catch and handle only domain-specific exceptions; let system
+  exceptions propagate
+- Add contextual information to exceptions using raise ExceptionType("Context: {}".format(details)) from original_exception
+- Document which exceptions a function might raise in its docstring
+- In CLI commands, catch all expected exceptions and display user-friendly error messages
