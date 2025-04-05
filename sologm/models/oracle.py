@@ -31,7 +31,7 @@ class InterpretationSet(Base, TimestampMixin):
         context: str,
         oracle_results: str,
         retry_attempt: int = 0,
-        is_current: bool = False
+        is_current: bool = False,
     ) -> "InterpretationSet":
         """Create a new interpretation set.
 
@@ -50,7 +50,7 @@ class InterpretationSet(Base, TimestampMixin):
             context=context,
             oracle_results=oracle_results,
             retry_attempt=retry_attempt,
-            is_current=is_current
+            is_current=is_current,
         )
 
 
@@ -61,8 +61,7 @@ class Interpretation(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     set_id: Mapped[str] = mapped_column(
-        ForeignKey("interpretation_sets.id"), 
-        nullable=False
+        ForeignKey("interpretation_sets.id"), nullable=False
     )
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -72,11 +71,7 @@ class Interpretation(Base, TimestampMixin):
 
     @classmethod
     def create(
-        cls,
-        set_id: str,
-        title: str,
-        description: str,
-        is_selected: bool = False
+        cls, set_id: str, title: str, description: str, is_selected: bool = False
     ) -> "Interpretation":
         """Create a new interpretation.
 
@@ -93,5 +88,5 @@ class Interpretation(Base, TimestampMixin):
             set_id=set_id,
             title=title,
             description=description,
-            is_selected=is_selected
+            is_selected=is_selected,
         )

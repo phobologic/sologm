@@ -23,14 +23,14 @@ class Game(Base, TimestampMixin):
 
     # Relationships will be defined in relationships.py
 
-    @validates('name')
+    @validates("name")
     def validate_name(self, _: str, name: str) -> str:
         """Validate the game name."""
         if not name or not name.strip():
             raise ValueError("Game name cannot be empty")
         return name
 
-    @validates('slug')
+    @validates("slug")
     def validate_slug(self, _: str, slug: str) -> str:
         """Validate the game slug."""
         if not slug or not slug.strip():
@@ -53,9 +53,4 @@ class Game(Base, TimestampMixin):
         # Create a unique ID
         unique_id = str(uuid.uuid4())
 
-        return cls(
-            id=unique_id,
-            slug=base_slug,
-            name=name,
-            description=description
-        )
+        return cls(id=unique_id, slug=base_slug, name=name, description=description)
