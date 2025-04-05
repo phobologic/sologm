@@ -7,15 +7,15 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
-from sologm.models.dice import DiceRoll as DiceRollModel
+from sologm.models.dice import DiceRoll
 from sologm.utils.errors import DiceError
 
 
-class DiceManager(BaseManager[DiceRollModel, DiceRollModel]):
+class DiceManager(BaseManager[DiceRoll, DiceRoll]):
     """Manages dice rolling operations."""
 
     def roll(self, notation: str, reason: Optional[str] = None,
-             scene_id: Optional[str] = None) -> DiceRollModel:
+             scene_id: Optional[str] = None) -> DiceRoll:
         """Roll dice according to the specified notation and save to database.
 
         Args:
@@ -45,9 +45,9 @@ class DiceManager(BaseManager[DiceRollModel, DiceRollModel]):
                               f"{modifier} = {total}")
 
             # Define the database operation
-            def create_roll_operation(session: Session) -> DiceRollModel:
+            def create_roll_operation(session: Session) -> DiceRoll:
                 # Create the model instance
-                dice_roll_model = DiceRollModel.create(
+                dice_roll_model = DiceRoll.create(
                     notation=notation,
                     individual_results=individual_results,
                     modifier=modifier,
@@ -59,7 +59,7 @@ class DiceManager(BaseManager[DiceRollModel, DiceRollModel]):
                 # Add to session and flush to get ID
                 session.add(dice_roll_model)
                 session.flush()
-                
+
                 return dice_roll_model
 
             # Execute the operation
@@ -72,7 +72,7 @@ class DiceManager(BaseManager[DiceRollModel, DiceRollModel]):
 
     def get_recent_rolls(
         self, scene_id: Optional[str] = None, limit: int = 5
-    ) -> List[DiceRollModel]:
+    ) -> List[DiceRoll]:
         """Get recent dice rolls, optionally filtered by scene.
 
         Args:
@@ -82,19 +82,21 @@ class DiceManager(BaseManager[DiceRollModel, DiceRollModel]):
         Returns:
             List of DiceRoll models
         """
-        def get_rolls_operation(session: Session) -> List[DiceRollModel]:
+        def get_rolls_operation(session: Session) -> List[DiceRoll]:
             # Build query
-            query = session.query(DiceRollModel)
+            query = session.query(DiceRoll)
             if scene_id:
-                query = query.filter(DiceRollModel.scene_id == scene_id)
+                query = query.filter(DiceRoll.scene_id == scene_id)
 
             # Order by creation time and limit results
             return query.order_by(
-                DiceRollModel.created_at.desc()
+                DiceRoll.created_at.desc()
             ).limit(limit).all()
 
         try:
-            return self._execute_db_operation("get recent dice rolls", get_rolls_operation)
+            return self._execute_db_operation(
+                "get recent dice rolls", get_rolls_operation
+            )
         except Exception as e:
             raise DiceError(f"Failed to get recent dice rolls: {str(e)}") from e
 
@@ -136,16 +138,17 @@ class DiceManager(BaseManager[DiceRollModel, DiceRollModel]):
         self.logger.debug(f"Parsed {notation} as {count}d{sides}{modifier:+d}")
         return count, sides, modifier
 
-    def _convert_to_domain(self, db_model: DiceRollModel) -> DiceRollModel:
+    def _convert_to_domain(self, db_model: DiceRoll) -> DiceRoll:
         """Convert database model to domain model.
-        
+
         Since we're using the database model directly, this is a pass-through.
         """
         return db_model
 
-    def _convert_to_db_model(self, domain_model: DiceRollModel, db_model: Optional[DiceRollModel] = None) -> DiceRollModel:
+    def _convert_to_db_model(self, domain_model: DiceRoll,
+                             db_model: Optional[DiceRoll] = None) -> DiceRoll:
         """Convert domain model to database model.
-        
+
         Since we're using the database model directly, this is a pass-through.
         """
         return domain_model if db_model is None else db_model
