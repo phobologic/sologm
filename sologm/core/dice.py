@@ -28,7 +28,8 @@ class DiceRoll:
 class DiceManager(BaseManager[DiceRoll, DiceRollModel]):
     """Manages dice rolling operations."""
 
-    def roll(self, notation: str, reason: Optional[str] = None, scene_id: Optional[str] = None) -> DiceRoll:
+    def roll(self, notation: str, reason: Optional[str] = None,
+             scene_id: Optional[str] = None) -> DiceRoll:
         """Roll dice according to the specified notation and save to database.
 
         Args:
@@ -54,7 +55,8 @@ class DiceManager(BaseManager[DiceRoll, DiceRollModel]):
             self.logger.debug(f"Individual dice results: {individual_results}")
 
             total = sum(individual_results) + modifier
-            self.logger.debug(f"Final result: {individual_results} + {modifier} = {total}")
+            self.logger.debug(f"Final result: {individual_results} + "
+                              f"{modifier} = {total}")
 
             # Define the database operation
             def create_roll_operation(session: Session) -> DiceRoll:
@@ -67,23 +69,25 @@ class DiceManager(BaseManager[DiceRoll, DiceRollModel]):
                     reason=reason,
                     scene_id=scene_id
                 )
-                
+
                 # Add to session and flush to get ID
                 session.add(dice_roll_model)
                 session.flush()
-                
+
                 # Convert to domain model
                 return self._convert_to_domain(dice_roll_model)
-            
+
             # Execute the operation
             return self._execute_db_operation("roll dice", create_roll_operation)
-            
+
         except DiceError:
             raise
         except Exception as e:
             raise DiceError(f"Unexpected error during dice roll: {str(e)}") from e
 
-    def get_recent_rolls(self, scene_id: Optional[str] = None, limit: int = 5) -> List[DiceRoll]:
+    def get_recent_rolls(
+        self, scene_id: Optional[str] = None, limit: int = 5
+    ) -> List[DiceRoll]:
         """Get recent dice rolls, optionally filtered by scene.
 
         Args:
@@ -98,13 +102,15 @@ class DiceManager(BaseManager[DiceRoll, DiceRollModel]):
             query = session.query(DiceRollModel)
             if scene_id:
                 query = query.filter(DiceRollModel.scene_id == scene_id)
-            
+
             # Order by creation time and limit results
-            dice_roll_models = query.order_by(DiceRollModel.created_at.desc()).limit(limit).all()
-            
+            dice_roll_models = query.order_by(
+                DiceRollModel.created_at.desc()
+            ).limit(limit).all()
+
             # Convert to domain models
             return [self._convert_to_domain(model) for model in dice_roll_models]
-        
+
         try:
             return self._execute_db_operation("get recent dice rolls", get_rolls_operation)
         except Exception as e:
@@ -160,7 +166,7 @@ class DiceManager(BaseManager[DiceRoll, DiceRollModel]):
             scene_id=db_model.scene_id,
             created_at=db_model.created_at.isoformat() if db_model.created_at else None
         )
-    
+
     def _convert_to_db_model(self, domain_model: DiceRoll, db_model: Optional[DiceRollModel] = None) -> DiceRollModel:
         """Convert domain model to database model."""
         if db_model is None:

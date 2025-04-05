@@ -24,9 +24,9 @@ def db_session(db_engine):
     connection = db_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
-    
+
     yield session
-    
+
     session.close()
     transaction.rollback()
     connection.close()
@@ -121,7 +121,7 @@ class TestDiceManager:
         assert roll.modifier == 0
         assert roll.total == roll.individual_results[0]
         assert roll.reason is None
-        
+
         # Verify it's in the database
         db_roll = db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
         assert db_roll is not None
@@ -166,7 +166,7 @@ class TestDiceManager:
         roll = dice_manager.roll("1d20", scene_id=scene_id)
 
         assert roll.scene_id == scene_id
-        
+
         # Verify it's in the database with the scene ID
         db_roll = db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
         assert db_roll is not None
@@ -178,10 +178,10 @@ class TestDiceManager:
         dice_manager.roll("1d20", reason="Roll 1")
         dice_manager.roll("2d6", reason="Roll 2")
         dice_manager.roll("3d8", reason="Roll 3")
-        
+
         # Get recent rolls
         rolls = dice_manager.get_recent_rolls(limit=2)
-        
+
         # Verify we got the most recent 2 rolls
         assert len(rolls) == 2
         assert rolls[0].reason == "Roll 3"  # Most recent first
@@ -190,15 +190,15 @@ class TestDiceManager:
     def test_get_recent_rolls_by_scene(self, dice_manager: DiceManager) -> None:
         """Test getting recent rolls filtered by scene."""
         scene_id = "test-scene-456"
-        
+
         # Create some rolls with different scene IDs
         dice_manager.roll("1d20", reason="Roll 1", scene_id="other-scene")
         dice_manager.roll("2d6", reason="Roll 2", scene_id=scene_id)
         dice_manager.roll("3d8", reason="Roll 3", scene_id=scene_id)
-        
+
         # Get recent rolls for the specific scene
         rolls = dice_manager.get_recent_rolls(scene_id=scene_id)
-        
+
         # Verify we got only rolls for the specified scene
         assert len(rolls) == 2
         assert all(roll.scene_id == scene_id for roll in rolls)

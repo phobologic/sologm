@@ -70,7 +70,7 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
     details.append("Result: ", style="dim")
     details.append(str(roll.total), style="bold green")
-    
+
     # Add timestamp if available
     if roll.created_at:
         details.append("\nTime: ", style="dim")
@@ -480,7 +480,6 @@ def _create_oracle_panel(
             game,
             active_scene,
             oracle_manager,
-            truncation_length
         )
     logger.debug("No oracle panel needed")
     return None
@@ -544,7 +543,6 @@ def _create_recent_oracle_panel(
     game: Game,
     active_scene: Scene,
     oracle_manager: "OracleManager",
-    truncation_length: int
 ) -> Optional[Panel]:
     """Create a panel showing the most recent oracle interpretation."""
     logger.debug(
