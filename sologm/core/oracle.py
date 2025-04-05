@@ -343,9 +343,13 @@ DESCRIPTION: Detailed description of interpretation idea
 
             # Get and parse response
             logger.debug("Sending prompt to Claude API")
-            response = self.anthropic_client.send_message(prompt)
-            parsed = self._parse_interpretations(response)
-            logger.debug(f"Found {len(parsed)} interpretations")
+            try:
+                response = self.anthropic_client.send_message(prompt)
+                parsed = self._parse_interpretations(response)
+                logger.debug(f"Found {len(parsed)} interpretations")
+            except Exception as e:
+                # Wrap the exception in an OracleError
+                raise OracleError(f"Failed to get interpretations: {str(e)}") from e
 
             # Create interpretation set
             interp_set = InterpretationSet.create(
