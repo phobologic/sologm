@@ -2,6 +2,7 @@
 
 import pytest
 
+
 def test_cascade_delete_game(db_session, test_game_with_scenes):
     """Test that deleting a game cascades to scenes."""
     game, scenes = test_game_with_scenes
