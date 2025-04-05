@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from typing import List
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 import pytest
 from rich.console import Console
@@ -41,14 +41,17 @@ def mock_console():
 @pytest.fixture
 def sample_game() -> Game:
     """Create a sample game for testing."""
-    return Game(
-        id="game-1",
-        name="Test Game",
-        description="A test game",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        scenes=["scene-1", "scene-2"],
-    )
+    # Create a mock Game object that's not tied to SQLAlchemy
+    game = MagicMock(spec=Game)
+    game.id = "game-1"
+    game.name = "Test Game"
+    game.description = "A test game"
+    game.created_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    game.modified_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    # Make scenes a property that returns a list with 2 items
+    game.scenes = MagicMock()
+    game.scenes.__len__.return_value = 2
+    return game
 
 
 @pytest.fixture
@@ -115,15 +118,21 @@ def sample_interpretation() -> Interpretation:
 @pytest.fixture
 def sample_interpretation_set(sample_interpretation) -> InterpretationSet:
     """Create a sample interpretation set for testing."""
-    return InterpretationSet(
-        id="set-1",
-        context="Test context",
-        oracle_results="Test results",
-        interpretations=[sample_interpretation],
-        selected_interpretation=0,
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        scene_id="test-scene",
-    )
+    # Create a mock InterpretationSet that's not tied to SQLAlchemy
+    interp_set = MagicMock(spec=InterpretationSet)
+    interp_set.id = "set-1"
+    interp_set.context = "Test context"
+    interp_set.oracle_results = "Test results"
+    interp_set.interpretations = [sample_interpretation]
+    # Instead of selected_interpretation which doesn't exist
+    interp_set.selected_interpretation_id = sample_interpretation.id
+    interp_set.created_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    interp_set.scene_id = "test-scene"
+    # Make interpretations accessible as a property
+    interp_set.interpretations.__len__.return_value = 1
+    interp_set.interpretations.__iter__.return_value = iter([sample_interpretation])
+    interp_set.interpretations.__getitem__.return_value = sample_interpretation
+    return interp_set
 
 
 def test_display_dice_roll(mock_console, sample_dice_roll):
