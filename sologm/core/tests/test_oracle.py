@@ -21,13 +21,9 @@ def mock_anthropic_client() -> MagicMock:
 
 
 @pytest.fixture
-def oracle_manager(
-    mock_anthropic_client: MagicMock, session: Session
-) -> OracleManager:
+def oracle_manager(mock_anthropic_client: MagicMock, session: Session) -> OracleManager:
     """Create an oracle manager instance."""
-    return OracleManager(
-        anthropic_client=mock_anthropic_client, session=session
-    )
+    return OracleManager(anthropic_client=mock_anthropic_client, session=session)
 
 
 @pytest.fixture
@@ -80,16 +76,22 @@ class TestOracle:
     """Tests for oracle interpretation system."""
 
     def test_validate_active_context(
-        self, oracle_manager: OracleManager, test_game: Game, test_scene: Scene, session: Session
+        self,
+        oracle_manager: OracleManager,
+        test_game: Game,
+        test_scene: Scene,
+        session: Session,
     ) -> None:
         """Test validating active game and scene."""
         from sologm.core.game import GameManager
         from sologm.core.scene import SceneManager
-        
+
         game_manager = GameManager(session=session)
         scene_manager = SceneManager(session=session)
-        
-        game_id, scene_id = oracle_manager.validate_active_context(game_manager, scene_manager)
+
+        game_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager
+        )
         assert game_id == test_game.id
         assert scene_id == test_scene.id
 
@@ -99,14 +101,14 @@ class TestOracle:
         """Test validation with no active game."""
         from sologm.core.game import GameManager
         from sologm.core.scene import SceneManager
-        
+
         game_manager = GameManager(session=session)
         scene_manager = SceneManager(session=session)
-        
+
         # Make sure no game is active
         session.query(Game).update({Game.is_active: False})
         session.commit()
-        
+
         with pytest.raises(OracleError) as exc:
             oracle_manager.validate_active_context(game_manager, scene_manager)
         assert "No active game found" in str(exc.value)
@@ -117,14 +119,14 @@ class TestOracle:
         """Test validation with no active scene."""
         from sologm.core.game import GameManager
         from sologm.core.scene import SceneManager
-        
+
         game_manager = GameManager(session=session)
         scene_manager = SceneManager(session=session)
-        
+
         # Make sure no scene is current
         session.query(Scene).update({Scene.is_current: False})
         session.commit()
-        
+
         with pytest.raises(OracleError) as exc:
             oracle_manager.validate_active_context(game_manager, scene_manager)
         assert "No active scene found" in str(exc.value)
@@ -256,13 +258,17 @@ DESCRIPTION: Test Description
         assert selected.is_selected is True
 
         # Verify event was created
-        events = session.query(Event).filter(
-            Event.game_id == test_game.id,
-            Event.scene_id == test_scene.id,
-            Event.source == "oracle",
-            Event.interpretation_id == selected.id
-        ).all()
-        
+        events = (
+            session.query(Event)
+            .filter(
+                Event.game_id == test_game.id,
+                Event.scene_id == test_scene.id,
+                Event.source == "oracle",
+                Event.interpretation_id == selected.id,
+            )
+            .all()
+        )
+
         assert len(events) == 1
         assert selected.title in events[0].description
 
@@ -308,7 +314,7 @@ DESCRIPTION: Test Description
         )
         assert result2.retry_attempt == 1
         assert result2.is_current is True
-        
+
         # Verify first set is no longer current
         assert result1.is_current is False
 

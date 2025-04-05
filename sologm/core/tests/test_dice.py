@@ -38,8 +38,6 @@ def dice_manager(db_session):
     return DiceManager(session=db_session)
 
 
-
-
 class TestDiceManager:
     """Tests for the DiceManager class."""
 
@@ -104,7 +102,9 @@ class TestDiceManager:
         assert roll.reason is None
 
         # Verify it's in the database
-        db_roll = db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
+        db_roll = (
+            db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
+        )
         assert db_roll is not None
         assert db_roll.notation == "1d6"
         assert len(db_roll.individual_results) == 1
@@ -141,7 +141,9 @@ class TestDiceManager:
         assert 1 <= roll.individual_results[0] <= 20
         assert roll.reason == "Attack roll"
 
-    def test_roll_with_scene_id(self, dice_manager: DiceManager, db_session: Session) -> None:
+    def test_roll_with_scene_id(
+        self, dice_manager: DiceManager, db_session: Session
+    ) -> None:
         """Test rolling with a scene ID."""
         scene_id = "test-scene-123"
         roll = dice_manager.roll("1d20", scene_id=scene_id)
@@ -149,7 +151,9 @@ class TestDiceManager:
         assert roll.scene_id == scene_id
 
         # Verify it's in the database with the scene ID
-        db_roll = db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
+        db_roll = (
+            db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
+        )
         assert db_roll is not None
         assert db_roll.scene_id == scene_id
 

@@ -42,10 +42,7 @@ def scene_manager(session) -> SceneManager:
 @pytest.fixture
 def test_game(session) -> Generator[Game, None, None]:
     """Create a test game for scene operations."""
-    game = Game.create(
-        name="Test Game",
-        description="A game for testing"
-    )
+    game = Game.create(name="Test Game", description="A game for testing")
     game.is_active = True
     session.add(game)
     session.commit()
@@ -62,7 +59,7 @@ class TestScene:
             game_id="test-game",
             title="Test Scene",
             description="A test scene",
-            sequence=1
+            sequence=1,
         )
         session.add(scene)
         session.commit()
@@ -228,16 +225,16 @@ class TestSceneManager:
             game_id=test_game.id,
             title="Inactive Scene",
             description="Not active",
-            sequence=1
+            sequence=1,
         )
         scene.is_active = False
         session.add(scene)
         session.commit()
 
         # Make sure no scenes are active
-        session.query(Scene).filter(
-            Scene.game_id == test_game.id
-        ).update({"is_active": False})
+        session.query(Scene).filter(Scene.game_id == test_game.id).update(
+            {"is_active": False}
+        )
         session.commit()
 
         active_scene = scene_manager.get_active_scene(test_game.id)
