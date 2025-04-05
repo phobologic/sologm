@@ -4,7 +4,8 @@ import json
 import uuid
 from typing import Any, Dict, List, Optional, Union
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
 
 from sologm.models.base import Base, TimestampMixin
@@ -26,22 +27,23 @@ class JSONType(TypeDecorator):
         """Convert stored JSON string back to Python object."""
         return json.loads(value) if value else None
 
+
 class DiceRoll(Base, TimestampMixin):
     """SQLAlchemy model representing a dice roll result."""
 
     __tablename__ = "dice_rolls"
-    id: Column = Column(String(36), primary_key=True,
-                        default=lambda: str(uuid.uuid4()))
-    notation: Column = Column(String, nullable=False)
-    individual_results: Column = Column(JSONType, nullable=False)  # Store as JSON array
-    modifier: Column = Column(Integer, nullable=False)
-    total: Column = Column(Integer, nullable=False)
-    reason: Column = Column(Text, nullable=True)
+    
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
+    notation: Mapped[str] = mapped_column(nullable=False)
+    individual_results: Mapped[List[int]] = mapped_column(JSONType, nullable=False)  # Store as JSON array
+    modifier: Mapped[int] = mapped_column(Integer, nullable=False)
+    total: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Optional link to game and scene
-    scene_id: Column = Column(String, ForeignKey("scenes.id"), nullable=True)
+    scene_id: Mapped[Optional[str]] = mapped_column(ForeignKey("scenes.id"), nullable=True)
 
-    # Relationships will be defined in __init__.py
+    # Relationships will be defined in relationships.py
 
     @classmethod
     def create(

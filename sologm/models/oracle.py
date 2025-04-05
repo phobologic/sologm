@@ -1,8 +1,10 @@
 """Oracle interpretation models for SoloGM."""
 
 import uuid
+from typing import Optional
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from sologm.models.base import Base, TimestampMixin
 
@@ -11,17 +13,17 @@ class InterpretationSet(Base, TimestampMixin):
     """SQLAlchemy model representing a set of oracle interpretations."""
 
     __tablename__ = "interpretation_sets"
-    id: Column = Column(String(36), primary_key=True,
-                        default=lambda: str(uuid.uuid4()))
-    scene_id: Column = Column(String, ForeignKey("scenes.id"), nullable=False)
-    context: Column = Column(Text, nullable=False)
-    oracle_results: Column = Column(Text, nullable=False)
-    retry_attempt: Column = Column(Integer, default=0)
+    
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
+    scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
+    context: Mapped[str] = mapped_column(Text, nullable=False)
+    oracle_results: Mapped[str] = mapped_column(Text, nullable=False)
+    retry_attempt: Mapped[int] = mapped_column(Integer, default=0)
 
     # Flag for current interpretation set in a game
-    is_current: Column = Column(Boolean, default=False)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Relationships will be defined in __init__.py
+    # Relationships will be defined in relationships.py
 
     @classmethod
     def create(
@@ -52,19 +54,19 @@ class InterpretationSet(Base, TimestampMixin):
             is_current=is_current
         )
 
+
 class Interpretation(Base, TimestampMixin):
     """SQLAlchemy model representing a single oracle interpretation."""
 
     __tablename__ = "interpretations"
-    id: Column = Column(String(36), primary_key=True,
-                        default=lambda: str(uuid.uuid4()))
-    set_id: Column = Column(String, ForeignKey("interpretation_sets.id"),
-                            nullable=False)
-    title: Column = Column(String, nullable=False)
-    description: Column = Column(Text, nullable=False)
-    is_selected: Column = Column(Boolean, default=False)
+    
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
+    set_id: Mapped[str] = mapped_column(ForeignKey("interpretation_sets.id"), nullable=False)
+    title: Mapped[str] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    is_selected: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Relationships will be defined in __init__.py
+    # Relationships will be defined in relationships.py
 
     @classmethod
     def create(

@@ -2,19 +2,10 @@
 
 import enum
 import uuid
-from typing import ClassVar
+from typing import ClassVar, Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Enum,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import validates
+from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
@@ -25,6 +16,7 @@ class SceneStatus(enum.Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
 
+
 class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
@@ -33,18 +25,17 @@ class Scene(Base, TimestampMixin):
         UniqueConstraint('game_id', 'slug', name='uix_game_scene_slug'),
     )
 
-    id: Column = Column(String(36), primary_key=True,
-                        default=lambda: str(uuid.uuid4()))
-    slug: Column = Column(String, nullable=False, index=True)
-    game_id: Column = Column(String, ForeignKey("games.id"), nullable=False)
-    title: Column = Column(String, nullable=False)
-    description: Column = Column(Text)
-    status: Column = Column(Enum(SceneStatus), nullable=False,
-                            default=SceneStatus.ACTIVE)
-    sequence: Column = Column(Integer, nullable=False)
-    is_active: Column = Column(Boolean, default=False)
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
+    slug: Mapped[str] = mapped_column(nullable=False, index=True)
+    game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
+    title: Mapped[str] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(Text)
+    status: Mapped[SceneStatus] = mapped_column(Enum(SceneStatus), nullable=False, 
+                                               default=SceneStatus.ACTIVE)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=False)
 
-    # Relationships will be defined in __init__.py
+    # Relationships will be defined in relationships.py
 
     @validates('title')
     def validate_title(self, _: str, title: str) -> str:

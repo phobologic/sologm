@@ -3,7 +3,8 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import Column, ForeignKey, String, Text
+from sqlalchemy import ForeignKey, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from sologm.models.base import Base, TimestampMixin
 
@@ -12,18 +13,19 @@ class Event(Base, TimestampMixin):
     """SQLAlchemy model representing a game event."""
 
     __tablename__ = "events"
-    id: Column = Column(String(36), primary_key=True,
-                        default=lambda: str(uuid.uuid4()))
-    scene_id: Column = Column(String, ForeignKey("scenes.id"), nullable=False)
-    game_id: Column = Column(String, ForeignKey("games.id"), nullable=False)
-    description: Column = Column(Text, nullable=False)
-    source: Column = Column(String, nullable=False)  # manual, oracle, dice
+    
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
+    scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
+    game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(nullable=False)  # manual, oracle, dice
 
     # Optional link to interpretation if this event was created from one
-    interpretation_id: Column = Column(String, ForeignKey("interpretations.id"),
-                                       nullable=True)
+    interpretation_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("interpretations.id"), nullable=True
+    )
 
-    # Relationships will be defined in __init__.py
+    # Relationships will be defined in relationships.py
 
     @classmethod
     def create(
