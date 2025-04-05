@@ -8,7 +8,10 @@ from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.core.event import EventManager
+from sologm.core.game import GameManager
+from sologm.core.scene import SceneManager
 from sologm.integrations.anthropic import AnthropicClient
+from sologm.models.event import Event
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.utils.errors import OracleError
 
@@ -35,7 +38,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self.anthropic_client = anthropic_client or AnthropicClient()
         self.event_manager = event_manager or EventManager(session=session)
 
-    def validate_active_context(self, game_manager, scene_manager) -> Tuple[str, str]:
+    def validate_active_context(self,
+                                game_manager: GameManager,
+                                scene_manager: SceneManager) -> Tuple[str, str]:
         """Validate active game and scene exist.
 
         Args:
@@ -70,10 +75,13 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         Raises:
             OracleError: If set not found
         """
+
         def _get_interpretation_set(session: Session, set_id: str) -> InterpretationSet:
-            interp_set = session.query(InterpretationSet).filter(
-                InterpretationSet.id == set_id
-            ).first()
+            interp_set = (
+                session.query(InterpretationSet)
+                .filter(InterpretationSet.id == set_id)
+                .first()
+            )
             if not interp_set:
                 raise OracleError(f"Interpretation set {set_id} not found")
             return interp_set
@@ -82,7 +90,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             f"get interpretation set {set_id}", _get_interpretation_set, set_id
         )
 
-    def get_current_interpretation_set(self, scene_id: str) -> Optional[InterpretationSet]:
+    def get_current_interpretation_set(
+        self, scene_id: str
+    ) -> Optional[InterpretationSet]:
         """Get current interpretation set for a scene if it exists.
 
         Args:
@@ -91,16 +101,23 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         Returns:
             Optional[InterpretationSet]: Current interpretation set or None
         """
-        def _get_current_interpretation_set(session: Session, scene_id: str) -> Optional[InterpretationSet]:
-            return session.query(InterpretationSet).filter(
-                InterpretationSet.scene_id == scene_id,
-                InterpretationSet.is_current == True  # noqa: E712
-            ).first()
+
+        def _get_current_interpretation_set(
+            session: Session, scene_id: str
+        ) -> Optional[InterpretationSet]:
+            return (
+                session.query(InterpretationSet)
+                .filter(
+                    InterpretationSet.scene_id == scene_id,
+                    InterpretationSet.is_current == True,  # noqa: E712
+                )
+                .first()
+            )
 
         return self._execute_db_operation(
             f"get current interpretation set for scene {scene_id}",
             _get_current_interpretation_set,
-            scene_id
+            scene_id,
         )
 
     def get_most_recent_interpretation(
@@ -116,39 +133,45 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             Optional tuple of (InterpretationSet, selected Interpretation) or None if
             none found
         """
+
         def _get_most_recent_interpretation(
-            session: Session, game_id: str, scene_id: str
+            session: Session, scene_id: str
         ) -> Optional[Tuple[InterpretationSet, Interpretation]]:
             # Find interpretation sets for this scene with selected interpretations
-            interp_set = session.query(InterpretationSet).join(
-                Interpretation,
-                InterpretationSet.id == Interpretation.set_id
-            ).filter(
-                InterpretationSet.scene_id == scene_id,
-                Interpretation.is_selected == True  # noqa: E712
-            ).order_by(
-                InterpretationSet.created_at.desc()
-            ).first()
-            
+            interp_set = (
+                session.query(InterpretationSet)
+                .join(Interpretation, InterpretationSet.id == Interpretation.set_id)
+                .filter(
+                    InterpretationSet.scene_id == scene_id,
+                    Interpretation.is_selected == True,  # noqa: E712
+                )
+                .order_by(InterpretationSet.created_at.desc())
+                .first()
+            )
+
             if not interp_set:
                 return None
-            
+
             # Get the selected interpretation
-            selected_interp = session.query(Interpretation).filter(
-                Interpretation.set_id == interp_set.id,
-                Interpretation.is_selected == True  # noqa: E712
-            ).first()
-            
+            selected_interp = (
+                session.query(Interpretation)
+                .filter(
+                    Interpretation.set_id == interp_set.id,
+                    Interpretation.is_selected == True,  # noqa: E712
+                )
+                .first()
+            )
+
             if not selected_interp:
                 return None
-                
+
             return (interp_set, selected_interp)
 
         return self._execute_db_operation(
             "get most recent interpretation",
             _get_most_recent_interpretation,
             game_id,
-            scene_id
+            scene_id,
         )
 
     def _build_prompt(
@@ -250,6 +273,7 @@ DESCRIPTION: Detailed description of interpretation idea
         Returns:
             InterpretationSet: Set of generated interpretations.
         """
+
         def _get_interpretations(
             session: Session,
             game_id: str,
@@ -257,41 +281,48 @@ DESCRIPTION: Detailed description of interpretation idea
             context: str,
             oracle_results: str,
             count: int,
-            retry_attempt: int
+            retry_attempt: int,
         ) -> InterpretationSet:
             # First, clear any current interpretation sets for this scene
-            current_sets = session.query(InterpretationSet).filter(
-                InterpretationSet.scene_id == scene_id,
-                InterpretationSet.is_current == True  # noqa: E712
-            ).all()
-            
+            current_sets = (
+                session.query(InterpretationSet)
+                .filter(
+                    InterpretationSet.scene_id == scene_id,
+                    InterpretationSet.is_current == True,  # noqa: E712
+                )
+                .all()
+            )
+
             for current_set in current_sets:
                 current_set.is_current = False
-            
+
             # Get game and scene details for the prompt
             from sologm.models.game import Game
             from sologm.models.scene import Scene
-            from sologm.models.event import Event
-            
+
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
                 raise OracleError(f"Game {game_id} not found")
-                
-            scene = session.query(Scene).filter(
-                Scene.id == scene_id, 
-                Scene.game_id == game_id
-            ).first()
+
+            scene = (
+                session.query(Scene)
+                .filter(Scene.id == scene_id, Scene.game_id == game_id)
+                .first()
+            )
             if not scene:
                 raise OracleError(f"Scene {scene_id} not found in game {game_id}")
-            
+
             # Get recent events
-            recent_events = session.query(Event).filter(
-                Event.scene_id == scene_id,
-                Event.game_id == game_id
-            ).order_by(Event.created_at.desc()).limit(5).all()
-            
+            recent_events = (
+                session.query(Event)
+                .filter(Event.scene_id == scene_id, Event.game_id == game_id)
+                .order_by(Event.created_at.desc())
+                .limit(5)
+                .all()
+            )
+
             recent_event_descriptions = [event.description for event in recent_events]
-            
+
             # Build prompt and get response
             prompt = self._build_prompt(
                 game.description,
@@ -306,7 +337,8 @@ DESCRIPTION: Detailed description of interpretation idea
             if retry_attempt > 0:
                 prompt = prompt.replace(
                     "Please provide",
-                    f"This is retry attempt #{retry_attempt + 1}. Please provide DIFFERENT",
+                    f"This is retry attempt #{retry_attempt + 1}. Please "
+                    f"provide DIFFERENT",
                 )
 
             # Get and parse response
@@ -314,28 +346,28 @@ DESCRIPTION: Detailed description of interpretation idea
             response = self.anthropic_client.send_message(prompt)
             parsed = self._parse_interpretations(response)
             logger.debug(f"Found {len(parsed)} interpretations")
-            
+
             # Create interpretation set
             interp_set = InterpretationSet.create(
                 scene_id=scene_id,
                 context=context,
                 oracle_results=oracle_results,
                 retry_attempt=retry_attempt,
-                is_current=True
+                is_current=True,
             )
             session.add(interp_set)
             session.flush()  # Flush to get the ID
-            
+
             # Create interpretations
-            for i, interp_data in enumerate(parsed):
+            for _, interp_data in enumerate(parsed):
                 interpretation = Interpretation.create(
                     set_id=interp_set.id,
                     title=interp_data["title"],
                     description=interp_data["description"],
-                    is_selected=False
+                    is_selected=False,
                 )
                 session.add(interpretation)
-            
+
             return interp_set
 
         return self._execute_db_operation(
@@ -346,7 +378,7 @@ DESCRIPTION: Detailed description of interpretation idea
             context,
             oracle_results,
             count,
-            retry_attempt
+            retry_attempt,
         )
 
     def select_interpretation(
@@ -365,47 +397,56 @@ DESCRIPTION: Detailed description of interpretation idea
         Returns:
             Interpretation: The selected interpretation.
         """
+
         def _select_interpretation(
             session: Session,
             interpretation_set_id: str,
             interpretation_id: str,
-            add_event: bool
+            add_event: bool,
         ) -> Interpretation:
             # Get the interpretation set
-            interp_set = session.query(InterpretationSet).filter(
-                InterpretationSet.id == interpretation_set_id
-            ).first()
-            
+            interp_set = (
+                session.query(InterpretationSet)
+                .filter(InterpretationSet.id == interpretation_set_id)
+                .first()
+            )
+
             if not interp_set:
-                raise OracleError(f"Interpretation set {interpretation_set_id} not found")
-            
+                raise OracleError(
+                    f"Interpretation set {interpretation_set_id} not found"
+                )
+
             # Get the interpretation
-            interpretation = session.query(Interpretation).filter(
-                Interpretation.id == interpretation_id,
-                Interpretation.set_id == interpretation_set_id
-            ).first()
-            
+            interpretation = (
+                session.query(Interpretation)
+                .filter(
+                    Interpretation.id == interpretation_id,
+                    Interpretation.set_id == interpretation_set_id,
+                )
+                .first()
+            )
+
             if not interpretation:
                 raise OracleError(
-                    f"Interpretation {interpretation_id} not found in set {interpretation_set_id}"
+                    f"Interpretation {interpretation_id} not found in set "
+                    f"{interpretation_set_id}"
                 )
-            
+
             # Clear any previously selected interpretations in this set
-            for interp in session.query(Interpretation).filter(
-                Interpretation.set_id == interpretation_set_id
-            ).all():
+            for interp in (
+                session.query(Interpretation)
+                .filter(Interpretation.set_id == interpretation_set_id)
+                .all()
+            ):
                 interp.is_selected = False
-            
+
             # Mark this interpretation as selected
             interpretation.is_selected = True
-            
+
             # Add as event if requested
             if add_event:
-                self.add_interpretation_event(
-                    interp_set.scene_id, 
-                    interpretation
-                )
-            
+                self.add_interpretation_event(interp_set.scene_id, interpretation)
+
             return interpretation
 
         return self._execute_db_operation(
@@ -413,7 +454,7 @@ DESCRIPTION: Detailed description of interpretation idea
             _select_interpretation,
             interpretation_set_id,
             interpretation_id,
-            add_event
+            add_event,
         )
 
     def add_interpretation_event(
@@ -425,26 +466,31 @@ DESCRIPTION: Detailed description of interpretation idea
             scene_id: ID of the current scene.
             interpretation: The interpretation to add as an event.
         """
+
         def _add_interpretation_event(
             session: Session, scene_id: str, interpretation: Interpretation
         ) -> None:
             # Get the interpretation set to get the game_id
-            interp_set = session.query(InterpretationSet).filter(
-                InterpretationSet.id == interpretation.set_id
-            ).first()
-            
+            interp_set = (
+                session.query(InterpretationSet)
+                .filter(InterpretationSet.id == interpretation.set_id)
+                .first()
+            )
+
             if not interp_set:
-                raise OracleError(f"Interpretation set {interpretation.set_id} not found")
-            
+                raise OracleError(
+                    f"Interpretation set {interpretation.set_id} not found"
+                )
+
             description = f"{interpretation.title}: {interpretation.description}"
-            
+
             # Create the event
             event = Event.create(
-                game_id=interp_set.game_id,
+                game_id=interp_set.scene.game_id,
                 scene_id=scene_id,
                 description=description,
                 source="oracle",
-                interpretation_id=interpretation.id
+                interpretation_id=interpretation.id,
             )
             session.add(event)
 
@@ -452,5 +498,5 @@ DESCRIPTION: Detailed description of interpretation idea
             "add interpretation event",
             _add_interpretation_event,
             scene_id,
-            interpretation
+            interpretation,
         )

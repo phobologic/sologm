@@ -42,15 +42,18 @@ def interpret_oracle(
         game_manager = GameManager(session=session)
         scene_manager = SceneManager(session=session)
         oracle_manager = OracleManager(session=session)
-        
-        game_id, scene_id = oracle_manager.validate_active_context(game_manager, scene_manager)
-        
+
+        game_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager
+        )
+
         # Get game and scene details for prompt building
         game = game_manager.get_game(game_id)
         scene = scene_manager.get_scene(game_id, scene_id)
-        
+
         # Get recent events
         from sologm.core.event import EventManager
+
         event_manager = EventManager(session=session)
         recent_events = event_manager.list_events(game_id, scene_id, limit=5)
         recent_event_descriptions = [event.description for event in recent_events]
@@ -91,8 +94,10 @@ def retry_interpretation(session: Session = None) -> None:
         game_manager = GameManager(session=session)
         scene_manager = SceneManager(session=session)
         oracle_manager = OracleManager(session=session)
-        
-        game_id, scene_id = oracle_manager.validate_active_context(game_manager, scene_manager)
+
+        game_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager
+        )
 
         current_interp_set = oracle_manager.get_current_interpretation_set(scene_id)
         if not current_interp_set:
@@ -127,8 +132,10 @@ def show_interpretation_status(session: Session = None) -> None:
         game_manager = GameManager(session=session)
         scene_manager = SceneManager(session=session)
         oracle_manager = OracleManager(session=session)
-        
-        game_id, scene_id = oracle_manager.validate_active_context(game_manager, scene_manager)
+
+        game_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager
+        )
 
         current_interp_set = oracle_manager.get_current_interpretation_set(scene_id)
         if not current_interp_set:
@@ -140,12 +147,16 @@ def show_interpretation_status(session: Session = None) -> None:
         console.print(f"Context: {current_interp_set.context}")
         console.print(f"Results: {current_interp_set.oracle_results}")
         console.print(f"Retry count: {current_interp_set.retry_attempt}")
-        
+
         # Check if any interpretation is selected
-        has_selection = any(interp.is_selected for interp in current_interp_set.interpretations)
+        has_selection = any(
+            interp.is_selected for interp in current_interp_set.interpretations
+        )
         console.print(f"Resolved: {has_selection}\n")
 
-        display.display_interpretation_set(console, current_interp_set, show_context=False)
+        display.display_interpretation_set(
+            console, current_interp_set, show_context=False
+        )
 
     except OracleError as e:
         logger.error(f"Failed to show interpretation status: {e}")
@@ -172,8 +183,10 @@ def select_interpretation(
         game_manager = GameManager(session=session)
         scene_manager = SceneManager(session=session)
         oracle_manager = OracleManager(session=session)
-        
-        game_id, scene_id = oracle_manager.validate_active_context(game_manager, scene_manager)
+
+        game_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager
+        )
 
         if not interpretation_set_id:
             current_interp_set = oracle_manager.get_current_interpretation_set(scene_id)
