@@ -13,7 +13,8 @@ from sologm.utils.errors import DiceError
 @pytest.fixture
 def runner():
     """Create a CLI runner for testing."""
-    return CliRunner()
+    # Setting mix_stderr=True can help with file closure issues
+    return CliRunner(mix_stderr=True)
 
 
 @pytest.fixture
@@ -50,49 +51,62 @@ class TestRollDiceCommand:
         # Setup the mock to return our sample dice roll
         mock_dice_manager.roll.return_value = sample_dice_roll
 
-        # Run the command
-        result = runner.invoke(
-            dice_app,
-            ["roll", "2d6+3", "--reason", "Test roll", "--scene-id", "scene_123"],
-        )
+        # Create a fresh runner for each test to avoid file closure issues
+        fresh_runner = CliRunner(mix_stderr=True)
+        
+        # Run the command with isolated_filesystem to avoid file closure issues
+        with fresh_runner.isolated_filesystem():
+            result = fresh_runner.invoke(
+                dice_app,
+                ["roll", "2d6+3", "--reason", "Test roll", "--scene-id", "scene_123"],
+            )
 
-        # Verify the command executed successfully
-        assert result.exit_code == 0
-
-        # Verify the manager was called with correct parameters
-        mock_dice_manager.roll.assert_called_once_with(
-            "2d6+3", "Test roll", "scene_123"
-        )
-
-        # Verify output contains expected information
-        assert "2d6+3" in result.stdout
-        assert "Total: 12" in result.stdout
+            # Verify the command executed successfully
+            assert result.exit_code == 0
+            
+            # Verify the manager was called with correct parameters
+            mock_dice_manager.roll.assert_called_once_with(
+                "2d6+3", "Test roll", "scene_123"
+            )
+            
+            # Verify output contains expected information
+            assert "2d6+3" in result.stdout
+            assert "Total: 12" in result.stdout
 
     def test_roll_dice_minimal_args(self, runner, mock_dice_manager, sample_dice_roll):
         """Test dice roll with only required arguments."""
         # Setup the mock
         mock_dice_manager.roll.return_value = sample_dice_roll
 
+        # Create a fresh runner for each test
+        fresh_runner = CliRunner(mix_stderr=True)
+        
         # Run the command with only the notation
-        result = runner.invoke(dice_app, ["roll", "2d6+3"])
+        with fresh_runner.isolated_filesystem():
+            result = fresh_runner.invoke(dice_app, ["roll", "2d6+3"])
 
-        # Verify success
-        assert result.exit_code == 0
-
-        # Verify the manager was called with correct parameters
-        mock_dice_manager.roll.assert_called_once_with("2d6+3", None, None)
+            # Verify success
+            assert result.exit_code == 0
+            
+            # Verify the manager was called with correct parameters
+            mock_dice_manager.roll.assert_called_once_with("2d6+3", None, None)
 
     def test_roll_dice_error(self, runner, mock_dice_manager):
         """Test handling of errors during dice roll."""
         # Setup the mock to raise an error
         mock_dice_manager.roll.side_effect = DiceError("Invalid dice notation")
 
-        # Run the command with catch_exceptions=False to properly handle the SystemExit
-        result = runner.invoke(dice_app, ["roll", "invalid"], catch_exceptions=False)
+        # Create a fresh runner
+        fresh_runner = CliRunner(mix_stderr=True)
+        
+        # Run the command with isolated_filesystem
+        with fresh_runner.isolated_filesystem():
+            # We'll keep catch_exceptions=True to properly capture the output
+            result = fresh_runner.invoke(dice_app, ["roll", "invalid"])
 
-        # Verify the command failed with the expected error
-        assert result.exit_code == 1
-        assert "Error: Invalid dice notation" in result.stdout
+            # Verify the command failed with the expected error
+            assert result.exit_code == 1
+            assert "Error: Invalid dice notation" in result.stdout
 
 
 class TestDiceHistoryCommand:
@@ -103,51 +117,63 @@ class TestDiceHistoryCommand:
         # Setup the mock to return a list of dice rolls
         mock_dice_manager.get_recent_rolls.return_value = [sample_dice_roll]
 
+        # Create a fresh runner
+        fresh_runner = CliRunner(mix_stderr=True)
+        
         # Run the command
-        result = runner.invoke(
-            dice_app, ["history", "--limit", "5", "--scene-id", "scene_123"]
-        )
+        with fresh_runner.isolated_filesystem():
+            result = fresh_runner.invoke(
+                dice_app, ["history", "--limit", "5", "--scene-id", "scene_123"]
+            )
 
-        # Verify success
-        assert result.exit_code == 0
-
-        # Verify the manager was called with correct parameters
-        mock_dice_manager.get_recent_rolls.assert_called_once_with(
-            scene_id="scene_123", limit=5
-        )
-
-        # Verify output contains expected information
-        assert "Recent dice rolls:" in result.stdout
-        assert "2d6+3" in result.stdout
-        assert "Total: 12" in result.stdout
+            # Verify success
+            assert result.exit_code == 0
+            
+            # Verify the manager was called with correct parameters
+            mock_dice_manager.get_recent_rolls.assert_called_once_with(
+                scene_id="scene_123", limit=5
+            )
+            
+            # Verify output contains expected information
+            assert "Recent dice rolls:" in result.stdout
+            assert "2d6+3" in result.stdout
+            assert "Total: 12" in result.stdout
 
     def test_history_no_results(self, runner, mock_dice_manager):
         """Test dice history command when there are no results."""
         # Setup the mock to return an empty list
         mock_dice_manager.get_recent_rolls.return_value = []
 
+        # Create a fresh runner
+        fresh_runner = CliRunner(mix_stderr=True)
+        
         # Run the command
-        result = runner.invoke(dice_app, ["history"])
+        with fresh_runner.isolated_filesystem():
+            result = fresh_runner.invoke(dice_app, ["history"])
 
-        # Verify success
-        assert result.exit_code == 0
-
-        # Verify the manager was called with default parameters
-        mock_dice_manager.get_recent_rolls.assert_called_once_with(
-            scene_id=None, limit=5
-        )
-
-        # Verify output contains expected message
-        assert "No dice rolls found." in result.stdout
+            # Verify success
+            assert result.exit_code == 0
+            
+            # Verify the manager was called with default parameters
+            mock_dice_manager.get_recent_rolls.assert_called_once_with(
+                scene_id=None, limit=5
+            )
+            
+            # Verify output contains expected message
+            assert "No dice rolls found." in result.stdout
 
     def test_history_error(self, runner, mock_dice_manager):
         """Test handling of errors during history retrieval."""
         # Setup the mock to raise an error
         mock_dice_manager.get_recent_rolls.side_effect = DiceError("Database error")
 
+        # Create a fresh runner
+        fresh_runner = CliRunner(mix_stderr=True)
+        
         # Run the command
-        result = runner.invoke(dice_app, ["history"])
+        with fresh_runner.isolated_filesystem():
+            result = fresh_runner.invoke(dice_app, ["history"])
 
-        # Verify the command failed with the expected error
-        assert result.exit_code == 1
-        assert "Error: Database error" in result.stdout
+            # Verify the command failed with the expected error
+            assert result.exit_code == 1
+            assert "Error: Database error" in result.stdout
