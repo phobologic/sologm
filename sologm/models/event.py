@@ -12,7 +12,8 @@ class Event(Base, TimestampMixin):
     """SQLAlchemy model representing a game event."""
 
     __tablename__ = "events"
-    id: Column = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Column = Column(String(36), primary_key=True,
+                        default=lambda: str(uuid.uuid4()))
     scene_id: Column = Column(String, ForeignKey("scenes.id"), nullable=False)
     game_id: Column = Column(String, ForeignKey("games.id"), nullable=False)
     description: Column = Column(Text, nullable=False)
@@ -20,10 +21,10 @@ class Event(Base, TimestampMixin):
 
     # Optional link to interpretation if this event was created from one
     interpretation_id: Column = Column(String, ForeignKey("interpretations.id"),
-                                      nullable=True)
+                                       nullable=True)
 
     # Relationships will be defined in __init__.py
-    
+
     @classmethod
     def create(
         cls,
@@ -40,7 +41,8 @@ class Event(Base, TimestampMixin):
             scene_id: ID of the scene this event belongs to.
             description: Description of the event.
             source: Source of the event (manual, oracle, dice).
-            interpretation_id: Optional ID of the interpretation that created this event.
+            interpretation_id: Optional ID of the interpretation that created
+                               this event.
         Returns:
             A new Event instance.
         """

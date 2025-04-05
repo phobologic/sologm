@@ -30,7 +30,8 @@ class DiceRoll(Base, TimestampMixin):
     """SQLAlchemy model representing a dice roll result."""
 
     __tablename__ = "dice_rolls"
-    id: Column = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Column = Column(String(36), primary_key=True,
+                        default=lambda: str(uuid.uuid4()))
     notation: Column = Column(String, nullable=False)
     individual_results: Column = Column(JSONType, nullable=False)  # Store as JSON array
     modifier: Column = Column(Integer, nullable=False)
@@ -38,11 +39,10 @@ class DiceRoll(Base, TimestampMixin):
     reason: Column = Column(Text, nullable=True)
 
     # Optional link to game and scene
-    game_id: Column = Column(String, ForeignKey("games.id"), nullable=True)
     scene_id: Column = Column(String, ForeignKey("scenes.id"), nullable=True)
 
     # Relationships will be defined in __init__.py
-    
+
     @classmethod
     def create(
         cls,
@@ -51,7 +51,6 @@ class DiceRoll(Base, TimestampMixin):
         modifier: int,
         total: int,
         reason: Optional[str] = None,
-        game_id: Optional[str] = None,
         scene_id: Optional[str] = None
     ) -> "DiceRoll":
         """Create a new dice roll record.
@@ -62,7 +61,6 @@ class DiceRoll(Base, TimestampMixin):
             modifier: The modifier applied to the roll.
             total: The total result of the roll.
             reason: Optional reason for the roll.
-            game_id: Optional ID of the game this roll belongs to.
             scene_id: Optional ID of the scene this roll belongs to.
         Returns:
             A new DiceRoll instance.
@@ -74,6 +72,5 @@ class DiceRoll(Base, TimestampMixin):
             modifier=modifier,
             total=total,
             reason=reason,
-            game_id=game_id,
             scene_id=scene_id
         )

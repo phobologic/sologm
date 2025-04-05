@@ -4,7 +4,16 @@ import enum
 import uuid
 from typing import ClassVar
 
-from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import validates
 
 from sologm.models.base import Base, TimestampMixin
@@ -23,8 +32,9 @@ class Scene(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint('game_id', 'slug', name='uix_game_scene_slug'),
     )
-    
-    id: Column = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    id: Column = Column(String(36), primary_key=True,
+                        default=lambda: str(uuid.uuid4()))
     slug: Column = Column(String, nullable=False, index=True)
     game_id: Column = Column(String, ForeignKey("games.id"), nullable=False)
     title: Column = Column(String, nullable=False)
@@ -42,7 +52,7 @@ class Scene(Base, TimestampMixin):
         if not title or not title.strip():
             raise ValueError("Scene title cannot be empty")
         return title
-        
+
     @validates('slug')
     def validate_slug(self, _: str, slug: str) -> str:
         """Validate the scene slug."""
@@ -70,7 +80,7 @@ class Scene(Base, TimestampMixin):
         """
         # Generate a URL-friendly slug from the title and sequence
         scene_slug = f"scene-{sequence}-{slugify(title)}"
-        
+
         return cls(
             id=str(uuid.uuid4()),
             slug=scene_slug,

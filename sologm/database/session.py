@@ -21,7 +21,7 @@ class DatabaseSession:
 
     _instance: Optional['DatabaseSession'] = None
     engine: Engine
-    Session: scoped_session
+    session: scoped_session
 
     @classmethod
     def get_instance(
@@ -48,7 +48,7 @@ class DatabaseSession:
         **engine_kwargs: Dict[str, Any]
     ) -> None:
         """Initialize the database session.
-        
+
         Args:
             db_url: Database URL (defaults to SQLite in current directory)
             engine: Pre-configured SQLAlchemy engine instance
@@ -84,7 +84,7 @@ class DatabaseSession:
 
         # Create scoped session
         logger.debug("Creating scoped session")
-        self.Session = scoped_session(session_factory)
+        self.session = scoped_session(session_factory)
 
     def create_tables(self) -> None:
         """Create all tables defined in the models."""
@@ -98,12 +98,12 @@ class DatabaseSession:
             A new SQLAlchemy session.
         """
         logger.debug("Getting new session")
-        return self.Session()
+        return self.session()
 
     def close_session(self) -> None:
         """Close the current session."""
         logger.debug("Removing session")
-        self.Session.remove()
+        self.session.remove()
 
     def dispose(self) -> None:
         """Dispose of the engine and all its connections."""
@@ -160,10 +160,11 @@ def initialize_database(
 
     Args:
         db_url: Database URL (required if engine is not provided)
-        engine: Pre-configured SQLAlchemy engine instance (required if db_url is not provided)
+        engine: Pre-configured SQLAlchemy engine instance
+                (required if db_url is not provided)
     Returns:
         The DatabaseSession instance.
-    
+
     Raises:
         ValueError: If neither db_url nor engine is provided
     """
@@ -188,10 +189,10 @@ def get_session() -> Session:
 
 def get_db_context() -> SessionContext:
     """Get a database session context manager.
-    
+
     Returns:
         A session context manager.
-    
+
     Example:
         with get_db_context() as session:
             user = session.query(User).first()
