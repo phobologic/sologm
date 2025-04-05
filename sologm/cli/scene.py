@@ -95,7 +95,7 @@ def list_scenes(session: Session = None) -> None:
             scene.title,
             scene.description,
             scene.status.value,
-            "✓" if scene.id == current_scene_id else "",
+            "✓" if scene.id == active_scene_id else "",
             str(scene.sequence),
         )
 

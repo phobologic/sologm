@@ -7,10 +7,10 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from sologm.core.scene import SceneManager
 from sologm.models.base import Base
 from sologm.models.game import Game
 from sologm.models.scene import Scene, SceneStatus
-from sologm.core.scene import SceneManager
 from sologm.utils.errors import SceneError
 
 logger = logging.getLogger(__name__)
@@ -27,8 +27,8 @@ def engine():
 @pytest.fixture
 def session(engine):
     """Create a new database session for testing."""
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
     yield session
     session.close()
 
@@ -49,7 +49,7 @@ def test_game(session) -> Generator[Game, None, None]:
     game.is_active = True
     session.add(game)
     session.commit()
-    
+
     yield game
 
 
@@ -80,7 +80,9 @@ class TestScene:
 class TestSceneManager:
     """Tests for the SceneManager class."""
 
-    def test_create_scene(self, scene_manager: SceneManager, test_game: Game, session: Session) -> None:
+    def test_create_scene(
+        self, scene_manager: SceneManager, test_game: Game, session: Session
+    ) -> None:
         """Test creating a new scene."""
         scene = scene_manager.create_scene(
             game_id=test_game.id,
@@ -94,7 +96,7 @@ class TestSceneManager:
         assert scene.description == "The beginning"
         assert scene.status == SceneStatus.ACTIVE
         assert scene.sequence == 1
-        assert scene.is_active == True
+        assert scene.is_active
 
         # Verify scene was saved to database
         db_scene = session.query(Scene).filter(Scene.id == scene.id).first()
@@ -145,7 +147,7 @@ class TestSceneManager:
                 description="Another forest trail",
             )
 
-    def test_create_scene_nonexistent_game(self, scene_manager: SceneManager, session: Session) -> None:
+    def test_create_scene_nonexistent_game(self, scene_manager: SceneManager) -> None:
         """Test creating a scene in a nonexistent game."""
         # This will now fail with a SQLAlchemy foreign key constraint error
         # which gets wrapped in a SceneError
@@ -231,11 +233,13 @@ class TestSceneManager:
         scene.is_active = False
         session.add(scene)
         session.commit()
-        
+
         # Make sure no scenes are active
-        session.query(Scene).filter(Scene.game_id == test_game.id).update({"is_active": False})
+        session.query(Scene).filter(
+            Scene.game_id == test_game.id
+        ).update({"is_active": False})
         session.commit()
-        
+
         active_scene = scene_manager.get_active_scene(test_game.id)
         assert active_scene is None
 
