@@ -11,10 +11,10 @@ def test_transaction_isolation(db_engine):
     # Create two separate sessions with explicit connections
     connection1 = db_engine.connect()
     connection2 = db_engine.connect()
-    
+
     # Start explicit transactions
     transaction1 = connection1.begin()
-    
+
     # Create sessions bound to these connections
     Session = sessionmaker()
     session1 = Session(bind=connection1)
