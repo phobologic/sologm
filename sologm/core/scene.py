@@ -49,11 +49,11 @@ class SceneManager(BaseManager[Scene, Scene]):
         ) -> Scene:
             # Check if game exists
             from sologm.models.game import Game
-            
+
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
                 raise SceneError(f"Game with ID '{game_id}' does not exist")
-                
+
             # Check for duplicate titles
             existing = (
                 session.query(Scene)
