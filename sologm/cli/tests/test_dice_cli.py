@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from typer.testing import CliRunner
+from datetime import datetime
 
 from sologm.cli.dice import dice_app
 from sologm.models.dice import DiceRoll
@@ -27,17 +28,18 @@ def mock_dice_manager():
 @pytest.fixture
 def sample_dice_roll():
     """Create a sample dice roll for testing."""
-    return DiceRoll(
-        id="dice_123",
-        notation="2d6+3",
-        individual_results=[4, 5],
-        modifier=3,
-        total=12,
-        reason="Test roll",
-        scene_id="scene_123",
-        created_at="2023-01-01T12:00:00Z",
-        updated_at="2023-01-01T12:00:00Z",
-    )
+    # Create a mock DiceRoll instead of trying to instantiate the actual model
+    mock_roll = MagicMock(spec=DiceRoll)
+    mock_roll.id = "dice_123"
+    mock_roll.notation = "2d6+3"
+    mock_roll.individual_results = [4, 5]
+    mock_roll.modifier = 3
+    mock_roll.total = 12
+    mock_roll.reason = "Test roll"
+    mock_roll.scene_id = "scene_123"
+    mock_roll.created_at = datetime.fromisoformat("2023-01-01T12:00:00")
+    
+    return mock_roll
 
 
 class TestRollDiceCommand:
@@ -85,8 +87,8 @@ class TestRollDiceCommand:
         # Setup the mock to raise an error
         mock_dice_manager.roll.side_effect = DiceError("Invalid dice notation")
 
-        # Run the command
-        result = runner.invoke(dice_app, ["roll", "invalid"])
+        # Run the command with catch_exceptions=False to properly handle the SystemExit
+        result = runner.invoke(dice_app, ["roll", "invalid"], catch_exceptions=False)
 
         # Verify the command failed with the expected error
         assert result.exit_code == 1
