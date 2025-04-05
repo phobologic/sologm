@@ -6,11 +6,13 @@ from typing import TYPE_CHECKING
 import typer
 from rich.console import Console
 from rich.table import Table
+from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
     from typer import Typer
 
     app: Typer
+from sologm.cli.db_helpers import with_db_session
 from sologm.cli.display import display_scene_info
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
@@ -25,15 +27,17 @@ logger = logging.getLogger(__name__)
 
 
 @scene_app.command("create")
+@with_db_session
 def create_scene(
     title: str = typer.Option(..., "--title", "-t", help="Title of the scene"),
     description: str = typer.Option(
         ..., "--description", "-d", help="Description of the scene"
     ),
+    session: Session = None,
 ) -> None:
     """Create a new scene in the active game."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
+    game_manager = GameManager(session)
+    scene_manager = SceneManager(session)
 
     # Get active game
     active_game = game_manager.get_active_game()
@@ -55,23 +59,26 @@ def create_scene(
 
 
 @scene_app.command("list")
-def list_scenes() -> None:
+@with_db_session
+def list_scenes(session: Session = None) -> None:
     """List all scenes in the active game."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
+    game_manager = GameManager(session)
+    scene_manager = SceneManager(session)
 
     # Get active game
     active_game = game_manager.get_active_game()
     if not active_game:
         raise GameError("No active game. Use 'sologm game activate' to set " "one.")
 
-    # Get scenes and current scene ID
+    # Get scenes
     scenes = scene_manager.list_scenes(active_game.id)
     if not scenes:
         console.print("No scenes found. Create one with 'sologm scene " "create'.")
         return
 
-    current_scene_id = scene_manager.file_manager.get_active_scene_id(active_game.id)
+    # Get active scene
+    active_scene = scene_manager.get_active_scene(active_game.id)
+    active_scene_id = active_scene.id if active_scene else None
 
     # Create table
     table = Table(title=f"Scenes in {active_game.name}")
@@ -96,10 +103,11 @@ def list_scenes() -> None:
 
 
 @scene_app.command("info")
-def scene_info() -> None:
+@with_db_session
+def scene_info(session: Session = None) -> None:
     """Show information about the active scene."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
+    game_manager = GameManager(session)
+    scene_manager = SceneManager(session)
 
     try:
         _, active_scene = scene_manager.validate_active_context(game_manager)
@@ -109,10 +117,11 @@ def scene_info() -> None:
 
 
 @scene_app.command("complete")
-def complete_scene() -> None:
+@with_db_session
+def complete_scene(session: Session = None) -> None:
     """Complete the active scene."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
+    game_manager = GameManager(session)
+    scene_manager = SceneManager(session)
 
     try:
         game_id, active_scene = scene_manager.validate_active_context(game_manager)
@@ -124,12 +133,14 @@ def complete_scene() -> None:
 
 
 @scene_app.command("set-current")
+@with_db_session
 def set_current_scene(
-    scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current")
+    scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current"),
+    session: Session = None
 ) -> None:
     """Set which scene is currently being played."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
+    game_manager = GameManager(session)
+    scene_manager = SceneManager(session)
 
     # Get active game
     active_game = game_manager.get_active_game()
