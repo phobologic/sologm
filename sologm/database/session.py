@@ -1,6 +1,6 @@
 """Database session management for SoloGM."""
 
-from typing import Any, Callable, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -17,7 +17,6 @@ class DatabaseSession:
 
     _instance: Optional['DatabaseSession'] = None
     engine: Engine
-    session_factory: Callable[..., Session]
     Session: scoped_session
 
     @classmethod
@@ -49,6 +48,7 @@ class DatabaseSession:
         Args:
             db_url: Database URL (defaults to SQLite in current directory)
             engine: Pre-configured SQLAlchemy engine instance
+            engine_kwargs: Additional keyword arguments for engine creation
         """
         # Use provided engine or create one from URL
         self.engine = engine if engine is not None else create_engine(
@@ -61,16 +61,16 @@ class DatabaseSession:
             **engine_kwargs
         )
 
-        # Create session factory with reasonable defaults
-        self.session_factory = sessionmaker(
+        # Create session factory and scoped session directly
+        session_factory = sessionmaker(
             bind=self.engine,
             autocommit=False,
             autoflush=False,
             expire_on_commit=False  # Prevents detached instance errors
         )
-
+        
         # Create scoped session
-        self.Session = scoped_session(self.session_factory)
+        self.Session = scoped_session(session_factory)
 
     def create_tables(self) -> None:
         """Create all tables defined in the models."""
