@@ -13,22 +13,20 @@ from sologm.models.base import Base
 # Set up logger
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T', bound='DatabaseSession')
+T = TypeVar("T", bound="DatabaseSession")
 
 
 class DatabaseSession:
     """Manages database connections and sessions."""
 
-    _instance: Optional['DatabaseSession'] = None
+    _instance: Optional["DatabaseSession"] = None
     engine: Engine
     session: scoped_session
 
     @classmethod
     def get_instance(
-        cls: Type[T],
-        db_url: Optional[str] = None,
-        engine: Optional[Engine] = None
-    ) -> 'DatabaseSession':
+        cls: Type[T], db_url: Optional[str] = None, engine: Optional[Engine] = None
+    ) -> "DatabaseSession":
         """Get or create the singleton instance of DatabaseSession.
 
         Args:
@@ -45,7 +43,7 @@ class DatabaseSession:
         self,
         db_url: Optional[str] = None,
         engine: Optional[Engine] = None,
-        **engine_kwargs: Dict[str, Any]
+        **engine_kwargs: Dict[str, Any],
     ) -> None:
         """Initialize the database session.
 
@@ -67,7 +65,7 @@ class DatabaseSession:
                 max_overflow=10,
                 pool_timeout=30,
                 pool_recycle=1800,  # Recycle connections after 30 minutes
-                **engine_kwargs
+                **engine_kwargs,
             )
         else:
             logger.error("No engine or db_url provided")
@@ -79,7 +77,7 @@ class DatabaseSession:
             bind=self.engine,
             autocommit=False,
             autoflush=False,
-            expire_on_commit=False  # Prevents detached instance errors
+            expire_on_commit=False,  # Prevents detached instance errors
         )
 
         # Create scoped session
@@ -132,9 +130,12 @@ class SessionContext:
         self.session = self._db.get_session()
         return self.session
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]],
-                exc_val: Optional[BaseException],
-                exc_tb: Optional[Any]) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> None:
         """Exit context and close session."""
         if exc_type is not None:
             # An exception occurred, rollback
@@ -153,8 +154,7 @@ class SessionContext:
 
 # Convenience functions
 def initialize_database(
-    db_url: Optional[str] = None,
-    engine: Optional[Engine] = None
+    db_url: Optional[str] = None, engine: Optional[Engine] = None
 ) -> DatabaseSession:
     """Initialize the database and create tables if they don't exist.
 

@@ -15,7 +15,7 @@ class Config:
     _instance = None
 
     @classmethod
-    def get_instance(cls, config_path: Optional[Path] = None) -> 'Config':
+    def get_instance(cls, config_path: Optional[Path] = None) -> "Config":
         """Get or create the singleton Config instance.
 
         Args:
@@ -123,6 +123,7 @@ class Config:
                 yaml.dump(self._config, f, default_flow_style=False)
         except Exception as e:
             raise ConfigError(f"Failed to save configuration: {e}") from e
+
 
 def get_config() -> Config:
     """Get the global Config instance.

@@ -68,10 +68,7 @@ def test_ensure_utc():
     assert result.isoformat() == "2024-01-01T12:00:00+00:00"
 
     # Test with non-UTC timezone
-    other_tz = datetime(
-        2024, 1, 1, 12, 0,
-        tzinfo=timezone(offset=timedelta(hours=1))
-    )
+    other_tz = datetime(2024, 1, 1, 12, 0, tzinfo=timezone(offset=timedelta(hours=1)))
     result = ensure_utc(other_tz)
     assert result.tzinfo == timezone.utc
     assert result.isoformat() == "2024-01-01T11:00:00+00:00"  # Note the hour difference

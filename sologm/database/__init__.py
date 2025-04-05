@@ -16,6 +16,7 @@ from sologm.utils.config import Config
 
 logger = logging.getLogger(__name__)
 
+
 def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
     """Initialize the database connection.
 
@@ -45,6 +46,7 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
 
     logger.info(f"Initializing database with URL: {db_url}")
     return initialize_database(db_url=db_url)
+
 
 __all__ = [
     "DatabaseSession",

@@ -4,7 +4,8 @@ import logging
 
 import typer
 from rich.console import Console
-from sologm.cli.display import display_events_table
+
+from sologm.cli.utils.display import display_events_table
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager

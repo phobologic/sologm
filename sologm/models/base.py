@@ -8,11 +8,13 @@ from sologm.utils.datetime_utils import get_current_time
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
+
     pass
 
 
 class TimestampMixin:
     """Mixin that adds created_at and modified_at columns."""
+
     created_at = mapped_column(DateTime, default=get_current_time, nullable=False)
     modified_at = mapped_column(
         DateTime,

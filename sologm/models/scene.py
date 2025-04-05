@@ -2,7 +2,7 @@
 
 import enum
 import uuid
-from typing import ClassVar, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
@@ -11,9 +11,9 @@ from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
 if TYPE_CHECKING:
+    from sologm.models.dice import DiceRoll
     from sologm.models.event import Event
     from sologm.models.oracle import InterpretationSet
-    from sologm.models.dice import DiceRoll
 
 
 class SceneStatus(enum.Enum):
@@ -26,7 +26,7 @@ class SceneStatus(enum.Enum):
 class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
-    __tablename__: ClassVar[str] = "scenes"
+    __tablename__ = "scenes"
     __table_args__ = (UniqueConstraint("game_id", "slug", name="uix_game_scene_slug"),)
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))

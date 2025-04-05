@@ -1,7 +1,7 @@
 """Oracle interpretation models for SoloGM."""
 
 import uuid
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship

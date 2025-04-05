@@ -45,7 +45,7 @@ class AnthropicClient:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
 
         if not api_key:
-            logger.error("Anthropic API key not found in environment " "variables")
+            logger.error("Anthropic API key not found in environment variables")
             raise APIError(
                 "Anthropic API key not found. Please set the "
                 "ANTHROPIC_API_KEY environment variable or provide it in the "
@@ -76,11 +76,9 @@ class AnthropicClient:
             APIError: If the API call fails.
         """
         try:
-            logger.debug(f"Sending message to Claude with {max_tokens} max " "tokens")
+            logger.debug(f"Sending message to Claude with {max_tokens} max tokens")
 
-            logger.debug(
-                f"Sending message to Claude with prompt length: " f"{len(prompt)}"
-            )
+            logger.debug(f"Sending message to Claude with prompt length: {len(prompt)}")
             logger.debug(f"Prompt: {prompt}")
             # Handle system message
             system_param = system if system is not None else NOT_GIVEN

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from rich.console import Console
 
-from sologm.cli.display import (
+from sologm.cli.utils.display import (
     _calculate_truncation_length,
     _create_events_panel,
     _create_game_header_panel,

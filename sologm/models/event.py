@@ -34,7 +34,7 @@ class Event(Base, TimestampMixin):
         scene_id: str,
         description: str,
         source: str = "manual",
-        interpretation_id: Optional[str] = None
+        interpretation_id: Optional[str] = None,
     ) -> "Event":
         """Create a new event.
 
@@ -54,5 +54,5 @@ class Event(Base, TimestampMixin):
             scene_id=scene_id,
             description=description,
             source=source,
-            interpretation_id=interpretation_id
+            interpretation_id=interpretation_id,
         )

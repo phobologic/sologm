@@ -4,7 +4,8 @@ import logging
 
 import typer
 from rich.console import Console
-from sologm.cli.display import (
+
+from sologm.cli.utils.display import (
     display_game_info,
     display_game_status,
     display_games_table,

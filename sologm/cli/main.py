@@ -62,12 +62,14 @@ def main(
         from pathlib import Path
 
         from sologm.utils.config import Config
+
         logger.debug("Loading config from %s", config_path)
         Config.get_instance(Path(config_path))
 
     # Initialize database
     try:
         from sologm.database import init_db
+
         init_db()
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")

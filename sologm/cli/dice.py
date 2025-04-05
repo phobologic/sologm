@@ -6,7 +6,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from sologm.cli import display
+from sologm.cli.utils import display
 from sologm.core.dice import DiceManager
 from sologm.utils.errors import DiceError
 

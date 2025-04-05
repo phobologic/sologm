@@ -6,7 +6,6 @@ from typing import Any, Generic, Optional, Tuple, TypeVar
 from sqlalchemy.orm import Session
 
 from sologm.database.session import get_db_context
-from sologm.utils.errors import SoloGMError
 
 # Type variables for domain and database models
 T = TypeVar("T")  # Domain model type
@@ -85,7 +84,8 @@ class BaseManager(Generic[T, M]):
     ) -> Any:
         """Execute a database operation with proper session handling.
 
-        This method ensures proper transaction management but preserves original exceptions.
+        This method ensures proper transaction management but preserves
+        original exceptions.
 
         Args:
             operation_name: Name of the operation (for logging)

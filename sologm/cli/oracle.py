@@ -5,7 +5,7 @@ import logging
 import typer
 from rich.console import Console
 
-from sologm.cli import display
+from sologm.cli.utils import display
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager

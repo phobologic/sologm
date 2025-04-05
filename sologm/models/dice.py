@@ -13,6 +13,7 @@ from sologm.models.base import Base, TimestampMixin
 
 class JSONType(TypeDecorator):
     """Enables JSON storage by serializing on write and deserializing on read."""
+
     impl = String
 
     def process_bind_param(
@@ -43,8 +44,7 @@ class DiceRoll(Base, TimestampMixin):
 
     # Optional link to game and scene
     scene_id: Mapped[Optional[str]] = mapped_column(
-        ForeignKey("scenes.id"), 
-        nullable=True
+        ForeignKey("scenes.id"), nullable=True
     )
 
     # Relationships will be defined in relationships.py
@@ -57,7 +57,7 @@ class DiceRoll(Base, TimestampMixin):
         modifier: int,
         total: int,
         reason: Optional[str] = None,
-        scene_id: Optional[str] = None
+        scene_id: Optional[str] = None,
     ) -> "DiceRoll":
         """Create a new dice roll record.
 
@@ -78,5 +78,5 @@ class DiceRoll(Base, TimestampMixin):
             modifier=modifier,
             total=total,
             reason=reason,
-            scene_id=scene_id
+            scene_id=scene_id,
         )
