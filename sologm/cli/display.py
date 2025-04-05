@@ -174,8 +174,8 @@ def display_games_table(
 
     for game in games:
         # Ensure scenes relationship is loaded
-        scene_count = len(game.scenes) if hasattr(game, 'scenes') else 0
-        
+        scene_count = len(game.scenes) if hasattr(game, "scenes") else 0
+
         table.add_row(
             game.id,
             game.name,
@@ -201,11 +201,11 @@ def display_game_info(
         f"Displaying game info for {game.id} with active scene: "
         f"{active_scene.id if active_scene else 'None'}"
     )
-    
+
     # Ensure scenes relationship is loaded
-    scene_count = len(game.scenes) if hasattr(game, 'scenes') else 0
+    scene_count = len(game.scenes) if hasattr(game, "scenes") else 0
     logger.debug(f"Game details: name='{game.name}', scenes={scene_count}")
-    
+
     console.print("[bold]Active Game:[/]")
     console.print(f"  Name: {game.name} ({game.id})")
     console.print(f"  Description: {game.description}")
@@ -229,8 +229,10 @@ def display_interpretation_set(
         show_context: Whether to show context information
     """
     # Ensure interpretations relationship is loaded
-    interpretation_count = len(interp_set.interpretations) if hasattr(interp_set, 'interpretations') else 0
-    
+    interpretation_count = (
+        len(interp_set.interpretations) if hasattr(interp_set, "interpretations") else 0
+    )
+
     logger.debug(
         f"Displaying interpretation set {interp_set.id} with "
         f"{interpretation_count} interpretations"
@@ -241,7 +243,7 @@ def display_interpretation_set(
         console.print(f"Context: {interp_set.context}")
         console.print(f"Results: {interp_set.oracle_results}\n")
 
-    if hasattr(interp_set, 'interpretations'):
+    if hasattr(interp_set, "interpretations"):
         for i, interp in enumerate(interp_set.interpretations, 1):
             display_interpretation(console, interp)
     else:
@@ -352,10 +354,10 @@ def _calculate_truncation_length(console: Console) -> int:
 def _create_game_header_panel(game: Game) -> Panel:
     """Create the game info header panel."""
     logger.debug(f"Creating game header panel for game {game.id}")
-    
+
     # Ensure scenes relationship is loaded
-    scene_count = len(game.scenes) if hasattr(game, 'scenes') else 0
-    
+    scene_count = len(game.scenes) if hasattr(game, "scenes") else 0
+
     game_info = (
         f"[bold]{game.name}[/bold] ({game.id})\n"
         f"[dim]{game.description}[/dim]\n"
@@ -496,9 +498,9 @@ def _create_pending_oracle_panel(
 
     # Show truncated versions of the options
     options_text = ""
-    
+
     # Ensure interpretations relationship is loaded
-    if hasattr(interp_set, 'interpretations'):
+    if hasattr(interp_set, "interpretations"):
         for i, interp in enumerate(interp_set.interpretations, 1):
             logger.debug(f"Adding interpretation option {i}: {interp.id}")
             truncated_title = truncate_text(interp.title, truncation_length // 2)
