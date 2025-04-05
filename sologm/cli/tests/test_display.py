@@ -188,16 +188,11 @@ def test_display_game_status_full(
     scene_manager = MagicMock(spec=SceneManager)
     scene_manager.get_previous_scene.return_value = None
 
-    current_interpretation = {
-        "context": "Test context",
-        "selected_interpretation": None,
-    }
     display_game_status(
         mock_console,
         sample_game,
         sample_scene,
         sample_events,
-        current_interpretation,
         scene_manager=scene_manager,
         oracle_manager=None,
     )
@@ -241,16 +236,11 @@ def test_display_game_status_selected_interpretation(
     scene_manager = MagicMock(spec=SceneManager)
     scene_manager.get_previous_scene.return_value = None
 
-    current_interpretation = {
-        "context": "Test context",
-        "selected_interpretation": 0,
-    }
     display_game_status(
         mock_console,
         sample_game,
         sample_scene,
         sample_events,
-        current_interpretation,
         scene_manager=scene_manager,
         oracle_manager=None,
     )
