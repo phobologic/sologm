@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from typing import List
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from rich.console import Console
@@ -26,7 +26,7 @@ from sologm.core.dice import DiceRoll
 from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
-from sologm.core.scene import Scene, SceneStatus
+from sologm.core.scene import Scene, SceneManager, SceneStatus
 
 
 @pytest.fixture
