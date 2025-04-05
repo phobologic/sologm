@@ -197,6 +197,7 @@ def select_interpretation(
                 )
                 raise typer.Exit(1)
             interpretation_set_id = current_interp_set.id
+            interpretation_set_id = current_interp_set.id
 
         if not interpretation_id:
             console.print(
