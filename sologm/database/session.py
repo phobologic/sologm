@@ -22,7 +22,7 @@ class DatabaseSession:
     @classmethod
     def get_instance(
         cls: Type[T],
-        db_url: Optional[str] = None,
+        db_url: str = "",
         engine: Optional[Engine] = None
     ) -> T:
         """Get or create the singleton instance of DatabaseSession.
@@ -68,7 +68,7 @@ class DatabaseSession:
             autoflush=False,
             expire_on_commit=False  # Prevents detached instance errors
         )
-        
+
         # Create scoped session
         self.Session = scoped_session(session_factory)
 
