@@ -84,15 +84,15 @@ class BaseManager(Generic[T, M]):
         self, operation_name: str, operation: callable, *args: Any, **kwargs: Any
     ) -> Any:
         """Execute a database operation with proper session handling.
-        
+
         This method ensures proper transaction management but preserves original exceptions.
-        
+
         Args:
             operation_name: Name of the operation (for logging)
             operation: Callable that performs the database operation
             *args: Arguments to pass to the operation
             **kwargs: Keyword arguments to pass to the operation
-            
+
         Returns:
             Result of the operation
         """
