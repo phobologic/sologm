@@ -1,6 +1,6 @@
 """Database session management for SoloGM."""
 
-from typing import Any, Dict, Optional, Type, TypeVar, Callable
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
