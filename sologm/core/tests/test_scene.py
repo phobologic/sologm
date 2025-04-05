@@ -2,7 +2,8 @@
 
 import pytest
 
-from sologm.models.scene import SceneStatus
+from sologm.models.game import Game
+from sologm.models.scene import Scene, SceneStatus
 from sologm.utils.errors import SceneError
 
 
