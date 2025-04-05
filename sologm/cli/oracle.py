@@ -28,7 +28,7 @@ def interpret_oracle(
     show_prompt: bool = typer.Option(
         False,
         "--show-prompt",
-        help="Show the prompt that would be sent to the AI without sending it"
+        help="Show the prompt that would be sent to the AI without sending it",
     ),
 ) -> None:
     """Get interpretations for oracle results."""

@@ -220,8 +220,10 @@ class OracleManager:
         """
         logger.debug(f"Creating interpretation object with id: {id}")
         return Interpretation(
-            id=interpretation_id, title=title, description=description,
-            created_at=created_at
+            id=interpretation_id,
+            title=title,
+            description=description,
+            created_at=created_at,
         )
 
     def _validate_interpretation_set(self, interp_data: dict, set_id: str) -> None:
@@ -263,9 +265,7 @@ class OracleManager:
 
             # Get all interpretation set files, sorted by creation time (newest first)
             interp_files = sorted(
-                interp_dir.glob("*.yaml"),
-                key=lambda f: f.stat().st_mtime,
-                reverse=True
+                interp_dir.glob("*.yaml"), key=lambda f: f.stat().st_mtime, reverse=True
             )
             # Find the most recent one with a selected interpretation
             for file_path in interp_files:
@@ -277,10 +277,13 @@ class OracleManager:
                             game_id, scene_id, data["id"]
                         )
                         selected_idx = interp_set.selected_interpretation
-                        if (selected_idx is not None and
-                                0 <= selected_idx < len(interp_set.interpretations)):
-                            return (interp_set,
-                                    interp_set.interpretations[selected_idx])
+                        if selected_idx is not None and 0 <= selected_idx < len(
+                            interp_set.interpretations
+                        ):
+                            return (
+                                interp_set,
+                                interp_set.interpretations[selected_idx],
+                            )
                 except Exception as e:
                     logger.warning(
                         f"Error reading interpretation file {file_path}: {e}"
@@ -290,7 +293,6 @@ class OracleManager:
         except Exception as e:
             logger.warning(f"Error getting most recent interpretation: {e}")
             return None
-
 
     def _build_prompt(
         self,
@@ -436,7 +438,7 @@ DESCRIPTION: Detailed description of interpretation idea
         now = get_current_time()
         interpretations = [
             self._create_interpretation(
-                interpretation_id=f"interp-{i+1}",
+                interpretation_id=f"interp-{i + 1}",
                 title=interp["title"],
                 description=interp["description"],
                 created_at=now,
@@ -557,8 +559,7 @@ DESCRIPTION: Detailed description of interpretation idea
         # Mark the interpretation reference as resolved in the game data
         game_data = self._read_game_data(game_id)
         ref_key = "current_interpretation_reference"
-        if (ref_key in game_data and
-                game_data[ref_key]["id"] == interpretation_set_id):
+        if ref_key in game_data and game_data[ref_key]["id"] == interpretation_set_id:
             game_data[ref_key]["resolved"] = True
             self.file_manager.write_yaml(
                 self.file_manager.get_game_path(game_id), game_data
@@ -583,8 +584,5 @@ DESCRIPTION: Detailed description of interpretation idea
         """
         description = f"{interpretation.title}: {interpretation.description}"
         self.event_manager.add_event(
-            game_id=game_id,
-            scene_id=scene_id,
-            description=description,
-            source="oracle"
+            game_id=game_id, scene_id=scene_id, description=description, source="oracle"
         )

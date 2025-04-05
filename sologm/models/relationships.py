@@ -9,9 +9,7 @@ from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene
 
 # Game relationships
-Game.scenes = relationship(
-    "Scene", back_populates="game",cascade="all, delete-orphan"
-)
+Game.scenes = relationship("Scene", back_populates="game", cascade="all, delete-orphan")
 
 # Scene relationships
 Scene.game = relationship("Game", back_populates="scenes")
@@ -27,19 +25,14 @@ Scene.dice_rolls = relationship("DiceRoll", back_populates="scene")
 Event.scene = relationship("Scene", back_populates="events")
 
 # InterpretationSet relationships
-InterpretationSet.scene = relationship(
-    "Scene", back_populates="interpretation_sets"
-)
+InterpretationSet.scene = relationship("Scene", back_populates="interpretation_sets")
 InterpretationSet.interpretations = relationship(
-    "Interpretation",
-    back_populates="interpretation_set",
-    cascade="all, delete-orphan"
+    "Interpretation", back_populates="interpretation_set", cascade="all, delete-orphan"
 )
 
 # Interpretation relationships
 Interpretation.interpretation_set = relationship(
-    "InterpretationSet",
-    back_populates="interpretations"
+    "InterpretationSet", back_populates="interpretations"
 )
 Interpretation.events = relationship("Event", back_populates="interpretation")
 

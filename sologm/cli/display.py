@@ -8,11 +8,11 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from sologm.models.dice import DiceRoll
 from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
 from sologm.core.scene import Scene, SceneManager
+from sologm.models.dice import DiceRoll
 
 if TYPE_CHECKING:
     from sologm.core.oracle import OracleManager
@@ -37,8 +37,8 @@ def truncate_text(text: str, max_length: int = 60) -> str:
         logger.debug("Text already within max length, returning unchanged")
         return text
     # Ensure we keep exactly max_length characters including the ellipsis
-    logger.debug(f"Truncating text to {max_length-3} chars plus ellipsis")
-    return text[:max_length-3] + "..."
+    logger.debug(f"Truncating text to {max_length - 3} chars plus ellipsis")
+    return text[: max_length - 3] + "..."
 
 
 def display_dice_roll(console: Console, roll: DiceRoll) -> None:
@@ -95,17 +95,16 @@ def display_interpretation(
         f"Interpretation title: '{interp.title}', created: {interp.created_at}"
     )
     # Extract the numeric part of the ID (e.g., "1" from "interp-1")
-    id_number = interp.id.split('-')[1]
+    id_number = interp.id.split("-")[1]
     title_line = f"[bold]{interp.title}[/bold]"
     if selected:
         title_line += " [green](Selected)[/green]"
 
     panel = Panel(
-        Text.from_markup(
-            f"{title_line}\n{interp.description}"
+        Text.from_markup(f"{title_line}\n{interp.description}"),
+        title=Text.from_markup(
+            f"[cyan]Interpretation {interp.id} ({id_number})[/cyan]"
         ),
-        title=Text.from_markup(f"[cyan]Interpretation {interp.id} "
-                               f"({id_number})[/cyan]"),
         border_style="blue",
     )
     console.print(panel)
@@ -313,7 +312,7 @@ def display_game_status(
         active_scene,
         current_interpretation_reference,
         oracle_manager,
-        truncation_length
+        truncation_length,
     )
     if oracle_panel:
         console.print(oracle_panel)
@@ -356,9 +355,7 @@ def _create_game_header_panel(game: Game) -> Panel:
 
 
 def _create_scene_panels_grid(
-    game: Game,
-    active_scene: Optional[Scene],
-    scene_manager: Optional[SceneManager]
+    game: Game, active_scene: Optional[Scene], scene_manager: Optional[SceneManager]
 ) -> Table:
     """Create a grid containing current and previous scene panels."""
     logger.debug(f"Creating scene panels grid for game {game.id}")
@@ -367,18 +364,13 @@ def _create_scene_panels_grid(
     if active_scene:
         logger.debug(f"Including active scene {active_scene.id} in panel")
         scenes_content = (
-            f"[bold]{active_scene.title}[/bold]\n"
-            f"[dim]{active_scene.description}[/dim]"
+            f"[bold]{active_scene.title}[/bold]\n[dim]{active_scene.description}[/dim]"
         )
     else:
         logger.debug("No active scene to display")
         scenes_content = "[dim]No active scene[/dim]"
 
-    scenes_panel = Panel(
-        scenes_content,
-        title="Current Scene",
-        border_style="cyan"
-    )
+    scenes_panel = Panel(scenes_content, title="Current Scene", border_style="cyan")
 
     # Create previous scene panel
     prev_scene = None
@@ -392,17 +384,14 @@ def _create_scene_panels_grid(
     if prev_scene:
         logger.debug(f"Including previous scene {prev_scene.id} in panel")
         prev_scene_content = (
-            f"[bold]{prev_scene.title}[/bold]\n"
-            f"[dim]{prev_scene.description}[/dim]"
+            f"[bold]{prev_scene.title}[/bold]\n[dim]{prev_scene.description}[/dim]"
         )
     else:
         logger.debug("No previous scene to display")
         prev_scene_content = "[dim]No previous scene[/dim]"
 
     prev_scene_panel = Panel(
-        prev_scene_content,
-        title="Previous Scene",
-        border_style="blue"
+        prev_scene_content, title="Previous Scene", border_style="blue"
     )
 
     # Create a nested grid for the left column to stack the scene panels
@@ -452,7 +441,7 @@ def _create_oracle_panel(
     active_scene: Optional[Scene],
     current_interpretation_reference: Optional[dict],
     oracle_manager: Optional["OracleManager"],
-    truncation_length: int
+    truncation_length: int,
 ) -> Optional[Panel]:
     """Create the oracle panel if applicable."""
     logger.debug(f"Creating oracle panel for game {game.id}")
@@ -463,16 +452,12 @@ def _create_oracle_panel(
     )
 
     logger.debug(f"Has open interpretation: {has_open_interpretation}")
-    logger.debug(f"Has active scene: {active_scene}, "
-                 f"oracle_manager: {oracle_manager}")
+    logger.debug(f"Has active scene: {active_scene}, oracle_manager: {oracle_manager}")
 
     if has_open_interpretation:
         logger.debug("Creating pending oracle panel")
         return _create_pending_oracle_panel(
-            game,
-            current_interpretation_reference,
-            oracle_manager,
-            truncation_length
+            game, current_interpretation_reference, oracle_manager, truncation_length
         )
     elif active_scene and oracle_manager:
         logger.debug(f"Creating recent oracle panel for scene {active_scene.id}")
@@ -489,12 +474,13 @@ def _create_pending_oracle_panel(
     game: Game,
     current_interpretation_reference: dict,
     oracle_manager: Optional["OracleManager"],
-    truncation_length: int
+    truncation_length: int,
 ) -> Panel:
     """Create a panel for pending oracle interpretation."""
     logger.debug(f"Creating pending oracle panel for game {game.id}")
     # Try to load the actual interpretation set for more context
     from sologm.core.oracle import OracleManager
+
     oracle_mgr = oracle_manager or OracleManager()
     try:
         logger.debug(
@@ -504,7 +490,7 @@ def _create_pending_oracle_panel(
         interp_set = oracle_mgr.get_interpretation_set(
             game.id,
             current_interpretation_reference["scene_id"],
-            current_interpretation_reference["id"]
+            current_interpretation_reference["id"],
         )
         context = interp_set.context
         logger.debug(
@@ -525,7 +511,7 @@ def _create_pending_oracle_panel(
             f"[dim]Use 'sologm oracle select' to choose an interpretation[/dim]",
             title="Pending Oracle Decision",
             border_style="yellow",
-            expand=True
+            expand=True,
         )
     except Exception as e:
         logger.debug(f"Failed to load interpretation set: {e}, using fallback panel")
@@ -535,7 +521,7 @@ def _create_pending_oracle_panel(
             "[dim]Use 'sologm oracle status' to see details[/dim]",
             title="Pending Oracle Decision",
             border_style="yellow",
-            expand=True
+            expand=True,
         )
 
 
@@ -569,7 +555,7 @@ def _create_recent_oracle_panel(
                 f"[dim]{selected_interp.description}[/dim]",
                 title="Previous Oracle Decision",
                 border_style="green",
-                expand=True
+                expand=True,
             )
         else:
             logger.debug("No recent interpretation found")
