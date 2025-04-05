@@ -22,7 +22,7 @@ class DatabaseSession:
     @classmethod
     def get_instance(
         cls: Type[T],
-        db_url: str = "",
+        db_url: Optional[str] = None,
         engine: Optional[Engine] = None
     ) -> T:
         """Get or create the singleton instance of DatabaseSession.
@@ -39,7 +39,7 @@ class DatabaseSession:
 
     def __init__(
         self,
-        db_url: str = "sqlite:///sologm.db",
+        db_url: Optional[str] = None,
         engine: Optional[Engine] = None,
         **engine_kwargs: Dict[str, Any]
     ) -> None:
@@ -51,15 +51,20 @@ class DatabaseSession:
             engine_kwargs: Additional keyword arguments for engine creation
         """
         # Use provided engine or create one from URL
-        self.engine = engine if engine is not None else create_engine(
-            db_url,
-            poolclass=QueuePool,
-            pool_size=5,
-            max_overflow=10,
-            pool_timeout=30,
-            pool_recycle=1800,  # Recycle connections after 30 minutes
-            **engine_kwargs
-        )
+        if engine is not None:
+            self.engine = engine
+        elif db_url is not None:
+            self.engine = create_engine(
+                db_url,
+                poolclass=QueuePool,
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                pool_recycle=1800,  # Recycle connections after 30 minutes
+                **engine_kwargs
+            )
+        else:
+            raise ValueError("Either db_url or engine must be provided")
 
         # Create session factory and scoped session directly
         session_factory = sessionmaker(
@@ -136,11 +141,17 @@ def initialize_database(
     """Initialize the database and create tables if they don't exist.
 
     Args:
-        db_url: Database URL
-        engine: Pre-configured SQLAlchemy engine instance
+        db_url: Database URL (required if engine is not provided)
+        engine: Pre-configured SQLAlchemy engine instance (required if db_url is not provided)
     Returns:
         The DatabaseSession instance.
+    
+    Raises:
+        ValueError: If neither db_url nor engine is provided
     """
+    if db_url is None and engine is None:
+        raise ValueError("Either db_url or engine must be provided")
+        
     db = DatabaseSession.get_instance(db_url=db_url, engine=engine)
     db.create_tables()
     return db
