@@ -6,6 +6,7 @@ import typer
 from rich.console import Console
 
 from sologm.cli.utils import display
+from sologm.cli.utils.editor import edit_text
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
@@ -115,28 +116,14 @@ def retry_interpretation(
         if edit_context or typer.confirm(
             "Would you like to edit the context before retrying?"
         ):
-            # Show the current context
-            console.print("\n[bold blue]Current context:[/bold blue]")
-            console.print(context)
-
-            # Open the editor with the current context
-            import click
-
-            try:
-                new_context = click.edit(context)
-
-                # If the user saved changes (didn't abort)
-                if new_context is not None:
-                    context = new_context.strip()
-                    console.print("\n[green]Context updated.[/green]")
-                else:
-                    console.print("\n[yellow]Context unchanged.[/yellow]")
-            except click.UsageError as e:
-                console.print(f"\n[red]Could not open editor: {str(e)}[/red]")
-                console.print(
-                    "[yellow]Continuing with original context. To use this feature, "
-                    "set the EDITOR environment variable to your preferred text editor.[/yellow]"
-                )
+            context, _ = edit_text(
+                context,
+                console=console,
+                message="Current context:",
+                success_message="Context updated.",
+                cancel_message="Context unchanged.",
+                error_message="Could not open editor"
+            )
 
         console.print("\nGenerating new interpretations...", style="bold blue")
         new_interp_set = oracle_manager.get_interpretations(
