@@ -166,7 +166,7 @@ Test Description"""
             oracle_manager.select_interpretation(
                 "nonexistent-set", "nonexistent-interp"
             )
-        assert "not found" in str(exc.value)
+        assert "No interpretations found" in str(exc.value)
 
     def test_find_interpretation_by_different_identifiers(
         self, oracle_manager, mock_anthropic_client, test_game, test_scene
