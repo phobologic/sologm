@@ -221,9 +221,13 @@ The lack of forced entry and the selective theft of only the special brandy barr
 
         previous_interps_text = ""
         if previous_interpretations and retry_attempt > 0:
-            previous_interps_text = "Previous interpretations (please provide different ideas):\n\n"
+            previous_interps_text = (
+                "Previous interpretations (please provide different ideas):\n\n"
+            )
             for interp in previous_interpretations:
-                previous_interps_text += f"## {interp['title']}\n{interp['description']}\n\n"
+                previous_interps_text += (
+                    f"## {interp['title']}\n{interp['description']}\n\n"
+                )
 
         retry_text = ""
         if retry_attempt > 0:
@@ -443,7 +447,8 @@ Important:
                             count,
                             retry_attempt + 1,
                             max_retries,
-                            previous_set_id or interp_set.id,  # Pass the previous set ID
+                            previous_set_id
+                            or interp_set.id,  # Pass the previous set ID
                         )
                     else:
                         # We've reached max retries, raise error
