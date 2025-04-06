@@ -164,7 +164,7 @@ def display_interpretation(
         f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator} "
         f"[{TEXT_STYLES['timestamp']}]({sequence_text}{id_number}/{interp.slug})[/{TEXT_STYLES['timestamp']}]"
     )
-    
+
     # Panel content is just the description now
     panel_content = interp.description
 
