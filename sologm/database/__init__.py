@@ -22,7 +22,7 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
 
     Args:
         engine: Pre-configured SQLAlchemy engine instance (optional)
-        
+
     Returns:
         The DatabaseSession instance.
 
@@ -30,30 +30,30 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
         ValueError: If database URL cannot be determined
     """
     logger.info("Initializing database")
-    
+
     from sologm.utils.config import get_config
-    
+
     # Get database URL from config if engine not provided
     if not engine:
         config = get_config()
         db_url = config.get("database_url")
-        
+
         if not db_url:
             logger.error("No database URL configured")
             raise ValueError(
                 "Database URL not configured. Set SOLOGM_DATABASE_URL environment "
                 "variable or add 'database_url' to your config file."
             )
-        
+
         # Get or create the singleton instance
         db_session = DatabaseSession.get_instance(db_url=db_url)
     else:
         # Use provided engine
         db_session = DatabaseSession.get_instance(engine=engine)
-    
+
     # Create tables
     db_session.create_tables()
-    
+
     logger.info("Database initialized successfully")
     return db_session
 
