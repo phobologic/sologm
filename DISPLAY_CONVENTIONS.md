@@ -25,6 +25,12 @@
 - Truncate long text with ellipsis using `truncate_text()`
 - Include metadata in compact format (e.g., "Created: {date} • Scenes: {count}")
 
+### Table Formatting
+- Embed table titles in the top border using `title` parameter
+- Left-justify table titles with `title_justify="left"`
+- Use consistent title styling with TEXT_STYLES["title"]
+- Match table border color to content type using BORDER_STYLES
+
 ### Command Output Structure
 - Start with a header panel showing primary entity information
 - Group related information in separate panels
@@ -53,4 +59,11 @@ action_panel = Panel(
     f"[dim]Use 'sologm command action' to proceed[/dim]",
     title="Required Action",
     border_style="yellow"
+)
+
+# Table with embedded, left-justified title
+table = Table(
+    title=f"[{TEXT_STYLES['title']}]Table Title[/{TEXT_STYLES['title']}]",
+    title_justify="left",
+    border_style=BORDER_STYLES["game_info"],
 )
