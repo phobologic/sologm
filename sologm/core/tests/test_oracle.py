@@ -200,9 +200,20 @@ Test Description"""
         assert "different" in retry_call[0][0].lower()
 
     def test_automatic_retry_on_parse_failure(
-        self, oracle_manager, mock_anthropic_client, test_game, test_scene
+        self, oracle_manager, mock_anthropic_client, test_game, test_scene, db_session
     ):
         """Test automatic retry when parsing fails."""
+        # Debug: Print initial state
+        from sologm.models.game import Game
+        from sologm.models.scene import Scene
+        games = db_session.query(Game).all()
+        scenes = db_session.query(Scene).all()
+        print("\n=== INITIAL STATE ===")
+        print(f"Test game ID: {test_game.id}")
+        print(f"Test scene ID: {test_scene.id}")
+        print(f"Games in DB: {[g.id for g in games]}")
+        print(f"Scenes in DB: {[s.id for s in scenes]}")
+        
         # First response has no interpretations (bad format)
         # Second response has valid interpretations
         mock_anthropic_client.send_message.side_effect = [
@@ -212,9 +223,27 @@ Retry Description""",  # Second call - good format
         ]
 
         # This should automatically retry once
-        result = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
-        )
+        try:
+            result = oracle_manager.get_interpretations(
+                test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            )
+            
+            # Debug: Print final state if successful
+            games = db_session.query(Game).all()
+            scenes = db_session.query(Scene).all()
+            print("\n=== FINAL STATE (SUCCESS) ===")
+            print(f"Games in DB: {[g.id for g in games]}")
+            print(f"Scenes in DB: {[s.id for s in scenes]}")
+            
+        except Exception as e:
+            # Debug: Print state after error
+            games = db_session.query(Game).all()
+            scenes = db_session.query(Scene).all()
+            print("\n=== FINAL STATE (ERROR) ===")
+            print(f"Error: {str(e)}")
+            print(f"Games in DB: {[g.id for g in games]}")
+            print(f"Scenes in DB: {[s.id for s in scenes]}")
+            raise
 
         # Verify we got the result from the second attempt
         assert mock_anthropic_client.send_message.call_count == 2

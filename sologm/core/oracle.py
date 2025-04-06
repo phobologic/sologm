@@ -583,9 +583,25 @@ Important:
         Returns:
             InterpretationSet: The generated interpretation set
         """
+        # Debug: Print DB state before rollback
+        from sologm.models.game import Game
+        from sologm.models.scene import Scene
+        games = session.query(Game).all()
+        scenes = session.query(Scene).all()
+        print(f"\n=== DB STATE BEFORE ROLLBACK (attempt {retry_attempt}) ===")
+        print(f"Games in DB: {[g.id for g in games]}")
+        print(f"Scenes in DB: {[s.id for s in scenes]}")
+        
         # We need to create a new transaction for the retry
         # Close the current transaction
         session.rollback()
+        
+        # Debug: Print DB state after rollback
+        games = session.query(Game).all()
+        scenes = session.query(Scene).all()
+        print(f"\n=== DB STATE AFTER ROLLBACK (attempt {retry_attempt}) ===")
+        print(f"Games in DB: {[g.id for g in games]}")
+        print(f"Scenes in DB: {[s.id for s in scenes]}")
 
         # Call get_interpretations again with incremented retry_attempt
         return self.get_interpretations(
