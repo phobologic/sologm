@@ -1,6 +1,7 @@
 """Main Typer app for Solo RPG Helper."""
 
 import logging
+
 import typer
 from rich.console import Console
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 
-def cleanup_database() -> None:
+def cleanup_database(*args, **kwargs) -> None:
     """Clean up database resources when the application exits."""
     from sologm.database.session import DatabaseSession
 
