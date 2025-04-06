@@ -80,6 +80,9 @@ def main(
         console.print("2. Add 'database_url' to your config file")
         raise typer.Exit(code=1) from e
 
+    logger.debug("Exiting main without errors.")
+
+
 
 if __name__ == "__main__":
     app()
