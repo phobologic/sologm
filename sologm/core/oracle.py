@@ -393,58 +393,38 @@ Important:
 
                 # If no interpretations were parsed and we haven't exceeded max retries,
                 # try again with an incremented retry counter
-                if not parsed and retry_attempt < max_retries:
-                    logger.warning(
-                        "Failed to parse interpretations (attempt "
-                        f"{retry_attempt + 1}/{max_retries + 1}). "
-                        "Retrying automatically."
-                    )
-                    # Return to outer function which will retry
-                    return self._retry_interpretations(
-                        session,
-                        game_id,
-                        scene_id,
-                        context,
-                        oracle_results,
-                        count,
-                        retry_attempt + 1,
-                        max_retries,
-                    )
-
                 if not parsed:
-                    logger.warning("Failed to parse any interpretations from response")
-                    logger.debug(f"Raw response: {response}")
-                    raise OracleError(
-                        f"Failed to parse interpretations from AI response after "
-                        f"{retry_attempt + 1} attempts"
-                    )
+                    if retry_attempt < max_retries:
+                        logger.warning(
+                            "Failed to parse interpretations (attempt "
+                            f"{retry_attempt + 1}/{max_retries + 1}). "
+                            "Retrying automatically."
+                        )
+                        # Return to outer function which will retry
+                        return self._retry_interpretations(
+                            session,
+                            game_id,
+                            scene_id,
+                            context,
+                            oracle_results,
+                            count,
+                            retry_attempt + 1,
+                            max_retries,
+                        )
+                    else:
+                        # We've reached max retries, raise error
+                        logger.warning("Failed to parse any interpretations from response")
+                        logger.debug(f"Raw response: {response}")
+                        raise OracleError(
+                            f"Failed to parse interpretations from AI response after "
+                            f"{retry_attempt + 1} attempts"
+                        )
 
+            except OracleError:
+                # Re-raise OracleErrors without wrapping them again
+                raise
             except Exception as e:
-                # If this is a parsing error and we haven't exceeded max
-                # retries, try again
-                if (
-                    isinstance(e, OracleError)
-                    and "Failed to parse" in str(e)
-                    and retry_attempt < max_retries
-                ):
-                    logger.warning(
-                        "Error parsing interpretations (attempt "
-                        f"{retry_attempt + 1}/{max_retries + 1}). "
-                        "Retrying automatically."
-                    )
-                    # Return to outer function which will retry
-                    return self._retry_interpretations(
-                        session,
-                        game_id,
-                        scene_id,
-                        context,
-                        oracle_results,
-                        count,
-                        retry_attempt + 1,
-                        max_retries,
-                    )
-
-                # Wrap the exception in an OracleError
+                # Wrap other exceptions in an OracleError
                 raise OracleError(f"Failed to get interpretations: {str(e)}") from e
 
             # Create interpretation set
