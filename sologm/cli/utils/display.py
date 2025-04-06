@@ -1,7 +1,7 @@
 """Display helpers for CLI output."""
 
 import logging
-from typing import TYPE_CHECKING, List, Optional, Dict, Any, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -401,7 +401,7 @@ def display_interpretation_set(
 
     # Show set ID with instruction
     instruction_panel = Panel(
-        f"Use this ID to select an interpretation with 'sologm oracle select'",
+        "Use this ID to select an interpretation with 'sologm oracle select'",
         title=f"[{TEXT_STYLES['timestamp']}]Interpretation Set: {interp_set.id}[/{TEXT_STYLES['timestamp']}]",
         border_style=BORDER_STYLES["pending"],
         expand=False,
