@@ -584,9 +584,24 @@ def _create_game_header_panel(game: Game) -> Panel:
         f"[{TEXT_STYLES['timestamp']}]{game.id}[/{TEXT_STYLES['timestamp']}]"
     )
 
-    # Lets truncate the game.description in game_info, so that it takes up at most 3 lines of the screen based on the width of the console. AI!
     # Create content with consistent styling
-    game_info = f"{game.description}\n[dim]{formatted_metadata}[/dim]"
+    # Truncate description to fit approximately 3 lines based on console width
+    console_width = 80  # Default fallback width
+    try:
+        from rich.console import get_console
+        console_width = get_console().width
+    except Exception:
+        logger.debug("Could not determine console width, using default of 80")
+    
+    # Calculate chars per line (accounting for margins/padding)
+    chars_per_line = max(40, console_width - 10)
+    # For 3 lines, allow roughly 3x that many characters
+    max_desc_length = chars_per_line * 3
+    
+    truncated_description = truncate_text(game.description, max_length=max_desc_length)
+    logger.debug(f"Truncated game description from {len(game.description)} to {len(truncated_description)} chars")
+    
+    game_info = f"{truncated_description}\n[dim]{formatted_metadata}[/dim]"
 
     logger.debug("Game header panel created")
     return Panel(
