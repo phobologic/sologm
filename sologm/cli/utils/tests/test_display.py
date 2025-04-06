@@ -274,7 +274,7 @@ def test_create_game_header_panel(sample_game):
     panel = _create_game_header_panel(sample_game)
     assert panel is not None
     assert panel.title is not None
-    assert panel.border_style == BORDER_STYLES['game_info']
+    assert panel.border_style == BORDER_STYLES["game_info"]
 
 
 def test_create_scene_panels_grid(sample_game, sample_scene):
@@ -294,7 +294,7 @@ def test_create_events_panel(sample_events):
     panel = _create_events_panel(sample_events, 60)
     assert panel is not None
     assert "Recent Events" in panel.title
-    assert panel.border_style == BORDER_STYLES['success']
+    assert panel.border_style == BORDER_STYLES["success"]
 
     # Test with no events
     panel = _create_events_panel([], 60)
@@ -355,34 +355,32 @@ def test_truncate_text():
 
     # Edge case: max_length <= 3
     assert truncate_text("Any text", 3) == "..."
-    
+
     # Empty string
     assert truncate_text("", 10) == ""
+
+
 def test_format_metadata():
     """Test the format_metadata function."""
     # Test with multiple items
-    metadata = {
-        "Created": "2024-01-01",
-        "Modified": "2024-01-02",
-        "Items": 5
-    }
+    metadata = {"Created": "2024-01-01", "Modified": "2024-01-02", "Items": 5}
     result = format_metadata(metadata)
     assert "Created: 2024-01-01" in result
     assert "Modified: 2024-01-02" in result
     assert "Items: 5" in result
     assert METADATA_SEPARATOR in result
-    
+
     # Test with single item
     metadata = {"Created": "2024-01-01"}
     result = format_metadata(metadata)
     assert result == "Created: 2024-01-01"
-    
+
     # Test with None values
     metadata = {"Created": "2024-01-01", "Modified": None}
     result = format_metadata(metadata)
     assert result == "Created: 2024-01-01"
     assert "Modified" not in result
-    
+
     # Test with empty dict
     metadata = {}
     result = format_metadata(metadata)
