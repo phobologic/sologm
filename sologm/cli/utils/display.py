@@ -584,10 +584,7 @@ def _create_game_header_panel(game: Game) -> Panel:
     )
 
     # Create content with consistent styling
-    game_info = (
-        f"{game.description}\n"
-        f"[dim]{formatted_metadata}[/dim]"
-    )
+    game_info = f"{game.description}\n[dim]{formatted_metadata}[/dim]"
 
     logger.debug("Game header panel created")
     return Panel(
