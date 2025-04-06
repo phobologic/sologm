@@ -265,20 +265,19 @@ Important:
         """
         # Clean up the response to handle potential formatting issues
         # Remove any markdown code block markers if present
-        cleaned_text = re.sub(r'```markdown|```', '', response_text)
-        
+        cleaned_text = re.sub(r"```markdown|```", "", response_text)
+
         # Parse the interpretations using regex
         # This pattern matches a level 2 header (##) followed by text until the next level 2 header or end of string
-        pattern = r'## (.*?)\n(.*?)(?=\n## |$)'
+        pattern = r"## (.*?)\n(.*?)(?=\n## |$)"
         matches = re.findall(pattern, cleaned_text, re.DOTALL)
-        
+
         interpretations = []
         for title, description in matches:
-            interpretations.append({
-                "title": title.strip(),
-                "description": description.strip()
-            })
-        
+            interpretations.append(
+                {"title": title.strip(), "description": description.strip()}
+            )
+
         return interpretations
 
     def get_interpretations(
@@ -312,6 +311,7 @@ Important:
         # Get max_retries from config if not provided
         if max_retries is None:
             from sologm.utils.config import get_config
+
             config = get_config()
             max_retries = int(config.get("oracle_retries", 2))
 
@@ -389,7 +389,7 @@ Important:
                 response = self.anthropic_client.send_message(prompt)
                 parsed = self._parse_interpretations(response)
                 logger.debug(f"Found {len(parsed)} interpretations")
-                
+
                 # If no interpretations were parsed and we haven't exceeded max retries,
                 # try again with an incremented retry counter
                 if not parsed and retry_attempt < max_retries:
@@ -399,16 +399,16 @@ Important:
                     )
                     # Return to outer function which will retry
                     return self._retry_interpretations(
-                        session, 
-                        game_id, 
-                        scene_id, 
-                        context, 
-                        oracle_results, 
-                        count, 
+                        session,
+                        game_id,
+                        scene_id,
+                        context,
+                        oracle_results,
+                        count,
                         retry_attempt + 1,
-                        max_retries
+                        max_retries,
                     )
-                
+
                 if not parsed:
                     logger.warning("Failed to parse any interpretations from response")
                     logger.debug(f"Raw response: {response}")
@@ -416,26 +416,30 @@ Important:
                         f"Failed to parse interpretations from AI response after "
                         f"{retry_attempt + 1} attempts"
                     )
-                    
+
             except Exception as e:
                 # If this is a parsing error and we haven't exceeded max retries, try again
-                if isinstance(e, OracleError) and "Failed to parse" in str(e) and retry_attempt < max_retries:
+                if (
+                    isinstance(e, OracleError)
+                    and "Failed to parse" in str(e)
+                    and retry_attempt < max_retries
+                ):
                     logger.warning(
                         f"Error parsing interpretations (attempt {retry_attempt + 1}/{max_retries + 1}). "
                         f"Retrying automatically."
                     )
                     # Return to outer function which will retry
                     return self._retry_interpretations(
-                        session, 
-                        game_id, 
-                        scene_id, 
-                        context, 
-                        oracle_results, 
-                        count, 
+                        session,
+                        game_id,
+                        scene_id,
+                        context,
+                        oracle_results,
+                        count,
                         retry_attempt + 1,
-                        max_retries
+                        max_retries,
                     )
-                
+
                 # Wrap the exception in an OracleError
                 raise OracleError(f"Failed to get interpretations: {str(e)}") from e
 
@@ -562,10 +566,10 @@ Important:
         max_retries: int,
     ) -> InterpretationSet:
         """Helper method to handle retrying interpretation generation.
-        
+
         This method is called from within _get_interpretations when a retry is needed.
         It creates a new transaction to retry the operation.
-        
+
         Args:
             session: The current database session
             game_id: ID of the current game
@@ -575,14 +579,14 @@ Important:
             count: Number of interpretations to generate
             retry_attempt: The current retry attempt number
             max_retries: Maximum number of retries allowed
-            
+
         Returns:
             InterpretationSet: The generated interpretation set
         """
         # We need to create a new transaction for the retry
         # Close the current transaction
         session.rollback()
-        
+
         # Call get_interpretations again with incremented retry_attempt
         return self.get_interpretations(
             game_id=game_id,

@@ -208,7 +208,7 @@ Test Description"""
         mock_anthropic_client.send_message.side_effect = [
             "No proper format here",  # First call - bad format
             """## Retry Title
-Retry Description"""  # Second call - good format
+Retry Description""",  # Second call - good format
         ]
 
         # This should automatically retry once
@@ -252,13 +252,18 @@ Retry Description"""  # Second call - good format
             "Bad format 1",  # First call
             "Bad format 2",  # Second call
             """## Custom Max Retry
-Custom Description"""  # Third call
+Custom Description""",  # Third call
         ]
 
         # Set max_retries to 1 (so we should only try twice total)
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_interpretations(
-                test_game.id, test_scene.id, "What happens?", "Mystery", 1, max_retries=1
+                test_game.id,
+                test_scene.id,
+                "What happens?",
+                "Mystery",
+                1,
+                max_retries=1,
             )
 
         # Verify we only tried twice (original + 1 retry)
