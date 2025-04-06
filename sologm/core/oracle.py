@@ -268,7 +268,11 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         )
 
     def _get_context_data(
-        self, game_id: str, scene_id: str, retry_attempt: int, previous_set_id: Optional[str]
+        self,
+        game_id: str,
+        scene_id: str,
+        retry_attempt: int,
+        previous_set_id: Optional[str],
     ) -> Tuple[object, object, List[object], Optional[List[dict]]]:
         """Get all context data needed for interpretation.
 
@@ -284,21 +288,24 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         Raises:
             OracleError: If game or scene not found
         """
+
         def _get_data(session: Session) -> Tuple:
             # Get game and scene
             from sologm.models.game import Game
             from sologm.models.scene import Scene
-            
+
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
                 raise OracleError(f"Game {game_id} not found")
-                
-            scene = session.query(Scene).filter(
-                Scene.id == scene_id, Scene.game_id == game_id
-            ).first()
+
+            scene = (
+                session.query(Scene)
+                .filter(Scene.id == scene_id, Scene.game_id == game_id)
+                .first()
+            )
             if not scene:
                 raise OracleError(f"Scene {scene_id} not found in game {game_id}")
-                
+
             # Get recent events
             recent_events = (
                 session.query(Event)
@@ -307,7 +314,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 .limit(5)
                 .all()
             )
-            
+
             # Get previous interpretations if this is a retry
             previous_interpretations = None
             if retry_attempt > 0 and previous_set_id:
@@ -321,47 +328,46 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                         {"title": interp.title, "description": interp.description}
                         for interp in previous_interps
                     ]
-                    
+
             return game, scene, recent_events, previous_interpretations
-            
-        return self._execute_db_operation(
-            "get context data", _get_data
-        )
+
+        return self._execute_db_operation("get context data", _get_data)
 
     def _create_interpretation_set(
-        self, 
-        scene_id: str, 
-        context: str, 
+        self,
+        scene_id: str,
+        context: str,
         oracle_results: str,
-        parsed_interpretations: List[dict], 
-        retry_attempt: int
+        parsed_interpretations: List[dict],
+        retry_attempt: int,
     ) -> InterpretationSet:
         """Create interpretation set and interpretations in database.
-        
+
         Args:
             scene_id: ID of the scene
             context: User's question or context
             oracle_results: Oracle results to interpret
             parsed_interpretations: List of parsed interpretations
             retry_attempt: Current retry attempt number
-            
+
         Returns:
             InterpretationSet: The created interpretation set
         """
+
         def _create(session: Session) -> InterpretationSet:
             # First, clear any current interpretation sets for this scene
             current_sets = (
                 session.query(InterpretationSet)
                 .filter(
                     InterpretationSet.scene_id == scene_id,
-                    InterpretationSet.is_current == True  # noqa: E712
+                    InterpretationSet.is_current == True,  # noqa: E712
                 )
                 .all()
             )
-            
+
             for current_set in current_sets:
                 current_set.is_current = False
-                
+
             # Create interpretation set
             interp_set = InterpretationSet.create(
                 scene_id=scene_id,
@@ -372,7 +378,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             )
             session.add(interp_set)
             session.flush()  # Flush to get the ID
-            
+
             # Create interpretations
             for interp_data in parsed_interpretations:
                 interpretation = Interpretation.create(
@@ -382,13 +388,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                     is_selected=False,
                 )
                 session.add(interpretation)
-                
+
             return interp_set
-            
-        return self._execute_db_operation(
-            "create interpretation set",
-            _create
-        )
+
+        return self._execute_db_operation("create interpretation set", _create)
 
     def _parse_interpretations(self, response_text: str) -> List[dict]:
         """Parse interpretations from Claude's response using Markdown format.
@@ -457,17 +460,18 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         # Get max_retries from config if not provided
         if max_retries is None:
             from sologm.utils.config import get_config
+
             config = get_config()
             max_retries = int(config.get("oracle_retries", 2))
-        
+
         # Try to get interpretations with automatic retry
         for attempt in range(retry_attempt, retry_attempt + max_retries + 1):
             try:
                 # Get game and scene details, recent events, etc.
-                game, scene, recent_events, previous_interpretations = self._get_context_data(
-                    game_id, scene_id, attempt, previous_set_id
+                game, scene, recent_events, previous_interpretations = (
+                    self._get_context_data(game_id, scene_id, attempt, previous_set_id)
                 )
-                
+
                 # Build prompt and get response
                 prompt = self._build_prompt(
                     game.description,
@@ -477,24 +481,23 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                     oracle_results,
                     count,
                     previous_interpretations,
-                    attempt
+                    attempt,
                 )
-                
+
                 # Get response from AI
                 logger.debug("Sending prompt to Claude API")
                 response = self.anthropic_client.send_message(prompt)
-                
+
                 # Parse interpretations
                 parsed = self._parse_interpretations(response)
                 logger.debug(f"Found {len(parsed)} interpretations")
-                
+
                 # If parsing succeeded, create and return interpretation set
                 if parsed:
                     return self._create_interpretation_set(
-                        scene_id, context, oracle_results, 
-                        parsed, attempt
+                        scene_id, context, oracle_results, parsed, attempt
                     )
-                
+
                 # If we're on the last attempt and parsing failed, raise error
                 if attempt >= retry_attempt + max_retries:
                     logger.warning("Failed to parse any interpretations from response")
@@ -503,21 +506,21 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                         f"Failed to parse interpretations from AI response after "
                         f"{attempt + 1} attempts"
                     )
-                    
+
                 # Otherwise, continue to next attempt
                 logger.warning(
                     f"Failed to parse interpretations (attempt "
                     f"{attempt + 1}/{retry_attempt + max_retries + 1}). "
                     f"Retrying automatically."
                 )
-                
+
             except OracleError:
                 # Re-raise OracleErrors without wrapping them
                 raise
             except Exception as e:
                 # Wrap other exceptions in an OracleError
                 raise OracleError(f"Failed to get interpretations: {str(e)}") from e
-        
+
         # This should never be reached due to the error in the loop
         raise OracleError("Failed to get interpretations after maximum retries")
 
@@ -596,7 +599,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             interpretation_id,
             add_event,
         )
-
 
     def add_interpretation_event(
         self, scene_id: str, interpretation: Interpretation

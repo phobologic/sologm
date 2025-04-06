@@ -294,28 +294,26 @@ It also has multiple lines."""
         assert result.interpretations[0].title == "First Interpretation"
         assert "multiple lines" in result.interpretations[0].description
         assert result.interpretations[1].title == "Second Interpretation"
-        
+
     def test_get_context_data(self, oracle_manager, test_game, test_scene):
         """Test getting context data for interpretations."""
         game, scene, events, previous = oracle_manager._get_context_data(
             test_game.id, test_scene.id, 0, None
         )
-        
+
         assert game.id == test_game.id
         assert scene.id == test_scene.id
         assert isinstance(events, list)
         assert previous is None
-        
+
     def test_create_interpretation_set(self, oracle_manager, test_scene):
         """Test creating interpretation set."""
-        parsed = [
-            {"title": "Test Title", "description": "Test Description"}
-        ]
-        
+        parsed = [{"title": "Test Title", "description": "Test Description"}]
+
         result = oracle_manager._create_interpretation_set(
             test_scene.id, "Test context", "Test results", parsed, 0
         )
-        
+
         assert isinstance(result, InterpretationSet)
         assert result.scene_id == test_scene.id
         assert result.context == "Test context"
