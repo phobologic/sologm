@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sologm.core.base_manager import BaseManager
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
+from sologm.core.prompts.oracle import OraclePrompts
 from sologm.core.scene import SceneManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
@@ -208,73 +209,16 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         Returns:
             str: The formatted prompt.
         """
-        events_text = "No recent events"
-        if recent_events:
-            events_text = "\n".join([f"- {event}" for event in recent_events])
-
-        # Example format to show Claude
-        example_format = """## The Mysterious Footprints
-The footprints suggest someone sneaked into the cellar during the night. Based on their size and depth, they likely belong to a heavier individual carrying something substantial - possibly the stolen brandy barrel.
-
-## An Inside Job
-The lack of forced entry and the selective theft of only the special brandy barrel suggests this was done by someone familiar with the cellar layout and the value of that specific barrel."""
-
-        previous_interps_text = ""
-        if previous_interpretations and retry_attempt > 0:
-            previous_interps_text = (
-                "\n=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===\n\n"
-            )
-            for interp in previous_interpretations:
-                previous_interps_text += (
-                    f"## {interp['title']}\n{interp['description']}\n\n"
-                )
-            previous_interps_text += "=== END OF PREVIOUS INTERPRETATIONS ===\n\n"
-
-        retry_text = ""
-        if retry_attempt > 0:
-            retry_text = f"This is retry attempt #{retry_attempt + 1}. Please provide COMPLETELY DIFFERENT interpretations than those listed above."
-
-        return f"""You are interpreting oracle results for a solo RPG player.
-
-Game: {game_description}
-Current Scene: {scene_description}
-Recent Events:
-{events_text}
-
-Player's Question/Context: {context}
-Oracle Results: {oracle_results}
-
-{previous_interps_text}
-{retry_text}
-
-Please provide {count} different interpretations of these oracle results.
-Each interpretation should make sense in the context of the game and scene.
-Be creative but consistent with the established narrative.
-
-Format your response using Markdown headers exactly as follows:
-
-```markdown
-## [Title of first interpretation]
-[Detailed description of first interpretation]
-
-## [Title of second interpretation]
-[Detailed description of second interpretation]
-
-[and so on for each interpretation]
-```
-
-Here's an example of the format:
-
-{example_format}
-
-Important:
-- Start each interpretation with "## " followed by a descriptive title
-- Then provide the detailed description on the next line(s)
-- Make sure to separate interpretations with a blank line
-- Do not include any text outside this format
-- Do not include the ```markdown and ``` delimiters in your actual response
-- Do not number the interpretations
-"""
+        return OraclePrompts.build_interpretation_prompt(
+            game_description,
+            scene_description,
+            recent_events,
+            context,
+            oracle_results,
+            count,
+            previous_interpretations,
+            retry_attempt,
+        )
 
     def _parse_interpretations(self, response_text: str) -> List[dict]:
         """Parse interpretations from Claude's response using Markdown format.

@@ -55,7 +55,9 @@ def interpret_oracle(
         recent_event_descriptions = [event.description for event in recent_events]
 
         # Build prompt
-        prompt = oracle_manager._build_prompt(
+        from sologm.core.prompts.oracle import OraclePrompts
+        
+        prompt = OraclePrompts.build_interpretation_prompt(
             game.description,
             scene.description,
             recent_event_descriptions,
