@@ -171,7 +171,7 @@ def test_create_game_header_panel(test_game, mock_console):
     assert panel is not None
     assert panel.title is not None
     assert panel.border_style == BORDER_STYLES["game_info"]
-    
+
     # Test with console
     panel = _create_game_header_panel(test_game, mock_console)
     assert panel is not None

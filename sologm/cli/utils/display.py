@@ -566,11 +566,11 @@ def _calculate_truncation_length(console: Console) -> int:
 
 def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> Panel:
     """Create the game info header panel.
-    
+
     Args:
         game: The game to display information for
         console: Optional console instance to determine width for text truncation
-    
+
     Returns:
         A Panel containing the game header information
     """
@@ -593,7 +593,7 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
     # Create content with consistent styling
     # Truncate description to fit approximately 3 lines based on console width
     console_width = 80  # Default fallback width
-    
+
     if console:
         # Use the provided console instance
         console_width = console.width
@@ -603,6 +603,7 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
         logger.debug("No console provided, attempting to determine width")
         try:
             from rich.console import get_console
+
             console_width = get_console().width
         except Exception:
             logger.debug("Could not determine console width, using default of 80")
