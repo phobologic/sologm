@@ -338,7 +338,7 @@ Important:
             current_set = self.get_current_interpretation_set(scene_id)
             if current_set:
                 previous_set_id = current_set.id
-                
+
         # Get max_retries from config if not provided
         if max_retries is None:
             from sologm.utils.config import get_config
