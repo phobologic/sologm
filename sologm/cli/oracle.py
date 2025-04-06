@@ -83,7 +83,11 @@ def interpret_oracle(
 
 
 @oracle_app.command("retry")
-def retry_interpretation() -> None:
+def retry_interpretation(
+    count: int = typer.Option(
+        None, "--count", "-c", help="Number of interpretations to generate"
+    ),
+) -> None:
     """Request new interpretations using current context and results."""
     try:
         game_manager = GameManager()
@@ -102,13 +106,21 @@ def retry_interpretation() -> None:
             )
             raise typer.Exit(1)
 
+        # Use the provided count or default to the config value
+        if count is None:
+            from sologm.utils.config import get_config
+            config = get_config()
+            count = int(config.get("default_interpretations", 5))
+
         console.print("\nGenerating new interpretations...", style="bold blue")
         new_interp_set = oracle_manager.get_interpretations(
             game_id,
             scene_id,
             current_interp_set.context,
             current_interp_set.oracle_results,
+            count=count,
             retry_attempt=current_interp_set.retry_attempt + 1,
+            previous_set_id=current_interp_set.id  # Pass the current set ID
         )
 
         display.display_interpretation_set(console, new_interp_set)
