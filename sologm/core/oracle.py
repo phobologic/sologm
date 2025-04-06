@@ -332,6 +332,13 @@ Important:
         Raises:
             OracleError: If interpretations cannot be generated after max retries.
         """
+        # If this is a retry but no previous_set_id was provided,
+        # try to find the current interpretation set for this scene
+        if retry_attempt > 0 and previous_set_id is None:
+            current_set = self.get_current_interpretation_set(scene_id)
+            if current_set:
+                previous_set_id = current_set.id
+                
         # Get max_retries from config if not provided
         if max_retries is None:
             from sologm.utils.config import get_config
