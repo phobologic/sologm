@@ -18,34 +18,44 @@ logger = logging.getLogger(__name__)
 
 
 def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
-    """Initialize the database connection.
+    """Initialize the database and create tables if they don't exist.
 
     Args:
-        engine: Pre-configured SQLAlchemy engine
-
+        engine: Pre-configured SQLAlchemy engine instance (optional)
+        
     Returns:
-        Initialized DatabaseSession instance
+        The DatabaseSession instance.
+
+    Raises:
+        ValueError: If database URL cannot be determined
     """
-    if engine:
-        logger.info("Initializing database with provided engine")
-        return initialize_database(engine=engine)
-
-    # Priority: 1. Environment variable, 2. Config file
-    db_url = os.environ.get("SOLOGM_DATABASE_URL")
-
-    if not db_url:
-        config = Config.get_instance()
+    logger.info("Initializing database")
+    
+    from sologm.utils.config import get_config
+    
+    # Get database URL from config if engine not provided
+    if not engine:
+        config = get_config()
         db_url = config.get("database_url")
-
-    if not db_url:
-        logger.error("No database URL configured")
-        raise ValueError(
-            "No database URL configured. Please set the SOLOGM_DATABASE_URL "
-            "environment variable or add 'database_url' to your config file."
-        )
-
-    logger.info(f"Initializing database with URL: {db_url}")
-    return initialize_database(db_url=db_url)
+        
+        if not db_url:
+            logger.error("No database URL configured")
+            raise ValueError(
+                "Database URL not configured. Set SOLOGM_DATABASE_URL environment "
+                "variable or add 'database_url' to your config file."
+            )
+        
+        # Get or create the singleton instance
+        db_session = DatabaseSession.get_instance(db_url=db_url)
+    else:
+        # Use provided engine
+        db_session = DatabaseSession.get_instance(engine=engine)
+    
+    # Create tables
+    db_session.create_tables()
+    
+    logger.info("Database initialized successfully")
+    return db_session
 
 
 __all__ = [

@@ -184,6 +184,7 @@ def get_session() -> Session:
     Returns:
         A new SQLAlchemy session.
     """
+    logger.debug("Getting new session from singleton")
     return DatabaseSession.get_instance().get_session()
 
 
