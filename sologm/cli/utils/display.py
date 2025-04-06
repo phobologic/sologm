@@ -111,7 +111,11 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
     # Use consistent border style for dice rolls (neutral information)
     panel = Panel(
-        details, title=title, border_style=BORDER_STYLES["neutral"], expand=False, title_align="left"
+        details,
+        title=title,
+        border_style=BORDER_STYLES["neutral"],
+        expand=False,
+        title_align="left",
     )
     console.print(panel)
 
@@ -157,7 +161,7 @@ def display_interpretation(
             f"[{TEXT_STYLES['timestamp']}]Interpretation {id_number}[/{TEXT_STYLES['timestamp']}]"
         ),
         border_style=border_style,
-        title_align="left"
+        title_align="left",
     )
     console.print(panel)
     console.print()
@@ -370,7 +374,10 @@ def display_game_info(
     )
 
     panel = Panel(
-        panel_content, title=panel_title, border_style=BORDER_STYLES["game_info"], title_align="left"
+        panel_content,
+        title=panel_title,
+        border_style=BORDER_STYLES["game_info"],
+        title_align="left",
     )
 
     console.print(panel)
@@ -407,7 +414,7 @@ def display_interpretation_set(
             context_content,
             title=f"[{TEXT_STYLES['title']}]Oracle Interpretations[/{TEXT_STYLES['title']}]",
             border_style=BORDER_STYLES["game_info"],
-            title_align="left"
+            title_align="left",
         )
         console.print(context_panel)
         console.print()
@@ -422,7 +429,7 @@ def display_interpretation_set(
         title=f"[{TEXT_STYLES['timestamp']}]Interpretation Set: {interp_set.id}[/{TEXT_STYLES['timestamp']}]",
         border_style=BORDER_STYLES["pending"],
         expand=False,
-        title_align="left"
+        title_align="left",
     )
     console.print(instruction_panel)
 
@@ -464,7 +471,9 @@ def display_scene_info(console: Console, scene: Scene) -> None:
         f"[{TEXT_STYLES['timestamp']}]({scene.id})[/{TEXT_STYLES['timestamp']}]"
     )
 
-    panel = Panel(panel_content, title=panel_title, border_style=border_style, title_align="left")
+    panel = Panel(
+        panel_content, title=panel_title, border_style=border_style, title_align="left"
+    )
 
     console.print(panel)
 
@@ -573,7 +582,7 @@ def _create_game_header_panel(game: Game) -> Panel:
         title=panel_title,
         expand=True,
         border_style=BORDER_STYLES["game_info"],
-        title_align="left"
+        title_align="left",
     )
 
 
@@ -601,7 +610,7 @@ def _create_scene_panels_grid(
         scenes_content,
         title=f"[{TEXT_STYLES['title']}]Current Scene[/{TEXT_STYLES['title']}]",
         border_style=BORDER_STYLES["current"],
-        title_align="left"
+        title_align="left",
     )
 
     # Create previous scene panel with consistent styling
@@ -629,7 +638,7 @@ def _create_scene_panels_grid(
         prev_scene_content,
         title=f"[{TEXT_STYLES['title']}]Previous Scene[/{TEXT_STYLES['title']}]",
         border_style=BORDER_STYLES["game_info"],
-        title_align="left"
+        title_align="left",
     )
 
     # Create a nested grid for the left column to stack the scene panels
@@ -675,7 +684,7 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
         events_content.rstrip(),
         title=f"[{TEXT_STYLES['title']}]Recent Events[/{TEXT_STYLES['title']}] ({len(recent_events)} shown)",
         border_style=BORDER_STYLES["success"],
-        title_align="left"
+        title_align="left",
     )
 
 
@@ -744,7 +753,7 @@ def _create_pending_oracle_panel(
         title=f"[{TEXT_STYLES['title']}]Pending Oracle Decision[/{TEXT_STYLES['title']}]",
         border_style=BORDER_STYLES["pending"],
         expand=True,
-        title_align="left"
+        title_align="left",
     )
 
 
@@ -772,7 +781,7 @@ def _create_recent_oracle_panel(
         title=f"[{TEXT_STYLES['title']}]Previous Oracle Decision[/{TEXT_STYLES['title']}]",
         border_style=BORDER_STYLES["success"],
         expand=True,
-        title_align="left"
+        title_align="left",
     )
 
 
