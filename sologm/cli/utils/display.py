@@ -141,9 +141,6 @@ def display_interpretation(
         f"Interpretation title: '{interp.title}', created: {interp.created_at}"
     )
 
-    # Extract the numeric part of the ID if it follows the pattern "interp-N"
-    id_number = interp.id.split("-")[1] if "-" in interp.id else interp.id[:8]
-
     # Add selection indicator if selected
     selection_indicator = ""
     if interp.is_selected or selected:
@@ -159,10 +156,10 @@ def display_interpretation(
     )
 
     # Create panel with consistent styling and title showing the interpretation title, ID and slug
-    sequence_text = f"#{sequence} " if sequence is not None else ""
+    sequence_text = f"(#{sequence}) " if sequence is not None else ""
     panel_title = (
-        f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator} "
-        f"[{TEXT_STYLES['timestamp']}]({sequence_text}{id_number}/{interp.slug})[/{TEXT_STYLES['timestamp']}]"
+        f"[{TEXT_STYLES['title']}]{sequence_text}{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator} "
+        f"[{TEXT_STYLES['timestamp']}]({interp.slug} / {interp.id})[/{TEXT_STYLES['timestamp']}]"
     )
 
     # Panel content is just the description now
@@ -782,20 +779,19 @@ def _create_recent_oracle_panel(
 
     # Build the panel content with consistent styling
     panel_content = (
-        f"[{TEXT_STYLES['success']}]Last Oracle Interpretation:[/{TEXT_STYLES['success']}]\n"
         f"[{TEXT_STYLES['subtitle']}]Oracle Results:[/{TEXT_STYLES['subtitle']}] {interp_set.oracle_results}\n"
         f"[{TEXT_STYLES['subtitle']}]Context:[/{TEXT_STYLES['subtitle']}] {interp_set.context}\n\n"
         f"[{TEXT_STYLES['title']}]Selected Interpretation:[/{TEXT_STYLES['title']}] {selected_interp.title}\n"
         f"{selected_interp.description}\n\n"
-        f"[{TEXT_STYLES['subtitle']}]Other options were:[/{TEXT_STYLES['subtitle']}]\n"
+        f"[{TEXT_STYLES['subtitle']}]Other options were:[/{TEXT_STYLES['subtitle']}]"
     )
 
     # Add other interpretations that weren't selected
     for i, interp in enumerate(interp_set.interpretations, 1):
         if interp.id != selected_interp.id:
             panel_content += (
-                f"[{TEXT_STYLES['title']}]{i}. {interp.title}[/{TEXT_STYLES['title']}]\n"
-                f"{interp.description}\n\n"
+                f"\n[{TEXT_STYLES['title']}]{i}. {interp.title}[/{TEXT_STYLES['title']}]\n"
+                f"{interp.description}"
             )
 
     return Panel(
