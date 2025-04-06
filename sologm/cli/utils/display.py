@@ -207,7 +207,7 @@ def display_game_info(
     logger.debug(f"Game details: name='{game.name}', scenes={scene_count}")
 
     console.print("[bold]Active Game:[/]")
-    console.print(f"  Name: {game.name} ({game.id})")
+    console.print(f"  Name: {game.name} ({game.slug} {game.id})")
     console.print(f"  Description: {game.description}")
     console.print(f"  Created: {game.created_at}")
     console.print(f"  Modified: {game.modified_at}")
@@ -354,7 +354,7 @@ def _create_game_header_panel(game: Game) -> Panel:
     scene_count = len(game.scenes)
 
     game_info = (
-        f"[bold]{game.name}[/bold] ({game.id})\n"
+        f"[bold]{game.name}[/bold] ([bold]{game.slug}[/bold] {game.id})\n"
         f"[dim]{game.description}[/dim]\n"
         f"Created: {game.created_at.strftime('%Y-%m-%d')} • "
         f"Scenes: {scene_count}"
