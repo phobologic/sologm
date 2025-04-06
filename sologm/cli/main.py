@@ -72,10 +72,7 @@ def main(
 
         # Initialize the database - this will use the singleton pattern internally
         _ = init_db() # Returns a session, but not needed here.
-
-        # Register cleanup function to be called on exit
-        typer.Exit.register_callback(lambda: _cleanup_database())
-
+        
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         console.print("[bold red]Database initialization failed.[/bold red]")
@@ -86,20 +83,6 @@ def main(
         raise typer.Exit(code=1) from e
 
     logger.debug("Exiting main without errors.")
-
-
-def _cleanup_database() -> None:
-    """Clean up database resources when the application exits."""
-    from sologm.database.session import DatabaseSession
-
-    logger.debug("Cleaning up database resources")
-    try:
-        db_session = DatabaseSession.get_instance()
-        db_session.close_session()
-        db_session.dispose()
-        logger.debug("Database resources cleaned up successfully")
-    except Exception as e:
-        logger.error(f"Error cleaning up database resources: {e}")
 
 
 
