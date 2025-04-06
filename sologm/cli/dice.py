@@ -65,7 +65,6 @@ def dice_history_command(
         console.print("Recent dice rolls:", style="bold")
         for roll in rolls:
             display.display_dice_roll(console, roll)
-            console.print("---")
 
     except DiceError as e:
         console.print(f"Error: {str(e)}", style="bold red")

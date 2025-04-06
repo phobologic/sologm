@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 
 from sologm.core.event import Event
 from sologm.core.game import Game
@@ -35,7 +34,7 @@ TEXT_STYLES = {
     "success": "bright_green",  # Success indicators and selected items (Dracula green)
     "warning": "bright_yellow",  # Warnings and pending actions (Dracula yellow)
     "title": "bold",  # Titles and important identifiers
-    "subtitle": "blue3",  # Supplementary information and descriptions (Dracula comment blue)
+    "subtitle": "magenta",  # Supplementary information and descriptions (Dracula comment blue)
 }
 
 # Format strings for consistent metadata presentation
@@ -586,8 +585,8 @@ def _create_game_header_panel(game: Game) -> Panel:
 
     # Create content with consistent styling
     game_info = (
-        f"[{TEXT_STYLES['subtitle']}]{game.description}[/{TEXT_STYLES['subtitle']}]\n"
-        f"{formatted_metadata}"
+        f"{game.description}\n"
+        f"[dim]{formatted_metadata}[/dim]"
     )
 
     logger.debug("Game header panel created")
@@ -612,7 +611,7 @@ def _create_scene_panels_grid(
         logger.debug(f"Including active scene {active_scene.id} in panel")
         scenes_content = (
             f"[{TEXT_STYLES['title']}]{active_scene.title}[/{TEXT_STYLES['title']}]\n"
-            f"[{TEXT_STYLES['subtitle']}]{active_scene.description}[/{TEXT_STYLES['subtitle']}]"
+            f"{active_scene.description}"
         )
     else:
         logger.debug("No active scene to display")
@@ -640,7 +639,7 @@ def _create_scene_panels_grid(
         logger.debug(f"Including previous scene {prev_scene.id} in panel")
         prev_scene_content = (
             f"[{TEXT_STYLES['title']}]{prev_scene.title}[/{TEXT_STYLES['title']}]\n"
-            f"[{TEXT_STYLES['subtitle']}]{prev_scene.description}[/{TEXT_STYLES['subtitle']}]"
+            f"{prev_scene.description}"
         )
     else:
         logger.debug("No previous scene to display")
@@ -787,7 +786,7 @@ def _create_recent_oracle_panel(
     panel_content = (
         f"[{TEXT_STYLES['subtitle']}]Oracle Results:[/{TEXT_STYLES['subtitle']}] {interp_set.oracle_results}\n"
         f"[{TEXT_STYLES['subtitle']}]Context:[/{TEXT_STYLES['subtitle']}] {interp_set.context}\n\n"
-        f"[{TEXT_STYLES['title']}]Selected Interpretation:[/{TEXT_STYLES['title']}] {selected_interp.title}\n"
+        f"[{TEXT_STYLES['subtitle']}]Selected Interpretation:[/{TEXT_STYLES['subtitle']}] [bold]{selected_interp.title}[/bold]\n"
         f"{selected_interp.description}\n\n"
         f"[{TEXT_STYLES['subtitle']}]Other options were:[/{TEXT_STYLES['subtitle']}]"
     )
