@@ -68,6 +68,7 @@ class Config:
         default_config = {
             "anthropic_api_key": "",
             "default_interpretations": 5,
+            "oracle_retries": 2,
             "debug": False,
             "database_url": default_db_url,
         }

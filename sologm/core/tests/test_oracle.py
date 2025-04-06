@@ -199,6 +199,72 @@ Test Description"""
         assert "retry attempt #2" in retry_call[0][0].lower()
         assert "different" in retry_call[0][0].lower()
 
+    def test_automatic_retry_on_parse_failure(
+        self, oracle_manager, mock_anthropic_client, test_game, test_scene
+    ):
+        """Test automatic retry when parsing fails."""
+        # First response has no interpretations (bad format)
+        # Second response has valid interpretations
+        mock_anthropic_client.send_message.side_effect = [
+            "No proper format here",  # First call - bad format
+            """## Retry Title
+Retry Description"""  # Second call - good format
+        ]
+
+        # This should automatically retry once
+        result = oracle_manager.get_interpretations(
+            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+        )
+
+        # Verify we got the result from the second attempt
+        assert mock_anthropic_client.send_message.call_count == 2
+        assert result.retry_attempt == 1  # Should be marked as retry attempt 1
+        assert len(result.interpretations) == 1
+        assert result.interpretations[0].title == "Retry Title"
+
+    def test_automatic_retry_max_attempts(
+        self, oracle_manager, mock_anthropic_client, test_game, test_scene
+    ):
+        """Test that we don't exceed max retry attempts."""
+        # All responses have bad format
+        mock_anthropic_client.send_message.side_effect = [
+            "Bad format 1",  # First call
+            "Bad format 2",  # Second call
+            "Bad format 3",  # Third call (shouldn't be reached with default max_retries=2)
+        ]
+
+        # This should try the original + 2 retries, then fail
+        with pytest.raises(OracleError) as exc:
+            oracle_manager.get_interpretations(
+                test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            )
+
+        # Verify we tried 3 times total (original + 2 retries)
+        assert mock_anthropic_client.send_message.call_count == 3
+        assert "after 3 attempts" in str(exc.value)
+
+    def test_automatic_retry_with_custom_max(
+        self, oracle_manager, mock_anthropic_client, test_game, test_scene
+    ):
+        """Test custom max_retries parameter."""
+        # First two responses have bad format, third is good
+        mock_anthropic_client.send_message.side_effect = [
+            "Bad format 1",  # First call
+            "Bad format 2",  # Second call
+            """## Custom Max Retry
+Custom Description"""  # Third call
+        ]
+
+        # Set max_retries to 1 (so we should only try twice total)
+        with pytest.raises(OracleError) as exc:
+            oracle_manager.get_interpretations(
+                test_game.id, test_scene.id, "What happens?", "Mystery", 1, max_retries=1
+            )
+
+        # Verify we only tried twice (original + 1 retry)
+        assert mock_anthropic_client.send_message.call_count == 2
+        assert "after 2 attempts" in str(exc.value)
+
     def test_oracle_manager_get_interpretations_detailed(
         self, oracle_manager, mock_anthropic_client, test_game, test_scene
     ):
