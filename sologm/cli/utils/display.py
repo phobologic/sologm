@@ -354,7 +354,8 @@ def _create_game_header_panel(game: Game) -> Panel:
     scene_count = len(game.scenes)
 
     # Create a title with brighter colors for name and slug
-    panel_title = f"[bold bright_blue]{game.name}[/bold bright_blue] ([bold cyan]{game.slug}[/bold cyan] {game.id})"
+    panel_title = (f"[bold bright_blue]{game.name}[/bold bright_blue] "
+                  rf"([bold cyan]{game.slug}[/bold cyan]) \[{game.id}]")
 
     # Simplify the content since we moved the name/slug/id to the title
     game_info = (
@@ -476,7 +477,7 @@ def _create_oracle_panel(
 
     # Try to get most recent interpretation
     recent_interp = oracle_manager.get_most_recent_interpretation(
-        game.id, active_scene.id
+        active_scene.id
     )
 
     if recent_interp:

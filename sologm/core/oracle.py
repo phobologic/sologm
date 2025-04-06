@@ -131,12 +131,11 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         )
 
     def get_most_recent_interpretation(
-        self, game_id: str, scene_id: str
+        self, scene_id: str
     ) -> Optional[Tuple[InterpretationSet, Interpretation]]:
         """Get the most recently resolved interpretation for a game/scene.
 
         Args:
-            game_id: ID of the game
             scene_id: ID of the scene
 
         Returns:
@@ -180,7 +179,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         return self._execute_db_operation(
             "get most recent interpretation",
             _get_most_recent_interpretation,
-            game_id,
             scene_id,
         )
 

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 
-def cleanup_database(*args, **kwargs) -> None:
+def cleanup_database(*args: Optional[list], **kwargs: Optional[dict]) -> None:
     """Clean up database resources when the application exits.
 
     This function is used as a Typer result callback and receives the same arguments
@@ -31,6 +31,7 @@ def cleanup_database(*args, **kwargs) -> None:
         **kwargs: Variable keyword arguments from Typer (discarded).
     """
     from sologm.database.session import DatabaseSession
+    _ = [args, kwargs]
 
     logger.debug("Cleaning up database resources")
     try:

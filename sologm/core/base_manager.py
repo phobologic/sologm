@@ -1,11 +1,9 @@
 """Base manager class for SoloGM."""
 
 import logging
-from typing import Any, Generic, Optional, Tuple, TypeVar
+from typing import Any, Callable, Generic, Optional, Tuple, TypeVar
 
 from sqlalchemy.orm import Session
-
-from sologm.database.session import get_db_context
 
 # Type variables for domain and database models
 T = TypeVar("T")  # Domain model type
@@ -44,15 +42,16 @@ class BaseManager(Generic[T, M]):
         """
         if self._session:
             self.logger.debug("Using existing session")
-            return self._session, False
         else:
             self.logger.debug("Getting session from singleton")
             from sologm.database.session import DatabaseSession
 
             # Store the session for future use
             self._session = DatabaseSession.get_instance().get_session()
-            # Always return should_close=False since cleanup is handled at application exit
-            return self._session, False
+        # Always return should_close=False since cleanup is handled at
+        # application exit
+
+        return self._session, False
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
@@ -84,7 +83,7 @@ class BaseManager(Generic[T, M]):
         return domain_model  # type: ignore
 
     def _execute_db_operation(
-        self, operation_name: str, operation: callable, *args: Any, **kwargs: Any
+        self, operation_name: str, operation: Callable, *args: Any, **kwargs: Any
     ) -> Any:
         """Execute a database operation with proper session handling.
 
