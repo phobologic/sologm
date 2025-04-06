@@ -122,7 +122,7 @@ def retry_interpretation(
                 message="Current context:",
                 success_message="Context updated.",
                 cancel_message="Context unchanged.",
-                error_message="Could not open editor"
+                error_message="Could not open editor",
             )
 
         console.print("\nGenerating new interpretations...", style="bold blue")
