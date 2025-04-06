@@ -48,6 +48,7 @@ class BaseManager(Generic[T, M]):
         else:
             self.logger.debug("Getting session from singleton")
             from sologm.database.session import DatabaseSession
+
             # Store the session for future use
             self._session = DatabaseSession.get_instance().get_session()
             # Always return should_close=False since cleanup is handled at application exit
