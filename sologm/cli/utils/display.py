@@ -208,6 +208,7 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
     table.add_column("Source", style=TEXT_STYLES["category"])
     table.add_column("Description")
 
+    # Lets add the event.id to the table, in a similar style to how we do with scene listing. AI!
     # Add rows with consistent formatting
     for event in events:
         table.add_row(
@@ -219,7 +220,7 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
     # Wrap the table in a panel with a title
     panel = Panel(
         table,
-        title=f"[{TEXT_STYLES['title']}]Events in game '{scene.game.name}',"
+        title=f"[{TEXT_STYLES['title']}]Events in game '{scene.game.name}', "
         f"scene '{scene.title}'[/{TEXT_STYLES['title']}]",
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
