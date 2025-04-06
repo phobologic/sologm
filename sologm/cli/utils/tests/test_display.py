@@ -21,6 +21,10 @@ from sologm.cli.utils.display import (
     display_interpretation,
     display_interpretation_set,
     truncate_text,
+    format_metadata,
+    BORDER_STYLES,
+    TEXT_STYLES,
+    METADATA_SEPARATOR,
 )
 from sologm.core.dice import DiceRoll
 from sologm.core.event import Event
