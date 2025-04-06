@@ -1,24 +1,27 @@
 """Shared test fixtures for core module tests."""
 
-import pytest
+from logging import getLogger
 from unittest.mock import MagicMock
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
-from sologm.database.session import DatabaseSession
-from sologm.models.base import Base
-from sologm.models.game import Game
-from sologm.models.scene import Scene, SceneStatus
-from sologm.models.event import Event
-from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.dice import DiceRoll
-from sologm.core.game import GameManager
-from sologm.core.scene import SceneManager
-from sologm.core.event import EventManager
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
 from sologm.core.dice import DiceManager
+from sologm.core.event import EventManager
+from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
+from sologm.core.scene import SceneManager
+from sologm.database.session import DatabaseSession
 from sologm.integrations.anthropic import AnthropicClient
-from sologm.utils.errors import SoloGMError
+from sologm.models.base import Base
+from sologm.models.dice import DiceRoll
+from sologm.models.event import Event
+from sologm.models.game import Game
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene
+
+logger = getLogger(__name__)
 
 
 @pytest.fixture
@@ -33,15 +36,20 @@ def db_engine():
 @pytest.fixture
 def db_session(db_engine):
     """Create a new database session for a test."""
+    logger.debug("Initializing db_session")
     connection = db_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
+    logger.debug("Yielding db session.")
 
     yield session
 
+    logger.debug("Closing db session.")
     session.close()
     if transaction.is_active:
+        logger.debug("Rolling back active transactions.")
         transaction.rollback()
+    logger.debug("Closing db connection.")
     connection.close()
 
 
