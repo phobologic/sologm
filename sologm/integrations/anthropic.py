@@ -48,8 +48,8 @@ class AnthropicClient:
             logger.error("Anthropic API key not found in environment variables")
             raise APIError(
                 "Anthropic API key not found. Please set the "
-                "ANTHROPIC_API_KEY environment variable or provide it in the "
-                "configuration."
+                "ANTHROPIC_API_KEY environment variable or add 'anthropic_api_key' "
+                "to your configuration file."
             )
 
         return api_key

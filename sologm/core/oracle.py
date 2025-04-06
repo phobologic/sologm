@@ -35,7 +35,16 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             session: Optional database session (primarily for testing).
         """
         super().__init__(session)
-        self.anthropic_client = anthropic_client or AnthropicClient()
+        
+        # If no anthropic_client is provided, create one using the config
+        if not anthropic_client:
+            from sologm.utils.config import get_config
+            config = get_config()
+            api_key = config.get("anthropic_api_key")
+            self.anthropic_client = AnthropicClient(api_key=api_key)
+        else:
+            self.anthropic_client = anthropic_client
+            
         self.event_manager = event_manager or EventManager(session=session)
 
     def validate_active_context(
