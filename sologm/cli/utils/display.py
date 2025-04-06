@@ -121,7 +121,7 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
 
 def display_interpretation(
-    console: Console, interp: Interpretation, selected: bool = False
+    console: Console, interp: Interpretation, selected: bool = False, sequence: Optional[int] = None
 ) -> None:
     """Display a single interpretation.
 
@@ -129,6 +129,7 @@ def display_interpretation(
         console: Rich console instance
         interp: Interpretation to display
         selected: Whether this interpretation is selected
+        sequence: Optional sequence number of the interpretation
     """
     logger.debug(
         f"Displaying interpretation {interp.id} (selected: {interp.is_selected})"
@@ -139,13 +140,11 @@ def display_interpretation(
 
     # Extract the numeric part of the ID if it follows the pattern "interp-N"
     id_number = interp.id.split("-")[1] if "-" in interp.id else interp.id[:8]
-
-    # Format title with consistent styling
-    title_line = f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]"
+    
+    # Add selection indicator if selected
+    selection_indicator = ""
     if interp.is_selected or selected:
-        title_line += (
-            f" [{TEXT_STYLES['success']}](Selected)[/{TEXT_STYLES['success']}]"
-        )
+        selection_indicator = f" [{TEXT_STYLES['success']}](Selected)[/{TEXT_STYLES['success']}]"
 
     # Determine border style based on selection status
     border_style = (
@@ -154,12 +153,24 @@ def display_interpretation(
         else BORDER_STYLES["game_info"]
     )
 
-    # Create panel with consistent styling
+    # Create panel with consistent styling and title showing the interpretation title
+    panel_title = (
+        f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator}"
+    )
+    
+    # Add metadata with ID and slug
+    metadata = {
+        "ID": id_number,
+        "Slug": interp.slug,
+        "Sequence": sequence if sequence is not None else None
+    }
+    formatted_metadata = format_metadata(metadata)
+    
+    panel_content = f"{interp.description}\n\n{formatted_metadata}"
+
     panel = Panel(
-        Text.from_markup(f"{title_line}\n{interp.description}"),
-        title=Text.from_markup(
-            f"[{TEXT_STYLES['timestamp']}]Interpretation {id_number}[/{TEXT_STYLES['timestamp']}]"
-        ),
+        panel_content,
+        title=panel_title,
         border_style=border_style,
         title_align="left",
     )
@@ -419,9 +430,9 @@ def display_interpretation_set(
         console.print(context_panel)
         console.print()
 
-    # Display each interpretation
+    # Display each interpretation with its sequence number
     for i, interp in enumerate(interp_set.interpretations, 1):
-        display_interpretation(console, interp)
+        display_interpretation(console, interp, sequence=i)
 
     # Show set ID with instruction
     instruction_panel = Panel(
