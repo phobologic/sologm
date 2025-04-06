@@ -43,4 +43,5 @@ def mock_anthropic_client():
 def oracle_manager(mock_anthropic_client, db_session):
     """Create an OracleManager with a test session."""
     from sologm.core.oracle import OracleManager
+
     return OracleManager(anthropic_client=mock_anthropic_client, session=db_session)
