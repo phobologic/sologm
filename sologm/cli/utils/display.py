@@ -121,7 +121,10 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
 
 def display_interpretation(
-    console: Console, interp: Interpretation, selected: bool = False, sequence: Optional[int] = None
+    console: Console,
+    interp: Interpretation,
+    selected: bool = False,
+    sequence: Optional[int] = None,
 ) -> None:
     """Display a single interpretation.
 
@@ -140,11 +143,13 @@ def display_interpretation(
 
     # Extract the numeric part of the ID if it follows the pattern "interp-N"
     id_number = interp.id.split("-")[1] if "-" in interp.id else interp.id[:8]
-    
+
     # Add selection indicator if selected
     selection_indicator = ""
     if interp.is_selected or selected:
-        selection_indicator = f" [{TEXT_STYLES['success']}](Selected)[/{TEXT_STYLES['success']}]"
+        selection_indicator = (
+            f" [{TEXT_STYLES['success']}](Selected)[/{TEXT_STYLES['success']}]"
+        )
 
     # Determine border style based on selection status
     border_style = (
@@ -154,18 +159,16 @@ def display_interpretation(
     )
 
     # Create panel with consistent styling and title showing the interpretation title
-    panel_title = (
-        f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator}"
-    )
-    
+    panel_title = f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator}"
+
     # Add metadata with ID and slug
     metadata = {
         "ID": id_number,
         "Slug": interp.slug,
-        "Sequence": sequence if sequence is not None else None
+        "Sequence": sequence if sequence is not None else None,
     }
     formatted_metadata = format_metadata(metadata)
-    
+
     panel_content = f"{interp.description}\n\n{formatted_metadata}"
 
     panel = Panel(
