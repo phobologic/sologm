@@ -42,7 +42,9 @@ def test_display_events_table_with_events(mock_console, test_events, test_scene)
 def test_display_events_table_no_events(mock_console, test_scene):
     """Test displaying events table with no events."""
     display_events_table(mock_console, [], test_scene)
-    mock_console.print.assert_called_once_with(f"\nNo events in scene '{test_scene.title}'")
+    mock_console.print.assert_called_once_with(
+        f"\nNo events in scene '{test_scene.title}'"
+    )
 
 
 def test_display_games_table_with_games(mock_console, test_game):
@@ -85,7 +87,9 @@ def test_display_game_info_no_scene(mock_console, test_game):
     assert mock_console.print.called
 
 
-def test_display_game_status_full(mock_console, test_game, test_scene, test_events, scene_manager):
+def test_display_game_status_full(
+    mock_console, test_game, test_scene, test_events, scene_manager
+):
     """Test displaying full game status with all components."""
     display_game_status(
         mock_console,
@@ -201,7 +205,9 @@ def test_create_oracle_panel(test_game, test_scene, oracle_manager):
 
     # Test with oracle manager
     panel = _create_oracle_panel(test_game, test_scene, oracle_manager, 60)
-    assert panel is None or panel is not None  # Either outcome is valid depending on test data
+    assert (
+        panel is None or panel is not None
+    )  # Either outcome is valid depending on test data
 
 
 def test_display_interpretation(mock_console, test_interpretations):
