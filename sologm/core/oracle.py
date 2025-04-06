@@ -190,6 +190,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         context: str,
         oracle_results: str,
         count: int,
+        previous_interpretations: Optional[List[dict]] = None,
+        retry_attempt: int = 0,
     ) -> str:
         """Build the prompt for Claude API.
 
@@ -200,6 +202,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             context: User's question or context.
             oracle_results: Oracle results to interpret.
             count: Number of interpretations to generate.
+            previous_interpretations: Optional list of previous interpretations to avoid.
+            retry_attempt: Number of retry attempts made.
 
         Returns:
             str: The formatted prompt.
@@ -215,6 +219,16 @@ The footprints suggest someone sneaked into the cellar during the night. Based o
 ## An Inside Job
 The lack of forced entry and the selective theft of only the special brandy barrel suggests this was done by someone familiar with the cellar layout and the value of that specific barrel."""
 
+        previous_interps_text = ""
+        if previous_interpretations and retry_attempt > 0:
+            previous_interps_text = "Previous interpretations (please provide different ideas):\n\n"
+            for interp in previous_interpretations:
+                previous_interps_text += f"## {interp['title']}\n{interp['description']}\n\n"
+
+        retry_text = ""
+        if retry_attempt > 0:
+            retry_text = f"This is retry attempt #{retry_attempt + 1}. Please provide COMPLETELY DIFFERENT interpretations than those listed above."
+
         return f"""You are interpreting oracle results for a solo RPG player.
 
 Game: {game_description}
@@ -224,6 +238,9 @@ Recent Events:
 
 Player's Question/Context: {context}
 Oracle Results: {oracle_results}
+
+{previous_interps_text}
+{retry_text}
 
 Please provide {count} different interpretations of these oracle results.
 Each interpretation should make sense in the context of the game and scene.
@@ -290,6 +307,7 @@ Important:
         count: int = 5,
         retry_attempt: int = 0,
         max_retries: Optional[int] = None,
+        previous_set_id: Optional[str] = None,
     ) -> InterpretationSet:
         """Get interpretations for oracle results.
 
@@ -302,6 +320,7 @@ Important:
             retry_attempt: Number of retry attempts made.
             max_retries: Maximum number of automatic retries if parsing fails.
                 If None, uses the value from config.
+            previous_set_id: ID of the previous interpretation set to avoid duplicating.
 
         Returns:
             InterpretationSet: Set of generated interpretations.
@@ -325,6 +344,7 @@ Important:
             count: int,
             retry_attempt: int,
             max_retries: int,
+            previous_set_id: Optional[str],
         ) -> InterpretationSet:
             # First, clear any current interpretation sets for this scene
             current_sets = (
@@ -366,6 +386,25 @@ Important:
 
             recent_event_descriptions = [event.description for event in recent_events]
 
+            # Get previous interpretations if this is a retry
+            previous_interpretations = None
+            if retry_attempt > 0 and previous_set_id:
+                previous_set = (
+                    session.query(InterpretationSet)
+                    .filter(InterpretationSet.id == previous_set_id)
+                    .first()
+                )
+                if previous_set:
+                    previous_interps = (
+                        session.query(Interpretation)
+                        .filter(Interpretation.set_id == previous_set_id)
+                        .all()
+                    )
+                    previous_interpretations = [
+                        {"title": interp.title, "description": interp.description}
+                        for interp in previous_interps
+                    ]
+
             # Build prompt and get response
             prompt = self._build_prompt(
                 game.description,
@@ -374,15 +413,9 @@ Important:
                 context,
                 oracle_results,
                 count,
+                previous_interpretations,
+                retry_attempt,
             )
-
-            # If this is a retry, modify the prompt
-            if retry_attempt > 0:
-                prompt = prompt.replace(
-                    "Please provide",
-                    f"This is retry attempt #{retry_attempt + 1}. Please "
-                    f"provide DIFFERENT",
-                )
 
             # Get and parse response
             logger.debug("Sending prompt to Claude API")
@@ -410,6 +443,7 @@ Important:
                             count,
                             retry_attempt + 1,
                             max_retries,
+                            previous_set_id or interp_set.id,  # Pass the previous set ID
                         )
                     else:
                         # We've reached max retries, raise error
@@ -462,6 +496,7 @@ Important:
             count,
             retry_attempt,
             max_retries,
+            previous_set_id,
         )
 
     def select_interpretation(
@@ -550,6 +585,7 @@ Important:
         count: int,
         retry_attempt: int,
         max_retries: int,
+        previous_set_id: Optional[str] = None,
     ) -> InterpretationSet:
         """Helper method to handle retrying interpretation generation.
 
@@ -565,6 +601,7 @@ Important:
             count: Number of interpretations to generate
             retry_attempt: The current retry attempt number
             max_retries: Maximum number of retries allowed
+            previous_set_id: ID of the previous interpretation set
 
         Returns:
             InterpretationSet: The generated interpretation set
@@ -582,6 +619,7 @@ Important:
             count=count,
             retry_attempt=retry_attempt,
             max_retries=max_retries,
+            previous_set_id=previous_set_id,
         )
 
     def add_interpretation_event(
