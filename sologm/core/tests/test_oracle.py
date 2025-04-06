@@ -363,7 +363,7 @@ It also has multiple lines."""
         assert result.is_current is True
         assert len(result.interpretations) == 1
         assert result.interpretations[0].title == "Test Title"
-        
+
     def test_get_most_recent_interpretation(
         self, oracle_manager, mock_anthropic_client, test_game, test_scene
     ):
@@ -371,34 +371,34 @@ It also has multiple lines."""
         # Create an interpretation set
         response_text = """## Test Title\nTest Description"""
         mock_anthropic_client.send_message.return_value = response_text
-        
+
         interp_set = oracle_manager.get_interpretations(
             test_game.id, test_scene.id, "What happens?", "Mystery", 1
         )
-        
+
         # Select an interpretation
         selected = oracle_manager.select_interpretation(
             interp_set.id, "1", add_event=True
         )
-        
+
         # Get most recent interpretation
         result = oracle_manager.get_most_recent_interpretation(test_scene.id)
-        
+
         assert result is not None
         assert isinstance(result, tuple)
         assert len(result) == 2
         assert result[0].id == interp_set.id
         assert result[1].id == selected.id
-        
+
         # Test with no selected interpretations
         # First clear all selections
         db_session = oracle_manager._session
         db_session.query(Interpretation).update({Interpretation.is_selected: False})
         db_session.commit()
-        
+
         result = oracle_manager.get_most_recent_interpretation(test_scene.id)
         assert result is None
-        
+
     def test_add_interpretation_event(
         self, oracle_manager, mock_anthropic_client, test_game, test_scene, db_session
     ):
@@ -406,16 +406,16 @@ It also has multiple lines."""
         # Create an interpretation set
         response_text = """## Test Title\nTest Description"""
         mock_anthropic_client.send_message.return_value = response_text
-        
+
         interp_set = oracle_manager.get_interpretations(
             test_game.id, test_scene.id, "What happens?", "Mystery", 1
         )
-        
+
         interpretation = interp_set.interpretations[0]
-        
+
         # Add as event directly
         oracle_manager.add_interpretation_event(test_scene.id, interpretation)
-        
+
         # Verify event was created
         events = (
             db_session.query(Event)
@@ -427,30 +427,30 @@ It also has multiple lines."""
             )
             .all()
         )
-        
+
         assert len(events) == 1
         assert interpretation.title in events[0].description
         assert events[0].source == "oracle"
-        
+
     def test_parse_interpretations_malformed(self, oracle_manager):
         """Test parsing malformed responses."""
         # Test with completely invalid format
         response = "This is not formatted correctly at all."
         parsed = oracle_manager._parse_interpretations(response)
         assert len(parsed) == 0
-        
+
         # Test with partial formatting
         response = "Some text\n## Title Only\nNo other titles"
         parsed = oracle_manager._parse_interpretations(response)
         assert len(parsed) == 1
         assert parsed[0]["title"] == "Title Only"
-        
+
         # Test with code blocks (which should be removed)
         response = "```markdown\n## Code Block Title\nDescription\n```"
         parsed = oracle_manager._parse_interpretations(response)
         assert len(parsed) == 1
         assert parsed[0]["title"] == "Code Block Title"
-        
+
     def test_multiple_interpretation_sets(
         self, oracle_manager, mock_anthropic_client, test_game, test_scene, db_session
     ):
@@ -461,7 +461,7 @@ It also has multiple lines."""
             "## Second Set\nDescription 2",
             "## Third Set\nDescription 3",
         ]
-        
+
         # Create three sets
         set1 = oracle_manager.get_interpretations(
             test_game.id, test_scene.id, "Question 1", "Result 1", 1
@@ -472,20 +472,20 @@ It also has multiple lines."""
         set3 = oracle_manager.get_interpretations(
             test_game.id, test_scene.id, "Question 3", "Result 3", 1
         )
-        
+
         # Verify only the last one is current
         db_session.refresh(set1)
         db_session.refresh(set2)
         db_session.refresh(set3)
-        
+
         assert set1.is_current is False
         assert set2.is_current is False
         assert set3.is_current is True
-        
+
         # Verify get_current_interpretation_set returns the last one
         current = oracle_manager.get_current_interpretation_set(test_scene.id)
         assert current.id == set3.id
-        
+
     def test_get_current_interpretation_set(
         self, oracle_manager, mock_anthropic_client, test_game, test_scene
     ):
@@ -493,33 +493,31 @@ It also has multiple lines."""
         # Create an interpretation set
         response_text = """## Test Title\nTest Description"""
         mock_anthropic_client.send_message.return_value = response_text
-        
+
         created_set = oracle_manager.get_interpretations(
             test_game.id, test_scene.id, "What happens?", "Mystery", 1
         )
-        
+
         # Get current set and verify it matches
         current_set = oracle_manager.get_current_interpretation_set(test_scene.id)
         assert current_set is not None
         assert current_set.id == created_set.id
         assert current_set.is_current is True
-        
+
         # Create another set and verify the first is no longer current
         new_set = oracle_manager.get_interpretations(
             test_game.id, test_scene.id, "What happens next?", "Danger", 1
         )
-        
+
         current_set = oracle_manager.get_current_interpretation_set(test_scene.id)
         assert current_set.id == new_set.id
-        
+
         # Verify old set is no longer current
         db_session = oracle_manager._session
         db_session.refresh(created_set)
         assert created_set.is_current is False
-        
-    def test_get_current_interpretation_set_none(
-        self, oracle_manager, test_scene
-    ):
+
+    def test_get_current_interpretation_set_none(self, oracle_manager, test_scene):
         """Test getting current interpretation set when none exists."""
         # Ensure no current interpretation sets exist
         db_session = oracle_manager._session
@@ -527,7 +525,7 @@ It also has multiple lines."""
             InterpretationSet.scene_id == test_scene.id
         ).update({InterpretationSet.is_current: False})
         db_session.commit()
-        
+
         # Verify get_current_interpretation_set returns None
         current_set = oracle_manager.get_current_interpretation_set(test_scene.id)
         assert current_set is None
