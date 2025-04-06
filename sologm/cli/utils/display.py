@@ -263,7 +263,7 @@ def display_games_table(
     panel = Panel(
         table,
         title=f"[{TEXT_STYLES['title']}]Games[/{TEXT_STYLES['title']}]",
-        title_justify="left",
+        title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
     console.print(panel)
@@ -321,7 +321,7 @@ def display_scenes_table(
     panel = Panel(
         table,
         title=f"[{TEXT_STYLES['title']}]Scenes[/{TEXT_STYLES['title']}]",
-        title_justify="left",
+        title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
     console.print(panel)
