@@ -26,31 +26,28 @@ logger = getLogger(__name__)
 
 @pytest.fixture
 def db_engine():
-    """Create an in-memory SQLite database for testing."""
+    """Create a new in-memory SQLite database for each test."""
+    # Use a unique in-memory database for each test
+    # This ensures complete isolation between tests
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)
+    engine.dispose()
 
 
 @pytest.fixture
 def db_session(db_engine):
     """Create a new database session for a test."""
     logger.debug("Initializing db_session")
-    connection = db_engine.connect()
-    transaction = connection.begin()
-    session = Session(bind=connection)
+    # Create a session directly from the engine
+    # Each test gets a fresh database with no data
+    session = Session(bind=db_engine)
     logger.debug("Yielding db session.")
 
     yield session
 
     logger.debug("Closing db session.")
     session.close()
-    if transaction.is_active:
-        logger.debug("Rolling back active transactions.")
-        transaction.rollback()
-    logger.debug("Closing db connection.")
-    connection.close()
 
 
 @pytest.fixture
