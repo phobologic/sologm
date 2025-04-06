@@ -74,6 +74,7 @@ class Interpretation(Base, TimestampMixin):
     )
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
+    slug: Mapped[str] = mapped_column(nullable=False)
     is_selected: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships this model owns
@@ -95,10 +96,13 @@ class Interpretation(Base, TimestampMixin):
         Returns:
             A new Interpretation instance.
         """
+        from sologm.models.utils import slugify
+        
         return cls(
             id=str(uuid.uuid4()),
             set_id=set_id,
             title=title,
             description=description,
+            slug=slugify(title),
             is_selected=is_selected,
         )

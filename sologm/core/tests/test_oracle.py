@@ -133,7 +133,7 @@ Test Description"""
             test_game.id, test_scene.id, "What happens?", "Mystery", 1
         )
 
-        # Then select the interpretation
+        # Test selecting by UUID
         selected = oracle_manager.select_interpretation(
             interp_set.id, interp_set.interpretations[0].id, add_event=True
         )
@@ -166,6 +166,45 @@ Test Description"""
             oracle_manager.select_interpretation(
                 "nonexistent-set", "nonexistent-interp"
             )
+        assert "not found" in str(exc.value)
+        
+    def test_find_interpretation_by_different_identifiers(
+        self, oracle_manager, mock_anthropic_client, test_game, test_scene
+    ) -> None:
+        """Test finding interpretations by different identifier types."""
+        # Configure mock to return string response with multiple interpretations
+        response_text = """## First Option
+Description of first option
+
+## Second Option
+Description of second option"""
+        mock_anthropic_client.send_message.return_value = response_text
+
+        # Create an interpretation set with multiple interpretations
+        interp_set = oracle_manager.get_interpretations(
+            test_game.id, test_scene.id, "What happens?", "Mystery", 2
+        )
+        
+        assert len(interp_set.interpretations) == 2
+        
+        # Test finding by sequence number (as string)
+        interp1 = oracle_manager.find_interpretation(interp_set.id, "1")
+        assert interp1.title == "First Option"
+        
+        interp2 = oracle_manager.find_interpretation(interp_set.id, "2")
+        assert interp2.title == "Second Option"
+        
+        # Test finding by slug
+        interp_by_slug = oracle_manager.find_interpretation(interp_set.id, "first-option")
+        assert interp_by_slug.id == interp1.id
+        
+        # Test finding by UUID
+        interp_by_id = oracle_manager.find_interpretation(interp_set.id, interp1.id)
+        assert interp_by_id.id == interp1.id
+        
+        # Test invalid identifier
+        with pytest.raises(OracleError) as exc:
+            oracle_manager.find_interpretation(interp_set.id, "99")
         assert "not found" in str(exc.value)
 
     def test_get_interpretations_with_retry(

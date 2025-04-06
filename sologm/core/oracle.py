@@ -527,22 +527,91 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         # This should never be reached due to the error in the loop
         raise OracleError("Failed to get interpretations after maximum retries")
 
+    def find_interpretation(
+        self, 
+        interpretation_set_id: str, 
+        identifier: str
+    ) -> Interpretation:
+        """Find an interpretation by sequence number, slug, or UUID.
+        
+        Args:
+            interpretation_set_id: ID of the interpretation set
+            identifier: Sequence number (1, 2, 3...), slug, or UUID
+            
+        Returns:
+            The found interpretation
+            
+        Raises:
+            OracleError: If interpretation not found
+        """
+        def _find_interpretation(session: Session, set_id: str, identifier: str) -> Interpretation:
+            # Get all interpretations in the set
+            interpretations = (
+                session.query(Interpretation)
+                .filter(Interpretation.set_id == set_id)
+                .all()
+            )
+            
+            if not interpretations:
+                raise OracleError(f"No interpretations found in set {set_id}")
+                
+            # Try to parse as sequence number
+            try:
+                seq_num = int(identifier)
+                if 1 <= seq_num <= len(interpretations):
+                    return interpretations[seq_num - 1]  # Convert to 0-based index
+            except ValueError:
+                pass  # Not a number, continue
+                
+            # Try as slug
+            for interp in interpretations:
+                if interp.slug == identifier:
+                    return interp
+                    
+            # Try as UUID
+            interp = (
+                session.query(Interpretation)
+                .filter(
+                    Interpretation.set_id == set_id,
+                    Interpretation.id == identifier
+                )
+                .first()
+            )
+            
+            if interp:
+                return interp
+                
+            raise OracleError(
+                f"Interpretation '{identifier}' not found in set {set_id}. "
+                f"Please use a sequence number (1-{len(interpretations)}), "
+                f"a slug, or a valid UUID."
+            )
+        
+        return self._execute_db_operation(
+            f"find interpretation {identifier} in set {interpretation_set_id}",
+            _find_interpretation,
+            interpretation_set_id,
+            identifier,
+        )
+
     def select_interpretation(
         self,
         interpretation_set_id: str,
-        interpretation_id: str,
+        interpretation_identifier: str,
         add_event: bool = True,
     ) -> Interpretation:
         """Select an interpretation and optionally add it as an event.
 
         Args:
             interpretation_set_id: ID of the interpretation set.
-            interpretation_id: ID of the interpretation to select.
+            interpretation_identifier: Identifier of the interpretation (sequence number, slug, or UUID).
             add_event: Whether to add the interpretation as an event.
 
         Returns:
             Interpretation: The selected interpretation.
         """
+        # Find the interpretation using the flexible identifier
+        interpretation = self.find_interpretation(interpretation_set_id, interpretation_identifier)
 
         def _select_interpretation(
             session: Session,
@@ -560,22 +629,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             if not interp_set:
                 raise OracleError(
                     f"Interpretation set {interpretation_set_id} not found"
-                )
-
-            # Get the interpretation
-            interpretation = (
-                session.query(Interpretation)
-                .filter(
-                    Interpretation.id == interpretation_id,
-                    Interpretation.set_id == interpretation_set_id,
-                )
-                .first()
-            )
-
-            if not interpretation:
-                raise OracleError(
-                    f"Interpretation {interpretation_id} not found in set "
-                    f"{interpretation_set_id}"
                 )
 
             # Clear any previously selected interpretations in this set
@@ -599,7 +652,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             "select interpretation",
             _select_interpretation,
             interpretation_set_id,
-            interpretation_id,
+            interpretation.id,
             add_event,
         )
 

@@ -158,7 +158,7 @@ def show_interpretation_status() -> None:
 @oracle_app.command("select")
 def select_interpretation(
     interpretation_id: str = typer.Option(
-        None, "--id", "-i", help="ID of the interpretation to select"
+        None, "--id", "-i", help="Identifier of the interpretation to select (number, slug, or UUID)"
     ),
     interpretation_set_id: str = typer.Option(
         None,
@@ -167,7 +167,13 @@ def select_interpretation(
         help="ID of the interpretation set (uses current if not specified)",
     ),
 ) -> None:
-    """Select an interpretation to add as an event."""
+    """Select an interpretation to add as an event.
+    
+    You can specify the interpretation using:
+    - A sequence number (1, 2, 3...)
+    - The slug (derived from the title)
+    - The full UUID
+    """
     try:
         game_manager = GameManager()
         scene_manager = SceneManager()
@@ -190,7 +196,8 @@ def select_interpretation(
 
         if not interpretation_id:
             console.print(
-                "[red]Please specify which interpretation to select with --id.[/red]"
+                "[red]Please specify which interpretation to select with --id. "
+                "You can use the number (1, 2, 3...), the slug, or the UUID.[/red]"
             )
             raise typer.Exit(1)
 
