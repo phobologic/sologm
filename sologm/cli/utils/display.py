@@ -527,7 +527,7 @@ def display_game_status(
     grid.add_column("Right", ratio=1)
 
     # Add scene panels and events panel to main grid
-    left_grid = _create_scene_panels_grid(game, active_scene, scene_manager)
+    left_grid = _create_scene_panels_grid(game, active_scene, scene_manager, console)
     events_panel = _create_events_panel(recent_events, truncation_length)
     grid.add_row(left_grid, events_panel)
     console.print(grid)
@@ -633,18 +633,47 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
 
 
 def _create_scene_panels_grid(
-    game: Game, active_scene: Optional[Scene], scene_manager: Optional[SceneManager]
+    game: Game, 
+    active_scene: Optional[Scene], 
+    scene_manager: Optional[SceneManager],
+    console: Optional[Console] = None
 ) -> Table:
-    """Create a grid containing current and previous scene panels."""
+    """Create a grid containing current and previous scene panels.
+    
+    Args:
+        game: The game to display information for
+        active_scene: The currently active scene, if any
+        scene_manager: Optional scene manager for retrieving previous scene
+        console: Optional console instance to determine width for text truncation
+        
+    Returns:
+        A Table grid containing the scene panels
+    """
     logger.debug(f"Creating scene panels grid for game {game.id}")
-
+    
+    # Calculate truncation length for scene descriptions
+    console_width = 80  # Default fallback width
+    if console:
+        console_width = console.width
+        logger.debug(f"Using provided console width: {console_width}")
+    
+    # For scene descriptions in a two-column layout, use about 1/3 of console width
+    # This accounts for the panel taking up roughly half the screen, minus borders/padding
+    chars_per_line = max(30, int(console_width / 3))
+    # Allow for about 4 lines of text
+    max_desc_length = chars_per_line * 4
+    
     # Create current scene panel with consistent styling
     scenes_content = ""
     if active_scene:
         logger.debug(f"Including active scene {active_scene.id} in panel")
+        truncated_description = truncate_text(active_scene.description, max_length=max_desc_length)
+        logger.debug(
+            f"Truncated active scene description from {len(active_scene.description)} to {len(truncated_description)} chars"
+        )
         scenes_content = (
             f"[{TEXT_STYLES['title']}]{active_scene.title}[/{TEXT_STYLES['title']}]\n"
-            f"{active_scene.description}"
+            f"{truncated_description}"
         )
     else:
         logger.debug("No active scene to display")
@@ -657,6 +686,7 @@ def _create_scene_panels_grid(
         title=f"[{TEXT_STYLES['title']}]Current Scene[/{TEXT_STYLES['title']}]",
         border_style=BORDER_STYLES["current"],
         title_align="left",
+        expand=True,  # Ensure panel expands to fill available width
     )
 
     # Create previous scene panel with consistent styling
@@ -670,9 +700,13 @@ def _create_scene_panels_grid(
     prev_scene_content = ""
     if prev_scene:
         logger.debug(f"Including previous scene {prev_scene.id} in panel")
+        truncated_description = truncate_text(prev_scene.description, max_length=max_desc_length)
+        logger.debug(
+            f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars"
+        )
         prev_scene_content = (
             f"[{TEXT_STYLES['title']}]{prev_scene.title}[/{TEXT_STYLES['title']}]\n"
-            f"{prev_scene.description}"
+            f"{truncated_description}"
         )
     else:
         logger.debug("No previous scene to display")
@@ -685,11 +719,12 @@ def _create_scene_panels_grid(
         title=f"[{TEXT_STYLES['title']}]Previous Scene[/{TEXT_STYLES['title']}]",
         border_style=BORDER_STYLES["game_info"],
         title_align="left",
+        expand=True,  # Ensure panel expands to fill available width
     )
 
     # Create a nested grid for the left column to stack the scene panels
-    left_grid = Table.grid(padding=(0, 1))
-    left_grid.add_column()
+    left_grid = Table.grid(padding=(0, 1), expand=True)  # Make the grid expand
+    left_grid.add_column(ratio=1)  # Use ratio to ensure column expands
     left_grid.add_row(scenes_panel)
     left_grid.add_row(prev_scene_panel)
 
