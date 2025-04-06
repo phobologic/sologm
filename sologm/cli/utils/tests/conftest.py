@@ -1,6 +1,6 @@
 """Shared test fixtures for CLI utility tests."""
 
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 import pytest
 from rich.console import Console
@@ -14,7 +14,6 @@ from sologm.core.tests.conftest import (
     scene_manager,
     event_manager,
     dice_manager,
-    oracle_manager,
     test_game,
     test_scene,
     test_events,
@@ -22,6 +21,7 @@ from sologm.core.tests.conftest import (
     test_interpretations,
     test_dice_roll,
 )
+from sologm.integrations.anthropic import AnthropicClient
 
 
 @pytest.fixture
@@ -31,3 +31,16 @@ def mock_console():
     # Set a default width for the console to avoid type errors
     mock.width = 80
     return mock
+
+
+@pytest.fixture
+def mock_anthropic_client():
+    """Create a mock Anthropic client."""
+    return MagicMock(spec=AnthropicClient)
+
+
+@pytest.fixture
+def oracle_manager(mock_anthropic_client, db_session):
+    """Create an OracleManager with a test session."""
+    from sologm.core.oracle import OracleManager
+    return OracleManager(anthropic_client=mock_anthropic_client, session=db_session)
