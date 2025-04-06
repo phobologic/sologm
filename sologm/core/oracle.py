@@ -517,9 +517,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             except OracleError:
                 # Re-raise OracleErrors without wrapping them
                 raise
-            except Exception as e:
-                # Wrap other exceptions in an OracleError
-                raise OracleError(f"Failed to get interpretations: {str(e)}") from e
 
         # This should never be reached due to the error in the loop
         raise OracleError("Failed to get interpretations after maximum retries")

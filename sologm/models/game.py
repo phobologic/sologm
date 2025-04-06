@@ -1,7 +1,7 @@
 """Game model for SoloGM."""
 
 import uuid
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
@@ -21,7 +21,7 @@ class Game(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(unique=True, nullable=False)
     slug: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(default=False)
 
     # Relationships this model owns
