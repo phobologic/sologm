@@ -1,5 +1,9 @@
 # SoloGM Coding Conventions
 
+## Display Conventions
+
+For UI and display-related code, refer to the [Display Design Style](DISPLAY_CONVENTIONS.md) guidelines.
+
 ## Architecture
 
 ### CLI Layer
