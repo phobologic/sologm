@@ -39,37 +39,19 @@ def interpret_oracle(
         scene_manager = SceneManager()
         oracle_manager = OracleManager()
 
-        game_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager
-        )
-
-        # Get game and scene details for prompt building
-        game = game_manager.get_game(game_id)
-        scene = scene_manager.get_scene(game_id, scene_id)
-
-        # Get recent events
-        from sologm.core.event import EventManager
-
-        event_manager = EventManager()
-        recent_events = event_manager.list_events(game_id, scene_id, limit=5)
-        recent_event_descriptions = [event.description for event in recent_events]
-
-        # Build prompt
-        from sologm.core.prompts.oracle import OraclePrompts
-
-        prompt = OraclePrompts.build_interpretation_prompt(
-            game.description,
-            scene.description,
-            recent_event_descriptions,
-            context,
-            results,
-            count,
-        )
-
         if show_prompt:
+            # Get the prompt that would be sent to the AI
+            prompt = oracle_manager.build_interpretation_prompt_for_active_context(
+                game_manager, scene_manager, context, results, count
+            )
             console.print("\n[bold blue]Prompt that would be sent to AI:[/bold blue]")
             console.print(prompt)
             return
+
+        # Validate active context (will raise OracleError if no active game/scene)
+        game_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager
+        )
 
         console.print("\nGenerating interpretations...", style="bold blue")
         interp_set = oracle_manager.get_interpretations(

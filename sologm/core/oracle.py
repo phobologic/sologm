@@ -219,6 +219,52 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             previous_interpretations,
             retry_attempt,
         )
+        
+    def build_interpretation_prompt_for_active_context(
+        self,
+        game_manager: GameManager,
+        scene_manager: SceneManager,
+        context: str,
+        oracle_results: str,
+        count: int,
+    ) -> str:
+        """Build an interpretation prompt for the active game and scene.
+        
+        Args:
+            game_manager: GameManager instance
+            scene_manager: SceneManager instance
+            context: User's question or context
+            oracle_results: Oracle results to interpret
+            count: Number of interpretations to generate
+            
+        Returns:
+            str: The formatted prompt
+            
+        Raises:
+            OracleError: If no active game or scene
+        """
+        # Validate active context
+        game_id, scene_id = self.validate_active_context(game_manager, scene_manager)
+        
+        # Get game and scene details
+        game = game_manager.get_game(game_id)
+        scene = scene_manager.get_scene(game_id, scene_id)
+        
+        # Get recent events
+        from sologm.core.event import EventManager
+        event_manager = EventManager(session=self._session)
+        recent_events = event_manager.list_events(game_id, scene_id, limit=5)
+        recent_event_descriptions = [event.description for event in recent_events]
+        
+        # Build and return the prompt
+        return self._build_prompt(
+            game.description,
+            scene.description,
+            recent_event_descriptions,
+            context,
+            oracle_results,
+            count
+        )
 
     def _parse_interpretations(self, response_text: str) -> List[dict]:
         """Parse interpretations from Claude's response using Markdown format.
