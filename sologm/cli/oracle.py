@@ -106,21 +106,24 @@ def retry_interpretation(
 
             config = get_config()
             count = int(config.get("default_interpretations", 5))
-        
+
         # Get the current context
         context = current_interp_set.context
         oracle_results = current_interp_set.oracle_results
-        
+
         # If edit_context flag is set or user confirms editing
-        if edit_context or typer.confirm("Would you like to edit the context before retrying?"):
+        if edit_context or typer.confirm(
+            "Would you like to edit the context before retrying?"
+        ):
             # Show the current context
             console.print("\n[bold blue]Current context:[/bold blue]")
             console.print(context)
-            
+
             # Open the editor with the current context
             import click
+
             new_context = click.edit(context)
-            
+
             # If the user saved changes (didn't abort)
             if new_context is not None:
                 context = new_context.strip()
