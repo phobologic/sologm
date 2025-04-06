@@ -182,10 +182,8 @@ def display_events_table(
 
     logger.debug(f"Creating table with {len(events)} events")
 
-    # Create table with consistent styling
+    # Create table without a title
     table = Table(
-        title=f"[{TEXT_STYLES['title']}]Events in scene '{scene_title}'[/{TEXT_STYLES['title']}]",
-        title_justify="left",
         border_style=BORDER_STYLES["game_info"],
     )
 
@@ -202,7 +200,14 @@ def display_events_table(
             truncate_text(event.description, max_length=80),
         )
 
-    console.print(table)
+    # Wrap the table in a panel with a title
+    panel = Panel(
+        table,
+        title=f"[{TEXT_STYLES['title']}]Events in scene '{scene_title}'[/{TEXT_STYLES['title']}]",
+        title_justify="left",
+        border_style=BORDER_STYLES["game_info"],
+    )
+    console.print(panel)
 
 
 def display_games_table(
@@ -222,10 +227,8 @@ def display_games_table(
         console.print("No games found. Create one with 'sologm game create'.")
         return
 
-    # Create table with consistent styling
+    # Create table without a title
     table = Table(
-        title=f"[{TEXT_STYLES['title']}]Games[/{TEXT_STYLES['title']}]",
-        title_justify="left",
         border_style=BORDER_STYLES["game_info"],
     )
 
@@ -256,7 +259,14 @@ def display_games_table(
             active_marker,
         )
 
-    console.print(table)
+    # Wrap the table in a panel with a title
+    panel = Panel(
+        table,
+        title=f"[{TEXT_STYLES['title']}]Games[/{TEXT_STYLES['title']}]",
+        title_justify="left",
+        border_style=BORDER_STYLES["game_info"],
+    )
+    console.print(panel)
 
 
 def display_scenes_table(
@@ -276,10 +286,8 @@ def display_scenes_table(
         console.print("No scenes found. Create one with 'sologm scene create'.")
         return
 
-    # Create table with consistent styling
+    # Create table without a title
     table = Table(
-        title=f"[{TEXT_STYLES['title']}]Scenes[/{TEXT_STYLES['title']}]",
-        title_justify="left",
         border_style=BORDER_STYLES["game_info"],
     )
 
@@ -309,7 +317,14 @@ def display_scenes_table(
             str(scene.sequence),
         )
 
-    console.print(table)
+    # Wrap the table in a panel with a title
+    panel = Panel(
+        table,
+        title=f"[{TEXT_STYLES['title']}]Scenes[/{TEXT_STYLES['title']}]",
+        title_justify="left",
+        border_style=BORDER_STYLES["game_info"],
+    )
+    console.print(panel)
 
 
 def display_game_info(
