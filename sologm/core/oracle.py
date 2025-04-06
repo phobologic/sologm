@@ -490,7 +490,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                     response = self.anthropic_client.send_message(prompt)
                 except Exception as e:
                     logger.error(f"Error from AI service: {str(e)}")
-                    raise OracleError(f"Failed to get interpretations from AI service: {str(e)}") from e
+                    raise OracleError(
+                        f"Failed to get interpretations from AI service: {str(e)}"
+                    ) from e
 
                 # Parse interpretations
                 parsed = self._parse_interpretations(response)
