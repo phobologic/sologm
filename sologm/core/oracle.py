@@ -208,6 +208,13 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         if recent_events:
             events_text = "\n".join([f"- {event}" for event in recent_events])
 
+        # Example format to show Claude
+        example_format = f"""## The Mysterious Footprints
+The footprints suggest someone sneaked into the cellar during the night. Based on their size and depth, they likely belong to a heavier individual carrying something substantial - possibly the stolen brandy barrel.
+
+## An Inside Job
+The lack of forced entry and the selective theft of only the special brandy barrel suggests this was done by someone familiar with the cellar layout and the value of that specific barrel."""
+
         return f"""You are interpreting oracle results for a solo RPG player.
 
 Game: {game_description}
@@ -222,22 +229,33 @@ Please provide {count} different interpretations of these oracle results.
 Each interpretation should make sense in the context of the game and scene.
 Be creative but consistent with the established narrative.
 
-Format your response exactly as follows:
+Format your response using Markdown headers exactly as follows:
 
-=== BEGIN INTERPRETATIONS ===
+```markdown
+## [Title of first interpretation]
+[Detailed description of first interpretation]
 
---- INTERPRETATION 1 ---
-TITLE: Short title for the interpretation
-DESCRIPTION: Detailed description of interpretation idea
---- END INTERPRETATION 1 ---
+## [Title of second interpretation]
+[Detailed description of second interpretation]
 
 [and so on for each interpretation]
+```
 
-=== END INTERPRETATIONS ===
+Here's an example of the format:
+
+{example_format}
+
+Important:
+- Start each interpretation with "## " followed by a descriptive title
+- Then provide the detailed description on the next line(s)
+- Make sure to separate interpretations with a blank line
+- Do not include any text outside this format
+- Do not include the ```markdown and ``` delimiters in your actual response
+- Do not number the interpretations
 """
 
     def _parse_interpretations(self, response_text: str) -> List[dict]:
-        """Parse interpretations from Claude's response.
+        """Parse interpretations from Claude's response using Markdown format.
 
         Args:
             response_text: Raw response from Claude API.
@@ -245,18 +263,22 @@ DESCRIPTION: Detailed description of interpretation idea
         Returns:
             List[dict]: List of parsed interpretations.
         """
-        pattern = (
-            r"--- INTERPRETATION (\d+) ---\nTITLE: (.*?)\n"
-            r"DESCRIPTION: (.*?)\n--- END INTERPRETATION \1 ---"
-        )
-        matches = re.findall(pattern, response_text, re.DOTALL)
-
+        # Clean up the response to handle potential formatting issues
+        # Remove any markdown code block markers if present
+        cleaned_text = re.sub(r'```markdown|```', '', response_text)
+        
+        # Parse the interpretations using regex
+        # This pattern matches a level 2 header (##) followed by text until the next level 2 header or end of string
+        pattern = r'## (.*?)\n(.*?)(?=\n## |$)'
+        matches = re.findall(pattern, cleaned_text, re.DOTALL)
+        
         interpretations = []
-        for _, title, description in matches:
-            interpretations.append(
-                {"title": title.strip(), "description": description.strip()}
-            )
-
+        for title, description in matches:
+            interpretations.append({
+                "title": title.strip(),
+                "description": description.strip()
+            })
+        
         return interpretations
 
     def get_interpretations(
@@ -355,6 +377,12 @@ DESCRIPTION: Detailed description of interpretation idea
                 response = self.anthropic_client.send_message(prompt)
                 parsed = self._parse_interpretations(response)
                 logger.debug(f"Found {len(parsed)} interpretations")
+                
+                if not parsed:
+                    logger.warning("Failed to parse any interpretations from response")
+                    logger.debug(f"Raw response: {response}")
+                    raise OracleError("Failed to parse interpretations from AI response")
+                    
             except Exception as e:
                 # Wrap the exception in an OracleError
                 raise OracleError(f"Failed to get interpretations: {str(e)}") from e

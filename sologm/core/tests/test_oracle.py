@@ -64,22 +64,16 @@ class TestOracle:
         assert "What happens next?" in prompt
         assert "Mystery, Danger" in prompt
         assert "3 different interpretations" in prompt
+        assert "## [Title of first interpretation]" in prompt
+        assert "Do not number the interpretations" in prompt
 
     def test_parse_interpretations(self, oracle_manager) -> None:
         """Test parsing Claude's response."""
-        response = """=== BEGIN INTERPRETATIONS ===
+        response = """## Test Title 1
+Test Description 1
 
---- INTERPRETATION 1 ---
-TITLE: Test Title 1
-DESCRIPTION: Test Description 1
---- END INTERPRETATION 1 ---
-
---- INTERPRETATION 2 ---
-TITLE: Test Title 2
-DESCRIPTION: Test Description 2
---- END INTERPRETATION 2 ---
-
-=== END INTERPRETATIONS ==="""
+## Test Title 2
+Test Description 2"""
 
         parsed = oracle_manager._parse_interpretations(response)
 
@@ -94,14 +88,8 @@ DESCRIPTION: Test Description 2
     ) -> None:
         """Test getting interpretations."""
         # Configure mock to return string response
-        response_text = """=== BEGIN INTERPRETATIONS ===
-
---- INTERPRETATION 1 ---
-TITLE: Test Title
-DESCRIPTION: Test Description
---- END INTERPRETATION 1 ---
-
-=== END INTERPRETATIONS ==="""
+        response_text = """## Test Title
+Test Description"""
         mock_anthropic_client.send_message.return_value = response_text
 
         result = oracle_manager.get_interpretations(
@@ -228,21 +216,13 @@ DESCRIPTION: Test Description
     ):
         """Test detailed interpretation generation and parsing."""
         # Configure mock with a more complex response
-        response_text = """=== BEGIN INTERPRETATIONS ===
-
---- INTERPRETATION 1 ---
-TITLE: First Interpretation
-DESCRIPTION: This is the first interpretation with multiple lines
+        response_text = """## First Interpretation
+This is the first interpretation with multiple lines
 and some formatting.
---- END INTERPRETATION 1 ---
 
---- INTERPRETATION 2 ---
-TITLE: Second Interpretation
-DESCRIPTION: This is the second interpretation.
-It also has multiple lines.
---- END INTERPRETATION 2 ---
-
-=== END INTERPRETATIONS ==="""
+## Second Interpretation
+This is the second interpretation.
+It also has multiple lines."""
         mock_anthropic_client.send_message.return_value = response_text
 
         result = oracle_manager.get_interpretations(
