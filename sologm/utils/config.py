@@ -8,6 +8,8 @@ import yaml
 
 from sologm.utils.errors import ConfigError
 
+# Lets add some debug logging to this library, AI!
+
 
 class Config:
     """Configuration manager for Solo RPG Helper."""
