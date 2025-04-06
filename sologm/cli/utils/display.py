@@ -185,6 +185,7 @@ def display_events_table(
     # Create table with consistent styling
     table = Table(
         title=f"[{TEXT_STYLES['title']}]Events in scene '{scene_title}'[/{TEXT_STYLES['title']}]",
+        title_justify="left",
         border_style=BORDER_STYLES["game_info"],
     )
 
@@ -224,6 +225,7 @@ def display_games_table(
     # Create table with consistent styling
     table = Table(
         title=f"[{TEXT_STYLES['title']}]Games[/{TEXT_STYLES['title']}]",
+        title_justify="left",
         border_style=BORDER_STYLES["game_info"],
     )
 
@@ -277,6 +279,7 @@ def display_scenes_table(
     # Create table with consistent styling
     table = Table(
         title=f"[{TEXT_STYLES['title']}]Scenes[/{TEXT_STYLES['title']}]",
+        title_justify="left",
         border_style=BORDER_STYLES["game_info"],
     )
 
