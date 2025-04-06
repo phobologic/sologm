@@ -158,18 +158,15 @@ def display_interpretation(
         else BORDER_STYLES["game_info"]
     )
 
-    # Create panel with consistent styling and title showing the interpretation title
-    panel_title = f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator}"
-
-    # Add metadata with ID and slug
-    metadata = {
-        "ID": id_number,
-        "Slug": interp.slug,
-        "Sequence": sequence if sequence is not None else None,
-    }
-    formatted_metadata = format_metadata(metadata)
-
-    panel_content = f"{interp.description}\n\n{formatted_metadata}"
+    # Create panel with consistent styling and title showing the interpretation title, ID and slug
+    sequence_text = f"#{sequence} " if sequence is not None else ""
+    panel_title = (
+        f"[{TEXT_STYLES['title']}]{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator} "
+        f"[{TEXT_STYLES['timestamp']}]({sequence_text}{id_number}/{interp.slug})[/{TEXT_STYLES['timestamp']}]"
+    )
+    
+    # Panel content is just the description now
+    panel_content = interp.description
 
     panel = Panel(
         panel_content,
