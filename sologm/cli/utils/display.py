@@ -30,12 +30,12 @@ BORDER_STYLES = {
 
 # Text style constants based on data type (Dracula-inspired)
 TEXT_STYLES = {
-    "timestamp": "bright_cyan",  # Timestamps and IDs (Dracula cyan)
+    "timestamp": "bright_cyan",    # Timestamps and IDs (Dracula cyan)
     "category": "bright_magenta",  # Categories and sources (Dracula pink)
-    "success": "bright_green",  # Success indicators and selected items (Dracula green)
-    "warning": "bright_yellow",  # Warnings and pending actions (Dracula yellow)
-    "title": "bold",  # Titles and important identifiers
-    "subtitle": "dim bright_blue",  # Supplementary information and descriptions (Dracula comment blue)
+    "success": "bright_green",     # Success indicators and selected items (Dracula green)
+    "warning": "bright_yellow",    # Warnings and pending actions (Dracula yellow)
+    "title": "bold",               # Titles and important identifiers
+    "subtitle": "blue3",           # Supplementary information and descriptions (Dracula comment blue)
 }
 
 # Format strings for consistent metadata presentation
