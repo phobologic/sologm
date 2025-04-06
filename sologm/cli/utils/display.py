@@ -584,6 +584,7 @@ def _create_game_header_panel(game: Game) -> Panel:
         f"[{TEXT_STYLES['timestamp']}]{game.id}[/{TEXT_STYLES['timestamp']}]"
     )
 
+    # Lets truncate the game.description in game_info, so that it takes up at most 3 lines of the screen based on the width of the console. AI!
     # Create content with consistent styling
     game_info = f"{game.description}\n[dim]{formatted_metadata}[/dim]"
 
