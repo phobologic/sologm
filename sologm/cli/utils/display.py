@@ -464,7 +464,7 @@ def display_scene_info(console: Console, scene: Scene) -> None:
         f"[{TEXT_STYLES['timestamp']}]({scene.id})[/{TEXT_STYLES['timestamp']}]"
     )
 
-    panel = Panel(panel_content, title=panel_title, border_style=border_style)
+    panel = Panel(panel_content, title=panel_title, border_style=border_style, title_align="left")
 
     console.print(panel)
 
