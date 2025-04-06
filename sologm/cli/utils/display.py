@@ -355,7 +355,7 @@ def _create_game_header_panel(game: Game) -> Panel:
 
     # Create a title with brighter colors for name and slug
     panel_title = f"[bold bright_blue]{game.name}[/bold bright_blue] ([bold cyan]{game.slug}[/bold cyan] {game.id})"
-    
+
     # Simplify the content since we moved the name/slug/id to the title
     game_info = (
         f"[dim]{game.description}[/dim]\n"
