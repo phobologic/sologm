@@ -172,6 +172,20 @@ def test_display_games_table_no_games(mock_console):
     )
 
 
+def test_display_scenes_table_with_scenes(mock_console, sample_scene):
+    """Test displaying scenes table with scenes."""
+    display_scenes_table(mock_console, [sample_scene], sample_scene.id)
+    assert mock_console.print.called
+
+
+def test_display_scenes_table_no_scenes(mock_console):
+    """Test displaying scenes table with no scenes."""
+    display_scenes_table(mock_console, [], None)
+    mock_console.print.assert_called_once_with(
+        "No scenes found. Create one with 'sologm scene create'."
+    )
+
+
 def test_display_game_info(mock_console, sample_game, sample_scene):
     """Test displaying game info."""
     display_game_info(mock_console, sample_game, sample_scene)

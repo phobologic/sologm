@@ -257,6 +257,58 @@ def display_games_table(
     console.print(table)
 
 
+def display_scenes_table(
+    console: Console, scenes: List[Scene], active_scene_id: Optional[str] = None
+) -> None:
+    """Display scenes in a formatted table.
+
+    Args:
+        console: Rich console instance
+        scenes: List of scenes to display
+        active_scene_id: ID of the currently active scene, if any
+    """
+    logger.debug(f"Displaying scenes table with {len(scenes)} scenes")
+    logger.debug(f"Active scene ID: {active_scene_id if active_scene_id else 'None'}")
+    if not scenes:
+        logger.debug("No scenes found to display")
+        console.print("No scenes found. Create one with 'sologm scene create'.")
+        return
+
+    # Create table with consistent styling
+    table = Table(
+        title=f"[{TEXT_STYLES['title']}]Scenes[/{TEXT_STYLES['title']}]",
+        border_style=BORDER_STYLES["game_info"],
+    )
+
+    # Add columns with consistent styling
+    table.add_column("ID", style=TEXT_STYLES["timestamp"])
+    table.add_column("Title", style=TEXT_STYLES["category"])
+    table.add_column("Description")
+    table.add_column("Status", style=TEXT_STYLES["success"])
+    table.add_column("Current", style=TEXT_STYLES["success"], justify="center")
+    table.add_column("Sequence", justify="right")
+
+    # Add rows with consistent formatting
+    for scene in scenes:
+        is_active = active_scene_id and scene.id == active_scene_id
+        active_marker = "✓" if is_active else ""
+
+        # Use different styling for active scene
+        title_style = f"[{TEXT_STYLES['title']}]" if is_active else ""
+        title_style_end = f"[/{TEXT_STYLES['title']}]" if is_active else ""
+
+        table.add_row(
+            scene.id,
+            f"{title_style}{scene.title}{title_style_end}",
+            scene.description,
+            scene.status.value,
+            active_marker,
+            str(scene.sequence),
+        )
+
+    console.print(table)
+
+
 def display_game_info(
     console: Console, game: Game, active_scene: Optional[Scene] = None
 ) -> None:

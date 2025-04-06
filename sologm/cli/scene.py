@@ -67,34 +67,14 @@ def list_scenes() -> None:
 
     # Get scenes
     scenes = scene_manager.list_scenes(active_game.id)
-    if not scenes:
-        console.print("No scenes found. Create one with 'sologm scene create'.")
-        return
 
     # Get active scene
     active_scene = scene_manager.get_active_scene(active_game.id)
     active_scene_id = active_scene.id if active_scene else None
 
-    # Create table
-    table = Table(title=f"Scenes in {active_game.name}")
-    table.add_column("ID", style="cyan")
-    table.add_column("Title", style="magenta")
-    table.add_column("Description")
-    table.add_column("Status", style="green")
-    table.add_column("Current", style="yellow", justify="center")
-    table.add_column("Sequence", justify="right")
-
-    for scene in scenes:
-        table.add_row(
-            scene.id,
-            scene.title,
-            scene.description,
-            scene.status.value,
-            "✓" if scene.id == active_scene_id else "",
-            str(scene.sequence),
-        )
-
-    console.print(table)
+    # Use the display helper function
+    from sologm.cli.utils.display import display_scenes_table
+    display_scenes_table(console, scenes, active_scene_id)
 
 
 @scene_app.command("info")
