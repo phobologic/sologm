@@ -82,39 +82,39 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
     )
 
     # Create title with consistent styling
-    title = Text()
+    title_text = ""
     if roll.reason:
-        title.append(f"{roll.reason}: ", style=f"{TEXT_STYLES['title']} blue")
-    title.append(roll.notation, style=TEXT_STYLES["title"])
+        title_text = f"[{TEXT_STYLES['title']}]{roll.reason}:[/{TEXT_STYLES['title']}] [{TEXT_STYLES['title']}]{roll.notation}[/{TEXT_STYLES['title']}]"
+    else:
+        title_text = f"[{TEXT_STYLES['title']}]{roll.notation}[/{TEXT_STYLES['title']}]"
 
     # Build details with consistent styling
-    details = Text()
+    details = []
+    
     if len(roll.individual_results) > 1:
-        details.append("Rolls: ", style=TEXT_STYLES["subtitle"])
-        details.append(str(roll.individual_results), style=TEXT_STYLES["timestamp"])
-        details.append("\n")
+        details.append(f"[{TEXT_STYLES['subtitle']}]Rolls:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['timestamp']}]{roll.individual_results}[/{TEXT_STYLES['timestamp']}]")
 
     if roll.modifier != 0:
-        details.append("Modifier: ", style=TEXT_STYLES["subtitle"])
-        details.append(f"{roll.modifier:+d}", style=TEXT_STYLES["warning"])
-        details.append("\n")
+        details.append(f"[{TEXT_STYLES['subtitle']}]Modifier:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['warning']}]{roll.modifier:+d}[/{TEXT_STYLES['warning']}]")
 
-    details.append("Result: ", style=TEXT_STYLES["subtitle"])
-    details.append(
-        str(roll.total), style=f"{TEXT_STYLES['title']} {TEXT_STYLES['success']}"
-    )
+    details.append(f"[{TEXT_STYLES['subtitle']}]Result:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['title']} {TEXT_STYLES['success']}]{roll.total}[/{TEXT_STYLES['title']} {TEXT_STYLES['success']}]")
 
-    # Add timestamp if available
+    # Add timestamp metadata if available
+    metadata = {}
     if roll.created_at:
-        details.append("\nTime: ", style=TEXT_STYLES["subtitle"])
-        details.append(roll.created_at.isoformat(), style=TEXT_STYLES["timestamp"])
+        metadata["Time"] = roll.created_at.isoformat()
+    
+    # Combine details and metadata
+    content = "\n".join(details)
+    if metadata:
+        content += f"\n{format_metadata(metadata)}"
 
     # Use consistent border style for dice rolls (neutral information)
     panel = Panel(
-        details,
-        title=title,
+        content,
+        title=title_text,
         border_style=BORDER_STYLES["neutral"],
-        expand=False,
+        expand=True,
         title_align="left",
     )
     console.print(panel)
