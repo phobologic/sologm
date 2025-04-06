@@ -8,6 +8,8 @@ import pytest
 from rich.console import Console
 
 from sologm.cli.utils.display import (
+    BORDER_STYLES,
+    METADATA_SEPARATOR,
     _calculate_truncation_length,
     _create_events_panel,
     _create_game_header_panel,
@@ -21,11 +23,8 @@ from sologm.cli.utils.display import (
     display_interpretation,
     display_interpretation_set,
     display_scenes_table,
-    truncate_text,
     format_metadata,
-    BORDER_STYLES,
-    TEXT_STYLES,
-    METADATA_SEPARATOR,
+    truncate_text,
 )
 from sologm.core.dice import DiceRoll
 from sologm.core.event import Event
@@ -60,7 +59,7 @@ def sample_game() -> Game:
 
 
 @pytest.fixture
-def sample_scene() -> Scene:
+def sample_scene(sample_game) -> Scene:
     """Create a sample scene for testing."""
     return Scene(
         id="scene-1",
@@ -69,7 +68,7 @@ def sample_scene() -> Scene:
         created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
         modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
         status=SceneStatus.ACTIVE,
-        game_id="test-game",
+        game_id=sample_game.id,
         sequence=1,
     )
 
@@ -147,15 +146,15 @@ def test_display_dice_roll(mock_console, sample_dice_roll):
     assert mock_console.print.called
 
 
-def test_display_events_table_with_events(mock_console, sample_events):
+def test_display_events_table_with_events(mock_console, sample_events, sample_scene):
     """Test displaying events table with events."""
-    display_events_table(mock_console, sample_events, "Test Scene")
+    display_events_table(mock_console, sample_events, sample_scene)
     assert mock_console.print.called
 
 
-def test_display_events_table_no_events(mock_console):
+def test_display_events_table_no_events(mock_console, sample_scene):
     """Test displaying events table with no events."""
-    display_events_table(mock_console, [], "Test Scene")
+    display_events_table(mock_console, [], sample_scene)
     mock_console.print.assert_called_once_with("\nNo events in scene 'Test Scene'")
 
 
