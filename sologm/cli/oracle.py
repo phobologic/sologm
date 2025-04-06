@@ -38,7 +38,7 @@ def interpret_oracle(
         game_manager = GameManager()
         scene_manager = SceneManager()
         oracle_manager = OracleManager()
-        
+
         # Use the provided count or default to the config value
         if count is None:
             from sologm.utils.config import get_config
