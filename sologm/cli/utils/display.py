@@ -221,7 +221,8 @@ def display_events_table(
     # Wrap the table in a panel with a title
     panel = Panel(
         table,
-        title=f"[{TEXT_STYLES['title']}]Events in game '{scene.game.name}', scene '{scene.title}'[/{TEXT_STYLES['title']}]",
+        title=f"[{TEXT_STYLES['title']}]Events in game '{scene.game.name}',"
+              f"scene '{scene.title}'[/{TEXT_STYLES['title']}]",
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
