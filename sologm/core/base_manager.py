@@ -46,9 +46,10 @@ class BaseManager(Generic[T, M]):
             self.logger.debug("Using provided session")
             return self._session, False
         else:
-            self.logger.debug("Creating new session context")
-            context = get_db_context()
-            return context.__enter__(), True
+            self.logger.debug("Creating new session from singleton")
+            from sologm.database.session import DatabaseSession
+            session = DatabaseSession.get_instance().get_session()
+            return session, True
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
