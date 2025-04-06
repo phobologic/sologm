@@ -90,20 +90,26 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
     # Build details with consistent styling
     details = []
-    
+
     if len(roll.individual_results) > 1:
-        details.append(f"[{TEXT_STYLES['subtitle']}]Rolls:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['timestamp']}]{roll.individual_results}[/{TEXT_STYLES['timestamp']}]")
+        details.append(
+            f"[{TEXT_STYLES['subtitle']}]Rolls:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['timestamp']}]{roll.individual_results}[/{TEXT_STYLES['timestamp']}]"
+        )
 
     if roll.modifier != 0:
-        details.append(f"[{TEXT_STYLES['subtitle']}]Modifier:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['warning']}]{roll.modifier:+d}[/{TEXT_STYLES['warning']}]")
+        details.append(
+            f"[{TEXT_STYLES['subtitle']}]Modifier:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['warning']}]{roll.modifier:+d}[/{TEXT_STYLES['warning']}]"
+        )
 
-    details.append(f"[{TEXT_STYLES['subtitle']}]Result:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['title']} {TEXT_STYLES['success']}]{roll.total}[/{TEXT_STYLES['title']} {TEXT_STYLES['success']}]")
+    details.append(
+        f"[{TEXT_STYLES['subtitle']}]Result:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['title']} {TEXT_STYLES['success']}]{roll.total}[/{TEXT_STYLES['title']} {TEXT_STYLES['success']}]"
+    )
 
     # Add timestamp metadata if available
     metadata = {}
     if roll.created_at:
         metadata["Time"] = roll.created_at.isoformat()
-    
+
     # Combine details and metadata
     content = "\n".join(details)
     if metadata:
