@@ -146,14 +146,20 @@ def test_display_dice_roll(mock_console, sample_dice_roll):
     assert mock_console.print.called
 
 
-def test_display_events_table_with_events(mock_console, sample_events, sample_scene):
+def test_display_events_table_with_events(mock_console, sample_events, sample_scene, sample_game):
     """Test displaying events table with events."""
+    # Properly set up the game relationship on the scene
+    sample_scene.game = sample_game
+    
     display_events_table(mock_console, sample_events, sample_scene)
     assert mock_console.print.called
 
 
-def test_display_events_table_no_events(mock_console, sample_scene):
+def test_display_events_table_no_events(mock_console, sample_scene, sample_game):
     """Test displaying events table with no events."""
+    # Properly set up the game relationship on the scene
+    sample_scene.game = sample_game
+    
     display_events_table(mock_console, [], sample_scene)
     mock_console.print.assert_called_once_with("\nNo events in scene 'Test Scene'")
 
