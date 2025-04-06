@@ -21,21 +21,21 @@ logger = logging.getLogger(__name__)
 
 # Border style constants based on content type (Dracula-inspired)
 BORDER_STYLES = {
-    "game_info": "bright_blue",    # Game information (Dracula purple-blue)
-    "current": "bright_cyan",      # Current/active content (Dracula cyan)
-    "success": "bright_green",     # Success/completed content (Dracula green)
-    "pending": "bright_yellow",    # Pending actions/decisions (Dracula yellow)
-    "neutral": "bright_magenta",   # Neutral information (Dracula pink)
+    "game_info": "bright_blue",  # Game information (Dracula purple-blue)
+    "current": "bright_cyan",  # Current/active content (Dracula cyan)
+    "success": "bright_green",  # Success/completed content (Dracula green)
+    "pending": "bright_yellow",  # Pending actions/decisions (Dracula yellow)
+    "neutral": "bright_magenta",  # Neutral information (Dracula pink)
 }
 
 # Text style constants based on data type (Dracula-inspired)
 TEXT_STYLES = {
-    "timestamp": "bright_cyan",    # Timestamps and IDs (Dracula cyan)
+    "timestamp": "bright_cyan",  # Timestamps and IDs (Dracula cyan)
     "category": "bright_magenta",  # Categories and sources (Dracula pink)
-    "success": "bright_green",     # Success indicators and selected items (Dracula green)
-    "warning": "bright_yellow",    # Warnings and pending actions (Dracula yellow)
-    "title": "bold",               # Titles and important identifiers
-    "subtitle": "dim bright_blue", # Supplementary information and descriptions (Dracula comment blue)
+    "success": "bright_green",  # Success indicators and selected items (Dracula green)
+    "warning": "bright_yellow",  # Warnings and pending actions (Dracula yellow)
+    "title": "bold",  # Titles and important identifiers
+    "subtitle": "dim bright_blue",  # Supplementary information and descriptions (Dracula comment blue)
 }
 
 # Format strings for consistent metadata presentation
