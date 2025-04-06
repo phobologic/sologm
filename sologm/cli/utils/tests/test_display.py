@@ -164,9 +164,16 @@ def test_calculate_truncation_length(mock_console):
     assert result == 40  # default value
 
 
-def test_create_game_header_panel(test_game):
+def test_create_game_header_panel(test_game, mock_console):
     """Test creating the game header panel."""
+    # Test without console
     panel = _create_game_header_panel(test_game)
+    assert panel is not None
+    assert panel.title is not None
+    assert panel.border_style == BORDER_STYLES["game_info"]
+    
+    # Test with console
+    panel = _create_game_header_panel(test_game, mock_console)
     assert panel is not None
     assert panel.title is not None
     assert panel.border_style == BORDER_STYLES["game_info"]

@@ -517,7 +517,7 @@ def display_game_status(
     truncation_length = _calculate_truncation_length(console)
 
     # Display game header
-    console.print(_create_game_header_panel(game))
+    console.print(_create_game_header_panel(game, console))
 
     # Create and display the main grid with scene and events info
     grid = Table.grid(expand=True, padding=(0, 1))
@@ -564,8 +564,16 @@ def _calculate_truncation_length(console: Console) -> int:
         return 40
 
 
-def _create_game_header_panel(game: Game) -> Panel:
-    """Create the game info header panel."""
+def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> Panel:
+    """Create the game info header panel.
+    
+    Args:
+        game: The game to display information for
+        console: Optional console instance to determine width for text truncation
+    
+    Returns:
+        A Panel containing the game header information
+    """
     logger.debug(f"Creating game header panel for game {game.id}")
 
     # Access scenes relationship directly
@@ -582,16 +590,22 @@ def _create_game_header_panel(game: Game) -> Panel:
         f"[{TEXT_STYLES['timestamp']}]{game.id}[/{TEXT_STYLES['timestamp']}]"
     )
 
-    # Instead of figuring out the console width by getting a console here, perhaps we should pass the console instance into the method _create_game_header_panel like we do with display_game_status? AI!
     # Create content with consistent styling
     # Truncate description to fit approximately 3 lines based on console width
     console_width = 80  # Default fallback width
-    try:
-        from rich.console import get_console
-
-        console_width = get_console().width
-    except Exception:
-        logger.debug("Could not determine console width, using default of 80")
+    
+    if console:
+        # Use the provided console instance
+        console_width = console.width
+        logger.debug(f"Using provided console width: {console_width}")
+    else:
+        # Fall back to trying to get a console if none was provided
+        logger.debug("No console provided, attempting to determine width")
+        try:
+            from rich.console import get_console
+            console_width = get_console().width
+        except Exception:
+            logger.debug("Could not determine console width, using default of 80")
 
     # Calculate chars per line (accounting for margins/padding)
     chars_per_line = max(40, console_width - 10)
