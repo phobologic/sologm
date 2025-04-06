@@ -124,7 +124,7 @@ def retry_interpretation(
 
             try:
                 new_context = click.edit(context)
-                
+
                 # If the user saved changes (didn't abort)
                 if new_context is not None:
                     context = new_context.strip()
