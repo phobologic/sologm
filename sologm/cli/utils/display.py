@@ -180,9 +180,7 @@ def display_interpretation(
     console.print()
 
 
-def display_events_table(
-    console: Console, events: List[Event], scene: Scene
-) -> None:
+def display_events_table(console: Console, events: List[Event], scene: Scene) -> None:
     """Display events in a formatted table.
 
     Args:
@@ -222,7 +220,7 @@ def display_events_table(
     panel = Panel(
         table,
         title=f"[{TEXT_STYLES['title']}]Events in game '{scene.game.name}',"
-              f"scene '{scene.title}'[/{TEXT_STYLES['title']}]",
+        f"scene '{scene.title}'[/{TEXT_STYLES['title']}]",
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
@@ -589,18 +587,21 @@ def _create_game_header_panel(game: Game) -> Panel:
     console_width = 80  # Default fallback width
     try:
         from rich.console import get_console
+
         console_width = get_console().width
     except Exception:
         logger.debug("Could not determine console width, using default of 80")
-    
+
     # Calculate chars per line (accounting for margins/padding)
     chars_per_line = max(40, console_width - 10)
     # For 3 lines, allow roughly 3x that many characters
     max_desc_length = chars_per_line * 3
-    
+
     truncated_description = truncate_text(game.description, max_length=max_desc_length)
-    logger.debug(f"Truncated game description from {len(game.description)} to {len(truncated_description)} chars")
-    
+    logger.debug(
+        f"Truncated game description from {len(game.description)} to {len(truncated_description)} chars"
+    )
+
     game_info = f"{truncated_description}\n[dim]{formatted_metadata}[/dim]"
 
     logger.debug("Game header panel created")
