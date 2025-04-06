@@ -43,13 +43,15 @@ class BaseManager(Generic[T, M]):
             - should_close: Whether the caller should close the session
         """
         if self._session:
-            self.logger.debug("Using provided session")
+            self.logger.debug("Using existing session")
             return self._session, False
         else:
-            self.logger.debug("Creating new session from singleton")
+            self.logger.debug("Getting session from singleton")
             from sologm.database.session import DatabaseSession
-            session = DatabaseSession.get_instance().get_session()
-            return session, True
+            # Store the session for future use
+            self._session = DatabaseSession.get_instance().get_session()
+            # Always return should_close=False since cleanup is handled at application exit
+            return self._session, False
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
@@ -98,21 +100,15 @@ class BaseManager(Generic[T, M]):
             Result of the operation
         """
         self.logger.debug(f"Executing database operation: {operation_name}")
-        session, should_close = self._get_session()
+        session, _ = self._get_session()
         try:
             result = operation(session, *args, **kwargs)
-            if should_close:
-                self.logger.debug(f"Committing transaction for {operation_name}")
-                session.commit()
+            self.logger.debug(f"Committing transaction for {operation_name}")
+            session.commit()
             return result
         except Exception as e:
             # Only handle the transaction rollback, but re-raise the original exception
-            if should_close:
-                self.logger.debug(f"Rolling back transaction for {operation_name}")
-                session.rollback()
+            self.logger.debug(f"Rolling back transaction for {operation_name}")
+            session.rollback()
             self.logger.error(f"Error in {operation_name}: {str(e)}")
             raise  # Re-raise the original exception
-        finally:
-            if should_close:
-                self.logger.debug(f"Closing session for {operation_name}")
-                session.close()
