@@ -1,7 +1,7 @@
 """Display helpers for CLI output."""
 
 import logging
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Dict, Any, Union
 
 from rich.console import Console
 from rich.panel import Panel
@@ -18,6 +18,29 @@ if TYPE_CHECKING:
     from sologm.core.oracle import OracleManager
 
 logger = logging.getLogger(__name__)
+
+# Border style constants based on content type
+BORDER_STYLES = {
+    "game_info": "blue",         # Game information
+    "current": "cyan",           # Current/active content
+    "success": "green",          # Success/completed content
+    "pending": "yellow",         # Pending actions/decisions
+    "neutral": "bright_black",   # Neutral information (like dice rolls)
+}
+
+# Text style constants based on data type
+TEXT_STYLES = {
+    "timestamp": "cyan",         # Timestamps and IDs
+    "category": "magenta",       # Categories and sources
+    "success": "green",          # Success indicators and selected items
+    "warning": "yellow",         # Warnings and pending actions
+    "title": "bold",             # Titles and important identifiers
+    "subtitle": "dim",           # Supplementary information and descriptions
+}
+
+# Format strings for consistent metadata presentation
+METADATA_FORMAT = "{key}: {value}"
+METADATA_SEPARATOR = " • "
 
 
 def truncate_text(text: str, max_length: int = 60) -> str:
