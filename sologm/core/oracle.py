@@ -338,9 +338,18 @@ Important:
             for current_set in current_sets:
                 current_set.is_current = False
 
-            # Get game and scene details for the prompt
+            # Debug: Print DB state at start of operation
             from sologm.models.game import Game
             from sologm.models.scene import Scene
+            games = session.query(Game).all()
+            scenes = session.query(Scene).all()
+            print(f"\n=== DB STATE IN _get_interpretations (attempt {retry_attempt}) ===")
+            print(f"Looking for game_id: {game_id}")
+            print(f"Looking for scene_id: {scene_id}")
+            print(f"Games in DB: {[g.id for g in games]}")
+            print(f"Scenes in DB: {[s.id for s in scenes]}")
+            
+            # Get game and scene details for the prompt
 
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
