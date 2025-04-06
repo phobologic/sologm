@@ -269,7 +269,9 @@ class SceneManager(BaseManager[Scene, Scene]):
             "set current scene", _set_current_scene, game_id=game_id, scene_id=scene_id
         )
 
-    def update_scene(self, game_id: str, scene_id: str, title: str, description: str) -> Scene:
+    def update_scene(
+        self, game_id: str, scene_id: str, title: str, description: str
+    ) -> Scene:
         """Update a scene's title and description.
 
         Args:
@@ -305,9 +307,9 @@ class SceneManager(BaseManager[Scene, Scene]):
                     session.query(Scene)
                     .filter(
                         and_(
-                            Scene.game_id == game_id, 
+                            Scene.game_id == game_id,
                             Scene.title.ilike(title),
-                            Scene.id != scene_id
+                            Scene.id != scene_id,
                         )
                     )
                     .first()
@@ -325,12 +327,12 @@ class SceneManager(BaseManager[Scene, Scene]):
             return scene
 
         return self._execute_db_operation(
-            "update scene", 
-            _update_scene, 
-            game_id=game_id, 
-            scene_id=scene_id, 
-            title=title, 
-            description=description
+            "update scene",
+            _update_scene,
+            game_id=game_id,
+            scene_id=scene_id,
+            title=title,
+            description=description,
         )
 
     def get_previous_scene(self, game_id: str, current_scene: Scene) -> Optional[Scene]:

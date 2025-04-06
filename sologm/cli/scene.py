@@ -108,7 +108,9 @@ def complete_scene() -> None:
 
 @scene_app.command("edit")
 def edit_scene(
-    scene_id: str = typer.Option(None, "--id", help="ID of the scene to edit (defaults to active scene)"),
+    scene_id: str = typer.Option(
+        None, "--id", help="ID of the scene to edit (defaults to active scene)"
+    ),
 ) -> None:
     """Edit the title and description of a scene."""
     game_manager = GameManager()
@@ -117,60 +119,60 @@ def edit_scene(
     try:
         # Get active game
         game_id, active_scene = scene_manager.validate_active_context(game_manager)
-        
+
         # If no scene_id provided, use the active scene
         if not scene_id:
             scene_id = active_scene.id
-            
+
         # Get the scene to edit
         scene = scene_manager.get_scene(game_id, scene_id)
         if not scene:
             console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
             raise typer.Exit(1)
-            
+
         # Prepare the text for editing
         # Format: Title on first line, blank line, then description
         original_text = f"{scene.title}\n\n{scene.description}"
-        
+
         # Use the editor utility
         from sologm.cli.utils.editor import edit_text
-        
+
         edited_text, was_modified = edit_text(
             original_text,
             console=console,
             message=f"Editing scene {scene_id}:\nEnter the title on the first line, followed by a blank line, then the description:",
             success_message="Scene updated successfully.",
             cancel_message="Scene unchanged.",
-            error_message="Could not open editor"
+            error_message="Could not open editor",
         )
-        
+
         if was_modified:
             # Parse the edited text
             lines = edited_text.split("\n")
             new_title = lines[0].strip()
-            
+
             # Description starts after the first blank line
             description_start = 2  # Default if no blank line found
             for i, line in enumerate(lines[1:], 1):
                 if not line.strip():
                     description_start = i + 1
                     break
-                    
+
             new_description = "\n".join(lines[description_start:]).strip()
-            
+
             # Validate input
             if not new_title:
                 console.print("[bold red]Error:[/] Scene title cannot be empty.")
                 raise typer.Exit(1)
-                
+
             # Update the scene
             updated_scene = scene_manager.update_scene(
                 game_id=game_id,
                 scene_id=scene_id,
                 title=new_title,
-                description=new_description
+                description=new_description,
             )
-            
+
             console.print(f"[bold green]Scene updated successfully![/]")
             display_scene_info(console, updated_scene)
         else:
