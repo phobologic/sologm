@@ -582,6 +582,7 @@ def _create_game_header_panel(game: Game) -> Panel:
         f"[{TEXT_STYLES['timestamp']}]{game.id}[/{TEXT_STYLES['timestamp']}]"
     )
 
+    # Instead of figuring out the console width by getting a console here, perhaps we should pass the console instance into the method _create_game_header_panel like we do with display_game_status? AI!
     # Create content with consistent styling
     # Truncate description to fit approximately 3 lines based on console width
     console_width = 80  # Default fallback width
