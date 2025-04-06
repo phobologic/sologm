@@ -202,21 +202,9 @@ Test Description"""
         assert "different" in retry_call[0][0].lower()
 
     def test_automatic_retry_on_parse_failure(
-        self, oracle_manager, mock_anthropic_client, test_game, test_scene, db_session
+        self, oracle_manager, mock_anthropic_client, test_game, test_scene
     ):
         """Test automatic retry when parsing fails."""
-        # Debug: Print initial state
-        from sologm.models.game import Game
-        from sologm.models.scene import Scene
-
-        games = db_session.query(Game).all()
-        scenes = db_session.query(Scene).all()
-        print("\n=== INITIAL STATE ===")
-        print(f"Test game ID: {test_game.id}")
-        print(f"Test scene ID: {test_scene.id}")
-        print(f"Games in DB: {[g.id for g in games]}")
-        print(f"Scenes in DB: {[s.id for s in scenes]}")
-
         # First response has no interpretations (bad format)
         # Second response has valid interpretations
         mock_anthropic_client.send_message.side_effect = [
@@ -226,27 +214,9 @@ Retry Description""",  # Second call - good format
         ]
 
         # This should automatically retry once
-        try:
-            result = oracle_manager.get_interpretations(
-                test_game.id, test_scene.id, "What happens?", "Mystery", 1
-            )
-
-            # Debug: Print final state if successful
-            games = db_session.query(Game).all()
-            scenes = db_session.query(Scene).all()
-            print("\n=== FINAL STATE (SUCCESS) ===")
-            print(f"Games in DB: {[g.id for g in games]}")
-            print(f"Scenes in DB: {[s.id for s in scenes]}")
-
-        except Exception as e:
-            # Debug: Print state after error
-            games = db_session.query(Game).all()
-            scenes = db_session.query(Scene).all()
-            print("\n=== FINAL STATE (ERROR) ===")
-            print(f"Error: {str(e)}")
-            print(f"Games in DB: {[g.id for g in games]}")
-            print(f"Scenes in DB: {[s.id for s in scenes]}")
-            raise
+        result = oracle_manager.get_interpretations(
+            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+        )
 
         # Verify we got the result from the second attempt
         assert mock_anthropic_client.send_message.call_count == 2
@@ -324,3 +294,33 @@ It also has multiple lines."""
         assert result.interpretations[0].title == "First Interpretation"
         assert "multiple lines" in result.interpretations[0].description
         assert result.interpretations[1].title == "Second Interpretation"
+        
+    def test_get_context_data(self, oracle_manager, test_game, test_scene):
+        """Test getting context data for interpretations."""
+        game, scene, events, previous = oracle_manager._get_context_data(
+            test_game.id, test_scene.id, 0, None
+        )
+        
+        assert game.id == test_game.id
+        assert scene.id == test_scene.id
+        assert isinstance(events, list)
+        assert previous is None
+        
+    def test_create_interpretation_set(self, oracle_manager, test_scene):
+        """Test creating interpretation set."""
+        parsed = [
+            {"title": "Test Title", "description": "Test Description"}
+        ]
+        
+        result = oracle_manager._create_interpretation_set(
+            test_scene.id, "Test context", "Test results", parsed, 0
+        )
+        
+        assert isinstance(result, InterpretationSet)
+        assert result.scene_id == test_scene.id
+        assert result.context == "Test context"
+        assert result.oracle_results == "Test results"
+        assert result.retry_attempt == 0
+        assert result.is_current is True
+        assert len(result.interpretations) == 1
+        assert result.interpretations[0].title == "Test Title"

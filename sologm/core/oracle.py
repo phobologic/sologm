@@ -267,6 +267,129 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             count,
         )
 
+    def _get_context_data(
+        self, game_id: str, scene_id: str, retry_attempt: int, previous_set_id: Optional[str]
+    ) -> Tuple[object, object, List[object], Optional[List[dict]]]:
+        """Get all context data needed for interpretation.
+
+        Args:
+            game_id: ID of the current game
+            scene_id: ID of the current scene
+            retry_attempt: Current retry attempt number
+            previous_set_id: ID of the previous interpretation set
+
+        Returns:
+            Tuple containing game, scene, recent events, and previous interpretations
+
+        Raises:
+            OracleError: If game or scene not found
+        """
+        def _get_data(session: Session) -> Tuple:
+            # Get game and scene
+            from sologm.models.game import Game
+            from sologm.models.scene import Scene
+            
+            game = session.query(Game).filter(Game.id == game_id).first()
+            if not game:
+                raise OracleError(f"Game {game_id} not found")
+                
+            scene = session.query(Scene).filter(
+                Scene.id == scene_id, Scene.game_id == game_id
+            ).first()
+            if not scene:
+                raise OracleError(f"Scene {scene_id} not found in game {game_id}")
+                
+            # Get recent events
+            recent_events = (
+                session.query(Event)
+                .filter(Event.scene_id == scene_id, Event.game_id == game_id)
+                .order_by(Event.created_at.desc())
+                .limit(5)
+                .all()
+            )
+            
+            # Get previous interpretations if this is a retry
+            previous_interpretations = None
+            if retry_attempt > 0 and previous_set_id:
+                previous_interps = (
+                    session.query(Interpretation)
+                    .filter(Interpretation.set_id == previous_set_id)
+                    .all()
+                )
+                if previous_interps:
+                    previous_interpretations = [
+                        {"title": interp.title, "description": interp.description}
+                        for interp in previous_interps
+                    ]
+                    
+            return game, scene, recent_events, previous_interpretations
+            
+        return self._execute_db_operation(
+            "get context data", _get_data
+        )
+
+    def _create_interpretation_set(
+        self, 
+        scene_id: str, 
+        context: str, 
+        oracle_results: str,
+        parsed_interpretations: List[dict], 
+        retry_attempt: int
+    ) -> InterpretationSet:
+        """Create interpretation set and interpretations in database.
+        
+        Args:
+            scene_id: ID of the scene
+            context: User's question or context
+            oracle_results: Oracle results to interpret
+            parsed_interpretations: List of parsed interpretations
+            retry_attempt: Current retry attempt number
+            
+        Returns:
+            InterpretationSet: The created interpretation set
+        """
+        def _create(session: Session) -> InterpretationSet:
+            # First, clear any current interpretation sets for this scene
+            current_sets = (
+                session.query(InterpretationSet)
+                .filter(
+                    InterpretationSet.scene_id == scene_id,
+                    InterpretationSet.is_current == True  # noqa: E712
+                )
+                .all()
+            )
+            
+            for current_set in current_sets:
+                current_set.is_current = False
+                
+            # Create interpretation set
+            interp_set = InterpretationSet.create(
+                scene_id=scene_id,
+                context=context,
+                oracle_results=oracle_results,
+                retry_attempt=retry_attempt,
+                is_current=True,
+            )
+            session.add(interp_set)
+            session.flush()  # Flush to get the ID
+            
+            # Create interpretations
+            for interp_data in parsed_interpretations:
+                interpretation = Interpretation.create(
+                    set_id=interp_set.id,
+                    title=interp_data["title"],
+                    description=interp_data["description"],
+                    is_selected=False,
+                )
+                session.add(interpretation)
+                
+            return interp_set
+            
+        return self._execute_db_operation(
+            "create interpretation set",
+            _create
+        )
+
     def _parse_interpretations(self, response_text: str) -> List[dict]:
         """Parse interpretations from Claude's response using Markdown format.
 
@@ -334,173 +457,69 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         # Get max_retries from config if not provided
         if max_retries is None:
             from sologm.utils.config import get_config
-
             config = get_config()
             max_retries = int(config.get("oracle_retries", 2))
-
-        def _get_interpretations(
-            session: Session,
-            game_id: str,
-            scene_id: str,
-            context: str,
-            oracle_results: str,
-            count: int,
-            retry_attempt: int,
-            max_retries: int,
-            previous_set_id: Optional[str],
-        ) -> InterpretationSet:
-            # First, clear any current interpretation sets for this scene
-            current_sets = (
-                session.query(InterpretationSet)
-                .filter(
-                    InterpretationSet.scene_id == scene_id,
-                    InterpretationSet.is_current == True,  # noqa: E712
-                )
-                .all()
-            )
-
-            for current_set in current_sets:
-                current_set.is_current = False
-
-            # Get game and scene details for the prompt
-            from sologm.models.game import Game
-            from sologm.models.scene import Scene
-
-            game = session.query(Game).filter(Game.id == game_id).first()
-            if not game:
-                raise OracleError(f"Game {game_id} not found")
-
-            scene = (
-                session.query(Scene)
-                .filter(Scene.id == scene_id, Scene.game_id == game_id)
-                .first()
-            )
-            if not scene:
-                raise OracleError(f"Scene {scene_id} not found in game {game_id}")
-
-            # Get recent events
-            recent_events = (
-                session.query(Event)
-                .filter(Event.scene_id == scene_id, Event.game_id == game_id)
-                .order_by(Event.created_at.desc())
-                .limit(5)
-                .all()
-            )
-
-            recent_event_descriptions = [event.description for event in recent_events]
-
-            # Get previous interpretations if this is a retry
-            previous_interpretations = None
-            if retry_attempt > 0 and previous_set_id:
-                previous_set = (
-                    session.query(InterpretationSet)
-                    .filter(InterpretationSet.id == previous_set_id)
-                    .first()
-                )
-                if previous_set:
-                    previous_interps = (
-                        session.query(Interpretation)
-                        .filter(Interpretation.set_id == previous_set_id)
-                        .all()
-                    )
-                    previous_interpretations = [
-                        {"title": interp.title, "description": interp.description}
-                        for interp in previous_interps
-                    ]
-
-            # Build prompt and get response
-            prompt = self._build_prompt(
-                game.description,
-                scene.description,
-                recent_event_descriptions,
-                context,
-                oracle_results,
-                count,
-                previous_interpretations,
-                retry_attempt,
-            )
-
-            # Get and parse response
-            logger.debug("Sending prompt to Claude API")
+        
+        # Try to get interpretations with automatic retry
+        for attempt in range(retry_attempt, retry_attempt + max_retries + 1):
             try:
+                # Get game and scene details, recent events, etc.
+                game, scene, recent_events, previous_interpretations = self._get_context_data(
+                    game_id, scene_id, attempt, previous_set_id
+                )
+                
+                # Build prompt and get response
+                prompt = self._build_prompt(
+                    game.description,
+                    scene.description,
+                    [event.description for event in recent_events],
+                    context,
+                    oracle_results,
+                    count,
+                    previous_interpretations,
+                    attempt
+                )
+                
+                # Get response from AI
+                logger.debug("Sending prompt to Claude API")
                 response = self.anthropic_client.send_message(prompt)
+                
+                # Parse interpretations
                 parsed = self._parse_interpretations(response)
                 logger.debug(f"Found {len(parsed)} interpretations")
-
-                # If no interpretations were parsed and we haven't exceeded max retries,
-                # try again with an incremented retry counter
-                if not parsed:
-                    if retry_attempt < max_retries:
-                        logger.warning(
-                            "Failed to parse interpretations (attempt "
-                            f"{retry_attempt + 1}/{max_retries + 1}). "
-                            "Retrying automatically."
-                        )
-                        # Return to outer function which will retry
-                        return self._retry_interpretations(
-                            session,
-                            game_id,
-                            scene_id,
-                            context,
-                            oracle_results,
-                            count,
-                            retry_attempt + 1,
-                            max_retries,
-                            previous_set_id,  # Just pass the previous_set_id as is
-                        )
-                    else:
-                        # We've reached max retries, raise error
-                        logger.warning(
-                            "Failed to parse any interpretations from response"
-                        )
-                        logger.debug(f"Raw response: {response}")
-                        raise OracleError(
-                            f"Failed to parse interpretations from AI response after "
-                            f"{retry_attempt + 1} attempts"
-                        )
-
+                
+                # If parsing succeeded, create and return interpretation set
+                if parsed:
+                    return self._create_interpretation_set(
+                        scene_id, context, oracle_results, 
+                        parsed, attempt
+                    )
+                
+                # If we're on the last attempt and parsing failed, raise error
+                if attempt >= retry_attempt + max_retries:
+                    logger.warning("Failed to parse any interpretations from response")
+                    logger.debug(f"Raw response: {response}")
+                    raise OracleError(
+                        f"Failed to parse interpretations from AI response after "
+                        f"{attempt + 1} attempts"
+                    )
+                    
+                # Otherwise, continue to next attempt
+                logger.warning(
+                    f"Failed to parse interpretations (attempt "
+                    f"{attempt + 1}/{retry_attempt + max_retries + 1}). "
+                    f"Retrying automatically."
+                )
+                
             except OracleError:
-                # Re-raise OracleErrors without wrapping them again
+                # Re-raise OracleErrors without wrapping them
                 raise
             except Exception as e:
                 # Wrap other exceptions in an OracleError
                 raise OracleError(f"Failed to get interpretations: {str(e)}") from e
-
-            # Create interpretation set
-            interp_set = InterpretationSet.create(
-                scene_id=scene_id,
-                context=context,
-                oracle_results=oracle_results,
-                retry_attempt=retry_attempt,
-                is_current=True,
-            )
-            session.add(interp_set)
-            session.flush()  # Flush to get the ID
-
-            # Create interpretations
-            for _, interp_data in enumerate(parsed):
-                interpretation = Interpretation.create(
-                    set_id=interp_set.id,
-                    title=interp_data["title"],
-                    description=interp_data["description"],
-                    is_selected=False,
-                )
-                session.add(interpretation)
-
-            return interp_set
-
-        return self._execute_db_operation(
-            "get interpretations",
-            _get_interpretations,
-            game_id,
-            scene_id,
-            context,
-            oracle_results,
-            count,
-            retry_attempt,
-            max_retries,
-            previous_set_id,
-        )
+        
+        # This should never be reached due to the error in the loop
+        raise OracleError("Failed to get interpretations after maximum retries")
 
     def select_interpretation(
         self,
@@ -578,52 +597,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             add_event,
         )
 
-    def _retry_interpretations(
-        self,
-        session: Session,
-        game_id: str,
-        scene_id: str,
-        context: str,
-        oracle_results: str,
-        count: int,
-        retry_attempt: int,
-        max_retries: int,
-        previous_set_id: Optional[str] = None,
-    ) -> InterpretationSet:
-        """Helper method to handle retrying interpretation generation.
-
-        This method is called from within _get_interpretations when a retry is needed.
-        It creates a new transaction to retry the operation.
-
-        Args:
-            session: The current database session
-            game_id: ID of the current game
-            scene_id: ID of the current scene
-            context: User's question or context
-            oracle_results: Oracle results to interpret
-            count: Number of interpretations to generate
-            retry_attempt: The current retry attempt number
-            max_retries: Maximum number of retries allowed
-            previous_set_id: ID of the previous interpretation set
-
-        Returns:
-            InterpretationSet: The generated interpretation set
-        """
-        # We need to create a new transaction for the retry
-        # Close the current transaction
-        session.rollback()
-
-        # Call get_interpretations again with incremented retry_attempt
-        return self.get_interpretations(
-            game_id=game_id,
-            scene_id=scene_id,
-            context=context,
-            oracle_results=oracle_results,
-            count=count,
-            retry_attempt=retry_attempt,
-            max_retries=max_retries,
-            previous_set_id=previous_set_id,
-        )
 
     def add_interpretation_event(
         self, scene_id: str, interpretation: Interpretation
