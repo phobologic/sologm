@@ -778,7 +778,7 @@ def _create_recent_oracle_panel(
         f"{selected_interp.description}\n\n"
         f"[{TEXT_STYLES['subtitle']}]Other options were:[/{TEXT_STYLES['subtitle']}]\n"
     )
-    
+
     # Add other interpretations that weren't selected
     for i, interp in enumerate(interp_set.interpretations, 1):
         if interp.id != selected_interp.id:
