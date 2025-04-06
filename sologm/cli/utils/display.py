@@ -181,21 +181,21 @@ def display_interpretation(
 
 
 def display_events_table(
-    console: Console, events: List[Event], scene_title: str
+    console: Console, events: List[Event], scene: Scene
 ) -> None:
     """Display events in a formatted table.
 
     Args:
         console: Rich console instance
         events: List of events to display
-        scene_title: Title of the scene
+        scene: The Scene to display events from.
     """
     logger.debug(
-        f"Displaying events table for scene '{scene_title}' with {len(events)} events"
+        f"Displaying events table for scene '{scene.title}' with {len(events)} events"
     )
     if not events:
-        logger.debug(f"No events to display for scene '{scene_title}'")
-        console.print(f"\nNo events in scene '{scene_title}'")
+        logger.debug(f"No events to display for scene '{scene.title}'")
+        console.print(f"\nNo events in scene '{scene.title}'")
         return
 
     logger.debug(f"Creating table with {len(events)} events")
@@ -221,7 +221,7 @@ def display_events_table(
     # Wrap the table in a panel with a title
     panel = Panel(
         table,
-        title=f"[{TEXT_STYLES['title']}]Events in scene '{scene_title}'[/{TEXT_STYLES['title']}]",
+        title=f"[{TEXT_STYLES['title']}]Events in game '{scene.game.name}', scene '{scene.title}'[/{TEXT_STYLES['title']}]",
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )

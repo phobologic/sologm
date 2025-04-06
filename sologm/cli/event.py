@@ -63,7 +63,7 @@ def list_events(
         )
         scene = scene_manager.get_scene(game_id, scene_id)
         logger.debug(f"Found {len(events)} events")
-        display_events_table(console, events, scene.title)
+        display_events_table(console, events, scene)
 
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")
