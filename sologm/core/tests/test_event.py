@@ -128,3 +128,49 @@ class TestEventManager:
         db_session.refresh(event)
         assert event.interpretation is not None
         assert event.interpretation.id == interpretation.id
+        
+    def test_get_event(self, event_manager, test_game, test_scene, create_test_event):
+        """Test getting an event by ID."""
+        # Create a test event
+        event = create_test_event(test_game.id, test_scene.id, "Test event to retrieve")
+        
+        # Get the event
+        retrieved_event = event_manager.get_event(event.id)
+        
+        # Verify the event was retrieved correctly
+        assert retrieved_event is not None
+        assert retrieved_event.id == event.id
+        assert retrieved_event.description == "Test event to retrieve"
+        
+    def test_get_nonexistent_event(self, event_manager):
+        """Test getting a nonexistent event."""
+        # Try to get a nonexistent event
+        event = event_manager.get_event("nonexistent-event-id")
+        
+        # Verify no event was found
+        assert event is None
+        
+    def test_update_event(self, event_manager, test_game, test_scene, create_test_event):
+        """Test updating an event's description."""
+        # Create a test event
+        event = create_test_event(test_game.id, test_scene.id, "Original description")
+        
+        # Update the event
+        updated_event = event_manager.update_event(event.id, "Updated description")
+        
+        # Verify the event was updated correctly
+        assert updated_event.id == event.id
+        assert updated_event.description == "Updated description"
+        
+        # Verify the event was updated in the database
+        retrieved_event = event_manager.get_event(event.id)
+        assert retrieved_event.description == "Updated description"
+        
+    def test_update_nonexistent_event(self, event_manager):
+        """Test updating a nonexistent event."""
+        # Try to update a nonexistent event
+        with pytest.raises(EventError) as exc:
+            event_manager.update_event("nonexistent-event-id", "Updated description")
+        
+        # Verify the correct error was raised
+        assert "Event with ID 'nonexistent-event-id' not found" in str(exc.value)

@@ -110,6 +110,48 @@ class EventManager(BaseManager[Event, Event]):
 
         return game.id, scene.id
 
+    def get_event(self, event_id: str) -> Optional[Event]:
+        """Get an event by ID.
+        
+        Args:
+            event_id: ID of the event to retrieve
+            
+        Returns:
+            The event if found, None otherwise
+        """
+        return self._execute_db_operation(
+            "get event",
+            lambda session: session.query(Event).filter(Event.id == event_id).first(),
+        )
+
+    def update_event(self, event_id: str, description: str) -> Event:
+        """Update an event's description.
+        
+        Args:
+            event_id: ID of the event to update
+            description: New description for the event
+            
+        Returns:
+            The updated event
+            
+        Raises:
+            EventError: If the event is not found
+        """
+        def _update_event(session: Session) -> Event:
+            event = session.query(Event).filter(Event.id == event_id).first()
+            if not event:
+                raise EventError(f"Event with ID '{event_id}' not found")
+            
+            event.description = description
+            session.add(event)
+            return event
+            
+        try:
+            return self._execute_db_operation("update event", _update_event)
+        except Exception as e:
+            self.logger.error(f"Failed to update event: {str(e)}")
+            raise EventError(f"Failed to update event: {str(e)}") from e
+
     def list_events(
         self, game_id: str, scene_id: str, limit: Optional[int] = None
     ) -> List[Event]:
