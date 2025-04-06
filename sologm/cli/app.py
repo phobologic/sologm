@@ -12,7 +12,15 @@ console = Console()
 
 
 def cleanup_database(*args, **kwargs) -> None:
-    """Clean up database resources when the application exits."""
+    """Clean up database resources when the application exits.
+    
+    This function is used as a Typer result callback and receives the same arguments
+    as the main() function in main.py, but doesn't use them.
+    
+    Args:
+        *args: Variable positional arguments from Typer (discarded).
+        **kwargs: Variable keyword arguments from Typer (discarded).
+    """
     from sologm.database.session import DatabaseSession
 
     logger.debug("Cleaning up database resources")
