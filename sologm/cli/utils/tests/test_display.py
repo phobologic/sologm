@@ -20,6 +20,7 @@ from sologm.cli.utils.display import (
     display_games_table,
     display_interpretation,
     display_interpretation_set,
+    display_scenes_table,
     truncate_text,
     format_metadata,
     BORDER_STYLES,
