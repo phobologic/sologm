@@ -25,7 +25,7 @@ def interpret_oracle(
         ..., "--results", "-r", help="Oracle results to interpret"
     ),
     count: int = typer.Option(
-        3, "--count", "-n", help="Number of interpretations to generate"
+        None, "--count", "-n", help="Number of interpretations to generate"
     ),
     show_prompt: bool = typer.Option(
         False,
@@ -38,6 +38,13 @@ def interpret_oracle(
         game_manager = GameManager()
         scene_manager = SceneManager()
         oracle_manager = OracleManager()
+        
+        # Use the provided count or default to the config value
+        if count is None:
+            from sologm.utils.config import get_config
+
+            config = get_config()
+            count = int(config.get("default_interpretations", 5))
 
         if show_prompt:
             # Get the prompt that would be sent to the AI
