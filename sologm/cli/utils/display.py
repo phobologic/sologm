@@ -370,7 +370,7 @@ def display_game_info(
     )
 
     panel = Panel(
-        panel_content, title=panel_title, border_style=BORDER_STYLES["game_info"]
+        panel_content, title=panel_title, border_style=BORDER_STYLES["game_info"], title_align="left"
     )
 
     console.print(panel)
