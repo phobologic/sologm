@@ -78,6 +78,9 @@ def retry_interpretation(
     count: int = typer.Option(
         None, "--count", "-c", help="Number of interpretations to generate"
     ),
+    edit_context: bool = typer.Option(
+        False, "--edit", "-e", help="Edit the context before retrying"
+    ),
 ) -> None:
     """Request new interpretations using current context and results."""
     try:
@@ -103,13 +106,34 @@ def retry_interpretation(
 
             config = get_config()
             count = int(config.get("default_interpretations", 5))
+        
+        # Get the current context
+        context = current_interp_set.context
+        oracle_results = current_interp_set.oracle_results
+        
+        # If edit_context flag is set or user confirms editing
+        if edit_context or typer.confirm("Would you like to edit the context before retrying?"):
+            # Show the current context
+            console.print("\n[bold blue]Current context:[/bold blue]")
+            console.print(context)
+            
+            # Open the editor with the current context
+            import click
+            new_context = click.edit(context)
+            
+            # If the user saved changes (didn't abort)
+            if new_context is not None:
+                context = new_context.strip()
+                console.print("\n[green]Context updated.[/green]")
+            else:
+                console.print("\n[yellow]Context unchanged.[/yellow]")
 
         console.print("\nGenerating new interpretations...", style="bold blue")
         new_interp_set = oracle_manager.get_interpretations(
             game_id,
             scene_id,
-            current_interp_set.context,
-            current_interp_set.oracle_results,
+            context,  # Use the potentially updated context
+            oracle_results,
             count=count,
             retry_attempt=current_interp_set.retry_attempt + 1,
             previous_set_id=current_interp_set.id,  # Pass the current set ID
