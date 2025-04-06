@@ -59,7 +59,9 @@ class Config:
 
         # Create default config if it doesn't exist
         if not self.config_path.exists():
-            logger.debug(f"Config file not found, creating default at: {self.config_path}")
+            logger.debug(
+                f"Config file not found, creating default at: {self.config_path}"
+            )
             self._create_default_config()
         else:
             logger.debug(f"Loading existing config from: {self.config_path}")
@@ -120,7 +122,9 @@ class Config:
             api_env_key = f"{key[:-8].upper()}_API_KEY"
             api_env_value = os.environ.get(api_env_key)
             if api_env_value is not None:
-                logger.debug(f"Using environment variable {api_env_key} for API key: {key}")
+                logger.debug(
+                    f"Using environment variable {api_env_key} for API key: {key}"
+                )
                 return api_env_value
 
         # Fall back to config file
