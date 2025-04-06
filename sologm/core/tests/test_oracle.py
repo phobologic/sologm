@@ -50,12 +50,14 @@ class TestOracle:
         """Test building prompts for Claude."""
         # Mock the OraclePrompts.build_interpretation_prompt method
         from sologm.core.prompts.oracle import OraclePrompts
-        
+
         def mock_build_prompt(*args, **kwargs):
             return "Mocked prompt"
-            
-        monkeypatch.setattr(OraclePrompts, "build_interpretation_prompt", mock_build_prompt)
-        
+
+        monkeypatch.setattr(
+            OraclePrompts, "build_interpretation_prompt", mock_build_prompt
+        )
+
         prompt = oracle_manager._build_prompt(
             "Test Game",
             "Test Scene",

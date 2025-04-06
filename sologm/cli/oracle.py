@@ -56,7 +56,7 @@ def interpret_oracle(
 
         # Build prompt
         from sologm.core.prompts.oracle import OraclePrompts
-        
+
         prompt = OraclePrompts.build_interpretation_prompt(
             game.description,
             scene.description,
@@ -111,6 +111,7 @@ def retry_interpretation(
         # Use the provided count or default to the config value
         if count is None:
             from sologm.utils.config import get_config
+
             config = get_config()
             count = int(config.get("default_interpretations", 5))
 
@@ -122,7 +123,7 @@ def retry_interpretation(
             current_interp_set.oracle_results,
             count=count,
             retry_attempt=current_interp_set.retry_attempt + 1,
-            previous_set_id=current_interp_set.id  # Pass the current set ID
+            previous_set_id=current_interp_set.id,  # Pass the current set ID
         )
 
         display.display_interpretation_set(console, new_interp_set)

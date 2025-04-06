@@ -9,10 +9,10 @@ class OraclePrompts:
     @staticmethod
     def format_events(recent_events: List[str]) -> str:
         """Format recent events for the prompt.
-        
+
         Args:
             recent_events: List of recent event descriptions
-            
+
         Returns:
             Formatted events text for the prompt
         """
@@ -23,7 +23,7 @@ class OraclePrompts:
     @staticmethod
     def get_example_format() -> str:
         """Get example format for interpretations.
-        
+
         Returns:
             Example interpretations to show the AI the expected format
         """
@@ -38,17 +38,17 @@ The lack of forced entry and the selective theft of only the special brandy barr
         previous_interpretations: Optional[List[dict]], retry_attempt: int
     ) -> str:
         """Format previous interpretations for the prompt.
-        
+
         Args:
             previous_interpretations: List of previous interpretations to avoid repeating
             retry_attempt: Current retry attempt number
-            
+
         Returns:
             Formatted previous interpretations section
         """
         if not previous_interpretations or retry_attempt <= 0:
             return ""
-            
+
         text = "\n=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===\n\n"
         for interp in previous_interpretations:
             text += f"## {interp['title']}\n{interp['description']}\n\n"
@@ -58,10 +58,10 @@ The lack of forced entry and the selective theft of only the special brandy barr
     @staticmethod
     def get_retry_text(retry_attempt: int) -> str:
         """Get retry-specific instructions.
-        
+
         Args:
             retry_attempt: Current retry attempt number
-            
+
         Returns:
             Text with retry-specific instructions
         """
@@ -82,7 +82,7 @@ The lack of forced entry and the selective theft of only the special brandy barr
         retry_attempt: int = 0,
     ) -> str:
         """Build the complete prompt for interpretation generation.
-        
+
         Args:
             game_description: Description of the current game
             scene_description: Description of the current scene
@@ -92,7 +92,7 @@ The lack of forced entry and the selective theft of only the special brandy barr
             count: Number of interpretations to generate
             previous_interpretations: Optional list of previous interpretations to avoid
             retry_attempt: Current retry attempt number
-            
+
         Returns:
             Complete prompt for the AI
         """
@@ -102,7 +102,7 @@ The lack of forced entry and the selective theft of only the special brandy barr
             previous_interpretations, retry_attempt
         )
         retry_text = cls.get_retry_text(retry_attempt)
-        
+
         return f"""You are interpreting oracle results for a solo RPG player.
 
 Game: {game_description}
