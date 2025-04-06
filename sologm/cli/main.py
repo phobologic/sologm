@@ -71,8 +71,8 @@ def main(
         from sologm.database import init_db
 
         # Initialize the database - this will use the singleton pattern internally
-        _ = init_db() # Returns a session, but not needed here.
-        
+        _ = init_db()  # Returns a session, but not needed here.
+
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         console.print("[bold red]Database initialization failed.[/bold red]")
@@ -83,7 +83,6 @@ def main(
         raise typer.Exit(code=1) from e
 
     logger.debug("Exiting main without errors.")
-
 
 
 if __name__ == "__main__":

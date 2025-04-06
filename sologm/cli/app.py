@@ -9,10 +9,11 @@ logger = logging.getLogger(__name__)
 # Create console for rich output
 console = Console()
 
+
 def cleanup_database() -> None:
     """Clean up database resources when the application exits."""
     from sologm.database.session import DatabaseSession
-    
+
     logger.debug("Cleaning up database resources")
     try:
         db_session = DatabaseSession.get_instance()
@@ -22,11 +23,12 @@ def cleanup_database() -> None:
     except Exception as e:
         logger.error(f"Error cleaning up database resources: {e}")
 
+
 # Create Typer app with cleanup callback
 app = typer.Typer(
     name="sologm",
     help="Solo RPG Helper command-line application",
     add_completion=True,
     no_args_is_help=True,
-    result_callback=cleanup_database
+    result_callback=cleanup_database,
 )
