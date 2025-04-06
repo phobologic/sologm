@@ -215,7 +215,7 @@ def display_events_table(
         table.add_row(
             event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             event.source,
-            truncate_text(event.description, max_length=80),
+            event.description,  # Show full description without truncation
         )
 
     # Wrap the table in a panel with a title
