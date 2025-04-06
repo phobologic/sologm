@@ -209,7 +209,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             events_text = "\n".join([f"- {event}" for event in recent_events])
 
         # Example format to show Claude
-        example_format = f"""## The Mysterious Footprints
+        example_format = """## The Mysterious Footprints
 The footprints suggest someone sneaked into the cellar during the night. Based on their size and depth, they likely belong to a heavier individual carrying something substantial - possibly the stolen brandy barrel.
 
 ## An Inside Job
@@ -268,7 +268,8 @@ Important:
         cleaned_text = re.sub(r"```markdown|```", "", response_text)
 
         # Parse the interpretations using regex
-        # This pattern matches a level 2 header (##) followed by text until the next level 2 header or end of string
+        # This pattern matches a level 2 header (##) followed by text until
+        # the next level 2 header or end of string
         pattern = r"## (.*?)\n(.*?)(?=\n## |$)"
         matches = re.findall(pattern, cleaned_text, re.DOTALL)
 
@@ -338,21 +339,9 @@ Important:
             for current_set in current_sets:
                 current_set.is_current = False
 
-            # Debug: Print DB state at start of operation
+            # Get game and scene details for the prompt
             from sologm.models.game import Game
             from sologm.models.scene import Scene
-
-            games = session.query(Game).all()
-            scenes = session.query(Scene).all()
-            print(
-                f"\n=== DB STATE IN _get_interpretations (attempt {retry_attempt}) ==="
-            )
-            print(f"Looking for game_id: {game_id}")
-            print(f"Looking for scene_id: {scene_id}")
-            print(f"Games in DB: {[g.id for g in games]}")
-            print(f"Scenes in DB: {[s.id for s in scenes]}")
-
-            # Get game and scene details for the prompt
 
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
@@ -406,8 +395,9 @@ Important:
                 # try again with an incremented retry counter
                 if not parsed and retry_attempt < max_retries:
                     logger.warning(
-                        f"Failed to parse interpretations (attempt {retry_attempt + 1}/{max_retries + 1}). "
-                        f"Retrying automatically."
+                        "Failed to parse interpretations (attempt "
+                        f"{retry_attempt + 1}/{max_retries + 1}). "
+                        "Retrying automatically."
                     )
                     # Return to outer function which will retry
                     return self._retry_interpretations(
@@ -430,15 +420,17 @@ Important:
                     )
 
             except Exception as e:
-                # If this is a parsing error and we haven't exceeded max retries, try again
+                # If this is a parsing error and we haven't exceeded max
+                # retries, try again
                 if (
                     isinstance(e, OracleError)
                     and "Failed to parse" in str(e)
                     and retry_attempt < max_retries
                 ):
                     logger.warning(
-                        f"Error parsing interpretations (attempt {retry_attempt + 1}/{max_retries + 1}). "
-                        f"Retrying automatically."
+                        "Error parsing interpretations (attempt "
+                        f"{retry_attempt + 1}/{max_retries + 1}). "
+                        "Retrying automatically."
                     )
                     # Return to outer function which will retry
                     return self._retry_interpretations(
@@ -595,26 +587,9 @@ Important:
         Returns:
             InterpretationSet: The generated interpretation set
         """
-        # Debug: Print DB state before rollback
-        from sologm.models.game import Game
-        from sologm.models.scene import Scene
-
-        games = session.query(Game).all()
-        scenes = session.query(Scene).all()
-        print(f"\n=== DB STATE BEFORE ROLLBACK (attempt {retry_attempt}) ===")
-        print(f"Games in DB: {[g.id for g in games]}")
-        print(f"Scenes in DB: {[s.id for s in scenes]}")
-
         # We need to create a new transaction for the retry
         # Close the current transaction
         session.rollback()
-
-        # Debug: Print DB state after rollback
-        games = session.query(Game).all()
-        scenes = session.query(Scene).all()
-        print(f"\n=== DB STATE AFTER ROLLBACK (attempt {retry_attempt}) ===")
-        print(f"Games in DB: {[g.id for g in games]}")
-        print(f"Scenes in DB: {[s.id for s in scenes]}")
 
         # Call get_interpretations again with incremented retry_attempt
         return self.get_interpretations(
