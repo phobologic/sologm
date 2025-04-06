@@ -447,8 +447,7 @@ Important:
                             count,
                             retry_attempt + 1,
                             max_retries,
-                            previous_set_id
-                            or interp_set.id,  # Pass the previous set ID
+                            previous_set_id,  # Just pass the previous_set_id as is
                         )
                     else:
                         # We've reached max retries, raise error
