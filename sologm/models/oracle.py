@@ -97,7 +97,7 @@ class Interpretation(Base, TimestampMixin):
             A new Interpretation instance.
         """
         from sologm.models.utils import slugify
-        
+
         return cls(
             id=str(uuid.uuid4()),
             set_id=set_id,
