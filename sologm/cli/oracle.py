@@ -122,14 +122,21 @@ def retry_interpretation(
             # Open the editor with the current context
             import click
 
-            new_context = click.edit(context)
-
-            # If the user saved changes (didn't abort)
-            if new_context is not None:
-                context = new_context.strip()
-                console.print("\n[green]Context updated.[/green]")
-            else:
-                console.print("\n[yellow]Context unchanged.[/yellow]")
+            try:
+                new_context = click.edit(context)
+                
+                # If the user saved changes (didn't abort)
+                if new_context is not None:
+                    context = new_context.strip()
+                    console.print("\n[green]Context updated.[/green]")
+                else:
+                    console.print("\n[yellow]Context unchanged.[/yellow]")
+            except click.UsageError as e:
+                console.print(f"\n[red]Could not open editor: {str(e)}[/red]")
+                console.print(
+                    "[yellow]Continuing with original context. To use this feature, "
+                    "set the EDITOR environment variable to your preferred text editor.[/yellow]"
+                )
 
         console.print("\nGenerating new interpretations...", style="bold blue")
         new_interp_set = oracle_manager.get_interpretations(
