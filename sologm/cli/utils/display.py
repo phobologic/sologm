@@ -633,41 +633,43 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
 
 
 def _create_scene_panels_grid(
-    game: Game, 
-    active_scene: Optional[Scene], 
+    game: Game,
+    active_scene: Optional[Scene],
     scene_manager: Optional[SceneManager],
-    console: Optional[Console] = None
+    console: Optional[Console] = None,
 ) -> Table:
     """Create a grid containing current and previous scene panels.
-    
+
     Args:
         game: The game to display information for
         active_scene: The currently active scene, if any
         scene_manager: Optional scene manager for retrieving previous scene
         console: Optional console instance to determine width for text truncation
-        
+
     Returns:
         A Table grid containing the scene panels
     """
     logger.debug(f"Creating scene panels grid for game {game.id}")
-    
+
     # Calculate truncation length for scene descriptions
     console_width = 80  # Default fallback width
     if console:
         console_width = console.width
         logger.debug(f"Using provided console width: {console_width}")
-    
+
     # For scene descriptions in a two-column layout, use about 1/3 of console width
     # This accounts for the panel taking up roughly half the screen, minus borders/padding
     chars_per_line = max(30, int(console_width / 3))
     # Allow for about 4 lines of text
     max_desc_length = chars_per_line * 4
-    
+
     # Create current scene panel with consistent styling
     scenes_content = ""
     if active_scene:
         logger.debug(f"Including active scene {active_scene.id} in panel")
-        truncated_description = truncate_text(active_scene.description, max_length=max_desc_length)
+        truncated_description = truncate_text(
+            active_scene.description, max_length=max_desc_length
+        )
         logger.debug(
             f"Truncated active scene description from {len(active_scene.description)} to {len(truncated_description)} chars"
         )
@@ -700,7 +702,9 @@ def _create_scene_panels_grid(
     prev_scene_content = ""
     if prev_scene:
         logger.debug(f"Including previous scene {prev_scene.id} in panel")
-        truncated_description = truncate_text(prev_scene.description, max_length=max_desc_length)
+        truncated_description = truncate_text(
+            prev_scene.description, max_length=max_desc_length
+        )
         logger.debug(
             f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars"
         )
