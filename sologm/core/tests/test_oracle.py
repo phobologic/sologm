@@ -66,6 +66,32 @@ class TestOracle:
         assert "3 different interpretations" in prompt
         assert "## [Title of first interpretation]" in prompt
         assert "Do not number the interpretations" in prompt
+        
+    def test_build_prompt_with_previous_interpretations(self, oracle_manager) -> None:
+        """Test building prompts with previous interpretations."""
+        previous_interpretations = [
+            {"title": "Previous Title 1", "description": "Previous Description 1"},
+            {"title": "Previous Title 2", "description": "Previous Description 2"},
+        ]
+        
+        prompt = oracle_manager._build_prompt(
+            "Test Game",
+            "Test Scene",
+            ["Event 1", "Event 2"],
+            "What happens next?",
+            "Mystery, Danger",
+            3,
+            previous_interpretations=previous_interpretations,
+            retry_attempt=1,
+        )
+        
+        assert "=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===" in prompt
+        assert "## Previous Title 1" in prompt
+        assert "Previous Description 1" in prompt
+        assert "## Previous Title 2" in prompt
+        assert "Previous Description 2" in prompt
+        assert "=== END OF PREVIOUS INTERPRETATIONS ===" in prompt
+        assert "retry attempt #2" in prompt
 
     def test_parse_interpretations(self, oracle_manager) -> None:
         """Test parsing Claude's response."""

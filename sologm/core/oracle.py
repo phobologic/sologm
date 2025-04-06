@@ -222,12 +222,13 @@ The lack of forced entry and the selective theft of only the special brandy barr
         previous_interps_text = ""
         if previous_interpretations and retry_attempt > 0:
             previous_interps_text = (
-                "Previous interpretations (please provide different ideas):\n\n"
+                "\n=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===\n\n"
             )
             for interp in previous_interpretations:
                 previous_interps_text += (
                     f"## {interp['title']}\n{interp['description']}\n\n"
                 )
+            previous_interps_text += "=== END OF PREVIOUS INTERPRETATIONS ===\n\n"
 
         retry_text = ""
         if retry_attempt > 0:
