@@ -74,6 +74,7 @@ def list_scenes() -> None:
 
     # Use the display helper function
     from sologm.cli.utils.display import display_scenes_table
+
     display_scenes_table(console, scenes, active_scene_id)
 
 
