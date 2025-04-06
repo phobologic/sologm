@@ -59,34 +59,38 @@ def edit_event(
         game_id, scene_id = event_manager.validate_active_context(
             game_manager, scene_manager
         )
-        
+
         # Get the event
         event = event_manager.get_event(event_id)
         if not event:
             console.print(f"[red]Error:[/] Event with ID '{event_id}' not found")
             raise typer.Exit(1)
-            
+
         # Check if event belongs to current scene
         if event.scene_id != scene_id:
-            console.print(f"[red]Error:[/] Event '{event_id}' does not belong to the current scene")
+            console.print(
+                f"[red]Error:[/] Event '{event_id}' does not belong to the current scene"
+            )
             raise typer.Exit(1)
-            
+
         # Use the editor utility to edit the event description
         from sologm.cli.utils.editor import edit_text
-        
+
         edited_text, was_modified = edit_text(
             event.description,
             console=console,
             message=f"Editing event {event_id}:",
             success_message="Event updated successfully.",
             cancel_message="Event unchanged.",
-            error_message="Could not open editor"
+            error_message="Could not open editor",
         )
-        
+
         # Update the event if it was modified
         if was_modified:
             updated_event = event_manager.update_event(event_id, edited_text)
-            console.print(f"\nUpdated event in scene '{scene_manager.get_scene(game_id, scene_id).title}':")
+            console.print(
+                f"\nUpdated event in scene '{scene_manager.get_scene(game_id, scene_id).title}':"
+            )
             console.print(f"[green]{updated_event.description}[/]")
         else:
             console.print("[yellow]No changes made to the event.[/yellow]")

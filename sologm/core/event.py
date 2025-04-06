@@ -112,10 +112,10 @@ class EventManager(BaseManager[Event, Event]):
 
     def get_event(self, event_id: str) -> Optional[Event]:
         """Get an event by ID.
-        
+
         Args:
             event_id: ID of the event to retrieve
-            
+
         Returns:
             The event if found, None otherwise
         """
@@ -126,26 +126,27 @@ class EventManager(BaseManager[Event, Event]):
 
     def update_event(self, event_id: str, description: str) -> Event:
         """Update an event's description.
-        
+
         Args:
             event_id: ID of the event to update
             description: New description for the event
-            
+
         Returns:
             The updated event
-            
+
         Raises:
             EventError: If the event is not found
         """
+
         def _update_event(session: Session) -> Event:
             event = session.query(Event).filter(Event.id == event_id).first()
             if not event:
                 raise EventError(f"Event with ID '{event_id}' not found")
-            
+
             event.description = description
             session.add(event)
             return event
-            
+
         try:
             return self._execute_db_operation("update event", _update_event)
         except Exception as e:
