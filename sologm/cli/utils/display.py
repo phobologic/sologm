@@ -204,14 +204,15 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
     )
 
     # Add columns with consistent styling
+    table.add_column("ID", style=TEXT_STYLES["timestamp"])
     table.add_column("Time", style=TEXT_STYLES["timestamp"])
     table.add_column("Source", style=TEXT_STYLES["category"])
     table.add_column("Description")
 
-    # Lets add the event.id to the table, in a similar style to how we do with scene listing. AI!
     # Add rows with consistent formatting
     for event in events:
         table.add_row(
+            event.id,
             event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             event.source,
             event.description,  # Show full description without truncation
