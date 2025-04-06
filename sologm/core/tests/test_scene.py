@@ -280,6 +280,59 @@ class TestSceneManager:
         # Test get_previous_scene
         prev_scene = scene_manager.get_previous_scene(test_game.id, scene3)
         assert prev_scene.id == scene2.id
+        
+    def test_update_scene(self, scene_manager, test_game) -> None:
+        """Test updating a scene's title and description."""
+        # Create a test scene
+        scene = scene_manager.create_scene(
+            game_id=test_game.id,
+            title="Original Title",
+            description="Original description",
+        )
+        
+        # Update the scene
+        updated_scene = scene_manager.update_scene(
+            game_id=test_game.id,
+            scene_id=scene.id,
+            title="Updated Title",
+            description="Updated description",
+        )
+        
+        # Verify the scene was updated
+        assert updated_scene.id == scene.id
+        assert updated_scene.title == "Updated Title"
+        assert updated_scene.description == "Updated description"
+        
+        # Verify the scene was updated in the database
+        retrieved_scene = scene_manager.get_scene(test_game.id, scene.id)
+        assert retrieved_scene.title == "Updated Title"
+        assert retrieved_scene.description == "Updated description"
+
+    def test_update_scene_duplicate_title(self, scene_manager, test_game) -> None:
+        """Test updating a scene with a duplicate title fails."""
+        # Create two scenes
+        scene1 = scene_manager.create_scene(
+            game_id=test_game.id,
+            title="First Scene",
+            description="First description",
+        )
+        scene2 = scene_manager.create_scene(
+            game_id=test_game.id,
+            title="Second Scene",
+            description="Second description",
+        )
+        
+        # Try to update scene2 with scene1's title
+        with pytest.raises(
+            SceneError,
+            match="A scene with title 'First Scene' already exists in this game",
+        ):
+            scene_manager.update_scene(
+                game_id=test_game.id,
+                scene_id=scene2.id,
+                title="First Scene",
+                description="Updated description",
+            )
 
     def test_validate_active_context(self, scene_manager, game_manager, test_game):
         """Test validating active game and scene context."""

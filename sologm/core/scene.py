@@ -269,6 +269,70 @@ class SceneManager(BaseManager[Scene, Scene]):
             "set current scene", _set_current_scene, game_id=game_id, scene_id=scene_id
         )
 
+    def update_scene(self, game_id: str, scene_id: str, title: str, description: str) -> Scene:
+        """Update a scene's title and description.
+
+        Args:
+            game_id: ID of the game the scene belongs to
+            scene_id: ID of the scene to update
+            title: New title for the scene
+            description: New description for the scene
+
+        Returns:
+            The updated Scene object
+
+        Raises:
+            SceneError: If there's an error updating the scene
+        """
+        logger.debug(f"Updating scene {scene_id} in game {game_id}")
+
+        def _update_scene(
+            session: Session, game_id: str, scene_id: str, title: str, description: str
+        ) -> Scene:
+            # Get the scene to make sure it exists
+            scene = (
+                session.query(Scene)
+                .filter(and_(Scene.game_id == game_id, Scene.id == scene_id))
+                .first()
+            )
+
+            if not scene:
+                raise SceneError(f"Scene {scene_id} not found in game {game_id}")
+
+            # Check for duplicate titles (only if title is changing)
+            if scene.title != title:
+                existing = (
+                    session.query(Scene)
+                    .filter(
+                        and_(
+                            Scene.game_id == game_id, 
+                            Scene.title.ilike(title),
+                            Scene.id != scene_id
+                        )
+                    )
+                    .first()
+                )
+
+                if existing:
+                    raise SceneError(
+                        f"A scene with title '{title}' already exists in this game"
+                    )
+
+            # Update the scene
+            scene.title = title
+            scene.description = description
+            session.add(scene)
+            return scene
+
+        return self._execute_db_operation(
+            "update scene", 
+            _update_scene, 
+            game_id=game_id, 
+            scene_id=scene_id, 
+            title=title, 
+            description=description
+        )
+
     def get_previous_scene(self, game_id: str, current_scene: Scene) -> Optional[Scene]:
         """Get the scene that comes before the current scene in sequence.
 
