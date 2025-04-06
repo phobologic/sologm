@@ -341,14 +341,17 @@ Important:
             # Debug: Print DB state at start of operation
             from sologm.models.game import Game
             from sologm.models.scene import Scene
+
             games = session.query(Game).all()
             scenes = session.query(Scene).all()
-            print(f"\n=== DB STATE IN _get_interpretations (attempt {retry_attempt}) ===")
+            print(
+                f"\n=== DB STATE IN _get_interpretations (attempt {retry_attempt}) ==="
+            )
             print(f"Looking for game_id: {game_id}")
             print(f"Looking for scene_id: {scene_id}")
             print(f"Games in DB: {[g.id for g in games]}")
             print(f"Scenes in DB: {[s.id for s in scenes]}")
-            
+
             # Get game and scene details for the prompt
 
             game = session.query(Game).filter(Game.id == game_id).first()
@@ -595,16 +598,17 @@ Important:
         # Debug: Print DB state before rollback
         from sologm.models.game import Game
         from sologm.models.scene import Scene
+
         games = session.query(Game).all()
         scenes = session.query(Scene).all()
         print(f"\n=== DB STATE BEFORE ROLLBACK (attempt {retry_attempt}) ===")
         print(f"Games in DB: {[g.id for g in games]}")
         print(f"Scenes in DB: {[s.id for s in scenes]}")
-        
+
         # We need to create a new transaction for the retry
         # Close the current transaction
         session.rollback()
-        
+
         # Debug: Print DB state after rollback
         games = session.query(Game).all()
         scenes = session.query(Scene).all()
