@@ -353,14 +353,17 @@ def _create_game_header_panel(game: Game) -> Panel:
     # Access scenes relationship directly
     scene_count = len(game.scenes)
 
+    # Create a title with brighter colors for name and slug
+    panel_title = f"[bold bright_blue]{game.name}[/bold bright_blue] ([bold cyan]{game.slug}[/bold cyan] {game.id})"
+    
+    # Simplify the content since we moved the name/slug/id to the title
     game_info = (
-        f"[bold]{game.name}[/bold] ([bold]{game.slug}[/bold] {game.id})\n"
         f"[dim]{game.description}[/dim]\n"
         f"Created: {game.created_at.strftime('%Y-%m-%d')} • "
         f"Scenes: {scene_count}"
     )
     logger.debug("Game header panel created")
-    return Panel(game_info, expand=True, border_style="blue")
+    return Panel(game_info, title=panel_title, expand=True, border_style="blue")
 
 
 def _create_scene_panels_grid(
