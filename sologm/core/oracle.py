@@ -413,7 +413,9 @@ Important:
                         )
                     else:
                         # We've reached max retries, raise error
-                        logger.warning("Failed to parse any interpretations from response")
+                        logger.warning(
+                            "Failed to parse any interpretations from response"
+                        )
                         logger.debug(f"Raw response: {response}")
                         raise OracleError(
                             f"Failed to parse interpretations from AI response after "
