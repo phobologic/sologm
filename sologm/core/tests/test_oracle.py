@@ -122,14 +122,8 @@ Test Description"""
     ) -> None:
         """Test selecting an interpretation."""
         # Configure mock to return string response
-        response_text = """=== BEGIN INTERPRETATIONS ===
-
---- INTERPRETATION 1 ---
-TITLE: Test Title
-DESCRIPTION: Test Description
---- END INTERPRETATION 1 ---
-
-=== END INTERPRETATIONS ==="""
+        response_text = """## Test Title
+Test Description"""
         mock_anthropic_client.send_message.return_value = response_text
 
         # First create an interpretation set
@@ -177,14 +171,8 @@ DESCRIPTION: Test Description
     ) -> None:
         """Test getting interpretations with retry attempt."""
         # Configure mock to return string response
-        response_text = """=== BEGIN INTERPRETATIONS ===
-
---- INTERPRETATION 1 ---
-TITLE: Test Title
-DESCRIPTION: Test Description
---- END INTERPRETATION 1 ---
-
-=== END INTERPRETATIONS ==="""
+        response_text = """## Test Title
+Test Description"""
         mock_anthropic_client.send_message.return_value = response_text
 
         # First interpretation request
