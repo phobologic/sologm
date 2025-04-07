@@ -131,10 +131,7 @@ def edit_scene(
             raise typer.Exit(1)
 
         # Prepare the data for editing
-        scene_data = {
-            "title": scene.title,
-            "description": scene.description
-        }
+        scene_data = {"title": scene.title, "description": scene.description}
 
         # Use the YAML editor helper
         from sologm.cli.utils.editor import edit_yaml_data
@@ -145,7 +142,7 @@ def edit_scene(
             header_comment="Edit the scene details below\nThe description uses YAML's literal block style (|) which preserves all line breaks and formatting exactly as you type it.",
             field_comments={
                 "title": "The title of the scene",
-                "description": "The detailed description of the scene"
+                "description": "The detailed description of the scene",
             },
             literal_block_fields=["description"],
             required_fields=["title"],
