@@ -12,6 +12,22 @@ import typer
 logger = logging.getLogger(__name__)
 
 
+# Custom class for handling multi-line strings in YAML
+class MultiLineString(str):
+    """String subclass that forces YAML to use literal block style (|)."""
+    pass
+
+
+# Custom YAML representer for MultiLineString
+def _represent_multiline_string(dumper, data):
+    """Tell YAML to use the literal block style (|) for MultiLineString objects."""
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+
+
+# Register the custom representer with PyYAML
+yaml.add_representer(MultiLineString, _represent_multiline_string)
+
+
 def edit_text(
     text: str,
     console: Optional[Console] = None,
@@ -84,16 +100,15 @@ def prepare_yaml_for_editing(
     Returns:
         Formatted YAML string with comments
     """
+    # Create a copy of the data to modify
+    processed_data = data.copy()
+    
     # Process literal block fields
     if literal_block_fields:
-        processed_data = data.copy()
         for field in literal_block_fields:
             if field in processed_data and processed_data[field]:
-                # Ensure the field uses literal block style
-                if not processed_data[field].endswith("\n"):
-                    processed_data[field] += "\n"
-    else:
-        processed_data = data
+                # Convert to MultiLineString to force literal block style
+                processed_data[field] = MultiLineString(processed_data[field])
 
     # Convert to YAML
     yaml_text = yaml.dump(processed_data, sort_keys=False, default_flow_style=False)
