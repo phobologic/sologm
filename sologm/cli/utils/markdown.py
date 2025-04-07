@@ -105,11 +105,8 @@ def generate_scene_markdown(
         content.append("### Events")
         content.append("")
 
-        # Process each event
-        for i, event in enumerate(events):
-            if i > 0:
-                # Add a line break between events for better readability
-                content.append("")
+        # Process each event without adding extra line breaks between them
+        for event in events:
             content.extend(generate_event_markdown(event, include_metadata))
 
     return content
@@ -168,6 +165,5 @@ def generate_event_markdown(
         if metadata_lines:
             content.append("")
             content.extend(metadata_lines)
-            content.append("")
 
     return content
