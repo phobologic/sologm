@@ -10,8 +10,8 @@ from sologm.cli.utils.display import (
     display_game_status,
     display_games_table,
 )
-from sologm.core.dice import DiceManager
 from sologm.cli.utils.markdown import generate_game_markdown
+from sologm.core.dice import DiceManager
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
@@ -111,7 +111,7 @@ def game_info(
                     game.id, active_scene.id, limit=5
                 )[:5]  # Ensure we get at most 5 events
                 logger.debug(f"Retrieved {len(recent_events)} recent events")
-                
+
                 recent_rolls = dice_manager.get_recent_rolls(active_scene.id, limit=3)
                 logger.debug(f"Retrieved {len(recent_rolls)} recent dice rolls for scene {active_scene.id}")
                 # Log details of each roll to verify data
@@ -142,8 +142,9 @@ def edit_game(
 ) -> None:
     """Edit the name and description of a game."""
     try:
-        import yaml
         import textwrap
+
+        import yaml
 
         game_manager = GameManager()
 
@@ -221,7 +222,7 @@ description: |
                     description=new_description,
                 )
 
-                console.print(f"[bold green]Game updated successfully![/]")
+                console.print("[bold green]Game updated successfully![/]")
                 display_game_info(console, updated_game)
 
             except yaml.YAMLError as e:
