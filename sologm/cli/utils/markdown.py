@@ -35,7 +35,7 @@ def generate_game_markdown(
     # Game header
     content.append(f"# {game.name}")
     content.append("")
-    
+
     # Handle multi-line game description by ensuring each line is properly formatted
     for line in game.description.split("\n"):
         content.append(line)
@@ -78,7 +78,7 @@ def generate_scene_markdown(
     status_indicator = " ✓" if scene.status == SceneStatus.COMPLETED else ""
     content.append(f"## Scene {scene.sequence}: {scene.title}{status_indicator}")
     content.append("")
-    
+
     # Handle multi-line scene description
     for line in scene.description.split("\n"):
         content.append(line)
@@ -132,11 +132,11 @@ def generate_event_markdown(
 
     # Split the description into lines
     description_lines = event.description.split("\n")
-    
+
     # First line with the bullet and source indicator
     if description_lines:
         content.append(f"- {source_indicator} {description_lines[0]}")
-        
+
         # Additional lines need proper indentation to align with the first line content
         indent = "  " + " " * len(source_indicator)
         for line in description_lines[1:]:
