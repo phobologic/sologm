@@ -107,7 +107,10 @@ def edit_event(
 def list_events(
     limit: int = typer.Option(5, "--limit", "-l", help="Number of events to show"),
     scene_id: Optional[str] = typer.Option(
-        None, "--scene-id", "-s", help="ID of the scene to list events from (defaults to current scene)"
+        None,
+        "--scene-id",
+        "-s",
+        help="ID of the scene to list events from (defaults to current scene)",
     ),
 ) -> None:
     """List events in the current scene or a specified scene."""
@@ -119,20 +122,20 @@ def list_events(
         game_id, current_scene_id = event_manager.validate_active_context(
             game_manager, scene_manager
         )
-        
+
         # Use the specified scene_id if provided, otherwise use the current scene
         target_scene_id = scene_id if scene_id else current_scene_id
-        
+
         # Get the scene to display its title
         scene = scene_manager.get_scene(game_id, target_scene_id)
         if not scene:
             console.print(f"[red]Error:[/] Scene with ID '{target_scene_id}' not found")
             raise typer.Exit(1)
-            
+
         events = event_manager.list_events(
             game_id=game_id, scene_id=target_scene_id, limit=limit
         )
-        
+
         logger.debug(f"Found {len(events)} events")
         display_events_table(console, events, scene)
 
