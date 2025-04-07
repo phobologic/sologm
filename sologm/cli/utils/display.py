@@ -302,7 +302,7 @@ def display_scenes_table(
     logger.debug(f"Active scene ID: {active_scene_id if active_scene_id else 'None'}")
     if not scenes:
         logger.debug("No scenes found to display")
-        console.print("No scenes found. Add one with 'sologm scene add'.")
+        console.print("No scenes found. Create one with 'sologm scene create'.")
         return
 
     # Create table without a title
