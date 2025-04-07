@@ -117,18 +117,15 @@ def generate_event_markdown(
     """
     content = []
 
-    # Format timestamp
-    timestamp = format_datetime(event.created_at)
-
     # Format source indicator
     source_indicator = ""
     if event.source == "oracle":
-        source_indicator = " 🔮"
+        source_indicator = " 🔮:"
     elif event.source == "dice":
-        source_indicator = " 🎲"
+        source_indicator = " 🎲:"
 
     # Event entry
-    content.append(f"- **{timestamp}**{source_indicator}: {event.description}")
+    content.append(f"- {source_indicator} {event.description}")
 
     if include_metadata and event.metadata:
         # Format any metadata as indented content
