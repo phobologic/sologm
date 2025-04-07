@@ -51,7 +51,10 @@ def generate_game_markdown(
     scenes.sort(key=lambda s: s.sequence)
 
     # Process each scene
-    for scene in scenes:
+    for i, scene in enumerate(scenes):
+        # Add an extra line break before scenes (except the first one)
+        if i > 0:
+            content.append("")
         content.extend(generate_scene_markdown(scene, event_manager, include_metadata))
 
     return "\n".join(content)
@@ -98,11 +101,15 @@ def generate_scene_markdown(
     events.sort(key=lambda e: e.created_at)
 
     if events:
+        # Ensure there's a line break before the Events header
         content.append("### Events")
         content.append("")
 
         # Process each event
-        for event in events:
+        for i, event in enumerate(events):
+            if i > 0:
+                # Add a line break between events for better readability
+                content.append("")
             content.extend(generate_event_markdown(event, include_metadata))
 
     return content
