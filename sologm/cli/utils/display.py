@@ -537,15 +537,18 @@ def display_game_status(
     # Create a new grid for oracle and dice rolls
     bottom_grid = Table.grid(expand=True, padding=(0, 1))
     bottom_grid.add_column("Oracle", ratio=7)  # 70% width
-    bottom_grid.add_column("Dice", ratio=3)    # 30% width
+    bottom_grid.add_column("Dice", ratio=3)  # 30% width
 
     # Create oracle panel (always show, but may be empty)
-    oracle_panel = _create_oracle_panel(
-        game,
-        active_scene,
-        oracle_manager,
-        truncation_length,
-    ) or _create_empty_oracle_panel()
+    oracle_panel = (
+        _create_oracle_panel(
+            game,
+            active_scene,
+            oracle_manager,
+            truncation_length,
+        )
+        or _create_empty_oracle_panel()
+    )
 
     # Create dice rolls panel
     dice_panel = _create_dice_rolls_panel(recent_rolls or [])
@@ -899,9 +902,9 @@ def _create_recent_oracle_panel(
 def _create_empty_oracle_panel() -> Panel:
     """Create an empty oracle panel when no oracle information is available."""
     logger.debug("Creating empty oracle panel")
-    
+
     panel_content = f"[{TEXT_STYLES['subtitle']}]No oracle interpretations yet.[/{TEXT_STYLES['subtitle']}]"
-    
+
     return Panel(
         panel_content,
         title=f"[{TEXT_STYLES['title']}]Oracle[/{TEXT_STYLES['title']}]",
@@ -913,15 +916,15 @@ def _create_empty_oracle_panel() -> Panel:
 
 def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
     """Create a panel showing recent dice rolls.
-    
+
     Args:
         recent_rolls: List of recent dice rolls to display
-        
+
     Returns:
         Panel containing formatted dice roll information
     """
     logger.debug(f"Creating dice rolls panel with {len(recent_rolls)} rolls")
-    
+
     if not recent_rolls:
         panel_content = f"[{TEXT_STYLES['subtitle']}]No recent dice rolls.[/{TEXT_STYLES['subtitle']}]"
     else:
@@ -929,23 +932,23 @@ def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
         for roll in recent_rolls:
             # Format each roll concisely
             roll_line = f"[{TEXT_STYLES['title']}]{roll.notation}[/{TEXT_STYLES['title']}] = [{TEXT_STYLES['success']}]{roll.total}[/{TEXT_STYLES['success']}]"
-            
+
             # Add reason if available
             if roll.reason:
                 roll_line += f" ([{TEXT_STYLES['subtitle']}]{roll.reason}[/{TEXT_STYLES['subtitle']}])"
-                
+
             # Add timestamp
             roll_line += f"\n[{TEXT_STYLES['timestamp']}]{roll.created_at.strftime('%Y-%m-%d %H:%M')}[/{TEXT_STYLES['timestamp']}]"
-            
+
             # Add details for complex rolls
             if len(roll.individual_results) > 1:
                 roll_line += f"\n[{TEXT_STYLES['category']}]{roll.individual_results}[/{TEXT_STYLES['category']}]"
-                
+
             panel_content += roll_line + "\n\n"
-            
+
         # Remove trailing newlines
         panel_content = panel_content.rstrip()
-    
+
     return Panel(
         panel_content,
         title=f"[{TEXT_STYLES['title']}]Recent Rolls[/{TEXT_STYLES['title']}]",

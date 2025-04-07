@@ -114,7 +114,13 @@ def test_display_game_status_no_scene(mock_console, test_game):
 def test_display_game_status_no_events(mock_console, test_game, test_scene):
     """Test displaying game status without any events."""
     display_game_status(
-        mock_console, test_game, test_scene, [], None, oracle_manager=None, recent_rolls=None
+        mock_console,
+        test_game,
+        test_scene,
+        [],
+        None,
+        oracle_manager=None,
+        recent_rolls=None,
     )
     assert mock_console.print.called
 
