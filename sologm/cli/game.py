@@ -142,10 +142,6 @@ def edit_game(
 ) -> None:
     """Edit the name and description of a game."""
     try:
-        import textwrap
-
-        import yaml
-
         game_manager = GameManager()
 
         # Get the game (active or specified)
@@ -163,71 +159,41 @@ def edit_game(
                 )
                 raise typer.Exit(1)
 
-        # Prepare the text for editing with clear instructions
-        original_text = f"""# Edit the game details below
-# The description uses YAML's literal block style (|) which preserves all line breaks
-# and formatting exactly as you type it.
+        # Prepare the data for editing
+        game_data = {
+            "name": game.name,
+            "description": game.description
+        }
 
-name: {game.name}
-description: |
-{textwrap.indent(game.description, "  ")}
-"""
+        # Use the YAML editor helper
+        from sologm.cli.utils.editor import edit_yaml_data
 
-        # Use the editor utility
-        from sologm.cli.utils.editor import edit_text
-
-        edited_text, was_modified = edit_text(
-            original_text,
+        edited_data, was_modified = edit_yaml_data(
+            data=game_data,
             console=console,
-            message=f"Editing game {game.id}:",
+            header_comment="Edit the game details below\nThe description uses YAML's literal block style (|) which preserves all line breaks and formatting exactly as you type it.",
+            field_comments={
+                "name": "The name of the game",
+                "description": "The detailed description of the game"
+            },
+            literal_block_fields=["description"],
+            required_fields=["name"],
+            edit_message=f"Editing game {game.id}:",
             success_message="Game updated successfully.",
             cancel_message="Game unchanged.",
             error_message="Could not open editor",
         )
 
         if was_modified:
-            try:
-                # Remove comment lines before parsing
-                yaml_text = "\n".join(
-                    [
-                        line
-                        for line in edited_text.split("\n")
-                        if not line.strip().startswith("#")
-                    ]
-                )
+            # Update the game
+            updated_game = game_manager.update_game(
+                game_id=game.id,
+                name=edited_data["name"],
+                description=edited_data["description"],
+            )
 
-                # Parse the edited YAML
-                edited_data = yaml.safe_load(yaml_text)
-
-                # Validate the structure
-                if not isinstance(edited_data, dict):
-                    console.print(
-                        "[bold red]Error:[/] Invalid YAML format. Expected a dictionary."
-                    )
-                    raise typer.Exit(1)
-
-                # Extract and validate the name
-                new_name = edited_data.get("name", "").strip()
-                if not new_name:
-                    console.print("[bold red]Error:[/] Game name cannot be empty.")
-                    raise typer.Exit(1)
-
-                # Extract the description (can be empty)
-                new_description = edited_data.get("description", "")
-
-                # Update the game
-                updated_game = game_manager.update_game(
-                    game_id=game.id,
-                    name=new_name,
-                    description=new_description,
-                )
-
-                console.print("[bold green]Game updated successfully![/]")
-                display_game_info(console, updated_game)
-
-            except yaml.YAMLError as e:
-                console.print(f"[bold red]Error parsing YAML:[/] {str(e)}")
-                raise typer.Exit(1) from e
+            console.print("[bold green]Game updated successfully![/]")
+            display_game_info(console, updated_game)
         else:
             console.print("[yellow]No changes made to the game.[/yellow]")
 

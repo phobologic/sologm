@@ -113,10 +113,10 @@ def edit_scene(
     ),
 ) -> None:
     """Edit the title and description of a scene."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
-
     try:
+        game_manager = GameManager()
+        scene_manager = SceneManager()
+
         # Get active game
         game_id, active_scene = scene_manager.validate_active_context(game_manager)
 
@@ -130,50 +130,41 @@ def edit_scene(
             console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
             raise typer.Exit(1)
 
-        # Prepare the text for editing
-        # Format: Title on first line, blank line, then description
-        original_text = f"{scene.title}\n\n{scene.description}"
+        # Prepare the data for editing
+        scene_data = {
+            "title": scene.title,
+            "description": scene.description
+        }
 
-        # Use the editor utility
-        from sologm.cli.utils.editor import edit_text
+        # Use the YAML editor helper
+        from sologm.cli.utils.editor import edit_yaml_data
 
-        edited_text, was_modified = edit_text(
-            original_text,
+        edited_data, was_modified = edit_yaml_data(
+            data=scene_data,
             console=console,
-            message=f"Editing scene {scene_id}:\nEnter the title on the first line, followed by a blank line, then the description:",
+            header_comment="Edit the scene details below\nThe description uses YAML's literal block style (|) which preserves all line breaks and formatting exactly as you type it.",
+            field_comments={
+                "title": "The title of the scene",
+                "description": "The detailed description of the scene"
+            },
+            literal_block_fields=["description"],
+            required_fields=["title"],
+            edit_message=f"Editing scene {scene_id}:",
             success_message="Scene updated successfully.",
             cancel_message="Scene unchanged.",
             error_message="Could not open editor",
         )
 
         if was_modified:
-            # Parse the edited text
-            lines = edited_text.split("\n")
-            new_title = lines[0].strip()
-
-            # Description starts after the first blank line
-            description_start = 2  # Default if no blank line found
-            for i, line in enumerate(lines[1:], 1):
-                if not line.strip():
-                    description_start = i + 1
-                    break
-
-            new_description = "\n".join(lines[description_start:]).strip()
-
-            # Validate input
-            if not new_title:
-                console.print("[bold red]Error:[/] Scene title cannot be empty.")
-                raise typer.Exit(1)
-
             # Update the scene
             updated_scene = scene_manager.update_scene(
                 game_id=game_id,
                 scene_id=scene_id,
-                title=new_title,
-                description=new_description,
+                title=edited_data["title"],
+                description=edited_data["description"],
             )
 
-            console.print(f"[bold green]Scene updated successfully![/]")
+            console.print("[bold green]Scene updated successfully![/]")
             display_scene_info(console, updated_scene)
         else:
             console.print("[yellow]No changes made to the scene.[/yellow]")
