@@ -535,11 +535,13 @@ def display_game_status(
     console.print(grid)
 
     # Create a new grid for oracle and dice rolls
+    logger.debug("Creating bottom grid for oracle and dice rolls")
     bottom_grid = Table.grid(expand=True, padding=(0, 1))
     bottom_grid.add_column("Oracle", ratio=7)  # 70% width
     bottom_grid.add_column("Dice", ratio=3)  # 30% width
 
     # Create oracle panel (always show, but may be empty)
+    logger.debug("Creating oracle panel")
     oracle_panel = (
         _create_oracle_panel(
             game,
@@ -549,12 +551,17 @@ def display_game_status(
         )
         or _create_empty_oracle_panel()
     )
+    logger.debug(f"Oracle panel created: {oracle_panel is not None}")
 
     # Create dice rolls panel
+    logger.debug(f"Creating dice rolls panel with {len(recent_rolls or [])} rolls")
     dice_panel = _create_dice_rolls_panel(recent_rolls or [])
+    logger.debug(f"Dice panel created: {dice_panel is not None}")
 
     # Add panels to the bottom grid
+    logger.debug("Adding panels to bottom grid")
     bottom_grid.add_row(oracle_panel, dice_panel)
+    logger.debug("Printing bottom grid with oracle and dice panels")
     console.print(bottom_grid)
 
 
