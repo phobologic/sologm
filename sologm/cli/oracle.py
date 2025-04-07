@@ -247,7 +247,7 @@ def select_interpretation(
         if typer.confirm("\nAdd this interpretation as an event?"):
             # Get the interpretation set to access context and results
             interp_set = oracle_manager.get_interpretation_set(interpretation_set_id)
-            
+
             # Create a more comprehensive default description
             default_description = (
                 f"Question: {interp_set.context}\n"
