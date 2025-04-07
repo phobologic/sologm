@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.models.game import Game
+from sologm.models.utils import slugify
 from sologm.utils.errors import GameError
 
 logger = logging.getLogger(__name__)
