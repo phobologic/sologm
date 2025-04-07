@@ -59,8 +59,9 @@ class GameManager(BaseManager[Game, Game]):
                         f"A game with the name '{name}' already exists"
                     ) from e
                 elif "slug" in error_msg:
-                    raise GameError(f"A game with a similar name '{name}'"
-                                    f"already exists") from e
+                    raise GameError(
+                        f"A game with a similar name '{name}'already exists"
+                    ) from e
                 else:
                     raise GameError(
                         "Could not create game due to a uniqueness constraint"
@@ -190,7 +191,7 @@ class GameManager(BaseManager[Game, Game]):
         except Exception as e:
             logger.error(f"Failed to activate game {game_id}: {str(e)}")
             raise GameError(f"Failed to activate game {game_id}: {str(e)}") from e
-            
+
     def update_game(self, game_id: str, name: str, description: str) -> Game:
         """Update a game's name and description.
 
@@ -217,11 +218,11 @@ class GameManager(BaseManager[Game, Game]):
             # Update the game properties
             old_name = game.name
             game.name = name
-            
+
             # Only update the slug if the name changed
             if old_name != name:
                 game.slug = slugify(name)
-                
+
             game.description = description
 
             logger.debug(f"Updated game: {game_id}")
@@ -242,8 +243,9 @@ class GameManager(BaseManager[Game, Game]):
                         f"A game with the name '{name}' already exists"
                     ) from e
                 elif "slug" in error_msg:
-                    raise GameError(f"A game with a similar name '{name}'"
-                                    f"already exists") from e
+                    raise GameError(
+                        f"A game with a similar name '{name}'already exists"
+                    ) from e
                 else:
                     raise GameError(
                         "Could not update game due to a uniqueness constraint"

@@ -131,6 +131,7 @@ def edit_game(
     try:
         import yaml
         import textwrap
+
         game_manager = GameManager()
 
         # Get the game (active or specified)
@@ -155,7 +156,7 @@ def edit_game(
 
 name: {game.name}
 description: |
-{textwrap.indent(game.description, '  ')}
+{textwrap.indent(game.description, "  ")}
 """
 
         # Use the editor utility
@@ -173,26 +174,33 @@ description: |
         if was_modified:
             try:
                 # Remove comment lines before parsing
-                yaml_text = "\n".join([line for line in edited_text.split("\n") 
-                                      if not line.strip().startswith("#")])
-                
+                yaml_text = "\n".join(
+                    [
+                        line
+                        for line in edited_text.split("\n")
+                        if not line.strip().startswith("#")
+                    ]
+                )
+
                 # Parse the edited YAML
                 edited_data = yaml.safe_load(yaml_text)
-                
+
                 # Validate the structure
                 if not isinstance(edited_data, dict):
-                    console.print("[bold red]Error:[/] Invalid YAML format. Expected a dictionary.")
+                    console.print(
+                        "[bold red]Error:[/] Invalid YAML format. Expected a dictionary."
+                    )
                     raise typer.Exit(1)
-                
+
                 # Extract and validate the name
                 new_name = edited_data.get("name", "").strip()
                 if not new_name:
                     console.print("[bold red]Error:[/] Game name cannot be empty.")
                     raise typer.Exit(1)
-                
+
                 # Extract the description (can be empty)
                 new_description = edited_data.get("description", "")
-                
+
                 # Update the game
                 updated_game = game_manager.update_game(
                     game_id=game.id,
@@ -202,7 +210,7 @@ description: |
 
                 console.print(f"[bold green]Game updated successfully![/]")
                 display_game_info(console, updated_game)
-            
+
             except yaml.YAMLError as e:
                 console.print(f"[bold red]Error parsing YAML:[/] {str(e)}")
                 raise typer.Exit(1) from e

@@ -120,25 +120,25 @@ class TestGameManager:
         with pytest.raises(GameError) as exc:
             game_manager.activate_game("nonexistent-game")
         assert "Game not found" in str(exc.value)
-        
+
     def test_update_game(self, game_manager) -> None:
         """Test updating a game's name and description."""
         # Create a game first
-        game = game_manager.create_game(name="Original Name", description="Original description")
-        
+        game = game_manager.create_game(
+            name="Original Name", description="Original description"
+        )
+
         # Update the game
         updated_game = game_manager.update_game(
-            game_id=game.id,
-            name="Updated Name",
-            description="Updated description"
+            game_id=game.id, name="Updated Name", description="Updated description"
         )
-        
+
         # Verify the update
         assert updated_game.id == game.id
         assert updated_game.name == "Updated Name"
         assert updated_game.description == "Updated description"
         assert updated_game.slug == "updated-name"
-        
+
         # Get the game again to verify persistence
         retrieved_game = game_manager.get_game(game.id)
         assert retrieved_game.name == "Updated Name"
@@ -147,17 +147,19 @@ class TestGameManager:
     def test_update_game_with_duplicate_name_fails(self, game_manager) -> None:
         """Test updating a game with a duplicate name raises an error."""
         # Create two games
-        game1 = game_manager.create_game(name="First Game", description="First description")
-        game2 = game_manager.create_game(name="Second Game", description="Second description")
-        
+        game1 = game_manager.create_game(
+            name="First Game", description="First description"
+        )
+        game2 = game_manager.create_game(
+            name="Second Game", description="Second description"
+        )
+
         # Try to update the second game with the first game's name
         with pytest.raises(GameError) as exc:
             game_manager.update_game(
-                game_id=game2.id,
-                name="First Game",
-                description="Updated description"
+                game_id=game2.id, name="First Game", description="Updated description"
             )
-        
+
         assert "already exists" in str(exc.value).lower()
 
     def test_game_model_validation(self, db_session):
