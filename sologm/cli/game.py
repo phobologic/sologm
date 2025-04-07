@@ -10,6 +10,7 @@ from sologm.cli.utils.display import (
     display_game_status,
     display_games_table,
 )
+from sologm.cli.utils.markdown import generate_game_markdown
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
@@ -118,3 +119,44 @@ def game_info(
             display_game_info(console, game, active_scene)
     except GameError as e:
         console.print(f"[red]Error getting game info: {str(e)}[/red]")
+
+
+@game_app.command("dump")
+def dump_game(
+    game_id: str = typer.Option(
+        None, "--id", "-i", help="ID of the game to dump (defaults to active game)"
+    ),
+    include_metadata: bool = typer.Option(
+        False, "--metadata", "-m", help="Include technical metadata in the output"
+    ),
+) -> None:
+    """Export a game with all scenes and events as a markdown document to stdout."""
+    try:
+        game_manager = GameManager()
+        scene_manager = SceneManager()
+        event_manager = EventManager()
+        
+        # Get the game (active or specified)
+        game = None
+        if game_id:
+            game = game_manager.get_game(game_id)
+            if not game:
+                console.print(f"[red]Game with ID {game_id} not found[/red]")
+                raise typer.Exit(1)
+        else:
+            game = game_manager.get_active_game()
+            if not game:
+                console.print("[red]No active game. Specify a game ID or activate a game first.[/red]")
+                raise typer.Exit(1)
+        
+        # Generate the markdown content
+        markdown_content = generate_game_markdown(
+            game, scene_manager, event_manager, include_metadata
+        )
+        
+        # Print to stdout (without rich formatting)
+        print(markdown_content)
+        
+    except Exception as e:
+        console.print(f"[red]Error exporting game: {str(e)}[/red]")
+        raise typer.Exit(1)
