@@ -197,6 +197,12 @@ def select_interpretation(
         "-s",
         help="ID of the interpretation set (uses current if not specified)",
     ),
+    edit: bool = typer.Option(
+        False,
+        "--edit",
+        "-e",
+        help="Edit the event description before adding",
+    ),
 ) -> None:
     """Select an interpretation to add as an event.
 
@@ -223,7 +229,6 @@ def select_interpretation(
                 )
                 raise typer.Exit(1)
             interpretation_set_id = current_interp_set.id
-            interpretation_set_id = current_interp_set.id
 
         if not interpretation_id:
             console.print(
@@ -240,8 +245,26 @@ def select_interpretation(
         display.display_interpretation(console, selected)
 
         if typer.confirm("\nAdd this interpretation as an event?"):
-            oracle_manager.add_interpretation_event(scene_id, selected)
+            # Default event description
+            default_description = f"{selected.title}: {selected.description}"
+            
+            # Allow editing if requested or if user confirms
+            custom_description = None
+            if edit or typer.confirm("Would you like to edit the event description?"):
+                edited_description, was_modified = edit_text(
+                    default_description,
+                    console=console,
+                    message="Edit the event description:",
+                    success_message="Event description updated.",
+                    cancel_message="Event description unchanged.",
+                )
+                if was_modified:
+                    custom_description = edited_description
+            
+            # Add the event with possibly edited description
+            event = oracle_manager.add_interpretation_event(scene_id, selected, custom_description)
             console.print("\n[green]Added interpretation as event.[/green]")
+            console.print(f"Event: [bold]{event.description}[/bold]")
         else:
             console.print("\n[yellow]Interpretation not added as event.[/yellow]")
 

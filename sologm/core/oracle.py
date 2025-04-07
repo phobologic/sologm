@@ -659,25 +659,31 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         )
 
     def add_interpretation_event(
-        self, scene_id: str, interpretation: Interpretation
-    ) -> None:
+        self, scene_id: str, interpretation: Interpretation, custom_description: Optional[str] = None
+    ) -> Event:
         """Add an interpretation as an event.
 
         Args:
             scene_id: ID of the current scene.
             interpretation: The interpretation to add as an event.
+            custom_description: Optional custom description for the event.
+                If not provided, uses "{title}: {description}".
+
+        Returns:
+            Event: The created event.
         """
 
         def _add_interpretation_event(
-            session: Session, scene_id: str, interpretation: Interpretation
-        ) -> None:
+            session: Session, scene_id: str, interpretation: Interpretation, custom_description: Optional[str]
+        ) -> Event:
             # Access the interpretation_set relationship directly
             interp_set = interpretation.interpretation_set
 
             # Access the scene relationship from the interpretation set
             scene = interp_set.scene
 
-            description = f"{interpretation.title}: {interpretation.description}"
+            # Use custom description if provided, otherwise generate from interpretation
+            description = custom_description if custom_description is not None else f"{interpretation.title}: {interpretation.description}"
 
             # Create the event
             event = Event.create(
@@ -688,10 +694,12 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 interpretation_id=interpretation.id,
             )
             session.add(event)
+            return event
 
-        self._execute_db_operation(
+        return self._execute_db_operation(
             "add interpretation event",
             _add_interpretation_event,
             scene_id,
             interpretation,
+            custom_description,
         )
