@@ -923,41 +923,41 @@ def _create_empty_oracle_panel() -> Panel:
 
 def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
     """Create a panel showing recent dice rolls.
-    
+
     Args:
         recent_rolls: List of recent dice rolls to display
-        
+
     Returns:
         Panel containing formatted dice roll information
     """
     logger.debug(f"Creating dice rolls panel with {len(recent_rolls)} rolls")
-    
+
     if not recent_rolls:
         logger.debug("No dice rolls to display")
         panel_content = f"[{TEXT_STYLES['subtitle']}]No recent dice rolls.[/{TEXT_STYLES['subtitle']}]"
     else:
         panel_content = ""
         for i, roll in enumerate(recent_rolls):
-            logger.debug(f"Formatting roll {i+1}: {roll.notation} = {roll.total}")
+            logger.debug(f"Formatting roll {i + 1}: {roll.notation} = {roll.total}")
             # Format each roll concisely
             roll_line = f"[{TEXT_STYLES['title']}]{roll.notation}[/{TEXT_STYLES['title']}] = [{TEXT_STYLES['success']}]{roll.total}[/{TEXT_STYLES['success']}]"
-            
+
             # Add reason if available
             if roll.reason:
                 logger.debug(f"Roll has reason: {roll.reason}")
                 roll_line += f" ([{TEXT_STYLES['subtitle']}]{roll.reason}[/{TEXT_STYLES['subtitle']}])"
-                
+
             # Add timestamp
             logger.debug(f"Roll timestamp: {roll.created_at}")
             roll_line += f"\n[{TEXT_STYLES['timestamp']}]{roll.created_at.strftime('%Y-%m-%d %H:%M')}[/{TEXT_STYLES['timestamp']}]"
-            
+
             # Add details for complex rolls
             if len(roll.individual_results) > 1:
                 logger.debug(f"Roll has individual results: {roll.individual_results}")
                 roll_line += f"\n[{TEXT_STYLES['category']}]{roll.individual_results}[/{TEXT_STYLES['category']}]"
-                
+
             panel_content += roll_line + "\n\n"
-            
+
         # Remove trailing newlines
         panel_content = panel_content.rstrip()
         logger.debug(f"Final panel content length: {len(panel_content)}")
