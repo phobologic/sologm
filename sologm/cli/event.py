@@ -18,7 +18,7 @@ event_app = typer.Typer(help="Event tracking commands")
 
 @event_app.command("add")
 def add_event(
-    text: str = typer.Option(..., "--text", "-t", help="Text of the event"),
+    text: str = typer.Option(..., "--text", "-t", help="Text of the event"), # Lets change this to -d/--description AI!
     source: str = typer.Option(
         "manual", "--source", "-s", help="Source of the event (manual, oracle, dice)"
     ),
