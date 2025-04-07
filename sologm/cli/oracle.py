@@ -117,9 +117,9 @@ def retry_interpretation(
             "Would you like to edit the context before retrying?"
         ):
             from sologm.cli.utils.editor import edit_yaml_data
-            
+
             context_data = {"context": context}
-            
+
             edited_data, was_modified = edit_yaml_data(
                 data=context_data,
                 console=console,
@@ -134,7 +134,7 @@ def retry_interpretation(
                 cancel_message="Context unchanged.",
                 error_message="Could not open editor",
             )
-            
+
             if was_modified:
                 context = edited_data["context"]
 
@@ -273,9 +273,9 @@ def select_interpretation(
             custom_description = default_description
             if edit or typer.confirm("Would you like to edit the event description?"):
                 from sologm.cli.utils.editor import edit_yaml_data
-                
+
                 event_data = {"description": default_description}
-                
+
                 edited_data, was_modified = edit_yaml_data(
                     data=event_data,
                     console=console,
@@ -290,7 +290,7 @@ def select_interpretation(
                     cancel_message="Event description unchanged.",
                     error_message="Could not open editor",
                 )
-                
+
                 if was_modified:
                     custom_description = edited_data["description"]
 

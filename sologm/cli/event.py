@@ -80,7 +80,7 @@ def edit_event(
         from sologm.cli.utils.editor import edit_yaml_data
 
         event_data = {"description": event.description}
-        
+
         edited_data, was_modified = edit_yaml_data(
             data=event_data,
             console=console,
@@ -98,7 +98,9 @@ def edit_event(
 
         # Update the event if it was modified
         if was_modified:
-            updated_event = event_manager.update_event(event_id, edited_data["description"])
+            updated_event = event_manager.update_event(
+                event_id, edited_data["description"]
+            )
             console.print(
                 f"\nUpdated event in scene '{scene_manager.get_scene(game_id, scene_id).title}':"
             )
