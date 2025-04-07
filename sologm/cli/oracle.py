@@ -245,8 +245,15 @@ def select_interpretation(
         display.display_interpretation(console, selected)
 
         if typer.confirm("\nAdd this interpretation as an event?"):
-            # Default event description
-            default_description = f"{selected.title}: {selected.description}"
+            # Get the interpretation set to access context and results
+            interp_set = oracle_manager.get_interpretation_set(interpretation_set_id)
+            
+            # Create a more comprehensive default description
+            default_description = (
+                f"Question: {interp_set.context}\n"
+                f"Oracle: {interp_set.oracle_results}\n"
+                f"Interpretation: {selected.title} - {selected.description}"
+            )
 
             # Allow editing if requested or if user confirms
             custom_description = None
