@@ -663,8 +663,9 @@ def _create_scene_panels_grid(
     # Allow for about 4 lines of text
     max_desc_length = chars_per_line * 8
 
-    logger.debug(f"Chars per line: {chars_per_line}, Max description length: "
-                 f"{max_desc_length}")
+    logger.debug(
+        f"Chars per line: {chars_per_line}, Max description length: {max_desc_length}"
+    )
 
     # Create current scene panel with consistent styling
     scenes_content = ""
