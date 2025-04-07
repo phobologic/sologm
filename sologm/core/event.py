@@ -106,7 +106,7 @@ class EventManager(BaseManager[Event, Event]):
 
         scene = scene_manager.get_active_scene(game.id)
         if not scene:
-            raise EventError("No current scene. Create one with 'sologm scene create'.")
+            raise EventError("No current scene. Add one with 'sologm scene add'.")
 
         return game.id, scene.id
 

@@ -226,7 +226,7 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         active_scene = self.get_active_scene(active_game.id)
         if not active_scene:
-            raise SceneError("No active scene. Create one with 'sologm scene create'.")
+            raise SceneError("No active scene. Add one with 'sologm scene add'.")
 
         return active_game.id, active_scene
 

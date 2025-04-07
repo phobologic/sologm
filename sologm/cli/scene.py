@@ -24,14 +24,14 @@ console = Console()
 logger = logging.getLogger(__name__)
 
 
-@scene_app.command("create")
-def create_scene(
+@scene_app.command("add")
+def add_scene(
     title: str = typer.Option(..., "--title", "-t", help="Title of the scene"),
     description: str = typer.Option(
         ..., "--description", "-d", help="Description of the scene"
     ),
 ) -> None:
-    """Create a new scene in the active game."""
+    """Add a new scene to the active game."""
     game_manager = GameManager()
     scene_manager = SceneManager()
 
@@ -47,7 +47,7 @@ def create_scene(
         description=description,
     )
 
-    console.print("[bold green]Scene created successfully![/]")
+    console.print("[bold green]Scene added successfully![/]")
     console.print(f"Title: {scene.title}")
     console.print(f"Description: {scene.description}")
     console.print(f"Status: {scene.status.value}")

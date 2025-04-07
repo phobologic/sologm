@@ -79,8 +79,8 @@ sologm game info
 
 ### Scene Management
 ```bash
-# Create a new scene (becomes current automatically)
-sologm scene create --title "The Forest" --description "A dark and mysterious forest"
+# Add a new scene (becomes current automatically)
+sologm scene add --title "The Forest" --description "A dark and mysterious forest"
 
 # List all scenes
 sologm scene list
