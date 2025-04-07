@@ -18,7 +18,7 @@ event_app = typer.Typer(help="Event tracking commands")
 
 @event_app.command("add")
 def add_event(
-    text: str = typer.Option(..., "--text", "-t", help="Text of the event"), # Lets change this to -d/--description AI!
+    description: str = typer.Option(..., "--description", "-d", help="Text of the event"),
     source: str = typer.Option(
         "manual", "--source", "-s", help="Source of the event (manual, oracle, dice)"
     ),
@@ -33,7 +33,7 @@ def add_event(
             game_manager, scene_manager
         )
         event = event_manager.add_event(
-            game_id=game_id, scene_id=scene_id, description=text, source=source
+            game_id=game_id, scene_id=scene_id, description=description, source=source
         )
         scene = scene_manager.get_scene(game_id, scene_id)
         logger.debug(f"Added event {event.id}")
