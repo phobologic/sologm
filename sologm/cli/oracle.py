@@ -257,7 +257,7 @@ def select_interpretation(
             )
 
             # Allow editing if requested or if user confirms
-            custom_description = None
+            custom_description = default_description
             if edit or typer.confirm("Would you like to edit the event description?"):
                 edited_description, was_modified = edit_text(
                     default_description,

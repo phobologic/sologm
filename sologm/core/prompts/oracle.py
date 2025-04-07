@@ -118,7 +118,8 @@ Oracle Results: {oracle_results}
 
 Please provide {count} different interpretations of these oracle results.
 Each interpretation should make sense in the context of the game and scene.
-Be creative but consistent with the established narrative.
+Be creative but consistent with the established narrative.  Each potential
+interpretation should be 3-5 sentences long, and full of vivid imagery.
 
 Format your response using Markdown headers exactly as follows:
 
