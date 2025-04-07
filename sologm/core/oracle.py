@@ -598,14 +598,12 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self,
         interpretation_set_id: str,
         interpretation_identifier: str,
-        add_event: bool = True,
     ) -> Interpretation:
-        """Select an interpretation and optionally add it as an event.
+        """Select an interpretation.
 
         Args:
             interpretation_set_id: ID of the interpretation set.
             interpretation_identifier: Identifier of the interpretation (sequence number, slug, or UUID).
-            add_event: Whether to add the interpretation as an event.
 
         Returns:
             Interpretation: The selected interpretation.
@@ -619,7 +617,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             session: Session,
             interpretation_set_id: str,
             interpretation_id: str,
-            add_event: bool,
         ) -> Interpretation:
             # Get the interpretation set
             interp_set = (
@@ -644,10 +641,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             # Mark this interpretation as selected
             interpretation.is_selected = True
 
-            # Add as event if requested
-            if add_event:
-                self.add_interpretation_event(interp_set.scene_id, interpretation)
-
             return interpretation
 
         return self._execute_db_operation(
@@ -655,7 +648,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             _select_interpretation,
             interpretation_set_id,
             interpretation.id,
-            add_event,
         )
 
     def add_interpretation_event(

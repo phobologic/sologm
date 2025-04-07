@@ -135,7 +135,7 @@ Test Description"""
 
         # Test selecting by UUID
         selected = oracle_manager.select_interpretation(
-            interp_set.id, interp_set.interpretations[0].id, add_event=True
+            interp_set.id, interp_set.interpretations[0].id
         )
 
         assert isinstance(selected, Interpretation)
@@ -143,6 +143,25 @@ Test Description"""
         assert selected.title == interp_set.interpretations[0].title
         assert selected.is_selected is True
 
+        # Verify no event was created automatically
+        events = (
+            db_session.query(Event)
+            .filter(
+                Event.game_id == test_game.id,
+                Event.scene_id == test_scene.id,
+                Event.source == "oracle",
+                Event.interpretation_id == selected.id,
+            )
+            .all()
+        )
+
+        assert len(events) == 0
+        
+        # Now explicitly add an event
+        event = oracle_manager.add_interpretation_event(
+            test_scene.id, selected
+        )
+        
         # Verify event was created
         events = (
             db_session.query(Event)

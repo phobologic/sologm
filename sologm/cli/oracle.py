@@ -237,8 +237,9 @@ def select_interpretation(
             )
             raise typer.Exit(1)
 
+        # Mark the interpretation as selected
         selected = oracle_manager.select_interpretation(
-            interpretation_set_id, interpretation_id, add_event=False
+            interpretation_set_id, interpretation_id
         )
 
         console.print("\nSelected interpretation:")
@@ -247,7 +248,7 @@ def select_interpretation(
         if typer.confirm("\nAdd this interpretation as an event?"):
             # Get the interpretation set to access context and results
             interp_set = oracle_manager.get_interpretation_set(interpretation_set_id)
-
+            
             # Create a more comprehensive default description
             default_description = (
                 f"Question: {interp_set.context}\n"
