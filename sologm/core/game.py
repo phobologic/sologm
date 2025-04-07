@@ -190,3 +190,66 @@ class GameManager(BaseManager[Game, Game]):
         except Exception as e:
             logger.error(f"Failed to activate game {game_id}: {str(e)}")
             raise GameError(f"Failed to activate game {game_id}: {str(e)}") from e
+            
+    def update_game(self, game_id: str, name: str, description: str) -> Game:
+        """Update a game's name and description.
+
+        Args:
+            game_id: ID of the game to update
+            name: New name for the game
+            description: New description for the game
+
+        Returns:
+            The updated Game instance.
+
+        Raises:
+            GameError: If the game cannot be updated.
+        """
+
+        def _update_game(
+            session: Session, game_id: str, name: str, description: str
+        ) -> Game:
+            game = session.query(Game).filter(Game.id == game_id).first()
+            if not game:
+                logger.error(f"Cannot update nonexistent game: {game_id}")
+                raise GameError(f"Game not found: {game_id}")
+
+            # Update the game properties
+            old_name = game.name
+            game.name = name
+            
+            # Only update the slug if the name changed
+            if old_name != name:
+                game.slug = slugify(name)
+                
+            game.description = description
+
+            logger.debug(f"Updated game: {game_id}")
+            return game
+
+        try:
+            return self._execute_db_operation(
+                "update game", _update_game, game_id, name, description
+            )
+        except IntegrityError as e:
+            logger.error(f"Failed to update game {game_id}: {str(e)}")
+
+            error_msg = str(e).lower()
+
+            if "unique constraint" in error_msg:
+                if "name" in error_msg:
+                    raise GameError(
+                        f"A game with the name '{name}' already exists"
+                    ) from e
+                elif "slug" in error_msg:
+                    raise GameError(f"A game with a similar name '{name}'"
+                                    f"already exists") from e
+                else:
+                    raise GameError(
+                        "Could not update game due to a uniqueness constraint"
+                    ) from e
+            else:
+                raise GameError(f"Failed to update game: {str(e)}") from e
+        except Exception as e:
+            logger.error(f"Failed to update game {game_id}: {str(e)}")
+            raise GameError(f"Failed to update game: {str(e)}") from e
