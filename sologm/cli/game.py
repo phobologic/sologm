@@ -135,7 +135,7 @@ def dump_game(
         game_manager = GameManager()
         scene_manager = SceneManager()
         event_manager = EventManager()
-        
+
         # Get the game (active or specified)
         game = None
         if game_id:
@@ -146,17 +146,19 @@ def dump_game(
         else:
             game = game_manager.get_active_game()
             if not game:
-                console.print("[red]No active game. Specify a game ID or activate a game first.[/red]")
+                console.print(
+                    "[red]No active game. Specify a game ID or activate a game first.[/red]"
+                )
                 raise typer.Exit(1)
-        
+
         # Generate the markdown content
         markdown_content = generate_game_markdown(
             game, scene_manager, event_manager, include_metadata
         )
-        
+
         # Print to stdout (without rich formatting)
         print(markdown_content)
-        
+
     except Exception as e:
         console.print(f"[red]Error exporting game: {str(e)}[/red]")
         raise typer.Exit(1)
