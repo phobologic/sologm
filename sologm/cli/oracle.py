@@ -247,7 +247,7 @@ def select_interpretation(
         if typer.confirm("\nAdd this interpretation as an event?"):
             # Default event description
             default_description = f"{selected.title}: {selected.description}"
-            
+
             # Allow editing if requested or if user confirms
             custom_description = None
             if edit or typer.confirm("Would you like to edit the event description?"):
@@ -260,9 +260,11 @@ def select_interpretation(
                 )
                 if was_modified:
                     custom_description = edited_description
-            
+
             # Add the event with possibly edited description
-            event = oracle_manager.add_interpretation_event(scene_id, selected, custom_description)
+            event = oracle_manager.add_interpretation_event(
+                scene_id, selected, custom_description
+            )
             console.print("\n[green]Added interpretation as event.[/green]")
             console.print(f"Event: [bold]{event.description}[/bold]")
         else:

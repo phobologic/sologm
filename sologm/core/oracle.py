@@ -659,7 +659,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         )
 
     def add_interpretation_event(
-        self, scene_id: str, interpretation: Interpretation, custom_description: Optional[str] = None
+        self,
+        scene_id: str,
+        interpretation: Interpretation,
+        custom_description: Optional[str] = None,
     ) -> Event:
         """Add an interpretation as an event.
 
@@ -674,7 +677,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """
 
         def _add_interpretation_event(
-            session: Session, scene_id: str, interpretation: Interpretation, custom_description: Optional[str]
+            session: Session,
+            scene_id: str,
+            interpretation: Interpretation,
+            custom_description: Optional[str],
         ) -> Event:
             # Access the interpretation_set relationship directly
             interp_set = interpretation.interpretation_set
@@ -683,7 +689,11 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             scene = interp_set.scene
 
             # Use custom description if provided, otherwise generate from interpretation
-            description = custom_description if custom_description is not None else f"{interpretation.title}: {interpretation.description}"
+            description = (
+                custom_description
+                if custom_description is not None
+                else f"{interpretation.title}: {interpretation.description}"
+            )
 
             # Create the event
             event = Event.create(
