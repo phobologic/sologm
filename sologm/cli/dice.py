@@ -38,10 +38,10 @@ def roll_dice_command(
             try:
                 from sologm.core.game import GameManager
                 from sologm.core.scene import SceneManager
-                
+
                 game_manager = GameManager()
                 scene_manager = SceneManager()
-                
+
                 # Get active game
                 active_game = game_manager.get_active_game()
                 if active_game:
@@ -52,7 +52,7 @@ def roll_dice_command(
                         logger.debug(f"Using current scene: {scene_id}")
             except Exception as e:
                 logger.debug(f"Could not determine current scene: {str(e)}")
-        
+
         logger.debug(
             f"Rolling dice with notation: {notation}, reason: "
             f"{reason}, scene_id: {scene_id}"
