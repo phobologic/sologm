@@ -156,12 +156,10 @@ Test Description"""
         )
 
         assert len(events) == 0
-        
+
         # Now explicitly add an event
-        event = oracle_manager.add_interpretation_event(
-            test_scene.id, selected
-        )
-        
+        event = oracle_manager.add_interpretation_event(test_scene.id, selected)
+
         # Verify event was created
         events = (
             db_session.query(Event)
