@@ -98,20 +98,23 @@ def test_display_game_status_full(
         test_events,
         scene_manager=scene_manager,
         oracle_manager=None,
+        recent_rolls=[],
     )
     assert mock_console.print.called
 
 
 def test_display_game_status_no_scene(mock_console, test_game):
     """Test displaying game status without an active scene."""
-    display_game_status(mock_console, test_game, None, [], None, oracle_manager=None)
+    display_game_status(
+        mock_console, test_game, None, [], None, oracle_manager=None, recent_rolls=None
+    )
     assert mock_console.print.called
 
 
 def test_display_game_status_no_events(mock_console, test_game, test_scene):
     """Test displaying game status without any events."""
     display_game_status(
-        mock_console, test_game, test_scene, [], None, oracle_manager=None
+        mock_console, test_game, test_scene, [], None, oracle_manager=None, recent_rolls=None
     )
     assert mock_console.print.called
 
@@ -127,6 +130,7 @@ def test_display_game_status_no_interpretation(
         test_events,
         None,
         oracle_manager=None,
+        recent_rolls=None,
     )
     assert mock_console.print.called
 
@@ -142,6 +146,7 @@ def test_display_game_status_selected_interpretation(
         test_events,
         scene_manager=scene_manager,
         oracle_manager=None,
+        recent_rolls=None,
     )
     assert mock_console.print.called
 
@@ -215,6 +220,29 @@ def test_create_oracle_panel(test_game, test_scene, oracle_manager):
     assert (
         panel is None or panel is not None
     )  # Either outcome is valid depending on test data
+
+
+def test_create_empty_oracle_panel():
+    """Test creating an empty oracle panel."""
+    panel = _create_empty_oracle_panel()
+    assert panel is not None
+    assert "Oracle" in panel.title
+    assert panel.border_style == BORDER_STYLES["neutral"]
+
+
+def test_create_dice_rolls_panel(test_dice_roll):
+    """Test creating the dice rolls panel."""
+    # Test with no rolls
+    panel = _create_dice_rolls_panel([])
+    assert panel is not None
+    assert "Recent Rolls" in panel.title
+    assert "No recent dice rolls" in panel.renderable
+
+    # Test with rolls
+    panel = _create_dice_rolls_panel([test_dice_roll])
+    assert panel is not None
+    assert "Recent Rolls" in panel.title
+    assert test_dice_roll.notation in panel.renderable
 
 
 def test_display_interpretation(mock_console, test_interpretations):

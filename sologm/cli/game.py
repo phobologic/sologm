@@ -10,6 +10,7 @@ from sologm.cli.utils.display import (
     display_game_status,
     display_games_table,
 )
+from sologm.core.dice import DiceManager
 from sologm.cli.utils.markdown import generate_game_markdown
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
@@ -101,11 +102,14 @@ def game_info(
         if status:
             # Get additional status information
             event_manager = EventManager()
+            dice_manager = DiceManager()
             recent_events = []
+            recent_rolls = []
             if active_scene:
                 recent_events = event_manager.list_events(
                     game.id, active_scene.id, limit=5
                 )[:5]  # Ensure we get at most 5 events
+                recent_rolls = dice_manager.get_recent_rolls(active_scene.id, limit=3)
 
             display_game_status(
                 console,
@@ -114,6 +118,7 @@ def game_info(
                 recent_events,
                 scene_manager=scene_manager,
                 oracle_manager=oracle_manager,
+                recent_rolls=recent_rolls,
             )
         else:
             display_game_info(console, game, active_scene)
