@@ -395,7 +395,7 @@ It also has multiple lines."""
 
         # Select an interpretation
         selected = oracle_manager.select_interpretation(
-            interp_set.id, "1", add_event=True
+            interp_set.id, "1"
         )
 
         # Get most recent interpretation
