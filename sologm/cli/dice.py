@@ -33,6 +33,26 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
+        # If no scene_id is provided, try to get the current scene
+        if scene_id is None:
+            try:
+                from sologm.core.game import GameManager
+                from sologm.core.scene import SceneManager
+                
+                game_manager = GameManager()
+                scene_manager = SceneManager()
+                
+                # Get active game
+                active_game = game_manager.get_active_game()
+                if active_game:
+                    # Get active scene for the game
+                    active_scene = scene_manager.get_active_scene(active_game.id)
+                    if active_scene:
+                        scene_id = active_scene.id
+                        logger.debug(f"Using current scene: {scene_id}")
+            except Exception as e:
+                logger.debug(f"Could not determine current scene: {str(e)}")
+        
         logger.debug(
             f"Rolling dice with notation: {notation}, reason: "
             f"{reason}, scene_id: {scene_id}"
