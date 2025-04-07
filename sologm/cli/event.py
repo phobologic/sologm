@@ -76,13 +76,21 @@ def edit_event(
             )
             raise typer.Exit(1)
 
-        # Use the editor utility to edit the event description
-        from sologm.cli.utils.editor import edit_text
+        # Use the YAML editor utility to edit the event
+        from sologm.cli.utils.editor import edit_yaml_data
 
-        edited_text, was_modified = edit_text(
-            event.description,
+        event_data = {"description": event.description}
+        
+        edited_data, was_modified = edit_yaml_data(
+            data=event_data,
             console=console,
-            message=f"Editing event {event_id}:",
+            header_comment="Edit the event description below:",
+            field_comments={
+                "description": "The detailed description of the event",
+            },
+            literal_block_fields=["description"],
+            required_fields=["description"],
+            edit_message=f"Editing event {event_id}:",
             success_message="Event updated successfully.",
             cancel_message="Event unchanged.",
             error_message="Could not open editor",
@@ -90,7 +98,7 @@ def edit_event(
 
         # Update the event if it was modified
         if was_modified:
-            updated_event = event_manager.update_event(event_id, edited_text)
+            updated_event = event_manager.update_event(event_id, edited_data["description"])
             console.print(
                 f"\nUpdated event in scene '{scene_manager.get_scene(game_id, scene_id).title}':"
             )

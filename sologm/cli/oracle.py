@@ -116,14 +116,27 @@ def retry_interpretation(
         if edit_context or typer.confirm(
             "Would you like to edit the context before retrying?"
         ):
-            context, _ = edit_text(
-                context,
+            from sologm.cli.utils.editor import edit_yaml_data
+            
+            context_data = {"context": context}
+            
+            edited_data, was_modified = edit_yaml_data(
+                data=context_data,
                 console=console,
-                message="Current context:",
+                header_comment="Edit the context for the oracle interpretation:",
+                field_comments={
+                    "context": "The question or context for the oracle interpretation",
+                },
+                literal_block_fields=["context"],
+                required_fields=["context"],
+                edit_message="Current context:",
                 success_message="Context updated.",
                 cancel_message="Context unchanged.",
                 error_message="Could not open editor",
             )
+            
+            if was_modified:
+                context = edited_data["context"]
 
         console.print("\nGenerating new interpretations...", style="bold blue")
         new_interp_set = oracle_manager.get_interpretations(
@@ -259,15 +272,27 @@ def select_interpretation(
             # Allow editing if requested or if user confirms
             custom_description = default_description
             if edit or typer.confirm("Would you like to edit the event description?"):
-                edited_description, was_modified = edit_text(
-                    default_description,
+                from sologm.cli.utils.editor import edit_yaml_data
+                
+                event_data = {"description": default_description}
+                
+                edited_data, was_modified = edit_yaml_data(
+                    data=event_data,
                     console=console,
-                    message="Edit the event description:",
+                    header_comment="Edit the event description below:",
+                    field_comments={
+                        "description": "The detailed description of the event",
+                    },
+                    literal_block_fields=["description"],
+                    required_fields=["description"],
+                    edit_message="Edit the event description:",
                     success_message="Event description updated.",
                     cancel_message="Event description unchanged.",
+                    error_message="Could not open editor",
                 )
+                
                 if was_modified:
-                    custom_description = edited_description
+                    custom_description = edited_data["description"]
 
             # Add the event with possibly edited description
             event = oracle_manager.add_interpretation_event(
