@@ -1,13 +1,11 @@
 """Editor utilities for CLI commands."""
 
 import logging
-import textwrap
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import click
 import yaml
 from rich.console import Console
-import typer
 
 logger = logging.getLogger(__name__)
 
