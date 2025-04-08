@@ -200,34 +200,34 @@ def edit_yaml_data(
     """
     # Determine if we're creating or editing based on data
     is_new = data is None or not data
-    
+
     # Create a working copy of data or initialize empty dict if None
     working_data = {} if data is None else data.copy()
-    
+
     # Ensure all fields from field_comments exist in working_data
     if field_comments:
         for field in field_comments:
             if field not in working_data:
                 working_data[field] = ""
-    
+
     # Build appropriate header comment
     header_comment = context_info
-    
+
     # Add appropriate instruction based on action type
     if is_new:
         header_comment += "Enter the new details below:"
     else:
         header_comment += "Edit the details below:"
-        
+
         # Add original data reference for edit actions
         original_data_yaml = yaml.dump(data, sort_keys=False, default_flow_style=False)
         original_data_lines = original_data_yaml.split("\n")
-        
+
         header_comment += "\n\n# Original values (for reference):\n"
         for line in original_data_lines:
             header_comment += f"# {line}\n"
         header_comment += "#\n"
-    
+
     # Prepare YAML for editing
     yaml_text = prepare_yaml_for_editing(
         working_data, header_comment, field_comments, literal_block_fields
