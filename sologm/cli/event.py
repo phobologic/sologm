@@ -243,10 +243,7 @@ def edit_event(
         )
 
         # Use the structured editor with existing data
-        initial_data = {
-            "description": event.description,
-            "source": event.source
-        }
+        initial_data = {"description": event.description, "source": event.source}
         edited_data, was_modified = edit_structured_data(
             data=initial_data,
             console=console,

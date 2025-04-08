@@ -15,17 +15,20 @@ logger = logging.getLogger(__name__)
 
 class EditorError(Exception):
     """Base exception for editor-related errors."""
+
     pass
 
 
 class ValidationError(EditorError):
     """Exception raised when validation fails."""
+
     pass
 
 
 @dataclass
 class EditorConfig:
     """Configuration for editor behavior."""
+
     edit_message: str = "Editing data:"
     success_message: str = "Data updated successfully."
     cancel_message: str = "Data unchanged."
@@ -36,6 +39,7 @@ class EditorConfig:
 @dataclass
 class FieldConfig:
     """Configuration for a field in the structured editor."""
+
     name: str
     display_name: str
     help_text: Optional[str] = None
@@ -46,8 +50,9 @@ class FieldConfig:
 @dataclass
 class StructuredEditorConfig:
     """Configuration for structured text editor."""
+
     fields: List[FieldConfig] = field(default_factory=list)
-    
+
 
 def format_structured_text(
     data: Dict[str, Any],
@@ -55,95 +60,89 @@ def format_structured_text(
     context_info: str = "",
 ) -> str:
     """Format data as structured text blocks.
-    
+
     Args:
         data: Dictionary of data to format
         config: Editor configuration
         context_info: Context information to include at the top
-        
+
     Returns:
         Formatted text with structured blocks
     """
     lines = []
-    
+
     # Add context information with hash marks
     if context_info:
-        for line in context_info.split('\n'):
+        for line in context_info.split("\n"):
             lines.append(f"# {line}")
         lines.append("")  # Empty line after context
-    
+
     # Add each field as a structured block
     for field_config in config.fields:
         field_name = field_config.name
         display_name = field_config.display_name.upper()
-        
+
         # Add help text as a comment
         if field_config.help_text:
             lines.append(f"# {field_config.help_text}")
-        
+
         # Add required indicator if the field is required
         if field_config.required:
             lines.append(f"# (Required)")
-            
+
         # Add field header
         lines.append(f"--- {display_name} ---")
-        
+
         # Add field value or empty line
         value = data.get(field_name, "")
         if value:
             # For multiline values, ensure each line is included
-            for line in str(value).split('\n'):
+            for line in str(value).split("\n"):
                 lines.append(line)
         else:
             # Add an empty line for empty fields
             lines.append("")
-            
+
         # Add field footer
         lines.append(f"--- END {display_name} ---")
         lines.append("")  # Empty line between fields
-    
-    return '\n'.join(lines)
+
+    return "\n".join(lines)
 
 
-def parse_structured_text(
-    text: str, 
-    config: StructuredEditorConfig
-) -> Dict[str, Any]:
+def parse_structured_text(text: str, config: StructuredEditorConfig) -> Dict[str, Any]:
     """Parse structured text blocks into a dictionary.
-    
+
     Args:
         text: Structured text to parse
         config: Editor configuration
-        
+
     Returns:
         Dictionary of parsed data
-        
+
     Raises:
         ValidationError: If validation fails
     """
     result = {}
-    
+
     # Create a mapping of display names to field names
-    field_map = {
-        field.display_name.upper(): field.name 
-        for field in config.fields
-    }
-    
+    field_map = {field.display_name.upper(): field.name for field in config.fields}
+
     # Find all blocks using regex
     pattern = r"--- ([A-Z ]+) ---\n(.*?)--- END \1 ---"
     matches = re.findall(pattern, text, re.DOTALL)
-    
+
     # Process each matched block
     for display_name, content in matches:
         if display_name in field_map:
             field_name = field_map[display_name]
             # Store the content, stripping trailing whitespace from each line
             # but preserving line breaks
-            cleaned_content = '\n'.join(
-                line.rstrip() for line in content.split('\n')
+            cleaned_content = "\n".join(
+                line.rstrip() for line in content.split("\n")
             ).strip()
             result[field_name] = cleaned_content
-    
+
     # Validate required fields
     missing_fields = []
     for field in config.fields:
@@ -151,11 +150,11 @@ def parse_structured_text(
             field.name not in result or not result[field.name].strip()
         ):
             missing_fields.append(field.display_name)
-    
+
     if missing_fields:
         field_list = ", ".join(missing_fields)
         raise ValidationError(f"Required field(s) {field_list} cannot be empty.")
-    
+
     return result
 
 
@@ -216,20 +215,20 @@ def edit_text(
 
 def display_validation_error(console: Console, error: Exception) -> None:
     """Display a validation error in a user-friendly way.
-    
+
     Args:
         console: Rich console for output
         error: The exception to display
     """
     error_msg = str(error)
-    
+
     # Create a panel with the error message
     panel = Panel(
         Text.from_markup(f"[bold red]Error:[/] {error_msg}"),
         title="Validation Failed",
         border_style="red",
     )
-    
+
     console.print(panel)
     console.print("[yellow]The editor will reopen so you can fix this issue.[/yellow]")
 
@@ -242,38 +241,36 @@ def edit_structured_data(
     editor_config: Optional[EditorConfig] = None,
 ) -> Tuple[Dict[str, Any], bool]:
     """Edit data using structured text blocks in an external editor.
-    
+
     Args:
         data: Dictionary of data to edit (None or empty dict for new items)
         console: Rich console for output
         config: Configuration for structured text editor
         context_info: Context information to include at the top
         editor_config: Configuration for editor behavior
-        
+
     Returns:
         Tuple of (edited_data, was_modified)
     """
     # Use default configurations if none provided
     editor_config = editor_config or EditorConfig()
-    
+
     # Create a working copy of data or initialize empty dict if None
     working_data = {} if data is None else data.copy()
-    
+
     # Format the data as structured text
-    structured_text = format_structured_text(
-        working_data, config, context_info
-    )
-    
+    structured_text = format_structured_text(working_data, config, context_info)
+
     # Track retry attempts
     retry_count = 0
     max_retries = editor_config.max_retries
-    
+
     while retry_count <= max_retries:
         # Prepare message based on retry status
         current_message = editor_config.edit_message
         if retry_count > 0:
             current_message = f"Editing data (Retry {retry_count}/{max_retries}):"
-        
+
         # Open editor
         edited_text, was_modified = edit_text(
             structured_text,
@@ -283,7 +280,7 @@ def edit_structured_data(
             cancel_message=editor_config.cancel_message,
             error_message=editor_config.error_message,
         )
-        
+
         # If user canceled, return original data
         if not was_modified:
             if retry_count > 0:
@@ -291,19 +288,19 @@ def edit_structured_data(
                     "[yellow]No additional changes made. Canceling edit.[/yellow]"
                 )
             return data, False
-        
+
         try:
             # Parse and validate the edited text
             parsed_data = parse_structured_text(edited_text, config)
-            
+
             # If we got here, validation passed
             console.print(f"[green]{editor_config.success_message}[/green]")
             return parsed_data, True
-            
+
         except ValidationError as e:
             # Display the error and retry if we haven't exceeded max retries
             display_validation_error(console, e)
-            
+
             if retry_count < max_retries:
                 retry_count += 1
                 structured_text = edited_text  # Keep user's edits for the retry
@@ -312,7 +309,7 @@ def edit_structured_data(
                     "[bold red]Maximum retry attempts reached. Canceling edit.[/bold red]"
                 )
                 return data, False
-    
+
     # This should never be reached
     return data, False
 
