@@ -120,14 +120,16 @@ def get_event_context_header(
 # Custom class for handling multi-line strings in YAML
 class MultiLineString(str):
     """String subclass that forces YAML to use literal block style (|)."""
-    
-    def __new__(cls, content: str) -> 'MultiLineString':
+
+    def __new__(cls, content: str) -> "MultiLineString":
         """Create a new MultiLineString instance."""
         return super().__new__(cls, content)
 
 
 # Custom YAML representer for MultiLineString
-def _represent_multiline_string(dumper: yaml.Dumper, data: 'MultiLineString') -> yaml.Node:
+def _represent_multiline_string(
+    dumper: yaml.Dumper, data: "MultiLineString"
+) -> yaml.Node:
     """Tell YAML to use the literal block style (|) for MultiLineString objects."""
     return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
 
@@ -392,7 +394,9 @@ def parse_yaml_content(content: str) -> Dict[str, Any]:
         raise YamlParseError(f"YAML parsing error: {error_msg}")
 
 
-def display_validation_error(console: Console, error: Union[Exception, YamlValidationError]) -> None:
+def display_validation_error(
+    console: Console, error: Union[Exception, YamlValidationError]
+) -> None:
     """Display a validation error in a user-friendly way.
 
     Args:
