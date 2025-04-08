@@ -170,10 +170,17 @@ def edit_event(
             )
             raise typer.Exit(1)
 
-        # Get recent events for context
-        recent_events = event_manager.list_events(
-            game_id=game_id, scene_id=scene_id, limit=3
+        # Get recent events for context, excluding the event being edited
+        # First get more events than we need, then filter
+        all_recent_events = event_manager.list_events(
+            game_id=game_id, scene_id=scene_id, limit=5
         )
+        
+        # Filter out the event being edited
+        recent_events = [e for e in all_recent_events if e.id != event_id]
+        
+        # Limit to 3 events for display
+        recent_events = recent_events[:3]
 
         # Get context header using the helper function
         from sologm.cli.utils.editor import (
