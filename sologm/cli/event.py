@@ -122,7 +122,7 @@ def edit_event(
     ),
 ) -> None:
     """Edit an existing event.
-    
+
     If no event ID is provided, edits the most recent event in the current scene.
     """
     game_manager = GameManager()
@@ -141,14 +141,14 @@ def edit_event(
             recent_events = event_manager.list_events(
                 game_id=game_id, scene_id=scene_id, limit=1
             )
-            
+
             if not recent_events:
                 console.print(
                     "[red]Error:[/] No events found in the current scene. "
                     "Please provide an event ID with --id."
                 )
                 raise typer.Exit(1)
-                
+
             event = recent_events[0]
             event_id = event.id
             console.print(f"Editing most recent event (ID: {event_id})")
