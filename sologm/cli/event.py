@@ -1,7 +1,7 @@
 """Event tracking commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional
+from typing import Optional, List
 
 import typer
 from rich.console import Console
@@ -19,14 +19,17 @@ event_app = typer.Typer(help="Event tracking commands")
 
 @event_app.command("add")
 def add_event(
-    description: str = typer.Option(
-        ..., "--description", "-d", help="Description of the event"
+    description: Optional[str] = typer.Option(
+        None, "--description", "-d", help="Description of the event (opens editor if not provided)"
     ),
     source: str = typer.Option(
         "manual", "--source", "-s", help="Source of the event (manual, oracle, dice)"
     ),
 ) -> None:
-    """Add a new event to the current scene."""
+    """Add a new event to the current scene.
+    
+    If no description is provided, opens an editor to create the event.
+    """
     game_manager = GameManager()
     scene_manager = SceneManager()
     event_manager = EventManager()
@@ -35,10 +38,60 @@ def add_event(
         game_id, scene_id = event_manager.validate_active_context(
             game_manager, scene_manager
         )
+        
+        # Get the current scene and game for context
+        scene = scene_manager.get_scene(game_id, scene_id)
+        game = game_manager.get_game(game_id)
+        
+        # If no description is provided, open an editor
+        if description is None:
+            # Get recent events for context
+            recent_events = event_manager.list_events(
+                game_id=game_id, scene_id=scene_id, limit=3
+            )
+            
+            # Get context header using the helper function
+            from sologm.cli.utils.editor import get_event_context_header
+            context_info = get_event_context_header(
+                game_name=game.name,
+                scene_title=scene.title,
+                scene_description=scene.description,
+                recent_events=recent_events
+            )
+            
+            # Prepare data for the editor
+            event_data = {"description": ""}
+            
+            # Use the YAML editor utility
+            from sologm.cli.utils.editor import edit_yaml_data
+            edited_data, was_modified = edit_yaml_data(
+                data=event_data,
+                console=console,
+                header_comment=context_info + "Enter the new event description below:",
+                field_comments={
+                    "description": "The detailed description of the event",
+                },
+                literal_block_fields=["description"],
+                required_fields=["description"],
+                edit_message="Creating new event:",
+                success_message="Event created successfully.",
+                cancel_message="Event creation canceled.",
+                error_message="Could not open editor",
+            )
+            
+            # If the user canceled or didn't modify anything, exit
+            if not was_modified or not edited_data.get("description"):
+                console.print("[yellow]Event creation canceled.[/yellow]")
+                return
+            
+            # Use the edited description
+            description = edited_data["description"]
+        
+        # Add the event with the provided or edited description
         event = event_manager.add_event(
             game_id=game_id, scene_id=scene_id, description=description, source=source
         )
-        scene = scene_manager.get_scene(game_id, scene_id)
+        
         logger.debug(f"Added event {event.id}")
         console.print(f"\nAdded event to scene '{scene.title}':")
         console.print(f"[green]{event.description}[/]")
