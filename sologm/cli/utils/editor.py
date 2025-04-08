@@ -6,17 +6,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    Callable,
     Dict,
     Iterator,
     List,
-    Literal,
     Optional,
-    Protocol,
     Tuple,
-    TypeVar,
     Union,
-    cast,
 )
 
 import click
@@ -209,15 +204,15 @@ def prepare_working_data(
     working_data = {} if data is None else data.copy()
 
     # Ensure all fields from field_comments exist in working_data
-    for field in yaml_config.field_comments:
-        if field not in working_data:
-            working_data[field] = ""
+    for f in yaml_config.field_comments:
+        if f not in working_data:
+            working_data[f] = ""
 
     # Process literal block fields for the working data
-    for field in yaml_config.literal_block_fields:
-        if field in working_data and working_data[field]:
+    for f in yaml_config.literal_block_fields:
+        if f in working_data and working_data[f]:
             # Convert to MultiLineString to force literal block style
-            working_data[field] = MultiLineString(working_data[field])
+            working_data[f] = MultiLineString(working_data[f])
 
     return working_data
 
