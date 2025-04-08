@@ -175,10 +175,10 @@ def edit_event(
         all_recent_events = event_manager.list_events(
             game_id=game_id, scene_id=scene_id, limit=5
         )
-        
+
         # Filter out the event being edited
         recent_events = [e for e in all_recent_events if e.id != event_id]
-        
+
         # Limit to 3 events for display
         recent_events = recent_events[:3]
 
