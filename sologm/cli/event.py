@@ -54,7 +54,7 @@ def add_event(
             )
 
             # Get context header using the helper function
-            from sologm.cli.utils.editor import get_event_context_header
+            from sologm.cli.utils.editor import get_event_context_header, edit_yaml_data
 
             context_info = get_event_context_header(
                 game_name=game.name,
@@ -63,16 +63,11 @@ def add_event(
                 recent_events=recent_events,
             )
 
-            # Prepare data for the editor
-            event_data = {"description": ""}
-
-            # Use the YAML editor utility
-            from sologm.cli.utils.editor import edit_yaml_data
-
+            # Use the YAML editor utility with no initial data (creating new event)
             edited_data, was_modified = edit_yaml_data(
-                data=event_data,
+                data=None,  # No existing data for a new event
                 console=console,
-                header_comment=context_info + "Enter the new event description below:",
+                context_info=context_info,
                 field_comments={
                     "description": "The detailed description of the event",
                 },
@@ -149,12 +144,11 @@ def edit_event(
             recent_events=recent_events,
         )
 
-        event_data = {"description": event.description}
-
+        # Use the YAML editor utility with existing data
         edited_data, was_modified = edit_yaml_data(
-            data=event_data,
+            data={"description": event.description},  # Existing data
             console=console,
-            header_comment=context_info + "Edit the event description below:",
+            context_info=context_info,
             field_comments={
                 "description": "The detailed description of the event",
             },

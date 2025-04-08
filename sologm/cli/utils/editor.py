@@ -168,9 +168,9 @@ def prepare_yaml_for_editing(
 
 
 def edit_yaml_data(
-    data: Dict[str, Any],
+    data: Optional[Dict[str, Any]],
     console: Console,
-    header_comment: str = "Edit the details below:",
+    context_info: str = "",
     field_comments: Optional[Dict[str, str]] = None,
     literal_block_fields: Optional[list] = None,
     required_fields: Optional[list] = None,
@@ -183,10 +183,10 @@ def edit_yaml_data(
     """Edit data using YAML format in an external editor.
 
     Args:
-        data: Dictionary of data to edit
+        data: Dictionary of data to edit (None or empty dict for new items)
         console: Rich console for output
-        header_comment: Comment to place at the top of the file
-        field_comments: Optional dict mapping field names to comment strings
+        context_info: Context information to include in the header (game, scene, etc.)
+        field_comments: Dict mapping field names to comment strings
         literal_block_fields: List of fields that should use YAML's literal block style
         required_fields: List of fields that cannot be empty
         edit_message: Message to display before editing
@@ -198,20 +198,39 @@ def edit_yaml_data(
     Returns:
         Tuple of (edited_data, was_modified)
     """
-    # Create a string representation of the original data for reference
-    original_data_yaml = yaml.dump(data, sort_keys=False, default_flow_style=False)
-    original_data_lines = original_data_yaml.split("\n")
-    original_data_comment = "# Original values (for reference):\n"
-    for line in original_data_lines:
-        original_data_comment += f"# {line}\n"
-    original_data_comment += "#\n"
-
-    # Combine the header comment with the original data reference
-    full_header = f"{header_comment}\n\n{original_data_comment}"
-
+    # Determine if we're creating or editing based on data
+    is_new = data is None or not data
+    
+    # Create a working copy of data or initialize empty dict if None
+    working_data = {} if data is None else data.copy()
+    
+    # Ensure all fields from field_comments exist in working_data
+    if field_comments:
+        for field in field_comments:
+            if field not in working_data:
+                working_data[field] = ""
+    
+    # Build appropriate header comment
+    header_comment = context_info
+    
+    # Add appropriate instruction based on action type
+    if is_new:
+        header_comment += "Enter the new details below:"
+    else:
+        header_comment += "Edit the details below:"
+        
+        # Add original data reference for edit actions
+        original_data_yaml = yaml.dump(data, sort_keys=False, default_flow_style=False)
+        original_data_lines = original_data_yaml.split("\n")
+        
+        header_comment += "\n\n# Original values (for reference):\n"
+        for line in original_data_lines:
+            header_comment += f"# {line}\n"
+        header_comment += "#\n"
+    
     # Prepare YAML for editing
     yaml_text = prepare_yaml_for_editing(
-        data, full_header, field_comments, literal_block_fields
+        working_data, header_comment, field_comments, literal_block_fields
     )
 
     # Track if any edits were made
@@ -220,15 +239,15 @@ def edit_yaml_data(
     retry_count = 0
     current_error = None
 
-    # Save the original data comment to preserve it across retries
-    original_comment_block = original_data_comment
+    # Save the original header to preserve it across retries
+    original_header = header_comment
 
     while retry_count <= max_retries:
         # Prepare message with error info if this is a retry
         current_message = edit_message
 
         if current_error:
-            error_header = f"ERROR: {current_error}\n\nPlease fix the YAML format and try again.\nCommon issues include:\n- Incorrect indentation\n- Missing or extra colons\n- Unbalanced quotes\n\n{header_comment}\n\n{original_comment_block}"
+            error_header = f"ERROR: {current_error}\n\nPlease fix the YAML format and try again.\nCommon issues include:\n- Incorrect indentation\n- Missing or extra colons\n- Unbalanced quotes\n\n{original_header}"
             current_message = f"Editing data (Retry {retry_count}/{max_retries}):"
 
             # For retries, we'll manually construct the text to preserve user's input
