@@ -275,7 +275,6 @@ def prepare_yaml_for_editing(
     data: Dict[str, Any],
     header_comment: str = "Edit the details below:",
     field_comments: Optional[Dict[str, str]] = None,
-    literal_block_fields: Optional[List[str]] = None,
 ) -> str:
     """Prepare a YAML string for editing with comments and formatting.
 
@@ -283,25 +282,12 @@ def prepare_yaml_for_editing(
         data: Dictionary of data to convert to YAML
         header_comment: Comment to place at the top of the file
         field_comments: Optional dict mapping field names to comment strings
-        literal_block_fields: List of fields that should use YAML's literal block style
-                             (Note: This is kept for backward compatibility but
-                              fields should be converted to MultiLineString before calling)
 
     Returns:
         Formatted YAML string with comments
     """
-    # Create a copy of the data to modify
-    processed_data = data.copy()
-
-    # Process literal block fields if provided (for backward compatibility)
-    if literal_block_fields:
-        for field in literal_block_fields:
-            if field in processed_data and processed_data[field]:
-                # Convert to MultiLineString to force literal block style
-                processed_data[field] = MultiLineString(processed_data[field])
-
     # Convert to YAML
-    yaml_text = yaml.dump(processed_data, sort_keys=False, default_flow_style=False)
+    yaml_text = yaml.dump(data, sort_keys=False, default_flow_style=False)
 
     # Add comments
     lines = [f"# {line}" for line in header_comment.split("\n")]
