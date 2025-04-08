@@ -478,14 +478,8 @@ def edit_yaml_data(
     data: Optional[Dict[str, Any]],
     console: Console,
     context_info: str = "",
-    field_comments: Optional[Dict[str, str]] = None,
-    literal_block_fields: Optional[List[str]] = None,
-    required_fields: Optional[List[str]] = None,
-    edit_message: str = "Editing data:",
-    success_message: str = "Data updated successfully.",
-    cancel_message: str = "Data unchanged.",
-    error_message: str = "Could not open editor",
-    max_retries: int = 2,
+    yaml_config: Optional[YamlConfig] = None,
+    editor_config: Optional[EditorConfig] = None,
 ) -> Tuple[Dict[str, Any], bool]:
     """Edit data using YAML format in an external editor.
 
@@ -493,32 +487,15 @@ def edit_yaml_data(
         data: Dictionary of data to edit (None or empty dict for new items)
         console: Rich console for output
         context_info: Context information to include in the header (game, scene, etc.)
-        field_comments: Dict mapping field names to comment strings
-        literal_block_fields: List of fields that should use YAML's literal block style
-        required_fields: List of fields that cannot be empty
-        edit_message: Message to display before editing
-        success_message: Message to display on successful edit
-        cancel_message: Message to display when edit is canceled
-        error_message: Message to display when editor fails to open
-        max_retries: Maximum number of retries for parsing errors
+        yaml_config: Configuration for YAML formatting and validation
+        editor_config: Configuration for editor behavior
 
     Returns:
         Tuple of (edited_data, was_modified)
     """
-    # Create configuration objects
-    editor_config = EditorConfig(
-        edit_message=edit_message,
-        success_message=success_message,
-        cancel_message=cancel_message,
-        error_message=error_message,
-        max_retries=max_retries,
-    )
-
-    yaml_config = YamlConfig(
-        field_comments=field_comments or {},
-        literal_block_fields=literal_block_fields or [],
-        required_fields=required_fields or [],
-    )
+    # Use default configurations if none provided
+    yaml_config = yaml_config or YamlConfig()
+    editor_config = editor_config or EditorConfig()
 
     # Determine if we're creating or editing based on data
     mode = EditorMode.CREATE if data is None or not data else EditorMode.EDIT

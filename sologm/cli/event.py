@@ -54,7 +54,12 @@ def add_event(
             )
 
             # Get context header using the helper function
-            from sologm.cli.utils.editor import get_event_context_header, edit_yaml_data
+            from sologm.cli.utils.editor import (
+                get_event_context_header,
+                edit_yaml_data,
+                EditorConfig,
+                YamlConfig,
+            )
 
             context_info = get_event_context_header(
                 game_name=game.name,
@@ -63,20 +68,29 @@ def add_event(
                 recent_events=recent_events,
             )
 
-            # Use the YAML editor utility with no initial data (creating new event)
-            edited_data, was_modified = edit_yaml_data(
-                data=None,  # No existing data for a new event
-                console=console,
-                context_info=context_info,
+            # Create editor and YAML configurations
+            editor_config = EditorConfig(
+                edit_message="Creating new event:",
+                success_message="Event created successfully.",
+                cancel_message="Event creation canceled.",
+                error_message="Could not open editor",
+            )
+
+            yaml_config = YamlConfig(
                 field_comments={
                     "description": "The detailed description of the event",
                 },
                 literal_block_fields=["description"],
                 required_fields=["description"],
-                edit_message="Creating new event:",
-                success_message="Event created successfully.",
-                cancel_message="Event creation canceled.",
-                error_message="Could not open editor",
+            )
+
+            # Use the YAML editor utility with no initial data (creating new event)
+            edited_data, was_modified = edit_yaml_data(
+                data=None,  # No existing data for a new event
+                console=console,
+                context_info=context_info,
+                yaml_config=yaml_config,
+                editor_config=editor_config,
             )
 
             # If the user canceled or didn't modify anything, exit
@@ -135,7 +149,12 @@ def edit_event(
         )
 
         # Get context header using the helper function
-        from sologm.cli.utils.editor import edit_yaml_data, get_event_context_header
+        from sologm.cli.utils.editor import (
+            edit_yaml_data,
+            get_event_context_header,
+            EditorConfig,
+            YamlConfig,
+        )
 
         context_info = get_event_context_header(
             game_name=game.name,
@@ -144,20 +163,29 @@ def edit_event(
             recent_events=recent_events,
         )
 
-        # Use the YAML editor utility with existing data
-        edited_data, was_modified = edit_yaml_data(
-            data={"description": event.description},  # Existing data
-            console=console,
-            context_info=context_info,
+        # Create editor and YAML configurations
+        editor_config = EditorConfig(
+            edit_message=f"Editing event {event_id}:",
+            success_message="Event updated successfully.",
+            cancel_message="Event unchanged.",
+            error_message="Could not open editor",
+        )
+
+        yaml_config = YamlConfig(
             field_comments={
                 "description": "The detailed description of the event",
             },
             literal_block_fields=["description"],
             required_fields=["description"],
-            edit_message=f"Editing event {event_id}:",
-            success_message="Event updated successfully.",
-            cancel_message="Event unchanged.",
-            error_message="Could not open editor",
+        )
+
+        # Use the YAML editor utility with existing data
+        edited_data, was_modified = edit_yaml_data(
+            data={"description": event.description},  # Existing data
+            console=console,
+            context_info=context_info,
+            yaml_config=yaml_config,
+            editor_config=editor_config,
         )
 
         # Update the event if it was modified
