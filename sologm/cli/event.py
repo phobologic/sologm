@@ -53,12 +53,13 @@ def add_event(
                 game_id=game_id, scene_id=scene_id, limit=3
             )
 
-            # Get context header using the helper function
-            from sologm.cli.utils.editor import (
-                get_event_context_header,
-                edit_yaml_data,
+            # Import the structured editor
+            from sologm.cli.utils.structured_editor import (
+                edit_structured_data,
                 EditorConfig,
-                YamlConfig,
+                FieldConfig,
+                StructuredEditorConfig,
+                get_event_context_header,
             )
 
             context_info = get_event_context_header(
@@ -68,7 +69,7 @@ def add_event(
                 recent_events=recent_events,
             )
 
-            # Create editor and YAML configurations
+            # Create editor configurations
             editor_config = EditorConfig(
                 edit_message="Creating new event:",
                 success_message="Event created successfully.",
@@ -76,20 +77,33 @@ def add_event(
                 error_message="Could not open editor",
             )
 
-            yaml_config = YamlConfig(
-                field_comments={
-                    "description": "The detailed description of the event",
-                },
-                literal_block_fields=["description"],
-                required_fields=["description"],
+            # Configure the structured editor fields
+            structured_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="description",
+                        display_name="Event Description",
+                        help_text="The detailed description of the event",
+                        required=True,
+                        multiline=True,
+                    ),
+                    FieldConfig(
+                        name="source",
+                        display_name="Source",
+                        help_text="Source of the event (manual, oracle, dice)",
+                        required=False,
+                        multiline=False,
+                    ),
+                ]
             )
 
-            # Use the YAML editor utility with no initial data (creating new event)
-            edited_data, was_modified = edit_yaml_data(
-                data=None,  # No existing data for a new event
+            # Use the structured editor with initial data
+            initial_data = {"source": source}
+            edited_data, was_modified = edit_structured_data(
+                data=initial_data,
                 console=console,
+                config=structured_config,
                 context_info=context_info,
-                yaml_config=yaml_config,
                 editor_config=editor_config,
             )
 
@@ -98,8 +112,10 @@ def add_event(
                 console.print("[yellow]Event creation canceled.[/yellow]")
                 return
 
-            # Use the edited description
+            # Use the edited description and source
             description = edited_data["description"]
+            if "source" in edited_data and edited_data["source"]:
+                source = edited_data["source"]
 
         # Add the event with the provided or edited description
         event = event_manager.add_event(
@@ -182,12 +198,13 @@ def edit_event(
         # Limit to 3 events for display
         recent_events = recent_events[:3]
 
-        # Get context header using the helper function
-        from sologm.cli.utils.editor import (
-            edit_yaml_data,
-            get_event_context_header,
+        # Import the structured editor
+        from sologm.cli.utils.structured_editor import (
+            edit_structured_data,
             EditorConfig,
-            YamlConfig,
+            FieldConfig,
+            StructuredEditorConfig,
+            get_event_context_header,
         )
 
         context_info = get_event_context_header(
@@ -197,7 +214,7 @@ def edit_event(
             recent_events=recent_events,
         )
 
-        # Create editor and YAML configurations
+        # Create editor configurations
         editor_config = EditorConfig(
             edit_message=f"Editing event {event_id}:",
             success_message="Event updated successfully.",
@@ -205,27 +222,45 @@ def edit_event(
             error_message="Could not open editor",
         )
 
-        yaml_config = YamlConfig(
-            field_comments={
-                "description": "The detailed description of the event",
-            },
-            literal_block_fields=["description"],
-            required_fields=["description"],
+        # Configure the structured editor fields
+        structured_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(
+                    name="description",
+                    display_name="Event Description",
+                    help_text="The detailed description of the event",
+                    required=True,
+                    multiline=True,
+                ),
+                FieldConfig(
+                    name="source",
+                    display_name="Source",
+                    help_text="Source of the event (manual, oracle, dice)",
+                    required=False,
+                    multiline=False,
+                ),
+            ]
         )
 
-        # Use the YAML editor utility with existing data
-        edited_data, was_modified = edit_yaml_data(
-            data={"description": event.description},  # Existing data
+        # Use the structured editor with existing data
+        initial_data = {
+            "description": event.description,
+            "source": event.source
+        }
+        edited_data, was_modified = edit_structured_data(
+            data=initial_data,
             console=console,
+            config=structured_config,
             context_info=context_info,
-            yaml_config=yaml_config,
             editor_config=editor_config,
         )
 
         # Update the event if it was modified
         if was_modified:
+            # Check if source was changed
+            source = edited_data.get("source", event.source)
             updated_event = event_manager.update_event(
-                event_id, edited_data["description"]
+                event_id, edited_data["description"], source
             )
             console.print(f"\nUpdated event in scene '{scene.title}':")
             console.print(f"[green]{updated_event.description}[/]")
