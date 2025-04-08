@@ -58,6 +58,7 @@ def format_structured_text(
     data: Dict[str, Any],
     config: StructuredEditorConfig,
     context_info: str = "",
+    original_data: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Format data as structured text blocks.
 
@@ -65,6 +66,7 @@ def format_structured_text(
         data: Dictionary of data to format
         config: Editor configuration
         context_info: Context information to include at the top
+        original_data: Optional original data for reference in edit mode
 
     Returns:
         Formatted text with structured blocks
@@ -89,6 +91,15 @@ def format_structured_text(
         # Add required indicator if the field is required
         if field_config.required:
             lines.append(f"# (Required)")
+            
+        # Add original value as a comment if we're in edit mode
+        if original_data and field_name in original_data:
+            original_value = original_data[field_name]
+            if original_value:
+                lines.append(f"# Original value:")
+                for line in str(original_value).split("\n"):
+                    lines.append(f"# {line}")
+                lines.append("#")
 
         # Add field header
         lines.append(f"--- {display_name} ---")
@@ -239,6 +250,7 @@ def edit_structured_data(
     config: StructuredEditorConfig,
     context_info: str = "",
     editor_config: Optional[EditorConfig] = None,
+    is_new: bool = False,
 ) -> Tuple[Dict[str, Any], bool]:
     """Edit data using structured text blocks in an external editor.
 
@@ -248,6 +260,7 @@ def edit_structured_data(
         config: Configuration for structured text editor
         context_info: Context information to include at the top
         editor_config: Configuration for editor behavior
+        is_new: Whether this is a new item (if True, don't show original values)
 
     Returns:
         Tuple of (edited_data, was_modified)
@@ -259,7 +272,10 @@ def edit_structured_data(
     working_data = {} if data is None else data.copy()
 
     # Format the data as structured text
-    structured_text = format_structured_text(working_data, config, context_info)
+    original_data = None if is_new else data
+    structured_text = format_structured_text(
+        working_data, config, context_info, original_data
+    )
 
     # Track retry attempts
     retry_count = 0

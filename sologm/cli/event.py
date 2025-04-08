@@ -105,6 +105,7 @@ def add_event(
                 config=structured_config,
                 context_info=context_info,
                 editor_config=editor_config,
+                is_new=True,  # This is a new event
             )
 
             # If the user canceled or didn't modify anything, exit
@@ -250,6 +251,7 @@ def edit_event(
             config=structured_config,
             context_info=context_info,
             editor_config=editor_config,
+            is_new=False,  # This is an existing event
         )
 
         # Update the event if it was modified
