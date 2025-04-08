@@ -117,9 +117,14 @@ def add_event(
 
 @event_app.command("edit")
 def edit_event(
-    event_id: str = typer.Option(..., "--id", help="ID of the event to edit"),
+    event_id: Optional[str] = typer.Option(
+        None, "--id", help="ID of the event to edit (defaults to most recent event)"
+    ),
 ) -> None:
-    """Edit an existing event."""
+    """Edit an existing event.
+    
+    If no event ID is provided, edits the most recent event in the current scene.
+    """
     game_manager = GameManager()
     scene_manager = SceneManager()
     event_manager = EventManager()
@@ -130,11 +135,29 @@ def edit_event(
             game_manager, scene_manager
         )
 
-        # Get the event
-        event = event_manager.get_event(event_id)
-        if not event:
-            console.print(f"[red]Error:[/] Event with ID '{event_id}' not found")
-            raise typer.Exit(1)
+        # If no event_id provided, get the most recent event
+        if event_id is None:
+            # Get the most recent event (limit=1)
+            recent_events = event_manager.list_events(
+                game_id=game_id, scene_id=scene_id, limit=1
+            )
+            
+            if not recent_events:
+                console.print(
+                    "[red]Error:[/] No events found in the current scene. "
+                    "Please provide an event ID with --id."
+                )
+                raise typer.Exit(1)
+                
+            event = recent_events[0]
+            event_id = event.id
+            console.print(f"Editing most recent event (ID: {event_id})")
+        else:
+            # Get the specified event
+            event = event_manager.get_event(event_id)
+            if not event:
+                console.print(f"[red]Error:[/] Event with ID '{event_id}' not found")
+                raise typer.Exit(1)
 
         # Check if event belongs to current scene
         if event.scene_id != scene_id:
