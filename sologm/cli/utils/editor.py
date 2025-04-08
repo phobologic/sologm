@@ -210,9 +210,12 @@ def prepare_working_data(
 
     # Process literal block fields for the working data
     for f in yaml_config.literal_block_fields:
-        if f in working_data and working_data[f]:
-            # Convert to MultiLineString to force literal block style
+        # Always convert literal block fields to MultiLineString, even if empty
+        if f in working_data:
             working_data[f] = MultiLineString(working_data[f])
+        # Also handle the case where the field doesn't exist yet
+        elif f not in working_data:
+            working_data[f] = MultiLineString("")
 
     return working_data
 
