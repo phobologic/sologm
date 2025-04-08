@@ -124,7 +124,9 @@ class EventManager(BaseManager[Event, Event]):
             lambda session: session.query(Event).filter(Event.id == event_id).first(),
         )
 
-    def update_event(self, event_id: str, description: str, source: Optional[str] = None) -> Event:
+    def update_event(
+        self, event_id: str, description: str, source: Optional[str] = None
+    ) -> Event:
         """Update an event's description and optionally its source.
 
         Args:
@@ -147,7 +149,7 @@ class EventManager(BaseManager[Event, Event]):
             event.description = description
             if source is not None:
                 event.source = source
-            
+
             session.add(event)
             return event
 

@@ -168,7 +168,7 @@ class TestEventManager:
         # Verify the event was updated in the database
         retrieved_event = event_manager.get_event(event.id)
         assert retrieved_event.description == "Updated description"
-        
+
     def test_update_event_with_source(
         self, event_manager, test_game, test_scene, create_test_event
     ):
@@ -176,7 +176,7 @@ class TestEventManager:
         # Create a test event
         event = create_test_event(test_game.id, test_scene.id, "Original description")
         assert event.source == "manual"  # Default source
-        
+
         # Update the event with a new source
         updated_event = event_manager.update_event(
             event.id, "Updated description", "oracle"
