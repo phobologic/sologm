@@ -110,8 +110,7 @@ def add_event(
 
             # If the user canceled or didn't modify anything, exit
             if not was_modified or not edited_data.get("description"):
-                console.print("[yellow]Event creation canceled.[/yellow]")
-                return
+                return  # Just return without printing a duplicate message
 
             # Use the edited description and source
             description = edited_data["description"]
