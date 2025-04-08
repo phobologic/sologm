@@ -124,12 +124,13 @@ class EventManager(BaseManager[Event, Event]):
             lambda session: session.query(Event).filter(Event.id == event_id).first(),
         )
 
-    def update_event(self, event_id: str, description: str) -> Event:
-        """Update an event's description.
+    def update_event(self, event_id: str, description: str, source: Optional[str] = None) -> Event:
+        """Update an event's description and optionally its source.
 
         Args:
             event_id: ID of the event to update
             description: New description for the event
+            source: Optional new source for the event
 
         Returns:
             The updated event
@@ -144,6 +145,9 @@ class EventManager(BaseManager[Event, Event]):
                 raise EventError(f"Event with ID '{event_id}' not found")
 
             event.description = description
+            if source is not None:
+                event.source = source
+            
             session.add(event)
             return event
 

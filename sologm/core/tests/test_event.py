@@ -163,10 +163,34 @@ class TestEventManager:
         # Verify the event was updated correctly
         assert updated_event.id == event.id
         assert updated_event.description == "Updated description"
+        assert updated_event.source == "manual"  # Source should remain unchanged
 
         # Verify the event was updated in the database
         retrieved_event = event_manager.get_event(event.id)
         assert retrieved_event.description == "Updated description"
+        
+    def test_update_event_with_source(
+        self, event_manager, test_game, test_scene, create_test_event
+    ):
+        """Test updating an event's description and source."""
+        # Create a test event
+        event = create_test_event(test_game.id, test_scene.id, "Original description")
+        assert event.source == "manual"  # Default source
+        
+        # Update the event with a new source
+        updated_event = event_manager.update_event(
+            event.id, "Updated description", "oracle"
+        )
+
+        # Verify the event was updated correctly
+        assert updated_event.id == event.id
+        assert updated_event.description == "Updated description"
+        assert updated_event.source == "oracle"  # Source should be updated
+
+        # Verify the event was updated in the database
+        retrieved_event = event_manager.get_event(event.id)
+        assert retrieved_event.description == "Updated description"
+        assert retrieved_event.source == "oracle"
 
     def test_update_nonexistent_event(self, event_manager):
         """Test updating a nonexistent event."""
