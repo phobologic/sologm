@@ -91,7 +91,7 @@ def format_structured_text(
         # Add required indicator if the field is required
         if field_config.required:
             lines.append(f"# (Required)")
-            
+
         # Add original value as a comment if we're in edit mode
         if original_data and field_name in original_data:
             original_value = original_data[field_name]
