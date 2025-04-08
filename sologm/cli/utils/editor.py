@@ -6,11 +6,17 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterator,
     List,
+    Literal,
     Optional,
+    Protocol,
     Tuple,
+    TypeVar,
+    Union,
+    cast,
 )
 
 import click
@@ -81,7 +87,7 @@ def get_event_context_header(
     game_name: str,
     scene_title: str,
     scene_description: str,
-    recent_events: Optional[List] = None,
+    recent_events: Optional[List[Any]] = None,
 ) -> str:
     """Create a context header for event editing.
 
@@ -114,12 +120,14 @@ def get_event_context_header(
 # Custom class for handling multi-line strings in YAML
 class MultiLineString(str):
     """String subclass that forces YAML to use literal block style (|)."""
-
-    pass
+    
+    def __new__(cls, content: str) -> 'MultiLineString':
+        """Create a new MultiLineString instance."""
+        return super().__new__(cls, content)
 
 
 # Custom YAML representer for MultiLineString
-def _represent_multiline_string(dumper, data):
+def _represent_multiline_string(dumper: yaml.Dumper, data: 'MultiLineString') -> yaml.Node:
     """Tell YAML to use the literal block style (|) for MultiLineString objects."""
     return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
 
@@ -333,6 +341,7 @@ def validate_yaml_data(
 
     Raises:
         YamlValidationError: If validation fails
+        RequiredFieldError: If required fields are missing
     """
     # Validate the structure
     if not isinstance(data, dict):
@@ -383,7 +392,7 @@ def parse_yaml_content(content: str) -> Dict[str, Any]:
         raise YamlParseError(f"YAML parsing error: {error_msg}")
 
 
-def display_validation_error(console: Console, error: Exception) -> None:
+def display_validation_error(console: Console, error: Union[Exception, YamlValidationError]) -> None:
     """Display a validation error in a user-friendly way.
 
     Args:
