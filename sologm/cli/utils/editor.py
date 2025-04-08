@@ -129,6 +129,8 @@ def prepare_yaml_for_editing(
         header_comment: Comment to place at the top of the file
         field_comments: Optional dict mapping field names to comment strings
         literal_block_fields: List of fields that should use YAML's literal block style
+                             (Note: This is kept for backward compatibility but
+                              fields should be converted to MultiLineString before calling)
 
     Returns:
         Formatted YAML string with comments
@@ -136,7 +138,7 @@ def prepare_yaml_for_editing(
     # Create a copy of the data to modify
     processed_data = data.copy()
 
-    # Process literal block fields
+    # Process literal block fields if provided (for backward compatibility)
     if literal_block_fields:
         for field in literal_block_fields:
             if field in processed_data and processed_data[field]:
@@ -209,6 +211,13 @@ def edit_yaml_data(
         for field in field_comments:
             if field not in working_data:
                 working_data[field] = ""
+    
+    # Process literal block fields for the working data
+    if literal_block_fields:
+        for field in literal_block_fields:
+            if field in working_data and working_data[field]:
+                # Convert to MultiLineString to force literal block style
+                working_data[field] = MultiLineString(working_data[field])
 
     # Build appropriate header comment
     header_comment = context_info
@@ -219,8 +228,17 @@ def edit_yaml_data(
     else:
         header_comment += "Edit the details below:"
 
+        # Create a copy of the original data for the reference block
+        original_data_for_display = {} if data is None else data.copy()
+        
+        # Also convert literal block fields in the original data for display
+        if literal_block_fields and data:
+            for field in literal_block_fields:
+                if field in original_data_for_display and original_data_for_display[field]:
+                    original_data_for_display[field] = MultiLineString(original_data_for_display[field])
+        
         # Add original data reference for edit actions
-        original_data_yaml = yaml.dump(data, sort_keys=False, default_flow_style=False)
+        original_data_yaml = yaml.dump(original_data_for_display, sort_keys=False, default_flow_style=False)
         original_data_lines = original_data_yaml.split("\n")
 
         header_comment += "\n\n# Original values (for reference):\n"
@@ -228,9 +246,9 @@ def edit_yaml_data(
             header_comment += f"# {line}\n"
         header_comment += "#\n"
 
-    # Prepare YAML for editing
+    # Prepare YAML for editing - we've already converted the fields to MultiLineString objects
     yaml_text = prepare_yaml_for_editing(
-        working_data, header_comment, field_comments, literal_block_fields
+        working_data, header_comment, field_comments
     )
 
     # Track if any edits were made
