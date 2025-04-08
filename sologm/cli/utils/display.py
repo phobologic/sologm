@@ -996,13 +996,13 @@ def get_event_context_header(
     recent_events: Optional[List] = None,
 ) -> str:
     """Create a context header for event editing.
-    
+
     Args:
         game_name: Name of the current game
         scene_title: Title of the current scene
         scene_description: Description of the current scene
         recent_events: Optional list of recent events
-        
+
     Returns:
         Formatted context header as a string
     """
@@ -1012,12 +1012,12 @@ def get_event_context_header(
         f"Scene: {scene_title}\n\n"
         f"Scene Description:\n{scene_description}\n\n"
     )
-    
+
     # Add recent events if any
     if recent_events:
         context_info += "Recent Events:\n"
         for i, event in enumerate(recent_events, 1):
             context_info += f"{i}. [{event.source}] {event.description}\n"
         context_info += "\n"
-    
+
     return context_info
