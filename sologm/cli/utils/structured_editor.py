@@ -2,6 +2,7 @@
 
 import logging
 import re
+import textwrap
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -52,6 +53,37 @@ class StructuredEditorConfig:
     """Configuration for structured text editor."""
 
     fields: List[FieldConfig] = field(default_factory=list)
+    wrap_width: int = 70  # Default width for text wrapping
+
+
+def wrap_text(text: str, width: int = 70, indent: str = "  ") -> List[str]:
+    """Wrap text at specified width with proper indentation.
+    
+    Args:
+        text: Text to wrap
+        width: Maximum width for each line
+        indent: String to use for indentation of continuation lines
+        
+    Returns:
+        List of wrapped lines
+    """
+    wrapped_lines = []
+    for line in text.split('\n'):
+        # If the line is already short enough, just add it
+        if len(line) <= width:
+            wrapped_lines.append(line)
+        else:
+            # Wrap the line and add proper indentation for continuation lines
+            wrapped = textwrap.wrap(line, width=width)
+            for i, wrapped_line in enumerate(wrapped):
+                if i == 0:
+                    # First line has no additional indent
+                    wrapped_lines.append(wrapped_line)
+                else:
+                    # Continuation lines get indentation
+                    wrapped_lines.append(f"{indent}{wrapped_line}")
+    
+    return wrapped_lines
 
 
 def format_structured_text(
@@ -72,21 +104,28 @@ def format_structured_text(
         Formatted text with structured blocks
     """
     lines = []
+    wrap_width = config.wrap_width
 
-    # Add context information with hash marks
+    # Add context information with hash marks and proper wrapping
     if context_info:
-        for line in context_info.split("\n"):
-            lines.append(f"# {line}")
-        lines.append("")  # Empty line after context
+        # Split context info into sections
+        sections = context_info.split("\n\n")
+        for section in sections:
+            if section.strip():
+                # Wrap each section and add comment markers
+                for line in wrap_text(section, width=wrap_width):
+                    lines.append(f"# {line}")
+                lines.append("")  # Empty line after each section
 
     # Add each field as a structured block
     for field_config in config.fields:
         field_name = field_config.name
         display_name = field_config.display_name.upper()
 
-        # Add help text as a comment
+        # Add help text as a comment with wrapping
         if field_config.help_text:
-            lines.append(f"# {field_config.help_text}")
+            for line in wrap_text(field_config.help_text, width=wrap_width):
+                lines.append(f"# {line}")
 
         # Add required indicator if the field is required
         if field_config.required:
@@ -97,8 +136,10 @@ def format_structured_text(
             original_value = original_data[field_name]
             if original_value:
                 lines.append(f"# Original value:")
-                for line in str(original_value).split("\n"):
-                    lines.append(f"# {line}")
+                # Wrap each line of the original value
+                for orig_line in str(original_value).split("\n"):
+                    for wrapped_line in wrap_text(orig_line, width=wrap_width):
+                        lines.append(f"# {wrapped_line}")
                 lines.append("#")
 
         # Add field header
@@ -348,17 +389,20 @@ def get_event_context_header(
         Formatted context header as a string
     """
     # Create context information for the editor
-    context_info = (
-        f"Game: {game_name}\n"
-        f"Scene: {scene_title}\n\n"
-        f"Scene Description:\n{scene_description}\n\n"
-    )
+    context_info = [
+        f"Game: {game_name}",
+        f"Scene: {scene_title}",
+        "",
+        "Scene Description:",
+        scene_description,
+        "",
+    ]
 
     # Add recent events if any
     if recent_events:
-        context_info += "Recent Events:\n"
+        context_info.append("Recent Events:")
         for i, event in enumerate(recent_events, 1):
-            context_info += f"{i}. [{event.source}] {event.description}\n"
-        context_info += "\n"
+            context_info.append(f"{i}. [{event.source}] {event.description}")
+        context_info.append("")
 
-    return context_info
+    return "\n".join(context_info)
