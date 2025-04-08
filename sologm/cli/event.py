@@ -134,6 +134,10 @@ def edit_event(
         game_id, scene_id = event_manager.validate_active_context(
             game_manager, scene_manager
         )
+        
+        # Get the game and scene objects
+        game = game_manager.get_game(game_id)
+        scene = scene_manager.get_scene(game_id, scene_id)
 
         # If no event_id provided, get the most recent event
         if event_id is None:
@@ -217,7 +221,7 @@ def edit_event(
                 event_id, edited_data["description"]
             )
             console.print(
-                f"\nUpdated event in scene '{scene_manager.get_scene(game_id, scene_id).title}':"
+                f"\nUpdated event in scene '{scene.title}':"
             )
             console.print(f"[green]{updated_event.description}[/]")
         else:
