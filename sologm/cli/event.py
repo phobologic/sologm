@@ -134,15 +134,27 @@ def edit_event(
             )
             raise typer.Exit(1)
 
-        # Use the YAML editor utility to edit the event
-        from sologm.cli.utils.editor import edit_yaml_data
+        # Get recent events for context
+        recent_events = event_manager.list_events(
+            game_id=game_id, scene_id=scene_id, limit=3
+        )
+
+        # Get context header using the helper function
+        from sologm.cli.utils.editor import edit_yaml_data, get_event_context_header
+
+        context_info = get_event_context_header(
+            game_name=game.name,
+            scene_title=scene.title,
+            scene_description=scene.description,
+            recent_events=recent_events,
+        )
 
         event_data = {"description": event.description}
 
         edited_data, was_modified = edit_yaml_data(
             data=event_data,
             console=console,
-            header_comment="Edit the event description below:",
+            header_comment=context_info + "Edit the event description below:",
             field_comments={
                 "description": "The detailed description of the event",
             },
