@@ -211,7 +211,7 @@ def edit_yaml_data(
         for field in field_comments:
             if field not in working_data:
                 working_data[field] = ""
-    
+
     # Process literal block fields for the working data
     if literal_block_fields:
         for field in literal_block_fields:
@@ -230,15 +230,22 @@ def edit_yaml_data(
 
         # Create a copy of the original data for the reference block
         original_data_for_display = {} if data is None else data.copy()
-        
+
         # Also convert literal block fields in the original data for display
         if literal_block_fields and data:
             for field in literal_block_fields:
-                if field in original_data_for_display and original_data_for_display[field]:
-                    original_data_for_display[field] = MultiLineString(original_data_for_display[field])
-        
+                if (
+                    field in original_data_for_display
+                    and original_data_for_display[field]
+                ):
+                    original_data_for_display[field] = MultiLineString(
+                        original_data_for_display[field]
+                    )
+
         # Add original data reference for edit actions
-        original_data_yaml = yaml.dump(original_data_for_display, sort_keys=False, default_flow_style=False)
+        original_data_yaml = yaml.dump(
+            original_data_for_display, sort_keys=False, default_flow_style=False
+        )
         original_data_lines = original_data_yaml.split("\n")
 
         header_comment += "\n\n# Original values (for reference):\n"
@@ -247,9 +254,7 @@ def edit_yaml_data(
         header_comment += "#\n"
 
     # Prepare YAML for editing - we've already converted the fields to MultiLineString objects
-    yaml_text = prepare_yaml_for_editing(
-        working_data, header_comment, field_comments
-    )
+    yaml_text = prepare_yaml_for_editing(working_data, header_comment, field_comments)
 
     # Track if any edits were made
     any_edits_made = False
