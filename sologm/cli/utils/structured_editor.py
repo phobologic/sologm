@@ -58,17 +58,17 @@ class StructuredEditorConfig:
 
 def wrap_text(text: str, width: int = 70, indent: str = "  ") -> List[str]:
     """Wrap text at specified width with proper indentation.
-    
+
     Args:
         text: Text to wrap
         width: Maximum width for each line
         indent: String to use for indentation of continuation lines
-        
+
     Returns:
         List of wrapped lines
     """
     wrapped_lines = []
-    for line in text.split('\n'):
+    for line in text.split("\n"):
         # If the line is already short enough, just add it
         if len(line) <= width:
             wrapped_lines.append(line)
@@ -82,7 +82,7 @@ def wrap_text(text: str, width: int = 70, indent: str = "  ") -> List[str]:
                 else:
                     # Continuation lines get indentation
                     wrapped_lines.append(f"{indent}{wrapped_line}")
-    
+
     return wrapped_lines
 
 
