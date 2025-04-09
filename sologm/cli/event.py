@@ -107,7 +107,9 @@ def add_event(
             )
 
             # Use the structured editor with initial data
-            initial_data = {"source": source if isinstance(source, str) else source.name}
+            initial_data = {
+                "source": source if isinstance(source, str) else source.name
+            }
             edited_data, was_modified = edit_structured_data(
                 data=initial_data,
                 console=console,
