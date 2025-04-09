@@ -129,20 +129,20 @@ def display_interpretation(
     )
 
     st = StyledText
-    
+
     # Create panel title with sequence number, title, selection indicator, and ID
     sequence_text = f"(#{sequence}) " if sequence is not None else ""
-    
+
     # Build the title components
     title_parts = [st.title(f"{sequence_text}{interp.title}")]
-    
+
     # Add selection indicator if selected
     if interp.is_selected or selected:
         title_parts.extend([" ", st.success("(Selected)")])
-    
+
     # Add ID and slug
     title_parts.extend([" ", st.timestamp(f"({interp.slug} / {interp.id})")])
-    
+
     # Combine into a single Text object
     panel_title = st.combine(*title_parts)
 
@@ -419,7 +419,7 @@ def display_interpretation_set(
         show_context: Whether to show context information
     """
     st = StyledText
-    
+
     # Access interpretations relationship directly
     interpretation_count = len(interp_set.interpretations)
 
@@ -506,9 +506,9 @@ def display_scene_info(console: Console, scene: Scene) -> None:
     )
 
     panel = Panel(
-        panel_content, 
-        title=panel_title, 
-        border_style=border_style, 
+        panel_content,
+        title=panel_title,
+        border_style=border_style,
         title_align="left"
     )
 
@@ -672,7 +672,7 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
     content = Text()
     content.append(truncated_description)
     content.append("\n")
-    
+
     # Add metadata with dim style
     metadata_text = st.format_metadata(metadata)
     metadata_text.stylize("dim")
@@ -735,7 +735,7 @@ def _create_scene_panels_grid(
         logger.debug(
             f"Truncated active scene description from {len(active_scene.description)} to {len(truncated_description)} chars"
         )
-        
+
         scenes_content = st.combine(
             st.title(active_scene.title),
             "\n",
@@ -770,7 +770,7 @@ def _create_scene_panels_grid(
         logger.debug(
             f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars"
         )
-        
+
         prev_scene_content = st.combine(
             st.title(prev_scene.title),
             "\n",
@@ -800,7 +800,7 @@ def _create_scene_panels_grid(
 def _create_events_panel(recent_events: List[Event], truncation_length: int) -> Panel:
     """Create the recent events panel."""
     logger.debug(f"Creating events panel with {len(recent_events)} events")
-    
+
     st = StyledText
     events_content = Text()
 
@@ -820,16 +820,16 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
             )
 
             logger.debug(f"Adding event {event.id} to panel (source: {source_name})")
-            
+
             # Add a newline between events
             if i > 0:
                 events_content.append("\n\n")
-                
+
             # Truncate long descriptions based on calculated width
             truncated_description = truncate_text(
                 event.description, max_length=truncation_length
             )
-            
+
             # Add event header with timestamp and source
             events_content.append(st.timestamp(event.created_at.strftime('%Y-%m-%d %H:%M')))
             events_content.append(" ")
@@ -900,10 +900,10 @@ def _create_pending_oracle_panel(
     logger.debug(f"Creating pending oracle panel for set {interp_set.id}")
 
     st = StyledText
-    
+
     # Create panel content
     panel_content = Text()
-    
+
     # Add header
     panel_content.append(st.warning("Open Oracle Interpretation:"))
     panel_content.append("\n")
@@ -911,18 +911,18 @@ def _create_pending_oracle_panel(
     panel_content.append(" ")
     panel_content.append(interp_set.context)
     panel_content.append("\n\n")
-    
+
     # Add interpretation options
     for i, interp in enumerate(interp_set.interpretations, 1):
         logger.debug(f"Adding interpretation option {i}: {interp.id}")
-        
+
         if i > 1:
             panel_content.append("\n\n")
-            
+
         panel_content.append(st.title(f"{i}. {interp.title}"))
         panel_content.append("\n")
         panel_content.append(interp.description)
-    
+
     # Add footer
     panel_content.append("\n\n")
     panel_content.append(st.subtitle("Use 'sologm oracle select' to choose an interpretation"))
@@ -947,10 +947,10 @@ def _create_recent_oracle_panel(
     )
 
     st = StyledText
-    
+
     # Build the panel content
     panel_content = Text()
-    
+
     # Add oracle results and context
     panel_content.append(st.subtitle("Oracle Results:"))
     panel_content.append(" ")
@@ -960,7 +960,7 @@ def _create_recent_oracle_panel(
     panel_content.append(" ")
     panel_content.append(interp_set.context)
     panel_content.append("\n\n")
-    
+
     # Add selected interpretation
     panel_content.append(st.subtitle("Selected Interpretation:"))
     panel_content.append(" ")
@@ -968,10 +968,10 @@ def _create_recent_oracle_panel(
     panel_content.append("\n")
     panel_content.append(selected_interp.description)
     panel_content.append("\n\n")
-    
+
     # Add other options header
     panel_content.append(st.subtitle("Other options were:"))
-    
+
     # Add other interpretations that weren't selected
     for i, interp in enumerate(interp_set.interpretations, 1):
         if interp.id != selected_interp.id:
@@ -1017,20 +1017,20 @@ def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
     logger.debug(f"Creating dice rolls panel with {len(recent_rolls)} rolls")
 
     st = StyledText
-    
+
     if not recent_rolls:
         logger.debug("No dice rolls to display")
         panel_content = st.subtitle("No recent dice rolls.")
     else:
         panel_content = Text()
-        
+
         for i, roll in enumerate(recent_rolls):
             logger.debug(f"Formatting roll {i + 1}: {roll.notation} = {roll.total}")
-            
+
             # Add spacing between rolls
             if i > 0:
                 panel_content.append("\n\n")
-                
+
             # Create roll header with notation and total
             roll_header = st.combine(
                 st.title(roll.notation),
@@ -1038,19 +1038,19 @@ def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
                 st.success(str(roll.total))
             )
             panel_content.append(roll_header)
-            
+
             # Add reason if available
             if roll.reason:
                 logger.debug(f"Roll has reason: {roll.reason}")
                 panel_content.append(" (")
                 panel_content.append(st.subtitle(roll.reason))
                 panel_content.append(")")
-            
+
             # Add timestamp
             logger.debug(f"Roll timestamp: {roll.created_at}")
             panel_content.append("\n")
             panel_content.append(st.timestamp(roll.created_at.strftime('%Y-%m-%d %H:%M')))
-            
+
             # Add details for complex rolls
             if len(roll.individual_results) > 1:
                 logger.debug(f"Roll has individual results: {roll.individual_results}")
