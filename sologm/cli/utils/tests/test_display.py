@@ -201,16 +201,18 @@ def test_create_scene_panels_grid(test_game, test_scene):
     assert grid is not None
 
 
-def test_create_events_panel(test_events):
+def test_create_events_panel(test_events, display_helpers):
     """Test creating the events panel."""
+    create_events_panel = display_helpers["create_events_panel"]
+    
     # Test with events
-    panel = _create_events_panel(test_events, 60)
+    panel = create_events_panel(test_events, 60)
     assert panel is not None
     assert "Recent Events" in panel.title
     assert panel.border_style == BORDER_STYLES["success"]
 
     # Test with no events
-    panel = _create_events_panel([], 60)
+    panel = create_events_panel([], 60)
     assert panel is not None
     assert "Recent Events" in panel.title
 
@@ -228,24 +230,26 @@ def test_create_oracle_panel(test_game, test_scene, oracle_manager):
     )  # Either outcome is valid depending on test data
 
 
-def test_create_empty_oracle_panel():
+def test_create_empty_oracle_panel(display_helpers):
     """Test creating an empty oracle panel."""
-    panel = _create_empty_oracle_panel()
+    panel = display_helpers["create_empty_oracle_panel"]()
     assert panel is not None
     assert "Oracle" in panel.title
     assert panel.border_style == BORDER_STYLES["neutral"]
 
 
-def test_create_dice_rolls_panel(test_dice_roll):
+def test_create_dice_rolls_panel(test_dice_roll, display_helpers):
     """Test creating the dice rolls panel."""
+    create_dice_rolls_panel = display_helpers["create_dice_rolls_panel"]
+    
     # Test with no rolls
-    panel = _create_dice_rolls_panel([])
+    panel = create_dice_rolls_panel([])
     assert panel is not None
     assert "Recent Rolls" in panel.title
     assert "No recent dice rolls" in panel.renderable
 
     # Test with rolls
-    panel = _create_dice_rolls_panel([test_dice_roll])
+    panel = create_dice_rolls_panel([test_dice_roll])
     assert panel is not None
     assert "Recent Rolls" in panel.title
     assert test_dice_roll.notation in panel.renderable
