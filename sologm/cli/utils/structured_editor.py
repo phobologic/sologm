@@ -134,7 +134,9 @@ class TextFormatter:
 
             # Add enum values as options if provided
             if field_config.enum_values:
-                options_text = f"Available options: {', '.join(field_config.enum_values)}"
+                options_text = (
+                    f"Available options: {', '.join(field_config.enum_values)}"
+                )
                 for line in self.wrap_text(options_text, width=wrap_width):
                     lines.append(f"# {line}")
 
@@ -176,7 +178,9 @@ class TextFormatter:
 class TextParser:
     """Handles parsing structured text into data."""
 
-    def parse_structured_text(self, text: str, config: StructuredEditorConfig) -> Dict[str, Any]:
+    def parse_structured_text(
+        self, text: str, config: StructuredEditorConfig
+    ) -> Dict[str, Any]:
         """Parse structured text blocks into a dictionary.
 
         Args:
@@ -344,7 +348,9 @@ class UIManager:
         )
 
         console.print(panel)
-        console.print("[yellow]The editor will reopen so you can fix this issue.[/yellow]")
+        console.print(
+            "[yellow]The editor will reopen so you can fix this issue.[/yellow]"
+        )
 
 
 class StructuredEditor:
@@ -433,7 +439,9 @@ class StructuredEditor:
 
             try:
                 # Parse and validate the edited text
-                parsed_data = self.parser.parse_structured_text(edited_text, self.config)
+                parsed_data = self.parser.parse_structured_text(
+                    edited_text, self.config
+                )
 
                 # If we got here, validation passed
                 console.print(f"[green]{self.editor_config.success_message}[/green]")
@@ -469,7 +477,9 @@ def format_structured_text(
     original_data: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Format data as structured text blocks (compatibility function)."""
-    return TextFormatter().format_structured_text(data, config, context_info, original_data)
+    return TextFormatter().format_structured_text(
+        data, config, context_info, original_data
+    )
 
 
 def parse_structured_text(text: str, config: StructuredEditorConfig) -> Dict[str, Any]:
