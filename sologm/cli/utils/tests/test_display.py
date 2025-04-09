@@ -204,7 +204,7 @@ def test_create_scene_panels_grid(test_game, test_scene):
 def test_create_events_panel(test_events, display_helpers):
     """Test creating the events panel."""
     create_events_panel = display_helpers["create_events_panel"]
-    
+
     # Test with events
     panel = create_events_panel(test_events, 60)
     assert panel is not None
@@ -241,7 +241,7 @@ def test_create_empty_oracle_panel(display_helpers):
 def test_create_dice_rolls_panel(test_dice_roll, display_helpers):
     """Test creating the dice rolls panel."""
     create_dice_rolls_panel = display_helpers["create_dice_rolls_panel"]
-    
+
     # Test with no rolls
     panel = create_dice_rolls_panel([])
     assert panel is not None

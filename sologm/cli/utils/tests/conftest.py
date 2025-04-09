@@ -54,13 +54,15 @@ def oracle_manager(mock_anthropic_client, db_session):
 def test_events(db_session, test_game, test_scene):
     """Create test events with source_id instead of source."""
     # Get the source ID for "manual"
-    source_obj = db_session.query(EventSource).filter(EventSource.name == "manual").first()
+    source_obj = (
+        db_session.query(EventSource).filter(EventSource.name == "manual").first()
+    )
     if not source_obj:
         # Create it if it doesn't exist
         source_obj = EventSource.create(name="manual")
         db_session.add(source_obj)
         db_session.commit()
-    
+
     events = [
         Event.create(
             game_id=test_game.id,
@@ -84,7 +86,7 @@ def display_helpers():
         _create_dice_rolls_panel,
         _create_events_panel,
     )
-    
+
     return {
         "create_empty_oracle_panel": _create_empty_oracle_panel,
         "create_dice_rolls_panel": _create_dice_rolls_panel,
