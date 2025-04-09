@@ -46,6 +46,7 @@ class FieldConfig:
     help_text: Optional[str] = None
     required: bool = False
     multiline: bool = True
+    enum_values: Optional[List[str]] = None  # Available options for this field
 
 
 @dataclass
@@ -125,6 +126,12 @@ def format_structured_text(
         # Add help text as a comment with wrapping
         if field_config.help_text:
             for line in wrap_text(field_config.help_text, width=wrap_width):
+                lines.append(f"# {line}")
+                
+        # Add enum values as options if provided
+        if field_config.enum_values:
+            options_text = f"Available options: {', '.join(field_config.enum_values)}"
+            for line in wrap_text(options_text, width=wrap_width):
                 lines.append(f"# {line}")
 
         # Add required indicator if the field is required
@@ -206,6 +213,17 @@ def parse_structured_text(text: str, config: StructuredEditorConfig) -> Dict[str
     if missing_fields:
         field_list = ", ".join(missing_fields)
         raise ValidationError(f"Required field(s) {field_list} cannot be empty.")
+
+    # Validate enum values
+    for field in config.fields:
+        if (field.enum_values and 
+            field.name in result and 
+            result[field.name] and 
+            result[field.name] not in field.enum_values):
+            raise ValidationError(
+                f"Invalid value for {field.display_name}. "
+                f"Must be one of: {', '.join(field.enum_values)}"
+            )
 
     return result
 

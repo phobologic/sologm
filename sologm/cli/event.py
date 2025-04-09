@@ -26,7 +26,10 @@ def add_event(
         help="Description of the event (opens editor if not provided)",
     ),
     source: str = typer.Option(
-        "manual", "--source", "-s", help="Source of the event (manual, oracle, dice)"
+        "manual", 
+        "--source", 
+        "-s", 
+        help="Source of the event (use 'sologm event sources' to see available options)"
     ),
 ) -> None:
     """Add a new event to the current scene.
@@ -77,6 +80,9 @@ def add_event(
                 error_message="Could not open editor",
             )
 
+            # Get available sources
+            available_sources = [source.name for source in event_manager.get_event_sources()]
+
             # Configure the structured editor fields
             structured_config = StructuredEditorConfig(
                 fields=[
@@ -90,9 +96,10 @@ def add_event(
                     FieldConfig(
                         name="source",
                         display_name="Source",
-                        help_text="Source of the event (manual, oracle, dice)",
+                        help_text="Source of the event",
                         required=False,
                         multiline=False,
+                        enum_values=available_sources,  # Pass the available sources
                     ),
                 ]
             )
@@ -222,6 +229,9 @@ def edit_event(
             error_message="Could not open editor",
         )
 
+        # Get available sources
+        available_sources = [source.name for source in event_manager.get_event_sources()]
+
         # Configure the structured editor fields
         structured_config = StructuredEditorConfig(
             fields=[
@@ -235,9 +245,10 @@ def edit_event(
                 FieldConfig(
                     name="source",
                     display_name="Source",
-                    help_text="Source of the event (manual, oracle, dice)",
+                    help_text="Source of the event",
                     required=False,
                     multiline=False,
+                    enum_values=available_sources,  # Pass the available sources
                 ),
             ]
         )
@@ -265,6 +276,23 @@ def edit_event(
         else:
             console.print("[yellow]No changes made to the event.[/yellow]")
 
+    except EventError as e:
+        console.print(f"[red]Error:[/] {str(e)}")
+        raise typer.Exit(1) from e
+
+
+@event_app.command("sources")
+def list_event_sources() -> None:
+    """List all available event sources."""
+    event_manager = EventManager()
+    
+    try:
+        sources = event_manager.get_event_sources()
+        
+        console.print("\n[bold]Available Event Sources:[/bold]")
+        for source in sources:
+            console.print(f"- {source.name}")
+            
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")
         raise typer.Exit(1) from e
