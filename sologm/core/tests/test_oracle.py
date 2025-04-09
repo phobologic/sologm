@@ -146,8 +146,10 @@ Test Description"""
 
         # Verify no event was created automatically
         # Get the oracle source
-        oracle_source = db_session.query(EventSource).filter(EventSource.name == "oracle").first()
-            
+        oracle_source = (
+            db_session.query(EventSource).filter(EventSource.name == "oracle").first()
+        )
+
         events = (
             db_session.query(Event)
             .filter(
@@ -165,8 +167,10 @@ Test Description"""
         event = oracle_manager.add_interpretation_event(test_scene.id, selected)
 
         # Get the oracle source
-        oracle_source = db_session.query(EventSource).filter(EventSource.name == "oracle").first()
-        
+        oracle_source = (
+            db_session.query(EventSource).filter(EventSource.name == "oracle").first()
+        )
+
         # Verify event was created
         events = (
             db_session.query(Event)
@@ -401,9 +405,7 @@ It also has multiple lines."""
         )
 
         # Select an interpretation
-        selected = oracle_manager.select_interpretation(
-            interp_set.id, "1"
-        )
+        selected = oracle_manager.select_interpretation(interp_set.id, "1")
 
         # Get most recent interpretation
         result = oracle_manager.get_most_recent_interpretation(test_scene.id)

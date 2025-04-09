@@ -689,7 +689,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             )
 
             # Get the source for "oracle"
-            oracle_source = session.query(EventSource).filter(EventSource.name == "oracle").first()
+            oracle_source = (
+                session.query(EventSource).filter(EventSource.name == "oracle").first()
+            )
             if not oracle_source:
                 raise OracleError("Oracle event source not found")
 
