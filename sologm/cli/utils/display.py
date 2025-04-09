@@ -212,8 +212,10 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
     # Add rows with consistent formatting
     for event in events:
         # Get the source name instead of the source object
-        source_name = event.source.name if hasattr(event.source, 'name') else str(event.source)
-        
+        source_name = (
+            event.source.name if hasattr(event.source, "name") else str(event.source)
+        )
+
         table.add_row(
             event.id,
             event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -778,8 +780,12 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
         events_shown = recent_events[:max_events_to_show]
         for event in events_shown:
             # Get the source name instead of the source object
-            source_name = event.source.name if hasattr(event.source, 'name') else str(event.source)
-            
+            source_name = (
+                event.source.name
+                if hasattr(event.source, "name")
+                else str(event.source)
+            )
+
             logger.debug(f"Adding event {event.id} to panel (source: {source_name})")
             # Truncate long descriptions based on calculated width
             truncated_description = truncate_text(
@@ -1024,7 +1030,11 @@ def get_event_context_header(
         context_info += "Recent Events:\n"
         for i, event in enumerate(recent_events, 1):
             # Get the source name instead of the source object
-            source_name = event.source.name if hasattr(event.source, 'name') else str(event.source)
+            source_name = (
+                event.source.name
+                if hasattr(event.source, "name")
+                else str(event.source)
+            )
             context_info += f"{i}. [{source_name}] {event.description}\n"
         context_info += "\n"
 
