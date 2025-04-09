@@ -48,7 +48,8 @@ class StyledText:
         """
         if style_name not in cls.STYLES:
             logger.warning(f"Unknown style: {style_name}, using plain text")
-            return Text(str(content))
+            # Return Text with default Style() instead of no style
+            return Text(str(content), style=Style())
         return Text(str(content), style=cls.STYLES[style_name])
 
     @classmethod
@@ -174,7 +175,8 @@ class StyledText:
             if isinstance(element, Text):
                 result.append(element)
             else:
-                result.append(str(element))
+                # Apply a default style to non-Text elements to ensure they get their own span
+                result.append(Text(str(element), style=Style()))
         return result
 
     @classmethod
