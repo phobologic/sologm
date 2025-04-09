@@ -191,8 +191,6 @@ def edit_scene(
 
             console.print("[bold green]Scene updated successfully![/]")
             display_scene_info(console, updated_scene)
-        else:
-            console.print("[yellow]No changes made to the scene.[/yellow]")
 
     except SceneError as e:
         console.print(f"[bold red]Error:[/] {str(e)}")

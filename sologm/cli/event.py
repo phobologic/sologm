@@ -285,8 +285,6 @@ def edit_event(
             # Display the updated event in a more consistent way
             events = [updated_event]  # Create a list with just this event
             display_events_table(console, events, scene)
-        else:
-            console.print("[yellow]No changes made to the event.[/yellow]")
 
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")

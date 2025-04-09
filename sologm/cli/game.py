@@ -226,8 +226,6 @@ def edit_game(
 
             console.print("[bold green]Game updated successfully![/]")
             display_game_info(console, updated_game)
-        else:
-            console.print("[yellow]No changes made to the game.[/yellow]")
 
     except GameError as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
