@@ -262,16 +262,21 @@ def create_test_scene(db_session):
 def initialize_event_sources(db_session):
     """Initialize event sources for testing."""
     from sologm.models.event_source import EventSource
-    
+
     # Create default event sources
     sources = ["manual", "oracle", "dice"]
     for source_name in sources:
-        existing = db_session.query(EventSource).filter(EventSource.name == source_name).first()
+        existing = (
+            db_session.query(EventSource)
+            .filter(EventSource.name == source_name)
+            .first()
+        )
         if not existing:
             source = EventSource.create(name=source_name)
             db_session.add(source)
-    
+
     db_session.commit()
+
 
 @pytest.fixture
 def create_test_event(db_session):
@@ -280,10 +285,13 @@ def create_test_event(db_session):
     def _create_event(game_id, scene_id, description="Test event", source="manual"):
         # Get the source ID from the name
         from sologm.models.event_source import EventSource
-        source_obj = db_session.query(EventSource).filter(EventSource.name == source).first()
+
+        source_obj = (
+            db_session.query(EventSource).filter(EventSource.name == source).first()
+        )
         if not source_obj:
             raise ValueError(f"Event source '{source}' not found")
-            
+
         event = Event.create(
             game_id=game_id,
             scene_id=scene_id,
