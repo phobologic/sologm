@@ -135,23 +135,50 @@ def edit_scene(
         # Prepare the data for editing
         scene_data = {"title": scene.title, "description": scene.description}
 
-        # Use the YAML editor helper
-        from sologm.cli.utils.editor import edit_yaml_data
+        # Use the structured editor helper
+        from sologm.cli.utils.structured_editor import (
+            edit_structured_data,
+            EditorConfig,
+            FieldConfig,
+            StructuredEditorConfig,
+        )
 
-        edited_data, was_modified = edit_yaml_data(
-            data=scene_data,
-            console=console,
-            header_comment="Edit the scene details below\nThe description uses YAML's literal block style (|) which preserves all line breaks and formatting exactly as you type it.",
-            field_comments={
-                "title": "The title of the scene",
-                "description": "The detailed description of the scene",
-            },
-            literal_block_fields=["description"],
-            required_fields=["title"],
+        # Create editor configurations
+        editor_config = EditorConfig(
             edit_message=f"Editing scene {scene_id}:",
             success_message="Scene updated successfully.",
             cancel_message="Scene unchanged.",
             error_message="Could not open editor",
+        )
+
+        # Configure the structured editor fields
+        structured_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(
+                    name="title",
+                    display_name="Scene Title",
+                    help_text="The title of the scene",
+                    required=True,
+                    multiline=False,
+                ),
+                FieldConfig(
+                    name="description",
+                    display_name="Scene Description",
+                    help_text="The detailed description of the scene",
+                    required=False,
+                    multiline=True,
+                ),
+            ]
+        )
+
+        # Use the structured editor
+        edited_data, was_modified = edit_structured_data(
+            data=scene_data,
+            console=console,
+            config=structured_config,
+            context_info=f"Editing scene: {scene.title} ({scene.id})\n",
+            editor_config=editor_config,
+            is_new=False,  # This is an existing scene
         )
 
         if was_modified:

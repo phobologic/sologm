@@ -168,23 +168,50 @@ def edit_game(
         # Prepare the data for editing
         game_data = {"name": game.name, "description": game.description}
 
-        # Use the YAML editor helper
-        from sologm.cli.utils.editor import edit_yaml_data
+        # Use the structured editor helper
+        from sologm.cli.utils.structured_editor import (
+            edit_structured_data,
+            EditorConfig,
+            FieldConfig,
+            StructuredEditorConfig,
+        )
 
-        edited_data, was_modified = edit_yaml_data(
-            data=game_data,
-            console=console,
-            header_comment="Edit the game details below\nThe description uses YAML's literal block style (|) which preserves all line breaks and formatting exactly as you type it.",
-            field_comments={
-                "name": "The name of the game",
-                "description": "The detailed description of the game",
-            },
-            literal_block_fields=["description"],
-            required_fields=["name"],
+        # Create editor configurations
+        editor_config = EditorConfig(
             edit_message=f"Editing game {game.id}:",
             success_message="Game updated successfully.",
             cancel_message="Game unchanged.",
             error_message="Could not open editor",
+        )
+
+        # Configure the structured editor fields
+        structured_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(
+                    name="name",
+                    display_name="Game Name",
+                    help_text="The name of the game",
+                    required=True,
+                    multiline=False,
+                ),
+                FieldConfig(
+                    name="description",
+                    display_name="Game Description",
+                    help_text="The detailed description of the game",
+                    required=False,
+                    multiline=True,
+                ),
+            ]
+        )
+
+        # Use the structured editor
+        edited_data, was_modified = edit_structured_data(
+            data=game_data,
+            console=console,
+            config=structured_config,
+            context_info=f"Editing game: {game.name} ({game.id})\n",
+            editor_config=editor_config,
+            is_new=False,  # This is an existing game
         )
 
         if was_modified:

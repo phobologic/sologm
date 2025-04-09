@@ -116,23 +116,43 @@ def retry_interpretation(
         if edit_context or typer.confirm(
             "Would you like to edit the context before retrying?"
         ):
-            from sologm.cli.utils.editor import edit_yaml_data
+            from sologm.cli.utils.structured_editor import (
+                edit_structured_data,
+                EditorConfig,
+                FieldConfig,
+                StructuredEditorConfig,
+            )
 
-            context_data = {"context": context}
-
-            edited_data, was_modified = edit_yaml_data(
-                data=context_data,
-                console=console,
-                header_comment="Edit the context for the oracle interpretation:",
-                field_comments={
-                    "context": "The question or context for the oracle interpretation",
-                },
-                literal_block_fields=["context"],
-                required_fields=["context"],
+            # Create editor configurations
+            editor_config = EditorConfig(
                 edit_message="Current context:",
                 success_message="Context updated.",
                 cancel_message="Context unchanged.",
                 error_message="Could not open editor",
+            )
+
+            # Configure the structured editor fields
+            structured_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="context",
+                        display_name="Oracle Context",
+                        help_text="The question or context for the oracle interpretation",
+                        required=True,
+                        multiline=True,
+                    ),
+                ]
+            )
+
+            # Use the structured editor
+            context_data = {"context": context}
+            edited_data, was_modified = edit_structured_data(
+                data=context_data,
+                console=console,
+                config=structured_config,
+                context_info="Edit the context for the oracle interpretation:\n",
+                editor_config=editor_config,
+                is_new=False,  # This is an existing context
             )
 
             if was_modified:
@@ -300,23 +320,43 @@ def select_interpretation(
             # Allow editing if requested or if user confirms
             custom_description = default_description
             if edit or typer.confirm("Would you like to edit the event description?"):
-                from sologm.cli.utils.editor import edit_yaml_data
+                from sologm.cli.utils.structured_editor import (
+                    edit_structured_data,
+                    EditorConfig,
+                    FieldConfig,
+                    StructuredEditorConfig,
+                )
 
-                event_data = {"description": default_description}
-
-                edited_data, was_modified = edit_yaml_data(
-                    data=event_data,
-                    console=console,
-                    header_comment="Edit the event description below:",
-                    field_comments={
-                        "description": "The detailed description of the event",
-                    },
-                    literal_block_fields=["description"],
-                    required_fields=["description"],
+                # Create editor configurations
+                editor_config = EditorConfig(
                     edit_message="Edit the event description:",
                     success_message="Event description updated.",
                     cancel_message="Event description unchanged.",
                     error_message="Could not open editor",
+                )
+
+                # Configure the structured editor fields
+                structured_config = StructuredEditorConfig(
+                    fields=[
+                        FieldConfig(
+                            name="description",
+                            display_name="Event Description",
+                            help_text="The detailed description of the event",
+                            required=True,
+                            multiline=True,
+                        ),
+                    ]
+                )
+
+                # Use the structured editor
+                event_data = {"description": default_description}
+                edited_data, was_modified = edit_structured_data(
+                    data=event_data,
+                    console=console,
+                    config=structured_config,
+                    context_info="Edit the event description below:\n",
+                    editor_config=editor_config,
+                    is_new=True,  # This is a new event
                 )
 
                 if was_modified:
