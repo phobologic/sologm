@@ -26,6 +26,7 @@ dependencies = [
     "anthropic>=0.5.0",
     "rich>=13.3.5",
     "sqlalchemy>=2.0.40",
+    "alembic>=1.15.2",
 ]
 
 [project.optional-dependencies]
