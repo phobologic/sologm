@@ -190,7 +190,7 @@ class TestEventManager:
         # Verify the event was updated in the database
         retrieved_event = event_manager.get_event(event.id)
         assert retrieved_event.description == "Updated description"
-        assert retrieved_event.source_id == "oracle"
+        assert retrieved_event.source.name == "oracle"
 
     def test_update_nonexistent_event(self, event_manager):
         """Test updating a nonexistent event."""
