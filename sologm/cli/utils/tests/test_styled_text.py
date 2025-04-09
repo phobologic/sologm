@@ -73,7 +73,7 @@ def test_styled_text_combine():
     combined = StyledText.combine(text1, " - ", text2)
     assert combined.plain == "Title - 2023-01-01"
     # Only expect spans for the styled portions (not the plain " - " string)
-    assert len(combined.spans) == 2  
+    assert len(combined.spans) == 2
 
     # Test combining strings and other objects
     combined = StyledText.combine("Plain", " ", 123, " ", True)
