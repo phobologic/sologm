@@ -116,7 +116,8 @@ def game_info(
 
                 recent_rolls = dice_manager.get_recent_rolls(active_scene.id, limit=3)
                 logger.debug(
-                    f"Retrieved {len(recent_rolls)} recent dice rolls for scene {active_scene.id}"
+                    f"Retrieved {len(recent_rolls)} recent dice rolls for "
+                    f"scene {active_scene.id}"
                 )
                 # Log details of each roll to verify data
                 for i, roll in enumerate(recent_rolls):
@@ -161,7 +162,8 @@ def edit_game(
             game = game_manager.get_active_game()
             if not game:
                 console.print(
-                    "[red]No active game. Specify a game ID or activate a game first.[/red]"
+                    "[red]No active game. Specify a game ID or activate a "
+                    "game first.[/red]"
                 )
                 raise typer.Exit(1)
 
@@ -170,10 +172,10 @@ def edit_game(
 
         # Use the structured editor helper
         from sologm.cli.utils.structured_editor import (
-            edit_structured_data,
             EditorConfig,
             FieldConfig,
             StructuredEditorConfig,
+            edit_structured_data,
         )
 
         # Create editor configurations
@@ -258,7 +260,8 @@ def dump_game(
             game = game_manager.get_active_game()
             if not game:
                 console.print(
-                    "[red]No active game. Specify a game ID or activate a game first.[/red]"
+                    "[red]No active game. Specify a game ID or activate a "
+                    "game first.[/red]"
                 )
                 raise typer.Exit(1)
 
@@ -272,4 +275,4 @@ def dump_game(
 
     except Exception as e:
         console.print(f"[red]Error exporting game: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

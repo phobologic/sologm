@@ -6,7 +6,6 @@ import typer
 from rich.console import Console
 
 from sologm.cli.utils import display
-from sologm.cli.utils.editor import edit_text
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
@@ -117,10 +116,10 @@ def retry_interpretation(
             "Would you like to edit the context before retrying?"
         ):
             from sologm.cli.utils.structured_editor import (
-                edit_structured_data,
                 EditorConfig,
                 FieldConfig,
                 StructuredEditorConfig,
+                edit_structured_data,
             )
 
             # Create editor configurations
@@ -137,7 +136,8 @@ def retry_interpretation(
                     FieldConfig(
                         name="context",
                         display_name="Oracle Context",
-                        help_text="The question or context for the oracle interpretation",
+                        help_text="The question or context for the oracle "
+                                  "interpretation",
                         required=True,
                         multiline=True,
                     ),
@@ -195,8 +195,9 @@ def show_interpretation_status() -> None:
             raise typer.Exit(0)
 
         # Use a more consistent display approach
-        from sologm.cli.utils.styled_text import StyledText
         from rich.panel import Panel
+
+        from sologm.cli.utils.styled_text import StyledText
 
         st = StyledText
         panel_title = st.title("Current Oracle Interpretation")
@@ -321,10 +322,10 @@ def select_interpretation(
             custom_description = default_description
             if edit or typer.confirm("Would you like to edit the event description?"):
                 from sologm.cli.utils.structured_editor import (
-                    edit_structured_data,
                     EditorConfig,
                     FieldConfig,
                     StructuredEditorConfig,
+                    edit_structured_data,
                 )
 
                 # Create editor configurations
@@ -373,7 +374,7 @@ def select_interpretation(
 
             # Display the event in a more consistent way
             events = [event]  # Create a list with just this event
-            display_events_table(console, events, scene)
+            display.display_events_table(console, events, scene)
         else:
             console.print("[yellow]Interpretation not added as event.[/yellow]")
 

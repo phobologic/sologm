@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
 if TYPE_CHECKING:
     from typer import Typer
@@ -137,10 +136,10 @@ def edit_scene(
 
         # Use the structured editor helper
         from sologm.cli.utils.structured_editor import (
-            edit_structured_data,
             EditorConfig,
             FieldConfig,
             StructuredEditorConfig,
+            edit_structured_data,
         )
 
         # Create editor configurations

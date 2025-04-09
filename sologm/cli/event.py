@@ -1,7 +1,7 @@
 """Event tracking commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional, List
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -58,10 +58,10 @@ def add_event(
 
             # Import the structured editor
             from sologm.cli.utils.structured_editor import (
-                edit_structured_data,
                 EditorConfig,
                 FieldConfig,
                 StructuredEditorConfig,
+                edit_structured_data,
                 get_event_context_header,
             )
 
@@ -214,10 +214,10 @@ def edit_event(
 
         # Import the structured editor
         from sologm.cli.utils.structured_editor import (
-            edit_structured_data,
             EditorConfig,
             FieldConfig,
             StructuredEditorConfig,
+            edit_structured_data,
             get_event_context_header,
         )
 
