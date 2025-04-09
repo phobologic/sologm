@@ -27,7 +27,9 @@ class TestTextFormatter:
 
         assert len(wrapped) > 1
         assert wrapped[0] == "This is a long line"
-        assert wrapped[1].startswith("  that should be")  # Note the two spaces at the beginning
+        assert wrapped[1].startswith(
+            "  that should be"
+        )  # Note the two spaces at the beginning
 
         # Test with indentation
         wrapped_indented = wrap_text(text, width=20, indent="    ")
