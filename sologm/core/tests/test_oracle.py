@@ -442,13 +442,18 @@ It also has multiple lines."""
         # Add as event directly
         oracle_manager.add_interpretation_event(test_scene.id, interpretation)
 
+        # Get the oracle source
+        oracle_source = (
+            db_session.query(EventSource).filter(EventSource.name == "oracle").first()
+        )
+
         # Verify event was created
         events = (
             db_session.query(Event)
             .filter(
                 Event.game_id == test_game.id,
                 Event.scene_id == test_scene.id,
-                Event.source == "oracle",
+                Event.source_id == oracle_source.id,
                 Event.interpretation_id == interpretation.id,
             )
             .all()
@@ -456,7 +461,7 @@ It also has multiple lines."""
 
         assert len(events) == 1
         assert interpretation.title in events[0].description
-        assert events[0].source == "oracle"
+        assert events[0].source.name == "oracle"
 
     def test_parse_interpretations_malformed(self, oracle_manager):
         """Test parsing malformed responses."""
