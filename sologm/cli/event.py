@@ -26,10 +26,10 @@ def add_event(
         help="Description of the event (opens editor if not provided)",
     ),
     source: str = typer.Option(
-        "manual", 
-        "--source", 
-        "-s", 
-        help="Source of the event (use 'sologm event sources' to see available options)"
+        "manual",
+        "--source",
+        "-s",
+        help="Source of the event (use 'sologm event sources' to see available options)",
     ),
 ) -> None:
     """Add a new event to the current scene.
@@ -81,7 +81,9 @@ def add_event(
             )
 
             # Get available sources
-            available_sources = [source.name for source in event_manager.get_event_sources()]
+            available_sources = [
+                source.name for source in event_manager.get_event_sources()
+            ]
 
             # Configure the structured editor fields
             structured_config = StructuredEditorConfig(
@@ -230,7 +232,9 @@ def edit_event(
         )
 
         # Get available sources
-        available_sources = [source.name for source in event_manager.get_event_sources()]
+        available_sources = [
+            source.name for source in event_manager.get_event_sources()
+        ]
 
         # Configure the structured editor fields
         structured_config = StructuredEditorConfig(
@@ -285,14 +289,14 @@ def edit_event(
 def list_event_sources() -> None:
     """List all available event sources."""
     event_manager = EventManager()
-    
+
     try:
         sources = event_manager.get_event_sources()
-        
+
         console.print("\n[bold]Available Event Sources:[/bold]")
         for source in sources:
             console.print(f"- {source.name}")
-            
+
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")
         raise typer.Exit(1) from e

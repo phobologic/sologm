@@ -127,7 +127,7 @@ def format_structured_text(
         if field_config.help_text:
             for line in wrap_text(field_config.help_text, width=wrap_width):
                 lines.append(f"# {line}")
-                
+
         # Add enum values as options if provided
         if field_config.enum_values:
             options_text = f"Available options: {', '.join(field_config.enum_values)}"
@@ -216,10 +216,12 @@ def parse_structured_text(text: str, config: StructuredEditorConfig) -> Dict[str
 
     # Validate enum values
     for field in config.fields:
-        if (field.enum_values and 
-            field.name in result and 
-            result[field.name] and 
-            result[field.name] not in field.enum_values):
+        if (
+            field.enum_values
+            and field.name in result
+            and result[field.name]
+            and result[field.name] not in field.enum_values
+        ):
             raise ValidationError(
                 f"Invalid value for {field.display_name}. "
                 f"Must be one of: {', '.join(field.enum_values)}"
