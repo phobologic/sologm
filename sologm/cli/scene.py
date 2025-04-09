@@ -32,26 +32,27 @@ def add_scene(
     ),
 ) -> None:
     """Add a new scene to the active game."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
+    try:
+        game_manager = GameManager()
+        scene_manager = SceneManager()
 
-    # Get active game
-    active_game = game_manager.get_active_game()
-    if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set one.")
+        # Get active game
+        active_game = game_manager.get_active_game()
+        if not active_game:
+            raise GameError("No active game. Use 'sologm game activate' to set one.")
 
-    # Create the scene
-    scene = scene_manager.create_scene(
-        game_id=active_game.id,
-        title=title,
-        description=description,
-    )
+        # Create the scene
+        scene = scene_manager.create_scene(
+            game_id=active_game.id,
+            title=title,
+            description=description,
+        )
 
-    console.print("[bold green]Scene added successfully![/]")
-    console.print(f"Title: {scene.title}")
-    console.print(f"Description: {scene.description}")
-    console.print(f"Status: {scene.status.value}")
-    console.print(f"Sequence: {scene.sequence}")
+        console.print("[bold green]Scene added successfully![/]")
+        display_scene_info(console, scene)
+    except (GameError, SceneError) as e:
+        console.print(f"[bold red]Error:[/] {str(e)}")
+        raise typer.Exit(1) from e
 
 
 @scene_app.command("list")
@@ -94,16 +95,17 @@ def scene_info() -> None:
 @scene_app.command("complete")
 def complete_scene() -> None:
     """Complete the active scene."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
-
     try:
+        game_manager = GameManager()
+        scene_manager = SceneManager()
+
         game_id, active_scene = scene_manager.validate_active_context(game_manager)
         completed_scene = scene_manager.complete_scene(game_id, active_scene.id)
         console.print("[bold green]Scene completed successfully![/]")
-        console.print(f"Completed scene: {completed_scene.title}")
+        display_scene_info(console, completed_scene)
     except SceneError as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
+        raise typer.Exit(1) from e
 
 
 @scene_app.command("edit")
@@ -176,27 +178,31 @@ def set_current_scene(
     scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current"),
 ) -> None:
     """Set which scene is currently being played."""
-    game_manager = GameManager()
-    scene_manager = SceneManager()
+    try:
+        game_manager = GameManager()
+        scene_manager = SceneManager()
 
-    # Get active game
-    active_game = game_manager.get_active_game()
-    if not active_game:
-        raise GameError("No active game. Use 'sologm game activate' to set one.")
+        # Get active game
+        active_game = game_manager.get_active_game()
+        if not active_game:
+            raise GameError("No active game. Use 'sologm game activate' to set one.")
 
-    # Get list of valid scenes first
-    scenes = scene_manager.list_scenes(active_game.id)
-    scene_ids = [s.id for s in scenes]
+        # Get list of valid scenes first
+        scenes = scene_manager.list_scenes(active_game.id)
+        scene_ids = [s.id for s in scenes]
 
-    # Check if scene_id exists before trying to set it
-    if scene_id not in scene_ids:
-        console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
-        console.print("\nValid scene IDs:")
-        for sid in scene_ids:
-            console.print(f"  {sid}")
-        return
+        # Check if scene_id exists before trying to set it
+        if scene_id not in scene_ids:
+            console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
+            console.print("\nValid scene IDs:")
+            for sid in scene_ids:
+                console.print(f"  {sid}")
+            return
 
-    # Set the current scene
-    new_current = scene_manager.set_current_scene(active_game.id, scene_id)
-    console.print("[bold green]Current scene updated successfully![/]")
-    console.print(f"Current scene: {new_current.title}")
+        # Set the current scene
+        new_current = scene_manager.set_current_scene(active_game.id, scene_id)
+        console.print("[bold green]Current scene updated successfully![/]")
+        display_scene_info(console, new_current)
+    except (GameError, SceneError) as e:
+        console.print(f"[bold red]Error:[/] {str(e)}")
+        raise typer.Exit(1) from e

@@ -134,8 +134,11 @@ def add_event(
         )
 
         logger.debug(f"Added event {event.id}")
-        console.print(f"\nAdded event to scene '{scene.title}':")
-        console.print(f"[green]{event.description}[/]")
+        console.print("[bold green]Event added successfully![/]")
+        
+        # Display the event in a more consistent way
+        events = [event]  # Create a list with just this event
+        display_events_table(console, events, scene)
 
     except EventError as e:
         console.print(f"[red]Error:[/] {str(e)}")
@@ -277,8 +280,11 @@ def edit_event(
             updated_event = event_manager.update_event(
                 event_id, edited_data["description"], source
             )
-            console.print(f"\nUpdated event in scene '{scene.title}':")
-            console.print(f"[green]{updated_event.description}[/]")
+            console.print("[bold green]Event updated successfully![/]")
+            
+            # Display the updated event in a more consistent way
+            events = [updated_event]  # Create a list with just this event
+            display_events_table(console, events, scene)
         else:
             console.print("[yellow]No changes made to the event.[/yellow]")
 

@@ -174,18 +174,38 @@ def show_interpretation_status() -> None:
             console.print("[yellow]No current interpretation set.[/yellow]")
             raise typer.Exit(0)
 
-        console.print("\n[bold]Current Oracle Interpretation[/bold]")
-        console.print(f"Set ID: [bold]{current_interp_set.id}[/bold]")
-        console.print(f"Context: {current_interp_set.context}")
-        console.print(f"Results: {current_interp_set.oracle_results}")
-        console.print(f"Retry count: {current_interp_set.retry_attempt}")
-
-        # Check if any interpretation is selected
-        has_selection = any(
-            interp.is_selected for interp in current_interp_set.interpretations
+        # Use a more consistent display approach
+        from sologm.cli.utils.styled_text import StyledText
+        from rich.panel import Panel
+        
+        st = StyledText
+        panel_title = st.title("Current Oracle Interpretation")
+        
+        # Create metadata with consistent formatting
+        metadata = {
+            "Set ID": current_interp_set.id,
+            "Retry count": current_interp_set.retry_attempt,
+            "Resolved": any(interp.is_selected for interp in current_interp_set.interpretations)
+        }
+        
+        # Create panel content
+        panel_content = st.combine(
+            st.subtitle("Context:"), " ", current_interp_set.context, "\n",
+            st.subtitle("Results:"), " ", current_interp_set.oracle_results, "\n",
+            st.format_metadata(metadata)
         )
-        console.print(f"Resolved: {has_selection}\n")
+        
+        # Create and display the panel
+        panel = Panel(
+            panel_content,
+            title=panel_title,
+            border_style="bright_blue",
+            title_align="left",
+        )
+        console.print(panel)
+        console.print()
 
+        # Display the interpretation set
         display.display_interpretation_set(
             console, current_interp_set, show_context=False
         )
@@ -298,10 +318,16 @@ def select_interpretation(
             event = oracle_manager.add_interpretation_event(
                 scene_id, selected, custom_description
             )
-            console.print("\n[green]Added interpretation as event.[/green]")
-            console.print(f"Event: [bold]{event.description}[/bold]")
+            console.print("[bold green]Interpretation added as event.[/]")
+            
+            # Get the scene for display
+            scene = scene_manager.get_scene(game_id, scene_id)
+            
+            # Display the event in a more consistent way
+            events = [event]  # Create a list with just this event
+            display_events_table(console, events, scene)
         else:
-            console.print("\n[yellow]Interpretation not added as event.[/yellow]")
+            console.print("[yellow]Interpretation not added as event.[/yellow]")
 
     except OracleError as e:
         logger.error(f"Failed to select interpretation: {e}")
