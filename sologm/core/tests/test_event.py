@@ -22,7 +22,7 @@ class TestEventManager:
         assert event.scene_id == test_scene.id
         assert event.game_id == test_game.id
         assert event.description == "Test event"
-        assert event.source_id == "manual"
+        assert event.source.name == "manual"
 
         # Verify event was saved to database
         db_event = db_session.query(Event).filter(Event.id == event.id).first()
@@ -163,7 +163,7 @@ class TestEventManager:
         # Verify the event was updated correctly
         assert updated_event.id == event.id
         assert updated_event.description == "Updated description"
-        assert updated_event.source_id == "manual"  # Source should remain unchanged
+        assert updated_event.source.name == "manual"  # Source should remain unchanged
 
         # Verify the event was updated in the database
         retrieved_event = event_manager.get_event(event.id)
@@ -175,7 +175,7 @@ class TestEventManager:
         """Test updating an event's description and source."""
         # Create a test event
         event = create_test_event(test_game.id, test_scene.id, "Original description")
-        assert event.source_id == "manual"  # Default source
+        assert event.source.name == "manual"  # Default source
 
         # Update the event with a new source
         updated_event = event_manager.update_event(
@@ -185,7 +185,7 @@ class TestEventManager:
         # Verify the event was updated correctly
         assert updated_event.id == event.id
         assert updated_event.description == "Updated description"
-        assert updated_event.source_id == "oracle"  # Source should be updated
+        assert updated_event.source.name == "oracle"  # Source should be updated
 
         # Verify the event was updated in the database
         retrieved_event = event_manager.get_event(event.id)
@@ -208,7 +208,7 @@ class TestEventManager:
 
         # Verify we have the expected default sources
         assert len(sources) == 3
-        source_ids = [s.id for s in sources]
-        assert "manual" in source_ids
-        assert "oracle" in source_ids
-        assert "dice" in source_ids
+        source_names = [s.name for s in sources]
+        assert "manual" in source_names
+        assert "oracle" in source_names
+        assert "dice" in source_names
