@@ -211,10 +211,13 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
 
     # Add rows with consistent formatting
     for event in events:
+        # Get the source name instead of the source object
+        source_name = event.source.name if hasattr(event.source, 'name') else str(event.source)
+        
         table.add_row(
             event.id,
             event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            event.source,
+            source_name,
             event.description,  # Show full description without truncation
         )
 
@@ -774,14 +777,17 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
 
         events_shown = recent_events[:max_events_to_show]
         for event in events_shown:
-            logger.debug(f"Adding event {event.id} to panel (source: {event.source})")
+            # Get the source name instead of the source object
+            source_name = event.source.name if hasattr(event.source, 'name') else str(event.source)
+            
+            logger.debug(f"Adding event {event.id} to panel (source: {source_name})")
             # Truncate long descriptions based on calculated width
             truncated_description = truncate_text(
                 event.description, max_length=truncation_length
             )
             events_content += (
                 f"[{TEXT_STYLES['timestamp']}]{event.created_at.strftime('%Y-%m-%d %H:%M')}[/{TEXT_STYLES['timestamp']}] "
-                f"[{TEXT_STYLES['category']}]({event.source})[/{TEXT_STYLES['category']}]\n"
+                f"[{TEXT_STYLES['category']}]({source_name})[/{TEXT_STYLES['category']}]\n"
                 f"{truncated_description}\n\n"
             )
     else:
@@ -1017,7 +1023,9 @@ def get_event_context_header(
     if recent_events:
         context_info += "Recent Events:\n"
         for i, event in enumerate(recent_events, 1):
-            context_info += f"{i}. [{event.source}] {event.description}\n"
+            # Get the source name instead of the source object
+            source_name = event.source.name if hasattr(event.source, 'name') else str(event.source)
+            context_info += f"{i}. [{source_name}] {event.description}\n"
         context_info += "\n"
 
     return context_info
