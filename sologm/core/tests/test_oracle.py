@@ -3,6 +3,7 @@
 import pytest
 
 from sologm.models.event import Event
+from sologm.models.event_source import EventSource
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene
@@ -144,12 +145,15 @@ Test Description"""
         assert selected.is_selected is True
 
         # Verify no event was created automatically
+        # Get the oracle source
+        oracle_source = db_session.query(EventSource).filter(EventSource.name == "oracle").first()
+            
         events = (
             db_session.query(Event)
             .filter(
                 Event.game_id == test_game.id,
                 Event.scene_id == test_scene.id,
-                Event.source == "oracle",
+                Event.source_id == oracle_source.id,
                 Event.interpretation_id == selected.id,
             )
             .all()
@@ -160,13 +164,16 @@ Test Description"""
         # Now explicitly add an event
         event = oracle_manager.add_interpretation_event(test_scene.id, selected)
 
+        # Get the oracle source
+        oracle_source = db_session.query(EventSource).filter(EventSource.name == "oracle").first()
+        
         # Verify event was created
         events = (
             db_session.query(Event)
             .filter(
                 Event.game_id == test_game.id,
                 Event.scene_id == test_scene.id,
-                Event.source == "oracle",
+                Event.source_id == oracle_source.id,
                 Event.interpretation_id == selected.id,
             )
             .all()

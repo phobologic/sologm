@@ -13,6 +13,7 @@ from sologm.core.prompts.oracle import OraclePrompts
 from sologm.core.scene import SceneManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
+from sologm.models.event_source import EventSource
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.utils.errors import OracleError
 
@@ -687,12 +688,17 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 else f"{interpretation.title}: {interpretation.description}"
             )
 
+            # Get the source for "oracle"
+            oracle_source = session.query(EventSource).filter(EventSource.name == "oracle").first()
+            if not oracle_source:
+                raise OracleError("Oracle event source not found")
+
             # Create the event
             event = Event.create(
                 game_id=scene.game_id,
                 scene_id=scene_id,
                 description=description,
-                source="oracle",
+                source_id=oracle_source.id,
                 interpretation_id=interpretation.id,
             )
             session.add(event)
