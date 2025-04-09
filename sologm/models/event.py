@@ -1,12 +1,15 @@
 """Event model for SoloGM."""
 
 import uuid
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sologm.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from sologm.models.event_source import EventSource
 
 
 class Event(Base, TimestampMixin):
@@ -18,12 +21,15 @@ class Event(Base, TimestampMixin):
     scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
     game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    source: Mapped[str] = mapped_column(nullable=False)  # manual, oracle, dice
+    source_id: Mapped[str] = mapped_column(ForeignKey("event_sources.id"), nullable=False, default="manual")
 
     # Optional link to interpretation if this event was created from one
     interpretation_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("interpretations.id"), nullable=True
     )
+
+    # Define the "owning" relationship here
+    source: Mapped["EventSource"] = relationship("EventSource")
 
     # Relationships will be defined in relationships.py
 
@@ -33,7 +39,7 @@ class Event(Base, TimestampMixin):
         game_id: str,
         scene_id: str,
         description: str,
-        source: str = "manual",
+        source_id: str = "manual",
         interpretation_id: Optional[str] = None,
     ) -> "Event":
         """Create a new event.
@@ -42,7 +48,7 @@ class Event(Base, TimestampMixin):
             game_id: ID of the game this event belongs to.
             scene_id: ID of the scene this event belongs to.
             description: Description of the event.
-            source: Source of the event (manual, oracle, dice).
+            source_id: ID of the event source (manual, oracle, dice).
             interpretation_id: Optional ID of the interpretation that created
                                this event.
         Returns:
@@ -53,6 +59,6 @@ class Event(Base, TimestampMixin):
             game_id=game_id,
             scene_id=scene_id,
             description=description,
-            source=source,
+            source_id=source_id,
             interpretation_id=interpretation_id,
         )

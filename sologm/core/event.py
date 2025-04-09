@@ -9,6 +9,7 @@ from sologm.core.base_manager import BaseManager
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.models.event import Event
+from sologm.models.event_source import EventSource
 from sologm.utils.errors import EventError
 
 logger = logging.getLogger(__name__)
@@ -61,12 +62,18 @@ class EventManager(BaseManager[Event, Event]):
             if scene.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
 
+            # Validate source exists
+            event_source = session.query(EventSource).filter(EventSource.id == source).first()
+            if not event_source:
+                valid_sources = [s.id for s in session.query(EventSource).all()]
+                raise EventError(f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}")
+
             # Create event
             event = Event.create(
                 game_id=game_id,
                 scene_id=scene_id,
                 description=description,
-                source=source,
+                source_id=source,
                 interpretation_id=interpretation_id,
             )
 
@@ -148,7 +155,13 @@ class EventManager(BaseManager[Event, Event]):
 
             event.description = description
             if source is not None:
-                event.source = source
+                # Validate source exists
+                event_source = session.query(EventSource).filter(EventSource.id == source).first()
+                if not event_source:
+                    valid_sources = [s.id for s in session.query(EventSource).all()]
+                    raise EventError(f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}")
+                
+                event.source_id = source
 
             session.add(event)
             return event
@@ -210,3 +223,14 @@ class EventManager(BaseManager[Event, Event]):
         except Exception as e:
             self.logger.error(f"Failed to list events: {str(e)}")
             raise EventError(f"Failed to list events: {str(e)}") from e
+            
+    def get_event_sources(self) -> List[EventSource]:
+        """Get all available event sources.
+
+        Returns:
+            List of EventSource objects
+        """
+        return self._execute_db_operation(
+            "get event sources",
+            lambda session: session.query(EventSource).order_by(EventSource.id).all(),
+        )
