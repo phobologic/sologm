@@ -1,9 +1,8 @@
 """Styled text helper for Rich console output."""
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Union
 
-from rich.console import Console
 from rich.style import Style
 from rich.text import Text
 
