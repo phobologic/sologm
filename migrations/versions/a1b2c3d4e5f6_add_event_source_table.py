@@ -2,15 +2,14 @@
 
 Revision ID: a1b2c3d4e5f6
 Revises: 5d69d6f23e19
-Create Date: 2023-11-15
+Create Date: 2025-04-08 20:18:37.910271
 
 """
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import String
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a1b2c3d4e5f6"

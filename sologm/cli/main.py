@@ -65,11 +65,11 @@ def version_callback(value: bool) -> None:
 
 
 # Register all CLI subcommands
-app.add_typer(game_app, name="game")
-app.add_typer(scene_app, name="scene")
-app.add_typer(event_app, name="event")
-app.add_typer(dice_app, name="dice")
-app.add_typer(oracle_app, name="oracle")
+app.add_typer(game_app, name="game", no_args_is_help=True)
+app.add_typer(scene_app, name="scene", no_args_is_help=True)
+app.add_typer(event_app, name="event", no_args_is_help=True)
+app.add_typer(dice_app, name="dice", no_args_is_help=True)
+app.add_typer(oracle_app, name="oracle", no_args_is_help=True)
 
 
 @app.callback()
