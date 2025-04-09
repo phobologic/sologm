@@ -177,24 +177,32 @@ def show_interpretation_status() -> None:
         # Use a more consistent display approach
         from sologm.cli.utils.styled_text import StyledText
         from rich.panel import Panel
-        
+
         st = StyledText
         panel_title = st.title("Current Oracle Interpretation")
-        
+
         # Create metadata with consistent formatting
         metadata = {
             "Set ID": current_interp_set.id,
             "Retry count": current_interp_set.retry_attempt,
-            "Resolved": any(interp.is_selected for interp in current_interp_set.interpretations)
+            "Resolved": any(
+                interp.is_selected for interp in current_interp_set.interpretations
+            ),
         }
-        
+
         # Create panel content
         panel_content = st.combine(
-            st.subtitle("Context:"), " ", current_interp_set.context, "\n",
-            st.subtitle("Results:"), " ", current_interp_set.oracle_results, "\n",
-            st.format_metadata(metadata)
+            st.subtitle("Context:"),
+            " ",
+            current_interp_set.context,
+            "\n",
+            st.subtitle("Results:"),
+            " ",
+            current_interp_set.oracle_results,
+            "\n",
+            st.format_metadata(metadata),
         )
-        
+
         # Create and display the panel
         panel = Panel(
             panel_content,
@@ -319,10 +327,10 @@ def select_interpretation(
                 scene_id, selected, custom_description
             )
             console.print("[bold green]Interpretation added as event.[/]")
-            
+
             # Get the scene for display
             scene = scene_manager.get_scene(game_id, scene_id)
-            
+
             # Display the event in a more consistent way
             events = [event]  # Create a list with just this event
             display_events_table(console, events, scene)
