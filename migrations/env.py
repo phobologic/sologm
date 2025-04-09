@@ -7,6 +7,7 @@ from alembic import context
 
 # Import our models
 from sologm.models.base import Base
+
 # Import all models to ensure they're registered with Base.metadata
 import sologm.models.game
 import sologm.models.scene
@@ -78,9 +79,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
