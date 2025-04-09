@@ -171,3 +171,42 @@ This project was developed using [Aider](https://github.com/paul-gauthier/aider)
 ## License
 
 MIT
+
+## Database Migrations
+
+This project uses Alembic for database migrations. To manage migrations:
+
+### Generate a new migration
+
+```bash
+# Create a migration with auto-detection of model changes
+alembic revision --autogenerate -m "Description of changes"
+```
+
+### Apply migrations to the database
+
+```bash
+# Apply all pending migrations
+alembic upgrade head
+```
+
+### Downgrade the database
+
+```bash
+# Go back one revision
+alembic downgrade -1
+```
+
+### View migration history
+
+```bash
+# See migration history
+alembic history
+```
+
+### Get current revision
+
+```bash
+# Check current database version
+alembic current
+```

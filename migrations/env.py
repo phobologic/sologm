@@ -5,6 +5,16 @@ from sqlalchemy import pool
 
 from alembic import context
 
+# Import our models
+from sologm.models.base import Base
+# Import all models to ensure they're registered with Base.metadata
+import sologm.models.game
+import sologm.models.scene
+import sologm.models.event
+import sologm.models.oracle
+import sologm.models.dice
+import sologm.models.relationships  # Import relationships to ensure they're registered
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -14,11 +24,15 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+# Set target metadata to our SQLAlchemy models
+target_metadata = Base.metadata
+
+# Get database URL from our application config
+from sologm.utils.config import get_config
+
+config_instance = get_config()
+db_url = config_instance.get("database_url", "sqlite:///sologm.db")
+config.set_main_option("sqlalchemy.url", db_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
