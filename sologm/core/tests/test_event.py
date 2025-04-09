@@ -200,12 +200,12 @@ class TestEventManager:
 
         # Verify the correct error was raised
         assert "Event with ID 'nonexistent-event-id' not found" in str(exc.value)
-        
+
     def test_get_event_sources(self, event_manager, db_session):
         """Test getting all event sources."""
         # Get all event sources
         sources = event_manager.get_event_sources()
-        
+
         # Verify we have the expected default sources
         assert len(sources) == 3
         source_ids = [s.id for s in sources]

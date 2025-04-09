@@ -21,7 +21,9 @@ class Event(Base, TimestampMixin):
     scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
     game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    source_id: Mapped[str] = mapped_column(ForeignKey("event_sources.id"), nullable=False, default="manual")
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("event_sources.id"), nullable=False, default="manual"
+    )
 
     # Optional link to interpretation if this event was created from one
     interpretation_id: Mapped[Optional[str]] = mapped_column(

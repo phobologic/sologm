@@ -63,10 +63,14 @@ class EventManager(BaseManager[Event, Event]):
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
 
             # Validate source exists
-            event_source = session.query(EventSource).filter(EventSource.id == source).first()
+            event_source = (
+                session.query(EventSource).filter(EventSource.id == source).first()
+            )
             if not event_source:
                 valid_sources = [s.id for s in session.query(EventSource).all()]
-                raise EventError(f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}")
+                raise EventError(
+                    f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}"
+                )
 
             # Create event
             event = Event.create(
@@ -156,11 +160,15 @@ class EventManager(BaseManager[Event, Event]):
             event.description = description
             if source is not None:
                 # Validate source exists
-                event_source = session.query(EventSource).filter(EventSource.id == source).first()
+                event_source = (
+                    session.query(EventSource).filter(EventSource.id == source).first()
+                )
                 if not event_source:
                     valid_sources = [s.id for s in session.query(EventSource).all()]
-                    raise EventError(f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}")
-                
+                    raise EventError(
+                        f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}"
+                    )
+
                 event.source_id = source
 
             session.add(event)
@@ -223,7 +231,7 @@ class EventManager(BaseManager[Event, Event]):
         except Exception as e:
             self.logger.error(f"Failed to list events: {str(e)}")
             raise EventError(f"Failed to list events: {str(e)}") from e
-            
+
     def get_event_sources(self) -> List[EventSource]:
         """Get all available event sources.
 

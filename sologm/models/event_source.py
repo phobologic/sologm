@@ -19,15 +19,12 @@ class EventSource(Base):
     @classmethod
     def create(cls, id: str, name: str) -> "EventSource":
         """Create a new event source type.
-        
+
         Args:
             id: Identifier for the event source
             name: Display name for the event source
-            
+
         Returns:
             A new EventSource instance
         """
-        return cls(
-            id=id,
-            name=name
-        )
+        return cls(id=id, name=name)
