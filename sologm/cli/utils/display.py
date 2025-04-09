@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
+from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
@@ -18,27 +20,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Border style constants based on content type (Dracula-inspired)
-BORDER_STYLES = {
-    "game_info": "bright_blue",  # Game information (Dracula purple-blue)
-    "current": "bright_cyan",  # Current/active content (Dracula cyan)
-    "success": "bright_green",  # Success/completed content (Dracula green)
-    "pending": "bright_yellow",  # Pending actions/decisions (Dracula yellow)
-    "neutral": "bright_magenta",  # Neutral information (Dracula pink)
-}
-
-# Text style constants based on data type (Dracula-inspired)
-TEXT_STYLES = {
-    "timestamp": "bright_cyan",  # Timestamps and IDs (Dracula cyan)
-    "category": "bright_magenta",  # Categories and sources (Dracula pink)
-    "success": "bright_green",  # Success indicators and selected items (Dracula green)
-    "warning": "bright_yellow",  # Warnings and pending actions (Dracula yellow)
-    "title": "bold",  # Titles and important identifiers
-    "subtitle": "magenta",  # Supplementary information and descriptions (Dracula comment blue)
-}
-
 # Format strings for consistent metadata presentation
-METADATA_FORMAT = "{key}: {value}"
 METADATA_SEPARATOR = " • "
 
 
@@ -146,12 +128,23 @@ def display_interpretation(
         f"Interpretation title: '{interp.title}', created: {interp.created_at}"
     )
 
+    st = StyledText
+    
+    # Create panel title with sequence number, title, selection indicator, and ID
+    sequence_text = f"(#{sequence}) " if sequence is not None else ""
+    
+    # Build the title components
+    title_parts = [st.title(f"{sequence_text}{interp.title}")]
+    
     # Add selection indicator if selected
-    selection_indicator = ""
     if interp.is_selected or selected:
-        selection_indicator = (
-            f" [{TEXT_STYLES['success']}](Selected)[/{TEXT_STYLES['success']}]"
-        )
+        title_parts.extend([" ", st.success("(Selected)")])
+    
+    # Add ID and slug
+    title_parts.extend([" ", st.timestamp(f"({interp.slug} / {interp.id})")])
+    
+    # Combine into a single Text object
+    panel_title = st.combine(*title_parts)
 
     # Determine border style based on selection status
     border_style = (
@@ -160,18 +153,9 @@ def display_interpretation(
         else BORDER_STYLES["game_info"]
     )
 
-    # Create panel with consistent styling and title showing the interpretation title, ID and slug
-    sequence_text = f"(#{sequence}) " if sequence is not None else ""
-    panel_title = (
-        f"[{TEXT_STYLES['title']}]{sequence_text}{interp.title}[/{TEXT_STYLES['title']}]{selection_indicator} "
-        f"[{TEXT_STYLES['timestamp']}]({interp.slug} / {interp.id})[/{TEXT_STYLES['timestamp']}]"
-    )
-
-    # Panel content is just the description now
-    panel_content = interp.description
-
+    # Panel content is just the description
     panel = Panel(
-        panel_content,
+        interp.description,
         title=panel_title,
         border_style=border_style,
         title_align="left",
@@ -198,15 +182,17 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
 
     logger.debug(f"Creating table with {len(events)} events")
 
+    st = StyledText
+
     # Create table without a title
     table = Table(
         border_style=BORDER_STYLES["game_info"],
     )
 
     # Add columns with consistent styling
-    table.add_column("ID", style=TEXT_STYLES["timestamp"])
-    table.add_column("Time", style=TEXT_STYLES["timestamp"])
-    table.add_column("Source", style=TEXT_STYLES["category"])
+    table.add_column("ID", style=st.STYLES["timestamp"])
+    table.add_column("Time", style=st.STYLES["timestamp"])
+    table.add_column("Source", style=st.STYLES["category"])
     table.add_column("Description")
 
     # Add rows with consistent formatting
@@ -223,11 +209,15 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
             event.description,  # Show full description without truncation
         )
 
+    # Create panel title
+    panel_title = st.title(
+        f"Events in game '{scene.game.name}', scene '{scene.title}'"
+    )
+
     # Wrap the table in a panel with a title
     panel = Panel(
         table,
-        title=f"[{TEXT_STYLES['title']}]Events in game '{scene.game.name}', "
-        f"scene '{scene.title}'[/{TEXT_STYLES['title']}]",
+        title=panel_title,
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
@@ -251,17 +241,19 @@ def display_games_table(
         console.print("No games found. Create one with 'sologm game create'.")
         return
 
+    st = StyledText
+
     # Create table without a title
     table = Table(
         border_style=BORDER_STYLES["game_info"],
     )
 
     # Add columns with consistent styling
-    table.add_column("ID", style=TEXT_STYLES["timestamp"])
-    table.add_column("Name", style=TEXT_STYLES["category"])
+    table.add_column("ID", style=st.STYLES["timestamp"])
+    table.add_column("Name", style=st.STYLES["category"])
     table.add_column("Description")
     table.add_column("Scenes", justify="right")
-    table.add_column("Current", style=TEXT_STYLES["success"], justify="center")
+    table.add_column("Current", style=st.STYLES["success"], justify="center")
 
     # Add rows with consistent formatting
     for game in games:
@@ -271,22 +263,24 @@ def display_games_table(
         is_active = active_game and game.id == active_game.id
         active_marker = "✓" if is_active else ""
 
-        # Use different styling for active game
-        name_style = f"[{TEXT_STYLES['title']}]" if is_active else ""
-        name_style_end = f"[/{TEXT_STYLES['title']}]" if is_active else ""
+        # Create game name with appropriate styling
+        game_name = st.title(game.name).plain if is_active else game.name
 
         table.add_row(
             game.id,
-            f"{name_style}{game.name}{name_style_end}",
+            game_name,
             game.description,
             str(scene_count),
             active_marker,
         )
 
+    # Create panel title
+    panel_title = st.title("Games")
+
     # Wrap the table in a panel with a title
     panel = Panel(
         table,
-        title=f"[{TEXT_STYLES['title']}]Games[/{TEXT_STYLES['title']}]",
+        title=panel_title,
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
@@ -310,17 +304,19 @@ def display_scenes_table(
         console.print("No scenes found. Create one with 'sologm scene create'.")
         return
 
+    st = StyledText
+
     # Create table without a title
     table = Table(
         border_style=BORDER_STYLES["game_info"],
     )
 
     # Add columns with consistent styling
-    table.add_column("ID", style=TEXT_STYLES["timestamp"])
-    table.add_column("Title", style=TEXT_STYLES["category"])
+    table.add_column("ID", style=st.STYLES["timestamp"])
+    table.add_column("Title", style=st.STYLES["category"])
     table.add_column("Description")
-    table.add_column("Status", style=TEXT_STYLES["success"])
-    table.add_column("Current", style=TEXT_STYLES["success"], justify="center")
+    table.add_column("Status", style=st.STYLES["success"])
+    table.add_column("Current", style=st.STYLES["success"], justify="center")
     table.add_column("Sequence", justify="right")
 
     # Add rows with consistent formatting
@@ -328,23 +324,25 @@ def display_scenes_table(
         is_active = active_scene_id and scene.id == active_scene_id
         active_marker = "✓" if is_active else ""
 
-        # Use different styling for active scene
-        title_style = f"[{TEXT_STYLES['title']}]" if is_active else ""
-        title_style_end = f"[/{TEXT_STYLES['title']}]" if is_active else ""
+        # Create scene title with appropriate styling
+        scene_title = st.title(scene.title).plain if is_active else scene.title
 
         table.add_row(
             scene.id,
-            f"{title_style}{scene.title}{title_style_end}",
+            scene_title,
             scene.description,
             scene.status.value,
             active_marker,
             str(scene.sequence),
         )
 
+    # Create panel title
+    panel_title = st.title("Scenes")
+
     # Wrap the table in a panel with a title
     panel = Panel(
         table,
-        title=f"[{TEXT_STYLES['title']}]Scenes[/{TEXT_STYLES['title']}]",
+        title=panel_title,
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
@@ -366,6 +364,8 @@ def display_game_info(
         f"{active_scene.id if active_scene else 'None'}"
     )
 
+    st = StyledText
+
     # Access scenes relationship directly
     scene_count = len(game.scenes)
     logger.debug(f"Game details: name='{game.name}', scenes={scene_count}")
@@ -377,23 +377,27 @@ def display_game_info(
         "Scenes": scene_count,
     }
 
-    # Create panel with consistent styling
-    panel_content = (
-        f"[{TEXT_STYLES['subtitle']}]{game.description}[/{TEXT_STYLES['subtitle']}]\n"
-        f"{format_metadata(metadata)}"
-    )
+    # Create panel content
+    content = Text()
+    content.append(st.subtitle(game.description))
+    content.append("\n")
+    content.append(st.format_metadata(metadata))
 
     if active_scene:
-        panel_content += f"\nActive Scene: [{TEXT_STYLES['title']}]{active_scene.title}[/{TEXT_STYLES['title']}]"
+        content.append("\nActive Scene: ")
+        content.append(st.title(active_scene.title))
 
-    panel_title = (
-        f"[{TEXT_STYLES['title']} bright_blue]{game.name}[/{TEXT_STYLES['title']} bright_blue] "
-        f"([{TEXT_STYLES['title']} {TEXT_STYLES['timestamp']}]{game.slug}[/{TEXT_STYLES['title']} {TEXT_STYLES['timestamp']}]) "
-        f"[{TEXT_STYLES['timestamp']}]{game.id}[/{TEXT_STYLES['timestamp']}]"
+    # Create panel title
+    panel_title = st.combine(
+        st.title_blue(game.name),
+        " (",
+        st.title_timestamp(game.slug),
+        ") ",
+        st.timestamp(game.id)
     )
 
     panel = Panel(
-        panel_content,
+        content,
         title=panel_title,
         border_style=BORDER_STYLES["game_info"],
         title_align="left",
@@ -414,6 +418,8 @@ def display_interpretation_set(
         interp_set: InterpretationSet to display
         show_context: Whether to show context information
     """
+    st = StyledText
+    
     # Access interpretations relationship directly
     interpretation_count = len(interp_set.interpretations)
 
@@ -424,14 +430,18 @@ def display_interpretation_set(
 
     # Show context panel if requested
     if show_context:
-        context_content = (
-            f"[{TEXT_STYLES['subtitle']}]Context:[/{TEXT_STYLES['subtitle']}] {interp_set.context}\n"
-            f"[{TEXT_STYLES['subtitle']}]Results:[/{TEXT_STYLES['subtitle']}] {interp_set.oracle_results}"
+        # Create context content
+        context_content = st.combine(
+            st.subtitle("Context:"), " ", interp_set.context, "\n",
+            st.subtitle("Results:"), " ", interp_set.oracle_results
         )
+
+        # Create panel title
+        panel_title = st.title("Oracle Interpretations")
 
         context_panel = Panel(
             context_content,
-            title=f"[{TEXT_STYLES['title']}]Oracle Interpretations[/{TEXT_STYLES['title']}]",
+            title=panel_title,
             border_style=BORDER_STYLES["game_info"],
             title_align="left",
         )
@@ -445,7 +455,7 @@ def display_interpretation_set(
     # Show set ID with instruction
     instruction_panel = Panel(
         "Use this ID to select an interpretation with 'sologm oracle select'",
-        title=f"[{TEXT_STYLES['timestamp']}]Interpretation Set: {interp_set.id}[/{TEXT_STYLES['timestamp']}]",
+        title=st.timestamp(f"Interpretation Set: {interp_set.id}"),
         border_style=BORDER_STYLES["pending"],
         expand=False,
         title_align="left",
@@ -466,6 +476,8 @@ def display_scene_info(console: Console, scene: Scene) -> None:
         f"game_id={scene.game_id}"
     )
 
+    st = StyledText
+
     # Create metadata with consistent formatting
     metadata = {
         "Status": scene.status.value,
@@ -479,19 +491,25 @@ def display_scene_info(console: Console, scene: Scene) -> None:
     if scene.status.value == "COMPLETED":
         border_style = BORDER_STYLES["success"]
 
-    # Create panel with consistent styling
-    panel_content = (
-        f"[{TEXT_STYLES['subtitle']}]{scene.description}[/{TEXT_STYLES['subtitle']}]\n"
-        f"{format_metadata(metadata)}"
+    # Create panel content
+    panel_content = st.combine(
+        st.subtitle(scene.description),
+        "\n",
+        st.format_metadata(metadata)
     )
 
-    panel_title = (
-        f"[{TEXT_STYLES['title']} bright_blue]{scene.title}[/{TEXT_STYLES['title']} bright_blue] "
-        f"[{TEXT_STYLES['timestamp']}]({scene.id})[/{TEXT_STYLES['timestamp']}]"
+    # Create panel title
+    panel_title = st.combine(
+        st.title_blue(scene.title),
+        " ",
+        st.timestamp(f"({scene.id})")
     )
 
     panel = Panel(
-        panel_content, title=panel_title, border_style=border_style, title_align="left"
+        panel_content, 
+        title=panel_title, 
+        border_style=border_style, 
+        title_align="left"
     )
 
     console.print(panel)
@@ -605,18 +623,21 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
     """
     logger.debug(f"Creating game header panel for game {game.id}")
 
+    st = StyledText
+
     # Access scenes relationship directly
     scene_count = len(game.scenes)
 
     # Create metadata with consistent formatting
     metadata = {"Created": game.created_at.strftime("%Y-%m-%d"), "Scenes": scene_count}
-    formatted_metadata = format_metadata(metadata)
 
     # Create a title with consistent styling
-    panel_title = (
-        f"[{TEXT_STYLES['title']} bright_blue]{game.name}[/{TEXT_STYLES['title']} bright_blue] "
-        f"([{TEXT_STYLES['title']} {TEXT_STYLES['timestamp']}]{game.slug}[/{TEXT_STYLES['title']} {TEXT_STYLES['timestamp']}]) "
-        f"[{TEXT_STYLES['timestamp']}]{game.id}[/{TEXT_STYLES['timestamp']}]"
+    panel_title = st.combine(
+        st.title_blue(game.name),
+        " (",
+        st.title_timestamp(game.slug),
+        ") ",
+        st.timestamp(game.id)
     )
 
     # Create content with consistent styling
@@ -647,11 +668,19 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
         f"Truncated game description from {len(game.description)} to {len(truncated_description)} chars"
     )
 
-    game_info = f"{truncated_description}\n[dim]{formatted_metadata}[/dim]"
+    # Create content with styled text
+    content = Text()
+    content.append(truncated_description)
+    content.append("\n")
+    
+    # Add metadata with dim style
+    metadata_text = st.format_metadata(metadata)
+    metadata_text.stylize("dim")
+    content.append(metadata_text)
 
     logger.debug("Game header panel created")
     return Panel(
-        game_info,
+        content,
         title=panel_title,
         expand=True,
         border_style=BORDER_STYLES["game_info"],
@@ -678,6 +707,8 @@ def _create_scene_panels_grid(
     """
     logger.debug(f"Creating scene panels grid for game {game.id}")
 
+    st = StyledText
+
     # Calculate truncation length for scene descriptions
     console_width = 80  # Default fallback width
     if console:
@@ -695,7 +726,7 @@ def _create_scene_panels_grid(
     )
 
     # Create current scene panel with consistent styling
-    scenes_content = ""
+    scenes_content = Text()
     if active_scene:
         logger.debug(f"Including active scene {active_scene.id} in panel")
         truncated_description = truncate_text(
@@ -704,19 +735,19 @@ def _create_scene_panels_grid(
         logger.debug(
             f"Truncated active scene description from {len(active_scene.description)} to {len(truncated_description)} chars"
         )
-        scenes_content = (
-            f"[{TEXT_STYLES['title']}]{active_scene.title}[/{TEXT_STYLES['title']}]\n"
-            f"{truncated_description}"
+        
+        scenes_content = st.combine(
+            st.title(active_scene.title),
+            "\n",
+            truncated_description
         )
     else:
         logger.debug("No active scene to display")
-        scenes_content = (
-            f"[{TEXT_STYLES['subtitle']}]No active scene[/{TEXT_STYLES['subtitle']}]"
-        )
+        scenes_content = st.subtitle("No active scene")
 
     scenes_panel = Panel(
         scenes_content,
-        title=f"[{TEXT_STYLES['title']}]Current Scene[/{TEXT_STYLES['title']}]",
+        title=st.title("Current Scene"),
         border_style=BORDER_STYLES["current"],
         title_align="left",
         expand=True,  # Ensure panel expands to fill available width
@@ -730,7 +761,7 @@ def _create_scene_panels_grid(
         )
         prev_scene = scene_manager.get_previous_scene(game.id, active_scene)
 
-    prev_scene_content = ""
+    prev_scene_content = Text()
     if prev_scene:
         logger.debug(f"Including previous scene {prev_scene.id} in panel")
         truncated_description = truncate_text(
@@ -739,19 +770,19 @@ def _create_scene_panels_grid(
         logger.debug(
             f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars"
         )
-        prev_scene_content = (
-            f"[{TEXT_STYLES['title']}]{prev_scene.title}[/{TEXT_STYLES['title']}]\n"
-            f"{truncated_description}"
+        
+        prev_scene_content = st.combine(
+            st.title(prev_scene.title),
+            "\n",
+            truncated_description
         )
     else:
         logger.debug("No previous scene to display")
-        prev_scene_content = (
-            f"[{TEXT_STYLES['subtitle']}]No previous scene[/{TEXT_STYLES['subtitle']}]"
-        )
+        prev_scene_content = st.subtitle("No previous scene")
 
     prev_scene_panel = Panel(
         prev_scene_content,
-        title=f"[{TEXT_STYLES['title']}]Previous Scene[/{TEXT_STYLES['title']}]",
+        title=st.title("Previous Scene"),
         border_style=BORDER_STYLES["game_info"],
         title_align="left",
         expand=True,  # Ensure panel expands to fill available width
@@ -769,7 +800,9 @@ def _create_scene_panels_grid(
 def _create_events_panel(recent_events: List[Event], truncation_length: int) -> Panel:
     """Create the recent events panel."""
     logger.debug(f"Creating events panel with {len(recent_events)} events")
-    events_content = ""
+    
+    st = StyledText
+    events_content = Text()
 
     if recent_events:
         # Calculate how many events we can reasonably show
@@ -778,7 +811,7 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
         logger.debug(f"Showing {max_events_to_show} of {len(recent_events)} events")
 
         events_shown = recent_events[:max_events_to_show]
-        for event in events_shown:
+        for i, event in enumerate(events_shown):
             # Get the source name instead of the source object
             source_name = (
                 event.source.name
@@ -787,25 +820,36 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
             )
 
             logger.debug(f"Adding event {event.id} to panel (source: {source_name})")
+            
+            # Add a newline between events
+            if i > 0:
+                events_content.append("\n\n")
+                
             # Truncate long descriptions based on calculated width
             truncated_description = truncate_text(
                 event.description, max_length=truncation_length
             )
-            events_content += (
-                f"[{TEXT_STYLES['timestamp']}]{event.created_at.strftime('%Y-%m-%d %H:%M')}[/{TEXT_STYLES['timestamp']}] "
-                f"[{TEXT_STYLES['category']}]({source_name})[/{TEXT_STYLES['category']}]\n"
-                f"{truncated_description}\n\n"
-            )
+            
+            # Add event header with timestamp and source
+            events_content.append(st.timestamp(event.created_at.strftime('%Y-%m-%d %H:%M')))
+            events_content.append(" ")
+            events_content.append(st.category(f"({source_name})"))
+            events_content.append("\n")
+            events_content.append(truncated_description)
     else:
         logger.debug("No events to display in panel")
-        events_content = (
-            f"[{TEXT_STYLES['subtitle']}]No recent events[/{TEXT_STYLES['subtitle']}]"
-        )
+        events_content = st.subtitle("No recent events")
+
+    # Create panel title
+    panel_title = st.combine(
+        st.title("Recent Events"),
+        f" ({len(recent_events)} shown)"
+    )
 
     # Use success border style for events as they represent completed actions
     return Panel(
-        events_content.rstrip(),
-        title=f"[{TEXT_STYLES['title']}]Recent Events[/{TEXT_STYLES['title']}] ({len(recent_events)} shown)",
+        events_content,
+        title=panel_title,
         border_style=BORDER_STYLES["success"],
         title_align="left",
     )
@@ -855,27 +899,37 @@ def _create_pending_oracle_panel(
     """Create a panel for pending oracle interpretation."""
     logger.debug(f"Creating pending oracle panel for set {interp_set.id}")
 
-    # Show full title and description for each option
-    options_text = ""
-
+    st = StyledText
+    
+    # Create panel content
+    panel_content = Text()
+    
+    # Add header
+    panel_content.append(st.warning("Open Oracle Interpretation:"))
+    panel_content.append("\n")
+    panel_content.append(st.subtitle("Context:"))
+    panel_content.append(" ")
+    panel_content.append(interp_set.context)
+    panel_content.append("\n\n")
+    
+    # Add interpretation options
     for i, interp in enumerate(interp_set.interpretations, 1):
         logger.debug(f"Adding interpretation option {i}: {interp.id}")
-        options_text += (
-            f"[{TEXT_STYLES['title']}]{i}. {interp.title}[/{TEXT_STYLES['title']}]\n"
-            f"{interp.description}\n\n"
-        )
-
-    # Create panel with consistent styling for pending actions
-    panel_content = (
-        f"[{TEXT_STYLES['warning']}]Open Oracle Interpretation:[/{TEXT_STYLES['warning']}]\n"
-        f"[{TEXT_STYLES['subtitle']}]Context:[/{TEXT_STYLES['subtitle']}] {interp_set.context}\n\n"
-        f"{options_text}"
-        f"[{TEXT_STYLES['subtitle']}]Use 'sologm oracle select' to choose an interpretation[/{TEXT_STYLES['subtitle']}]"
-    )
+        
+        if i > 1:
+            panel_content.append("\n\n")
+            
+        panel_content.append(st.title(f"{i}. {interp.title}"))
+        panel_content.append("\n")
+        panel_content.append(interp.description)
+    
+    # Add footer
+    panel_content.append("\n\n")
+    panel_content.append(st.subtitle("Use 'sologm oracle select' to choose an interpretation"))
 
     return Panel(
         panel_content,
-        title=f"[{TEXT_STYLES['title']}]Pending Oracle Decision[/{TEXT_STYLES['title']}]",
+        title=st.title("Pending Oracle Decision"),
         border_style=BORDER_STYLES["pending"],
         expand=True,
         title_align="left",
@@ -892,26 +946,43 @@ def _create_recent_oracle_panel(
         f"interpretation {selected_interp.id}"
     )
 
-    # Build the panel content with consistent styling
-    panel_content = (
-        f"[{TEXT_STYLES['subtitle']}]Oracle Results:[/{TEXT_STYLES['subtitle']}] {interp_set.oracle_results}\n"
-        f"[{TEXT_STYLES['subtitle']}]Context:[/{TEXT_STYLES['subtitle']}] {interp_set.context}\n\n"
-        f"[{TEXT_STYLES['subtitle']}]Selected Interpretation:[/{TEXT_STYLES['subtitle']}] [bold]{selected_interp.title}[/bold]\n"
-        f"{selected_interp.description}\n\n"
-        f"[{TEXT_STYLES['subtitle']}]Other options were:[/{TEXT_STYLES['subtitle']}]"
-    )
-
+    st = StyledText
+    
+    # Build the panel content
+    panel_content = Text()
+    
+    # Add oracle results and context
+    panel_content.append(st.subtitle("Oracle Results:"))
+    panel_content.append(" ")
+    panel_content.append(interp_set.oracle_results)
+    panel_content.append("\n")
+    panel_content.append(st.subtitle("Context:"))
+    panel_content.append(" ")
+    panel_content.append(interp_set.context)
+    panel_content.append("\n\n")
+    
+    # Add selected interpretation
+    panel_content.append(st.subtitle("Selected Interpretation:"))
+    panel_content.append(" ")
+    panel_content.append(st.title(selected_interp.title))
+    panel_content.append("\n")
+    panel_content.append(selected_interp.description)
+    panel_content.append("\n\n")
+    
+    # Add other options header
+    panel_content.append(st.subtitle("Other options were:"))
+    
     # Add other interpretations that weren't selected
     for i, interp in enumerate(interp_set.interpretations, 1):
         if interp.id != selected_interp.id:
-            panel_content += (
-                f"\n[{TEXT_STYLES['title']}]{i}. {interp.title}[/{TEXT_STYLES['title']}]\n"
-                f"{interp.description}"
-            )
+            panel_content.append("\n")
+            panel_content.append(st.title(f"{i}. {interp.title}"))
+            panel_content.append("\n")
+            panel_content.append(interp.description)
 
     return Panel(
         panel_content,
-        title=f"[{TEXT_STYLES['title']}]Previous Oracle Decision[/{TEXT_STYLES['title']}]",
+        title=st.title("Previous Oracle Decision"),
         border_style=BORDER_STYLES["success"],
         expand=True,
         title_align="left",
@@ -922,11 +993,12 @@ def _create_empty_oracle_panel() -> Panel:
     """Create an empty oracle panel when no oracle information is available."""
     logger.debug("Creating empty oracle panel")
 
-    panel_content = f"[{TEXT_STYLES['subtitle']}]No oracle interpretations yet.[/{TEXT_STYLES['subtitle']}]"
+    st = StyledText
+    panel_content = st.subtitle("No oracle interpretations yet.")
 
     return Panel(
         panel_content,
-        title=f"[{TEXT_STYLES['title']}]Oracle[/{TEXT_STYLES['title']}]",
+        title=st.title("Oracle"),
         border_style=BORDER_STYLES["neutral"],
         expand=True,
         title_align="left",
@@ -944,39 +1016,50 @@ def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
     """
     logger.debug(f"Creating dice rolls panel with {len(recent_rolls)} rolls")
 
+    st = StyledText
+    
     if not recent_rolls:
         logger.debug("No dice rolls to display")
-        panel_content = f"[{TEXT_STYLES['subtitle']}]No recent dice rolls.[/{TEXT_STYLES['subtitle']}]"
+        panel_content = st.subtitle("No recent dice rolls.")
     else:
-        panel_content = ""
+        panel_content = Text()
+        
         for i, roll in enumerate(recent_rolls):
             logger.debug(f"Formatting roll {i + 1}: {roll.notation} = {roll.total}")
-            # Format each roll concisely
-            roll_line = f"[{TEXT_STYLES['title']}]{roll.notation}[/{TEXT_STYLES['title']}] = [{TEXT_STYLES['success']}]{roll.total}[/{TEXT_STYLES['success']}]"
-
+            
+            # Add spacing between rolls
+            if i > 0:
+                panel_content.append("\n\n")
+                
+            # Create roll header with notation and total
+            roll_header = st.combine(
+                st.title(roll.notation),
+                " = ",
+                st.success(str(roll.total))
+            )
+            panel_content.append(roll_header)
+            
             # Add reason if available
             if roll.reason:
                 logger.debug(f"Roll has reason: {roll.reason}")
-                roll_line += f" ([{TEXT_STYLES['subtitle']}]{roll.reason}[/{TEXT_STYLES['subtitle']}])"
-
+                panel_content.append(" (")
+                panel_content.append(st.subtitle(roll.reason))
+                panel_content.append(")")
+            
             # Add timestamp
             logger.debug(f"Roll timestamp: {roll.created_at}")
-            roll_line += f"\n[{TEXT_STYLES['timestamp']}]{roll.created_at.strftime('%Y-%m-%d %H:%M')}[/{TEXT_STYLES['timestamp']}]"
-
+            panel_content.append("\n")
+            panel_content.append(st.timestamp(roll.created_at.strftime('%Y-%m-%d %H:%M')))
+            
             # Add details for complex rolls
             if len(roll.individual_results) > 1:
                 logger.debug(f"Roll has individual results: {roll.individual_results}")
-                roll_line += f"\n[{TEXT_STYLES['category']}]{roll.individual_results}[/{TEXT_STYLES['category']}]"
-
-            panel_content += roll_line + "\n\n"
-
-        # Remove trailing newlines
-        panel_content = panel_content.rstrip()
-        logger.debug(f"Final panel content length: {len(panel_content)}")
+                panel_content.append("\n")
+                panel_content.append(st.category(str(roll.individual_results)))
 
     return Panel(
         panel_content,
-        title=f"[{TEXT_STYLES['title']}]Recent Rolls[/{TEXT_STYLES['title']}]",
+        title=st.title("Recent Rolls"),
         border_style=BORDER_STYLES["neutral"],
         expand=True,
         title_align="left",
@@ -992,13 +1075,7 @@ def format_metadata(items: Dict[str, Any]) -> str:
     Returns:
         Formatted metadata string with consistent separators
     """
-    formatted_items = []
-
-    for key, value in items.items():
-        if value is not None:
-            formatted_items.append(METADATA_FORMAT.format(key=key, value=value))
-
-    return METADATA_SEPARATOR.join(formatted_items)
+    return StyledText.format_metadata(items, METADATA_SEPARATOR).plain
 
 
 def get_event_context_header(

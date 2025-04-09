@@ -4,9 +4,9 @@ from unittest.mock import MagicMock
 
 import pytest
 from rich.console import Console
+from rich.text import Text
 
 from sologm.cli.utils.display import (
-    BORDER_STYLES,
     METADATA_SEPARATOR,
     _calculate_truncation_length,
     _create_events_panel,
@@ -24,6 +24,7 @@ from sologm.cli.utils.display import (
     format_metadata,
     truncate_text,
 )
+from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 from sologm.core.scene import SceneManager
 
 
@@ -322,3 +323,21 @@ def test_format_metadata():
     metadata = {}
     result = format_metadata(metadata)
     assert result == ""
+    
+    # Verify it's using StyledText under the hood
+    styled_result = StyledText.format_metadata(metadata)
+    assert isinstance(styled_result, Text)
+@pytest.fixture
+def display_helpers():
+    """Fixture to provide access to private display helper functions."""
+    from sologm.cli.utils.display import (
+        _create_empty_oracle_panel,
+        _create_events_panel,
+        _create_dice_rolls_panel,
+    )
+    
+    return {
+        "create_empty_oracle_panel": _create_empty_oracle_panel,
+        "create_events_panel": _create_events_panel,
+        "create_dice_rolls_panel": _create_dice_rolls_panel,
+    }
