@@ -3,7 +3,7 @@
 import pytest
 
 
-def test_cascade_delete_game(db_session, test_game_with_scenes):
+def test_cascade_delete_game(db_session, test_game_with_scenes, create_test_event):
     """Test that deleting a game cascades to scenes."""
     game, scenes = test_game_with_scenes
 
@@ -11,13 +11,12 @@ def test_cascade_delete_game(db_session, test_game_with_scenes):
     from sologm.models.event import Event
 
     for scene in scenes:
-        event = Event.create(
+        create_test_event(
             game_id=game.id,
             scene_id=scene.id,
             description="Test event",
             source="manual",
         )
-        db_session.add(event)
 
     db_session.commit()
 
