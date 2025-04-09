@@ -551,7 +551,7 @@ def get_event_context_header(
     if recent_events:
         context_info.append("Recent Events:")
         for i, event in enumerate(recent_events, 1):
-            context_info.append(f"{i}. [{event.source}] {event.description}")
+            context_info.append(f"{i}. [{event.source.name}] {event.description}")
         context_info.append("")
 
     return "\n".join(context_info)
