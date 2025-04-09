@@ -62,28 +62,44 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
         f"Individual results: {roll.individual_results}, modifier: {roll.modifier}"
     )
 
+    st = StyledText
+
     # Create title with consistent styling
-    title_text = ""
+    title_parts = []
     if roll.reason:
-        title_text = f"[{TEXT_STYLES['title']}]{roll.reason}:[/{TEXT_STYLES['title']}] [{TEXT_STYLES['title']}]{roll.notation}[/{TEXT_STYLES['title']}]"
+        title_parts.extend([st.title(f"{roll.reason}:"), " ", st.title(roll.notation)])
     else:
-        title_text = f"[{TEXT_STYLES['title']}]{roll.notation}[/{TEXT_STYLES['title']}]"
+        title_parts.append(st.title(roll.notation))
+    
+    panel_title = st.combine(*title_parts)
 
     # Build details with consistent styling
     details = []
 
     if len(roll.individual_results) > 1:
         details.append(
-            f"[{TEXT_STYLES['subtitle']}]Rolls:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['timestamp']}]{roll.individual_results}[/{TEXT_STYLES['timestamp']}]"
+            st.combine(
+                st.subtitle("Rolls:"), 
+                " ", 
+                st.timestamp(str(roll.individual_results))
+            )
         )
 
     if roll.modifier != 0:
         details.append(
-            f"[{TEXT_STYLES['subtitle']}]Modifier:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['warning']}]{roll.modifier:+d}[/{TEXT_STYLES['warning']}]"
+            st.combine(
+                st.subtitle("Modifier:"), 
+                " ", 
+                st.warning(f"{roll.modifier:+d}")
+            )
         )
 
     details.append(
-        f"[{TEXT_STYLES['subtitle']}]Result:[/{TEXT_STYLES['subtitle']}] [{TEXT_STYLES['title']} {TEXT_STYLES['success']}]{roll.total}[/{TEXT_STYLES['title']} {TEXT_STYLES['success']}]"
+        st.combine(
+            st.subtitle("Result:"), 
+            " ", 
+            st.title_success(str(roll.total))
+        )
     )
 
     # Add timestamp metadata if available
@@ -91,15 +107,24 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
     if roll.created_at:
         metadata["Time"] = roll.created_at.isoformat()
 
-    # Combine details and metadata
-    content = "\n".join(details)
+    # Create panel content
+    panel_content = Text()
+    
+    # Add all details
+    for i, detail in enumerate(details):
+        if i > 0:
+            panel_content.append("\n")
+        panel_content.append(detail)
+    
+    # Add metadata if available
     if metadata:
-        content += f"\n{format_metadata(metadata)}"
+        panel_content.append("\n")
+        panel_content.append(st.format_metadata(metadata))
 
     # Use consistent border style for dice rolls (neutral information)
     panel = Panel(
-        content,
-        title=title_text,
+        panel_content,
+        title=panel_title,
         border_style=BORDER_STYLES["neutral"],
         expand=True,
         title_align="left",
@@ -1075,6 +1100,8 @@ def format_metadata(items: Dict[str, Any]) -> str:
     Returns:
         Formatted metadata string with consistent separators
     """
+    # This function is kept for backward compatibility
+    # It returns a plain string version of the styled metadata
     return StyledText.format_metadata(items, METADATA_SEPARATOR).plain
 
 
@@ -1096,6 +1123,7 @@ def get_event_context_header(
         Formatted context header as a string
     """
     # Create context information for the editor
+    # This returns a plain string as it's used for editor context headers
     context_info = (
         f"Game: {game_name}\n"
         f"Scene: {scene_title}\n\n"
