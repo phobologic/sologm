@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     # For SQLite, we need to recreate the tables with the new schema
-    
+
     # Create a temporary table with the new schema for event_sources
     op.execute(
         """
@@ -83,7 +83,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     # For SQLite, we need to recreate the tables with the old schema
-    
+
     # Create a temporary table with the old schema for event_sources
     op.execute(
         """

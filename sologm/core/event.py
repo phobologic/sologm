@@ -161,7 +161,9 @@ class EventManager(BaseManager[Event, Event]):
             if source is not None:
                 # Validate source exists
                 event_source = (
-                    session.query(EventSource).filter(EventSource.name == source).first()
+                    session.query(EventSource)
+                    .filter(EventSource.name == source)
+                    .first()
                 )
                 if not event_source:
                     valid_sources = [s.name for s in session.query(EventSource).all()]
