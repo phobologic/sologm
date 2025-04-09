@@ -175,7 +175,8 @@ class StyledText:
             if isinstance(element, Text):
                 result.append(element)
             else:
-                # Apply a default style to non-Text elements to ensure they get their own span
+                # Apply a default style to non-Text elements to ensure they
+                # get their own span
                 result.append(Text(str(element), style=Style()))
         return result
 

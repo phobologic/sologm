@@ -4,7 +4,7 @@ import logging
 import re
 import textwrap
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple, Union
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import click
 from rich.console import Console
@@ -142,13 +142,13 @@ class TextFormatter:
 
             # Add required indicator if the field is required
             if field_config.required:
-                lines.append(f"# (Required)")
+                lines.append("# (Required)")
 
             # Add original value as a comment if we're in edit mode
             if original_data and field_name in original_data:
                 original_value = original_data[field_name]
                 if original_value:
-                    lines.append(f"# Original value:")
+                    lines.append("# Original value:")
                     # Wrap each line of the original value
                     for orig_line in str(original_value).split("\n"):
                         for wrapped_line in self.wrap_text(orig_line, width=wrap_width):
@@ -215,27 +215,27 @@ class TextParser:
 
         # Validate required fields
         missing_fields = []
-        for field in config.fields:
-            if field.required and (
-                field.name not in result or not result[field.name].strip()
+        for f in config.fields:
+            if f.required and (
+                f.name not in result or not result[f.name].strip()
             ):
-                missing_fields.append(field.display_name)
+                missing_fields.append(f.display_name)
 
         if missing_fields:
             field_list = ", ".join(missing_fields)
             raise ValidationError(f"Required field(s) {field_list} cannot be empty.")
 
         # Validate enum values
-        for field in config.fields:
+        for f in config.fields:
             if (
-                field.enum_values
-                and field.name in result
-                and result[field.name]
-                and result[field.name] not in field.enum_values
+                f.enum_values
+                and f.name in result
+                and result[f.name]
+                and result[f.name] not in f.enum_values
             ):
                 raise ValidationError(
-                    f"Invalid value for {field.display_name}. "
-                    f"Must be one of: {', '.join(field.enum_values)}"
+                    f"Invalid value for {f.display_name}. "
+                    f"Must be one of: {', '.join(f.enum_values)}"
                 )
 
         return result
@@ -456,7 +456,8 @@ class StructuredEditor:
                     structured_text = edited_text  # Keep user's edits for the retry
                 else:
                     console.print(
-                        "[bold red]Maximum retry attempts reached. Canceling edit.[/bold red]"
+                        "[bold red]Maximum retry attempts reached. "
+                        "Canceling edit.[/bold red]"
                     )
                     return data, False
 
