@@ -3,7 +3,7 @@
 import uuid
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Text
+from sqlalchemy import ForeignKey, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sologm.models.base import Base, TimestampMixin
@@ -21,8 +21,8 @@ class Event(Base, TimestampMixin):
     scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
     game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    source_id: Mapped[str] = mapped_column(
-        ForeignKey("event_sources.id"), nullable=False, default="manual"
+    source_id: Mapped[int] = mapped_column(
+        ForeignKey("event_sources.id"), nullable=False
     )
 
     # Optional link to interpretation if this event was created from one
@@ -41,7 +41,7 @@ class Event(Base, TimestampMixin):
         game_id: str,
         scene_id: str,
         description: str,
-        source_id: str = "manual",
+        source_id: int,
         interpretation_id: Optional[str] = None,
     ) -> "Event":
         """Create a new event.
@@ -50,7 +50,7 @@ class Event(Base, TimestampMixin):
             game_id: ID of the game this event belongs to.
             scene_id: ID of the scene this event belongs to.
             description: Description of the event.
-            source_id: ID of the event source (manual, oracle, dice).
+            source_id: ID of the event source.
             interpretation_id: Optional ID of the interpretation that created
                                this event.
         Returns:

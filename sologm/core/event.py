@@ -32,7 +32,7 @@ class EventManager(BaseManager[Event, Event]):
             game_id: ID of the game.
             scene_id: ID of the scene.
             description: Description of the event.
-            source: Source of the event (manual, oracle, dice).
+            source: Source name of the event (manual, oracle, dice).
             interpretation_id: Optional ID of the interpretation that created
                                this event.
 
@@ -62,12 +62,12 @@ class EventManager(BaseManager[Event, Event]):
             if scene.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
 
-            # Validate source exists
+            # Validate source exists and get its ID
             event_source = (
-                session.query(EventSource).filter(EventSource.id == source).first()
+                session.query(EventSource).filter(EventSource.name == source).first()
             )
             if not event_source:
-                valid_sources = [s.id for s in session.query(EventSource).all()]
+                valid_sources = [s.name for s in session.query(EventSource).all()]
                 raise EventError(
                     f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}"
                 )
@@ -77,7 +77,7 @@ class EventManager(BaseManager[Event, Event]):
                 game_id=game_id,
                 scene_id=scene_id,
                 description=description,
-                source_id=source,
+                source_id=event_source.id,
                 interpretation_id=interpretation_id,
             )
 
@@ -143,7 +143,7 @@ class EventManager(BaseManager[Event, Event]):
         Args:
             event_id: ID of the event to update
             description: New description for the event
-            source: Optional new source for the event
+            source: Optional new source name for the event
 
         Returns:
             The updated event
@@ -161,15 +161,15 @@ class EventManager(BaseManager[Event, Event]):
             if source is not None:
                 # Validate source exists
                 event_source = (
-                    session.query(EventSource).filter(EventSource.id == source).first()
+                    session.query(EventSource).filter(EventSource.name == source).first()
                 )
                 if not event_source:
-                    valid_sources = [s.id for s in session.query(EventSource).all()]
+                    valid_sources = [s.name for s in session.query(EventSource).all()]
                     raise EventError(
                         f"Invalid source '{source}'. Valid sources: {', '.join(valid_sources)}"
                     )
 
-                event.source_id = source
+                event.source_id = event_source.id
 
             session.add(event)
             return event
@@ -240,5 +240,5 @@ class EventManager(BaseManager[Event, Event]):
         """
         return self._execute_db_operation(
             "get event sources",
-            lambda session: session.query(EventSource).order_by(EventSource.id).all(),
+            lambda session: session.query(EventSource).order_by(EventSource.name).all(),
         )
