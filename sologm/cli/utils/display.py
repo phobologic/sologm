@@ -70,7 +70,7 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
         title_parts.extend([st.title(f"{roll.reason}:"), " ", st.title(roll.notation)])
     else:
         title_parts.append(st.title(roll.notation))
-    
+
     panel_title = st.combine(*title_parts)
 
     # Build details with consistent styling
@@ -79,27 +79,17 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
     if len(roll.individual_results) > 1:
         details.append(
             st.combine(
-                st.subtitle("Rolls:"), 
-                " ", 
-                st.timestamp(str(roll.individual_results))
+                st.subtitle("Rolls:"), " ", st.timestamp(str(roll.individual_results))
             )
         )
 
     if roll.modifier != 0:
         details.append(
-            st.combine(
-                st.subtitle("Modifier:"), 
-                " ", 
-                st.warning(f"{roll.modifier:+d}")
-            )
+            st.combine(st.subtitle("Modifier:"), " ", st.warning(f"{roll.modifier:+d}"))
         )
 
     details.append(
-        st.combine(
-            st.subtitle("Result:"), 
-            " ", 
-            st.title_success(str(roll.total))
-        )
+        st.combine(st.subtitle("Result:"), " ", st.title_success(str(roll.total)))
     )
 
     # Add timestamp metadata if available
@@ -109,13 +99,13 @@ def display_dice_roll(console: Console, roll: DiceRoll) -> None:
 
     # Create panel content
     panel_content = Text()
-    
+
     # Add all details
     for i, detail in enumerate(details):
         if i > 0:
             panel_content.append("\n")
         panel_content.append(detail)
-    
+
     # Add metadata if available
     if metadata:
         panel_content.append("\n")
@@ -235,9 +225,7 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
         )
 
     # Create panel title
-    panel_title = st.title(
-        f"Events in game '{scene.game.name}', scene '{scene.title}'"
-    )
+    panel_title = st.title(f"Events in game '{scene.game.name}', scene '{scene.title}'")
 
     # Wrap the table in a panel with a title
     panel = Panel(
@@ -418,7 +406,7 @@ def display_game_info(
         " (",
         st.title_timestamp(game.slug),
         ") ",
-        st.timestamp(game.id)
+        st.timestamp(game.id),
     )
 
     panel = Panel(
@@ -457,8 +445,13 @@ def display_interpretation_set(
     if show_context:
         # Create context content
         context_content = st.combine(
-            st.subtitle("Context:"), " ", interp_set.context, "\n",
-            st.subtitle("Results:"), " ", interp_set.oracle_results
+            st.subtitle("Context:"),
+            " ",
+            interp_set.context,
+            "\n",
+            st.subtitle("Results:"),
+            " ",
+            interp_set.oracle_results,
         )
 
         # Create panel title
@@ -518,23 +511,16 @@ def display_scene_info(console: Console, scene: Scene) -> None:
 
     # Create panel content
     panel_content = st.combine(
-        st.subtitle(scene.description),
-        "\n",
-        st.format_metadata(metadata)
+        st.subtitle(scene.description), "\n", st.format_metadata(metadata)
     )
 
     # Create panel title
     panel_title = st.combine(
-        st.title_blue(scene.title),
-        " ",
-        st.timestamp(f"({scene.id})")
+        st.title_blue(scene.title), " ", st.timestamp(f"({scene.id})")
     )
 
     panel = Panel(
-        panel_content,
-        title=panel_title,
-        border_style=border_style,
-        title_align="left"
+        panel_content, title=panel_title, border_style=border_style, title_align="left"
     )
 
     console.print(panel)
@@ -662,7 +648,7 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
         " (",
         st.title_timestamp(game.slug),
         ") ",
-        st.timestamp(game.id)
+        st.timestamp(game.id),
     )
 
     # Create content with consistent styling
@@ -762,9 +748,7 @@ def _create_scene_panels_grid(
         )
 
         scenes_content = st.combine(
-            st.title(active_scene.title),
-            "\n",
-            truncated_description
+            st.title(active_scene.title), "\n", truncated_description
         )
     else:
         logger.debug("No active scene to display")
@@ -797,9 +781,7 @@ def _create_scene_panels_grid(
         )
 
         prev_scene_content = st.combine(
-            st.title(prev_scene.title),
-            "\n",
-            truncated_description
+            st.title(prev_scene.title), "\n", truncated_description
         )
     else:
         logger.debug("No previous scene to display")
@@ -856,7 +838,9 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
             )
 
             # Add event header with timestamp and source
-            events_content.append(st.timestamp(event.created_at.strftime('%Y-%m-%d %H:%M')))
+            events_content.append(
+                st.timestamp(event.created_at.strftime("%Y-%m-%d %H:%M"))
+            )
             events_content.append(" ")
             events_content.append(st.category(f"({source_name})"))
             events_content.append("\n")
@@ -867,8 +851,7 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
 
     # Create panel title
     panel_title = st.combine(
-        st.title("Recent Events"),
-        f" ({len(recent_events)} shown)"
+        st.title("Recent Events"), f" ({len(recent_events)} shown)"
     )
 
     # Use success border style for events as they represent completed actions
@@ -950,7 +933,9 @@ def _create_pending_oracle_panel(
 
     # Add footer
     panel_content.append("\n\n")
-    panel_content.append(st.subtitle("Use 'sologm oracle select' to choose an interpretation"))
+    panel_content.append(
+        st.subtitle("Use 'sologm oracle select' to choose an interpretation")
+    )
 
     return Panel(
         panel_content,
@@ -1058,9 +1043,7 @@ def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
 
             # Create roll header with notation and total
             roll_header = st.combine(
-                st.title(roll.notation),
-                " = ",
-                st.success(str(roll.total))
+                st.title(roll.notation), " = ", st.success(str(roll.total))
             )
             panel_content.append(roll_header)
 
@@ -1074,7 +1057,9 @@ def _create_dice_rolls_panel(recent_rolls: List[DiceRoll]) -> Panel:
             # Add timestamp
             logger.debug(f"Roll timestamp: {roll.created_at}")
             panel_content.append("\n")
-            panel_content.append(st.timestamp(roll.created_at.strftime('%Y-%m-%d %H:%M')))
+            panel_content.append(
+                st.timestamp(roll.created_at.strftime("%Y-%m-%d %H:%M"))
+            )
 
             # Add details for complex rolls
             if len(roll.individual_results) > 1:
