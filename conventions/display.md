@@ -7,6 +7,8 @@
 
 ## Styling System
 
+The SoloGM styling system is loosely based on the [Dracula theme](https://draculatheme.com/), a dark theme known for its distinctive color palette.
+
 ### Border and Text Styles
 - Use the `StyledText` class and `BORDER_STYLES` for consistent styling:
   - Game information: `BORDER_STYLES["game_info"]` (bright_blue)
