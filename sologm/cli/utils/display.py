@@ -13,6 +13,7 @@ from sologm.core.event import Event
 from sologm.core.game import Game
 from sologm.core.oracle import Interpretation, InterpretationSet
 from sologm.core.scene import Scene, SceneManager
+from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
 
 if TYPE_CHECKING:
@@ -1088,6 +1089,138 @@ def format_metadata(items: Dict[str, Any]) -> str:
     # This function is kept for backward compatibility
     # It returns a plain string version of the styled metadata
     return StyledText.format_metadata(items, METADATA_SEPARATOR).plain
+
+
+def display_acts_table(
+    console: Console, acts: List[Act], active_act_id: Optional[str] = None
+) -> None:
+    """Display acts in a formatted table.
+
+    Args:
+        console: Rich console instance
+        acts: List of acts to display
+        active_act_id: ID of the currently active act, if any
+    """
+    logger.debug(f"Displaying acts table with {len(acts)} acts")
+    logger.debug(f"Active act ID: {active_act_id if active_act_id else 'None'}")
+    if not acts:
+        logger.debug("No acts found to display")
+        console.print("No acts found. Create one with 'sologm act create'.")
+        return
+
+    st = StyledText
+
+    # Create table without a title
+    table = Table(
+        border_style=BORDER_STYLES["game_info"],
+    )
+
+    # Add columns with consistent styling
+    table.add_column("ID", style=st.STYLES["timestamp"])
+    table.add_column("Sequence", justify="right")
+    table.add_column("Title", style=st.STYLES["category"])
+    table.add_column("Description")
+    table.add_column("Status", style=st.STYLES["success"])
+    table.add_column("Current", style=st.STYLES["success"], justify="center")
+
+    # Add rows with consistent formatting
+    for act in acts:
+        is_active = active_act_id and act.id == active_act_id
+        active_marker = "✓" if is_active else ""
+
+        # Create act title with appropriate styling
+        act_title = act.title if act.title else "[italic]Untitled Act[/italic]"
+        act_title_styled = st.title(act_title).plain if is_active else act_title
+
+        table.add_row(
+            act.id,
+            str(act.sequence),
+            act_title_styled,
+            act.description or "",
+            act.status.value,
+            active_marker,
+        )
+
+    # Create panel title
+    panel_title = st.title("Acts")
+
+    # Wrap the table in a panel with a title
+    panel = Panel(
+        table,
+        title=panel_title,
+        title_align="left",
+        border_style=BORDER_STYLES["game_info"],
+    )
+    console.print(panel)
+
+
+def display_act_info(console: Console, act: Act, game_name: str) -> None:
+    """Display detailed information about an act.
+
+    Args:
+        console: Rich console instance
+        act: Act to display
+        game_name: Name of the game this act belongs to
+    """
+    logger.debug(f"Displaying act info for {act.id} (status: {act.status.value})")
+    logger.debug(
+        f"Act details: title='{act.title}', sequence={act.sequence}, "
+        f"game_id={act.game_id}"
+    )
+
+    st = StyledText
+
+    # Create metadata with consistent formatting
+    metadata = {
+        "Game": game_name,
+        "Status": act.status.value,
+        "Sequence": f"Act {act.sequence}",
+        "Created": act.created_at.strftime("%Y-%m-%d"),
+        "Modified": act.modified_at.strftime("%Y-%m-%d"),
+    }
+
+    # Determine border style based on act status
+    border_style = BORDER_STYLES["current"] if act.is_active else BORDER_STYLES["game_info"]
+    if act.status.value == "COMPLETED":
+        border_style = BORDER_STYLES["success"]
+
+    # Create panel content
+    panel_content = Text()
+    
+    # Add description if available
+    if act.description:
+        panel_content.append(st.subtitle(act.description))
+        panel_content.append("\n\n")
+    
+    # Add metadata
+    panel_content.append(st.format_metadata(metadata))
+
+    # Create panel title
+    title_display = act.title or "[italic]Untitled Act[/italic]"
+    panel_title = st.combine(
+        st.title_blue(f"Act {act.sequence}: {title_display}"), 
+        " ", 
+        st.timestamp(f"({act.id})")
+    )
+
+    panel = Panel(
+        panel_content, 
+        title=panel_title, 
+        border_style=border_style, 
+        title_align="left"
+    )
+
+    console.print(panel)
+    
+    # Display scenes in this act if any
+    if hasattr(act, 'scenes') and act.scenes:
+        console.print("\nScenes in this act:")
+        for scene in act.scenes:
+            active_marker = "[bold green]✓[/bold green] " if scene.is_active else ""
+            status_style = "green" if scene.status.value == "COMPLETED" else "yellow"
+            console.print(f"{active_marker}Scene {scene.sequence}: [bold]{scene.title}[/bold] [bold {status_style}]({scene.status.value})[/bold {status_style}]")
+    else:
+        console.print("\nNo scenes in this act yet.")
 
 
 def get_event_context_header(

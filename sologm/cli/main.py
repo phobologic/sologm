@@ -70,6 +70,8 @@ app.add_typer(scene_app, name="scene", no_args_is_help=True)
 app.add_typer(event_app, name="event", no_args_is_help=True)
 app.add_typer(dice_app, name="dice", no_args_is_help=True)
 app.add_typer(oracle_app, name="oracle", no_args_is_help=True)
+from sologm.cli.act import act_app
+app.add_typer(act_app, name="act", no_args_is_help=True)
 
 
 @app.callback()

@@ -112,10 +112,59 @@ def test_game(db_session):
 
 
 @pytest.fixture
-def test_scene(db_session, test_game):
+def act_manager(db_session):
+    """Create an ActManager with a test session."""
+    from sologm.core.act import ActManager
+    return ActManager(session=db_session)
+
+
+@pytest.fixture
+def test_act(db_session, test_game):
+    """Create a test act."""
+    from sologm.models.act import Act
+    act = Act.create(
+        game_id=test_game.id,
+        title="Test Act",
+        description="A test act",
+        sequence=1,
+    )
+    act.is_active = True
+    db_session.add(act)
+    db_session.commit()
+    return act
+
+
+@pytest.fixture
+def create_test_act(db_session):
+    """Factory fixture to create test acts."""
+
+    def _create_act(
+        game_id,
+        title="Test Act",
+        description="A test act",
+        sequence=1,
+        is_active=True,
+    ):
+        from sologm.models.act import Act
+        act = Act.create(
+            game_id=game_id,
+            title=title,
+            description=description,
+            sequence=sequence,
+        )
+        act.is_active = is_active
+        db_session.add(act)
+        db_session.commit()
+        return act
+
+    return _create_act
+
+
+@pytest.fixture
+def test_scene(db_session, test_act):
     """Create a test scene."""
     scene = Scene.create(
-        game_id=test_game.id,
+        act_id=test_act.id,
         title="Test Scene",
         description="A test scene",
         sequence=1,
@@ -238,14 +287,14 @@ def create_test_scene(db_session):
     """Factory fixture to create test scenes."""
 
     def _create_scene(
-        game_id,
+        act_id,
         title="Test Scene",
         description="A test scene",
         sequence=1,
         is_active=True,
     ):
         scene = Scene.create(
-            game_id=game_id,
+            act_id=act_id,
             title=title,
             description=description,
             sequence=sequence,
