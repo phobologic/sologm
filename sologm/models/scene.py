@@ -11,6 +11,7 @@ from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
 if TYPE_CHECKING:
+    from sologm.models.act import Act
     from sologm.models.dice import DiceRoll
     from sologm.models.event import Event
     from sologm.models.oracle import InterpretationSet
@@ -27,11 +28,11 @@ class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
     __tablename__ = "scenes"
-    __table_args__ = (UniqueConstraint("game_id", "slug", name="uix_game_scene_slug"),)
+    __table_args__ = (UniqueConstraint("act_id", "slug", name="uix_act_scene_slug"),)
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     slug: Mapped[str] = mapped_column(nullable=False, index=True)
-    game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
+    act_id: Mapped[str] = mapped_column(ForeignKey("acts.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[SceneStatus] = mapped_column(
@@ -67,12 +68,12 @@ class Scene(Base, TimestampMixin):
 
     @classmethod
     def create(
-        cls, game_id: str, title: str, description: str, sequence: int
+        cls, act_id: str, title: str, description: str, sequence: int
     ) -> "Scene":
         """Create a new scene with a unique ID and slug based on the title.
 
         Args:
-            game_id: ID of the game this scene belongs to.
+            act_id: ID of the act this scene belongs to.
             title: Title of the scene.
             description: Description of the scene.
             sequence: Sequence number of the scene.
@@ -85,7 +86,7 @@ class Scene(Base, TimestampMixin):
         return cls(
             id=str(uuid.uuid4()),
             slug=scene_slug,
-            game_id=game_id,
+            act_id=act_id,
             title=title,
             description=description,
             status=SceneStatus.ACTIVE,

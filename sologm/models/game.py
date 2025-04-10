@@ -10,6 +10,7 @@ from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
 if TYPE_CHECKING:
+    from sologm.models.act import Act
     from sologm.models.scene import Scene
 
 
@@ -25,8 +26,8 @@ class Game(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(default=False)
 
     # Relationships this model owns
-    scenes: Mapped[List["Scene"]] = relationship(
-        "Scene", back_populates="game", cascade="all, delete-orphan"
+    acts: Mapped[List["Act"]] = relationship(
+        "Act", back_populates="game", cascade="all, delete-orphan"
     )
 
     @validates("name")

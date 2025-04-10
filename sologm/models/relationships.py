@@ -2,6 +2,7 @@
 
 from sqlalchemy.orm import relationship
 
+from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.oracle import Interpretation, InterpretationSet
@@ -9,8 +10,11 @@ from sologm.models.scene import Scene
 
 # Non-owning relationships only
 
+# Act relationships
+Act.game = relationship("Game", back_populates="acts")
+
 # Scene relationships
-Scene.game = relationship("Game", back_populates="scenes")
+Scene.act = relationship("Act", back_populates="scenes")
 
 # Event relationships
 Event.scene = relationship("Scene", back_populates="events")
