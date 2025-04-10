@@ -1,7 +1,7 @@
 # Display Design Style
 
 ## Panel Structure
-- Use `Panel` objects for distinct content sections
+- Use `rich.panel.Panel` objects for distinct content sections
 - Include descriptive titles in panels using the `title` parameter
 - Use `title_align="left"` for consistent title alignment
 - [See panel structure examples](examples/display.md#panel-structure)
@@ -12,11 +12,11 @@ The SoloGM styling system is loosely based on the [Dracula theme](https://dracul
 
 ### StyledText Class
 
-The `StyledText` class provides methods for creating styled text using Rich's native style system. It encapsulates styling logic to ensure consistency across the application.
+The `sologm.cli.utils.styled_text.StyledText` class provides methods for creating styled text using Rich's native style system. It encapsulates styling logic to ensure consistency across the application.
 
 ### Available Styles
 
-The following styles are available through the `StyledText` class:
+The following styles are available through the `sologm.cli.utils.styled_text.StyledText` class:
 
 | Method | Purpose | Visual Style |
 |--------|---------|--------------|
@@ -34,7 +34,7 @@ The following styles are available through the `StyledText` class:
 
 ### Border Styles
 
-Border styles are defined in the `BORDER_STYLES` dictionary:
+Border styles are defined in the `sologm.cli.utils.styled_text.BORDER_STYLES` dictionary:
 
 - Game information: `BORDER_STYLES["game_info"]` (bright_blue)
 - Current/active content: `BORDER_STYLES["current"]` (bright_cyan)
@@ -44,21 +44,21 @@ Border styles are defined in the `BORDER_STYLES` dictionary:
 
 ### Best Practices
 
-1. **Always use the StyledText class** instead of raw Rich markup
+1. **Always use the `sologm.cli.utils.styled_text.StyledText` class** instead of raw Rich markup
 2. **Use the appropriate method** for the type of content you're displaying
-3. **Combine styled elements** with the `combine()` method
+3. **Combine styled elements** with the `sologm.cli.utils.styled_text.StyledText.combine()` method
 4. **Match border styles** to the type of content in the panel
-5. **Use consistent metadata formatting** with `format_metadata()`
+5. **Use consistent metadata formatting** with `sologm.cli.utils.styled_text.StyledText.format_metadata()`
 
 ## Layout Patterns
-- Use `Table.grid()` for multi-column layouts
+- Use `rich.table.Table.grid()` for multi-column layouts
 - Stack related panels vertically in content sections
-- Truncate long text with ellipsis using `truncate_text()`
+- Truncate long text with ellipsis using `sologm.cli.utils.display.truncate_text()`
 - Include metadata in compact format (e.g., "Created: {date} • Scenes: {count}")
 - [See layout examples](examples/display.md#layout-patterns)
 
 ## Text Truncation
-- Use the `truncate_text()` function to handle long text:
+- Use the `sologm.cli.utils.display.truncate_text()` function to handle long text:
   - Specify a reasonable `max_length` based on display context
   - For multi-column layouts, calculate appropriate truncation length
   - Use console width to dynamically adjust truncation length when possible
@@ -69,15 +69,15 @@ Border styles are defined in the `BORDER_STYLES` dictionary:
 - [See grid layout examples](examples/display.md#grid-layouts)
 
 ## Table Formatting
-- Use consistent column styling with `StyledText.STYLES`
-- Match table border color to content type using `BORDER_STYLES`
+- Use consistent column styling with `sologm.cli.utils.styled_text.StyledText.STYLES`
+- Match table border color to content type using `sologm.cli.utils.styled_text.BORDER_STYLES`
 - Add columns with appropriate styles
 - [See table formatting examples](examples/display.md#table-formatting)
 
 ## Command Output Structure
 - Start with a header panel showing primary entity information
 - Group related information in separate panels
-- For list views, use Rich tables with consistent column structure
+- For list views, use `rich.table.Table` with consistent column structure
 - For detailed views, use nested panels with clear hierarchy
 - For status displays, use multi-column layout with color-coded sections
 - [See command output examples](examples/display.md#command-output-structure)
