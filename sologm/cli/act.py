@@ -1,4 +1,9 @@
-"""CLI commands for managing acts."""
+"""CLI commands for managing acts.
+
+This module provides commands for creating, listing, viewing, editing, and completing
+acts within a game. Acts represent complete narrative situations or problems that
+unfold through multiple connected Scenes.
+"""
 
 import logging
 from typing import Optional
@@ -50,6 +55,18 @@ def create_act(
     """Create a new act in the current game.
 
     If title and description are not provided, opens an editor to enter them.
+    Acts can be created without a title or description, allowing you to name them
+    later once their significance becomes clear.
+
+    Examples:
+        Create an act with title and description directly:
+        $ sologm act create --title "The Journey Begins" --description "The heroes set out on their quest"
+
+        Create an untitled act:
+        $ sologm act create
+
+        Create an act with just a title:
+        $ sologm act create -t "The Journey Begins"
     """
     logger.debug("Creating new act")
 
@@ -141,7 +158,14 @@ def create_act(
 
 @act_app.command("list")
 def list_acts() -> None:
-    """List all acts in the current game."""
+    """List all acts in the current game.
+    
+    Displays a table of all acts in the current game, including their sequence,
+    title, description, status, and whether they are active.
+    
+    Examples:
+        $ sologm act list
+    """
     logger.debug("Listing acts")
 
     # Get the active game
@@ -169,7 +193,14 @@ def list_acts() -> None:
 
 @act_app.command("info")
 def act_info() -> None:
-    """Show details of the current active act."""
+    """Show details of the current active act.
+    
+    Displays detailed information about the currently active act, including
+    its title, description, status, sequence, and any scenes it contains.
+    
+    Examples:
+        $ sologm act info
+    """
     logger.debug("Showing act info")
 
     # Get the active game
@@ -203,6 +234,18 @@ def edit_act(
     """Edit the current active act.
 
     If title and description are not provided, opens an editor to enter them.
+    You can update the title and/or description of the act, or remove them
+    by leaving the fields empty.
+    
+    Examples:
+        Edit act with an interactive editor:
+        $ sologm act edit
+        
+        Update just the title:
+        $ sologm act edit --title "New Title"
+        
+        Update both title and description:
+        $ sologm act edit -t "New Title" -d "New description of the act"
     """
     logger.debug("Editing act")
 
@@ -320,6 +363,24 @@ def complete_act(
     """Complete the current active act and optionally set its title and description.
 
     If title and description are not provided, opens an editor to enter them.
+    Completing an act marks it as finished and allows you to provide a retrospective
+    title and description that summarize the narrative events that occurred.
+    
+    The --ai flag can be used to generate a title and description based on the
+    act's content (when implemented).
+    
+    Examples:
+        Complete act with an interactive editor:
+        $ sologm act complete
+        
+        Complete act with specific title and description:
+        $ sologm act complete -t "The Fall of the Kingdom" -d "The heroes failed to save the kingdom"
+        
+        Complete act with AI-generated title and description (when implemented):
+        $ sologm act complete --ai
+        
+        Force AI regeneration of title/description (when implemented):
+        $ sologm act complete --ai --force
     """
     logger.debug("Completing act")
 
