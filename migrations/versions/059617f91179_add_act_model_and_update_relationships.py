@@ -43,7 +43,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("game_id", "slug", name="uix_game_act_slug"),
     )
     op.create_index(op.f("ix_acts_slug"), "acts", ["slug"], unique=False)
-    
+
     # Use batch mode for event_sources table to add unique constraint
     with op.batch_alter_table("event_sources") as batch_op:
         batch_op.create_unique_constraint("uq_event_sources_name", ["name"])
@@ -107,14 +107,14 @@ def upgrade() -> None:
     with op.batch_alter_table("scenes") as batch_op:
         # Create a foreign key from scenes.act_id to acts.id
         batch_op.create_foreign_key("fk_scenes_act_id_acts", "acts", ["act_id"], ["id"])
-        
+
         # Update the unique constraint
         batch_op.drop_constraint("uix_game_scene_slug", type_="unique")
         batch_op.create_unique_constraint("uix_act_scene_slug", ["act_id", "slug"])
-        
+
         # Make act_id not nullable after all scenes have been updated
         batch_op.alter_column("act_id", nullable=False)
-        
+
         # Finally, drop the game_id column from scenes
         batch_op.drop_constraint("fk_scenes_game_id_games", type_="foreignkey")
         batch_op.drop_column("game_id")
@@ -144,14 +144,16 @@ def downgrade() -> None:
     with op.batch_alter_table("scenes") as batch_op:
         # Make game_id not nullable
         batch_op.alter_column("game_id", nullable=False)
-        
+
         # Recreate the foreign key from scenes to games
-        batch_op.create_foreign_key("fk_scenes_game_id_games", "games", ["game_id"], ["id"])
-        
+        batch_op.create_foreign_key(
+            "fk_scenes_game_id_games", "games", ["game_id"], ["id"]
+        )
+
         # Update the unique constraint
         batch_op.drop_constraint("uix_act_scene_slug", type_="unique")
         batch_op.create_unique_constraint("uix_game_scene_slug", ["game_id", "slug"])
-        
+
         # Drop the act_id column
         batch_op.drop_constraint("fk_scenes_act_id_acts", type_="foreignkey")
         batch_op.drop_column("act_id")
@@ -159,7 +161,7 @@ def downgrade() -> None:
     # Use batch mode for event_sources table
     with op.batch_alter_table("event_sources") as batch_op:
         batch_op.drop_constraint("uq_event_sources_name", type_="unique")
-    
+
     # Drop the acts table
     op.drop_index(op.f("ix_acts_slug"), table_name="acts")
     op.drop_table("acts")
