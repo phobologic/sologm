@@ -1180,45 +1180,46 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
     }
 
     # Determine border style based on act status
-    border_style = BORDER_STYLES["current"] if act.is_active else BORDER_STYLES["game_info"]
+    border_style = (
+        BORDER_STYLES["current"] if act.is_active else BORDER_STYLES["game_info"]
+    )
     if act.status.value == "COMPLETED":
         border_style = BORDER_STYLES["success"]
 
     # Create panel content
     panel_content = Text()
-    
+
     # Add description if available
     if act.description:
         panel_content.append(st.subtitle(act.description))
         panel_content.append("\n\n")
-    
+
     # Add metadata
     panel_content.append(st.format_metadata(metadata))
 
     # Create panel title
     title_display = act.title or "[italic]Untitled Act[/italic]"
     panel_title = st.combine(
-        st.title_blue(f"Act {act.sequence}: {title_display}"), 
-        " ", 
-        st.timestamp(f"({act.id})")
+        st.title_blue(f"Act {act.sequence}: {title_display}"),
+        " ",
+        st.timestamp(f"({act.id})"),
     )
 
     panel = Panel(
-        panel_content, 
-        title=panel_title, 
-        border_style=border_style, 
-        title_align="left"
+        panel_content, title=panel_title, border_style=border_style, title_align="left"
     )
 
     console.print(panel)
-    
+
     # Display scenes in this act if any
-    if hasattr(act, 'scenes') and act.scenes:
+    if hasattr(act, "scenes") and act.scenes:
         console.print("\nScenes in this act:")
         for scene in act.scenes:
             active_marker = "[bold green]✓[/bold green] " if scene.is_active else ""
             status_style = "green" if scene.status.value == "COMPLETED" else "yellow"
-            console.print(f"{active_marker}Scene {scene.sequence}: [bold]{scene.title}[/bold] [bold {status_style}]({scene.status.value})[/bold {status_style}]")
+            console.print(
+                f"{active_marker}Scene {scene.sequence}: [bold]{scene.title}[/bold] [bold {status_style}]({scene.status.value})[/bold {status_style}]"
+            )
     else:
         console.print("\nNo scenes in this act yet.")
 

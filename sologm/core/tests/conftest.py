@@ -115,6 +115,7 @@ def test_game(db_session):
 def act_manager(db_session):
     """Create an ActManager with a test session."""
     from sologm.core.act import ActManager
+
     return ActManager(session=db_session)
 
 
@@ -122,6 +123,7 @@ def act_manager(db_session):
 def test_act(db_session, test_game):
     """Create a test act."""
     from sologm.models.act import Act
+
     act = Act.create(
         game_id=test_game.id,
         title="Test Act",
@@ -146,6 +148,7 @@ def create_test_act(db_session):
         is_active=True,
     ):
         from sologm.models.act import Act
+
         act = Act.create(
             game_id=game_id,
             title=title,

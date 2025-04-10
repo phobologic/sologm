@@ -6,7 +6,11 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from sologm.cli.utils.display import display_act_info, display_acts_table, display_game_info
+from sologm.cli.utils.display import (
+    display_act_info,
+    display_acts_table,
+    display_game_info,
+)
 from sologm.cli.utils.structured_editor import (
     EditorConfig,
     FieldConfig,
@@ -34,7 +38,10 @@ act_app = typer.Typer(
 @act_app.command("create")
 def create_act(
     title: Optional[str] = typer.Option(
-        None, "--title", "-t", help="Title of the act (can be left empty for untitled acts)"
+        None,
+        "--title",
+        "-t",
+        help="Title of the act (can be left empty for untitled acts)",
     ),
     description: Optional[str] = typer.Option(
         None, "--description", "-d", help="Description of the act"
@@ -110,11 +117,13 @@ def create_act(
             title=title,
             description=description,
         )
-        
+
         # Display success message
         title_display = f"'{act.title}'" if act.title else "untitled"
-        console.print(f"[bold green]Act {title_display} created successfully![/bold green]")
-        
+        console.print(
+            f"[bold green]Act {title_display} created successfully![/bold green]"
+        )
+
         # Display act details
         console.print(f"ID: {act.id}")
         console.print(f"Sequence: Act {act.sequence}")
@@ -124,7 +133,7 @@ def create_act(
             console.print(f"Title: {act.title}")
         if act.description:
             console.print(f"Description: {act.description}")
-            
+
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")
         raise typer.Exit(1)
@@ -145,7 +154,7 @@ def list_acts() -> None:
     # Get all acts for the game
     act_manager = ActManager()
     acts = act_manager.list_acts(active_game.id)
-    
+
     # Get active act ID
     active_act = act_manager.get_active_act(active_game.id)
     active_act_id = active_act.id if active_act else None
@@ -153,7 +162,7 @@ def list_acts() -> None:
     # Display game info
     display_game_info(console, active_game)
     console.print()
-    
+
     # Display acts table
     display_acts_table(console, acts, active_act_id)
 
@@ -270,11 +279,13 @@ def edit_act(
             title=title,
             description=description,
         )
-        
+
         # Display success message
         title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
-        console.print(f"[bold green]Act {title_display} updated successfully![/bold green]")
-        
+        console.print(
+            f"[bold green]Act {title_display} updated successfully![/bold green]"
+        )
+
         # Display updated act details
         console.print(f"ID: {updated_act.id}")
         console.print(f"Sequence: Act {updated_act.sequence}")
@@ -283,7 +294,7 @@ def edit_act(
             console.print(f"Title: {updated_act.title}")
         if updated_act.description:
             console.print(f"Description: {updated_act.description}")
-            
+
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")
         raise typer.Exit(1)
@@ -301,7 +312,9 @@ def complete_act(
         False, "--ai", help="Use AI to generate title and description if not provided"
     ),
     force: bool = typer.Option(
-        False, "--force", help="Force AI generation even if title/description already exist"
+        False,
+        "--force",
+        help="Force AI generation even if title/description already exist",
     ),
 ) -> None:
     """Complete the current active act and optionally set its title and description.
@@ -330,13 +343,17 @@ def complete_act(
         # Check if we should generate title/description
         should_generate_title = force or not active_act.title
         should_generate_description = force or not active_act.description
-        
+
         if should_generate_title or should_generate_description:
-            console.print("[yellow]AI generation of act title/description is not yet implemented.[/yellow]")
+            console.print(
+                "[yellow]AI generation of act title/description is not yet implemented.[/yellow]"
+            )
             console.print("Please provide title and description manually.")
             # This is where AI generation would be implemented
         elif not force:
-            console.print("[yellow]Act already has title and description. Use --force to override.[/yellow]")
+            console.print(
+                "[yellow]Act already has title and description. Use --force to override.[/yellow]"
+            )
 
     # If title and description are not provided, open editor
     if title is None and description is None and not ai:
@@ -365,7 +382,9 @@ def complete_act(
         context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
         context_info += f"Game: {active_game.name}\n"
         context_info += f"ID: {active_act.id}\n\n"
-        context_info += "You can provide a title and description to summarize this act's events."
+        context_info += (
+            "You can provide a title and description to summarize this act's events."
+        )
 
         # Create initial data
         initial_data = {
@@ -395,11 +414,15 @@ def complete_act(
             title=title,
             description=description,
         )
-        
+
         # Display success message
-        title_display = f"'{completed_act.title}'" if completed_act.title else "untitled"
-        console.print(f"[bold green]Act {title_display} completed successfully![/bold green]")
-        
+        title_display = (
+            f"'{completed_act.title}'" if completed_act.title else "untitled"
+        )
+        console.print(
+            f"[bold green]Act {title_display} completed successfully![/bold green]"
+        )
+
         # Display completed act details
         console.print(f"ID: {completed_act.id}")
         console.print(f"Sequence: Act {completed_act.sequence}")
@@ -408,7 +431,7 @@ def complete_act(
             console.print(f"Title: {completed_act.title}")
         if completed_act.description:
             console.print(f"Description: {completed_act.description}")
-            
+
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")
         raise typer.Exit(1)

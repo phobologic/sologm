@@ -16,7 +16,10 @@ class ActManager(BaseManager[Act, Act]):
     """Manages act operations."""
 
     def create_act(
-        self, game_id: str, title: Optional[str] = None, description: Optional[str] = None
+        self,
+        game_id: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> Act:
         """Create a new act in a game.
 
@@ -33,7 +36,12 @@ class ActManager(BaseManager[Act, Act]):
         """
         logger.debug(f"Creating act in game {game_id}")
 
-        def _create_act(session: Session, game_id: str, title: Optional[str], description: Optional[str]) -> Act:
+        def _create_act(
+            session: Session,
+            game_id: str,
+            title: Optional[str],
+            description: Optional[str],
+        ) -> Act:
             # Check if game exists
             from sologm.models.game import Game
 
@@ -129,7 +137,10 @@ class ActManager(BaseManager[Act, Act]):
         return self._execute_db_operation("get_active_act", _get_active_act, game_id)
 
     def edit_act(
-        self, act_id: str, title: Optional[str] = None, description: Optional[str] = None
+        self,
+        act_id: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> Act:
         """Edit an act's title and/or description.
 
@@ -147,7 +158,10 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(f"Editing act {act_id}")
 
         def _edit_act(
-            session: Session, act_id: str, title: Optional[str], description: Optional[str]
+            session: Session,
+            act_id: str,
+            title: Optional[str],
+            description: Optional[str],
         ) -> Act:
             act = session.query(Act).filter(Act.id == act_id).first()
             if not act:
@@ -159,6 +173,7 @@ class ActManager(BaseManager[Act, Act]):
                 # Update slug if title changes
                 if title:
                     from sologm.models.utils import slugify
+
                     act.slug = f"act-{act.sequence}-{slugify(title)}"
                 else:
                     act.slug = f"act-{act.sequence}-untitled"
@@ -168,9 +183,16 @@ class ActManager(BaseManager[Act, Act]):
 
             return act
 
-        return self._execute_db_operation("edit_act", _edit_act, act_id, title, description)
+        return self._execute_db_operation(
+            "edit_act", _edit_act, act_id, title, description
+        )
 
-    def complete_act(self, act_id: str, title: Optional[str] = None, description: Optional[str] = None) -> Act:
+    def complete_act(
+        self,
+        act_id: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> Act:
         """Mark an act as complete and optionally update its title/description.
 
         Args:
@@ -187,7 +209,10 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(f"Completing act {act_id}")
 
         def _complete_act(
-            session: Session, act_id: str, title: Optional[str], description: Optional[str]
+            session: Session,
+            act_id: str,
+            title: Optional[str],
+            description: Optional[str],
         ) -> Act:
             act = session.query(Act).filter(Act.id == act_id).first()
             if not act:
@@ -199,6 +224,7 @@ class ActManager(BaseManager[Act, Act]):
                 # Update slug if title changes
                 if title:
                     from sologm.models.utils import slugify
+
                     act.slug = f"act-{act.sequence}-{slugify(title)}"
 
             if description is not None:
@@ -209,7 +235,9 @@ class ActManager(BaseManager[Act, Act]):
 
             return act
 
-        return self._execute_db_operation("complete_act", _complete_act, act_id, title, description)
+        return self._execute_db_operation(
+            "complete_act", _complete_act, act_id, title, description
+        )
 
     def set_active_act(self, game_id: str, act_id: str) -> Act:
         """Set an act as the active act in a game.
@@ -241,7 +269,9 @@ class ActManager(BaseManager[Act, Act]):
             act.is_active = True
             return act
 
-        return self._execute_db_operation("set_active_act", _set_active_act, game_id, act_id)
+        return self._execute_db_operation(
+            "set_active_act", _set_active_act, game_id, act_id
+        )
 
     def _deactivate_all_acts(self, session: Session, game_id: str) -> None:
         """Deactivate all acts in a game.
@@ -251,9 +281,7 @@ class ActManager(BaseManager[Act, Act]):
             game_id: ID of the game to deactivate acts for
         """
         logger.debug(f"Deactivating all acts in game {game_id}")
-        session.query(Act).filter(Act.game_id == game_id).update(
-            {Act.is_active: False}
-        )
+        session.query(Act).filter(Act.game_id == game_id).update({Act.is_active: False})
 
     def validate_active_context(self, game_id: str) -> Tuple[str, Act]:
         """Validate that there is an active game and act.
