@@ -103,28 +103,26 @@ def upgrade() -> None:
             {"act_id": act_id, "game_id": game_id},
         )
 
-    # Use batch mode for scenes table to update constraints
-    with op.batch_alter_table("scenes") as batch_op:
+    # Use a single batch operation with recreate="always" to handle all changes
+    with op.batch_alter_table("scenes", recreate="always") as batch_op:
         # Create a foreign key from scenes.act_id to acts.id
         batch_op.create_foreign_key("fk_scenes_act_id_acts", "acts", ["act_id"], ["id"])
-
+        
         # Update the unique constraint
-        batch_op.drop_constraint("uix_game_scene_slug", type_="unique")
         batch_op.create_unique_constraint("uix_act_scene_slug", ["act_id", "slug"])
-
-        # Make act_id not nullable after all scenes have been updated
+        
+        # Make act_id not nullable
         batch_op.alter_column("act_id", nullable=False)
-
-        # Finally, drop the game_id column from scenes
-        batch_op.drop_constraint("fk_scenes_game_id_games", type_="foreignkey")
+        
+        # Drop the game_id column (this will automatically drop any foreign keys)
         batch_op.drop_column("game_id")
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Use batch mode for scenes table
-    with op.batch_alter_table("scenes") as batch_op:
-        # First, add back the game_id column to scenes
+    # Add back the game_id column to scenes
+    with op.batch_alter_table("scenes", recreate="always") as batch_op:
+        # Add the game_id column
         batch_op.add_column(sa.Column("game_id", sa.String(), nullable=True))
 
     # Get all scenes and their associated acts to restore the game_id
@@ -140,22 +138,18 @@ def downgrade() -> None:
             {"game_id": game_id, "scene_id": scene_id},
         )
 
-    # Continue with batch operations
-    with op.batch_alter_table("scenes") as batch_op:
+    # Complete the table modifications in a single batch operation
+    with op.batch_alter_table("scenes", recreate="always") as batch_op:
         # Make game_id not nullable
         batch_op.alter_column("game_id", nullable=False)
-
+        
         # Recreate the foreign key from scenes to games
-        batch_op.create_foreign_key(
-            "fk_scenes_game_id_games", "games", ["game_id"], ["id"]
-        )
-
+        batch_op.create_foreign_key("fk_scenes_game_id_games", "games", ["game_id"], ["id"])
+        
         # Update the unique constraint
-        batch_op.drop_constraint("uix_act_scene_slug", type_="unique")
         batch_op.create_unique_constraint("uix_game_scene_slug", ["game_id", "slug"])
-
+        
         # Drop the act_id column
-        batch_op.drop_constraint("fk_scenes_act_id_acts", type_="foreignkey")
         batch_op.drop_column("act_id")
 
     # Use batch mode for event_sources table
