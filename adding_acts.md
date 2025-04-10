@@ -54,7 +54,10 @@ When using the `--ai` flag:
 
 ### Workflow Considerations
 - When completing an Act, the user is prompted to name it or generate a name
-- When creating a new Act, the previous Act is automatically completed - but verify with the user that they are ready for that.
+- When creating a new Act, the system checks if there's an active, uncompleted Act
+  - If an uncompleted Act exists, the system fails with a clear error message
+  - The user must explicitly complete the current Act before creating a new one
+  - This enforces a structured workflow and prevents accidental Act creation
 - When activating a different Game, the system remembers which Act was active in that Game
 
 ## Act Model Design
