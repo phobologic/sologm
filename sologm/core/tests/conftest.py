@@ -149,6 +149,10 @@ def create_test_act(db_session):
     ):
         from sologm.models.act import Act
 
+        # If creating an active act, deactivate all other acts for this game first
+        if is_active:
+            db_session.query(Act).filter(Act.game_id == game_id).update({Act.is_active: False})
+            
         act = Act.create(
             game_id=game_id,
             title=title,
