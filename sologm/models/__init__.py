@@ -3,9 +3,11 @@
 # Import relationships to ensure they're properly set up
 import sologm.models.relationships  # noqa
 
+from sologm.models.act import Act, ActStatus
 from sologm.models.base import Base, TimestampMixin
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
+from sologm.models.event_source import EventSource
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene, SceneStatus
@@ -16,7 +18,10 @@ __all__ = [
     "Game",
     "Scene",
     "SceneStatus",
+    "Act",
+    "ActStatus",
     "Event",
+    "EventSource",
     "InterpretationSet",
     "Interpretation",
     "DiceRoll",

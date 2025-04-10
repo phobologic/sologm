@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config, pool
 # Import all models to ensure they're registered with Base.metadata
 # Import our models
 from sologm.models.base import Base
+import sologm.models  # Import all models
 
 # Get database URL from our application config
 from sologm.utils.config import get_config
