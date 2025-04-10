@@ -25,6 +25,7 @@ from sologm.cli.utils.structured_editor import (
 from sologm.cli.utils.styled_text import StyledText
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
+from sologm.models.act import ActStatus
 from sologm.utils.errors import GameError
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,9 @@ def create_act(
     If title and description are not provided, opens an editor to enter them.
     Acts can be created without a title or description, allowing you to name them
     later once their significance becomes clear.
+    
+    Note: You must complete the current active act (if any) before creating a new one.
+    Use 'sologm act complete' to complete the current act first.
 
     Examples:
         Create an act with title and description directly:
@@ -75,6 +79,18 @@ def create_act(
     active_game = game_manager.get_active_game()
     if not active_game:
         console.print("[red]Error:[/] No active game. Activate a game first.")
+        raise typer.Exit(1)
+
+    # Check if there's an active act that needs to be completed
+    act_manager = ActManager()
+    active_act = act_manager.get_active_act(active_game.id)
+    
+    if active_act and active_act.status != ActStatus.COMPLETED:
+        # There's an active act that's not completed
+        title_display = f"'{active_act.title}'" if active_act.title else "untitled"
+        console.print(f"[red]Error:[/] You have an active act ({title_display}) that is not completed.")
+        console.print("You must complete the current act before creating a new one.")
+        console.print("Use 'sologm act complete' to complete the current act first.")
         raise typer.Exit(1)
 
     # If title and description are not provided, open editor
@@ -127,7 +143,6 @@ def create_act(
         description = result.get("description") or None
 
     # Create the act
-    act_manager = ActManager()
     try:
         act = act_manager.create_act(
             game_id=active_game.id,
