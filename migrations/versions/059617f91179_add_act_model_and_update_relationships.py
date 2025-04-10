@@ -107,13 +107,13 @@ def upgrade() -> None:
     with op.batch_alter_table("scenes", recreate="always") as batch_op:
         # Create a foreign key from scenes.act_id to acts.id
         batch_op.create_foreign_key("fk_scenes_act_id_acts", "acts", ["act_id"], ["id"])
-        
+
         # Update the unique constraint
         batch_op.create_unique_constraint("uix_act_scene_slug", ["act_id", "slug"])
-        
+
         # Make act_id not nullable
         batch_op.alter_column("act_id", nullable=False)
-        
+
         # Drop the game_id column (this will automatically drop any foreign keys)
         batch_op.drop_column("game_id")
 
@@ -142,13 +142,15 @@ def downgrade() -> None:
     with op.batch_alter_table("scenes", recreate="always") as batch_op:
         # Make game_id not nullable
         batch_op.alter_column("game_id", nullable=False)
-        
+
         # Recreate the foreign key from scenes to games
-        batch_op.create_foreign_key("fk_scenes_game_id_games", "games", ["game_id"], ["id"])
-        
+        batch_op.create_foreign_key(
+            "fk_scenes_game_id_games", "games", ["game_id"], ["id"]
+        )
+
         # Update the unique constraint
         batch_op.create_unique_constraint("uix_game_scene_slug", ["game_id", "slug"])
-        
+
         # Drop the act_id column
         batch_op.drop_column("act_id")
 
