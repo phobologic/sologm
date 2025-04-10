@@ -9,25 +9,43 @@
 
 The SoloGM styling system is loosely based on the [Dracula theme](https://draculatheme.com/), a dark theme known for its distinctive color palette.
 
-### Border and Text Styles
-- Use the `StyledText` class and `BORDER_STYLES` for consistent styling:
-  - Game information: `BORDER_STYLES["game_info"]` (bright_blue)
-  - Current/active content: `BORDER_STYLES["current"]` (bright_cyan)
-  - Success/completed content: `BORDER_STYLES["success"]` (bright_green)
-  - Pending actions/decisions: `BORDER_STYLES["pending"]` (bright_yellow)
-  - Neutral information: `BORDER_STYLES["neutral"]` (bright_magenta)
+### StyledText Class
 
-### StyledText Methods
-- Use these methods instead of raw markup:
-  - `title()`: For main titles and headings
-  - `title_blue()`: For blue-colored titles
-  - `timestamp()`: For timestamps and IDs (bright_cyan)
-  - `subtitle()`: For section subtitles (magenta)
-  - `success()`: For success messages and selected items (bright_green)
-  - `warning()`: For warnings and pending actions (bright_yellow)
-  - `category()`: For categories and sources (bright_magenta)
-  - `combine()`: For combining multiple styled elements
-  - `format_metadata()`: For consistent metadata formatting
+The `StyledText` class provides methods for creating styled text using Rich's native style system. It encapsulates styling logic to ensure consistency across the application.
+
+### Available Styles
+
+The following styles are available through the `StyledText` class:
+
+| Method | Purpose | Visual Style |
+|--------|---------|--------------|
+| `title()` | Main titles and headings | Bold |
+| `title_blue()` | Blue-colored titles | Bold, bright blue |
+| `timestamp()` | Timestamps and IDs | Bright cyan |
+| `subtitle()` | Section subtitles | Magenta |
+| `success()` | Success messages and selected items | Bright green |
+| `warning()` | Warnings and pending actions | Bright yellow |
+| `category()` | Categories and sources | Bright magenta |
+| `title_timestamp()` | Combined title and timestamp | Bold, bright cyan |
+| `title_success()` | Combined title and success | Bold, bright green |
+
+### Border Styles
+
+Border styles are defined in the `BORDER_STYLES` dictionary:
+
+- Game information: `BORDER_STYLES["game_info"]` (bright_blue)
+- Current/active content: `BORDER_STYLES["current"]` (bright_cyan)
+- Success/completed content: `BORDER_STYLES["success"]` (bright_green)
+- Pending actions/decisions: `BORDER_STYLES["pending"]` (bright_yellow)
+- Neutral information: `BORDER_STYLES["neutral"]` (bright_magenta)
+
+### Best Practices
+
+1. **Always use the StyledText class** instead of raw Rich markup
+2. **Use the appropriate method** for the type of content you're displaying
+3. **Combine styled elements** with the `combine()` method
+4. **Match border styles** to the type of content in the panel
+5. **Use consistent metadata formatting** with `format_metadata()`
 
 ## Layout Patterns
 - Use `Table.grid()` for multi-column layouts
@@ -75,7 +93,36 @@ The SoloGM styling system is loosely based on the [Dracula theme](https://dracul
 - For detailed views, use nested panels with clear hierarchy
 - For status displays, use multi-column layout with color-coded sections
 
-## Examples
+## Usage Examples
+
+### Basic Styling
+
+```python
+from sologm.cli.utils.styled_text import StyledText
+
+# Create a styled text object
+title = StyledText.title("Game Title")
+timestamp = StyledText.timestamp("2023-01-01")
+
+# Combine styled elements
+header = StyledText.combine(title, " - ", timestamp)
+```
+
+### Metadata Formatting
+
+```python
+metadata = {
+    "Created": "2023-01-01",
+    "Modified": "2023-01-15",
+    "Items": 5
+}
+
+# Format metadata with default separator
+formatted = StyledText.format_metadata(metadata)  # "Created: 2023-01-01 • Modified: 2023-01-15 • Items: 5"
+```
+
+### Panel Creation
+
 ```python
 # Using StyledText for panel titles
 st = StyledText
@@ -100,14 +147,22 @@ panel = Panel(
     border_style=BORDER_STYLES["game_info"],
     title_align="left"
 )
+```
 
+### Table Creation
+
+```python
 # Creating a table with consistent styling
 table = Table(
     border_style=BORDER_STYLES["game_info"],
 )
 table.add_column("ID", style=st.STYLES["timestamp"])
 table.add_column("Name", style=st.STYLES["category"])
+```
 
+### Dice Roll Display
+
+```python
 # Display dice roll with styled components
 roll_title = st.combine(st.title("Roll Reason:"), " ", st.title("2d6"))
 roll_content = st.combine(

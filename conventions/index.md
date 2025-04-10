@@ -12,4 +12,3 @@ This document outlines the coding conventions for the SoloGM project. Follow the
 - [Documentation](documentation.md) - Docstrings and logging
 - [Type Annotations](type_annotations.md) - Type annotation guidelines
 - [Display Design](display.md) - UI and display-related guidelines
-- [Styled Text](styled_text.md) - Text styling and color conventions
