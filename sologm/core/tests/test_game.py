@@ -144,24 +144,26 @@ class TestGameManager:
         db_session.refresh(game1)
         assert game1.is_active is False
 
-    def test_activate_game_always_deactivates_others(self, game_manager, db_session) -> None:
+    def test_activate_game_always_deactivates_others(
+        self, game_manager, db_session
+    ) -> None:
         """Test that activating any game always deactivates all other games."""
         # Create multiple games
         games = [
             game_manager.create_game(name=f"Game {i}", description=f"Game {i}")
             for i in range(1, 4)
         ]
-        
+
         # Manually set all games to active (this shouldn't happen in practice)
         for game in games:
             game.is_active = True
         db_session.commit()
-        
+
         # Now activate one specific game
         activated_game = game_manager.activate_game(games[1].id)
         assert activated_game.id == games[1].id
         assert activated_game.is_active is True
-        
+
         # Verify all other games are inactive
         for i, game in enumerate(games):
             db_session.refresh(game)
