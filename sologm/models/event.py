@@ -68,9 +68,9 @@ class Event(Base, TimestampMixin):
         return self.interpretation_id is not None
 
     @is_from_oracle.expression
-    def is_from_oracle(cls):
+    def is_from_oracle(cls):  # noqa: N805
         """SQL expression for is_from_oracle."""
-        return (cls.interpretation_id != None).label("is_from_oracle")
+        return (cls.interpretation_id.is_not(None)).label("is_from_oracle")
 
     @property
     def source_name(self) -> str:
@@ -91,7 +91,7 @@ class Event(Base, TimestampMixin):
         return self.source_name.lower() == "manual"
 
     @is_manual.expression
-    def is_manual(cls):
+    def is_manual(cls):  # noqa: N805
         """SQL expression for is_manual."""
         from sologm.models.event_source import EventSource
 
@@ -114,7 +114,7 @@ class Event(Base, TimestampMixin):
         return self.source_name.lower() == "oracle"
 
     @is_oracle_generated.expression
-    def is_oracle_generated(cls):
+    def is_oracle_generated(cls):  # noqa: N805
         """SQL expression for is_oracle_generated."""
         from sologm.models.event_source import EventSource
 
@@ -137,7 +137,7 @@ class Event(Base, TimestampMixin):
         return self.source_name.lower() == "dice"
 
     @is_dice_generated.expression
-    def is_dice_generated(cls):
+    def is_dice_generated(cls):  # noqa: N805
         """SQL expression for is_dice_generated."""
         from sologm.models.event_source import EventSource
 
