@@ -274,7 +274,11 @@ def display_games_table(
     for game in games:
         # Get acts and scenes count
         act_count = len(game.acts) if hasattr(game, "acts") else 0
-        scene_count = sum(len(act.scenes) for act in game.acts) if hasattr(game, "acts") else len(game.scenes)
+        scene_count = (
+            sum(len(act.scenes) for act in game.acts)
+            if hasattr(game, "acts")
+            else len(game.scenes)
+        )
 
         is_active = active_game and game.id == active_game.id
         active_marker = "✓" if is_active else ""
@@ -384,13 +388,23 @@ def display_game_info(
     st = StyledText
 
     # Get active act if available
-    active_act = next((act for act in game.acts if act.is_active), None) if hasattr(game, "acts") else None
-    
+    active_act = (
+        next((act for act in game.acts if act.is_active), None)
+        if hasattr(game, "acts")
+        else None
+    )
+
     # Count scenes across all acts
-    scene_count = sum(len(act.scenes) for act in game.acts) if hasattr(game, "acts") else len(game.scenes)
+    scene_count = (
+        sum(len(act.scenes) for act in game.acts)
+        if hasattr(game, "acts")
+        else len(game.scenes)
+    )
     act_count = len(game.acts) if hasattr(game, "acts") else 0
-    
-    logger.debug(f"Game details: name='{game.name}', acts={act_count}, scenes={scene_count}")
+
+    logger.debug(
+        f"Game details: name='{game.name}', acts={act_count}, scenes={scene_count}"
+    )
 
     # Create metadata with consistent formatting
     metadata = {
@@ -659,13 +673,19 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
     st = StyledText
 
     # Get active act if available
-    active_act = next((act for act in game.acts if act.is_active), None) if hasattr(game, "acts") else None
-    
+    active_act = (
+        next((act for act in game.acts if act.is_active), None)
+        if hasattr(game, "acts")
+        else None
+    )
+
     # Create metadata with consistent formatting
     metadata = {
         "Created": game.created_at.strftime("%Y-%m-%d"),
         "Acts": len(game.acts) if hasattr(game, "acts") else 0,
-        "Scenes": sum(len(act.scenes) for act in game.acts) if hasattr(game, "acts") else len(game.scenes)
+        "Scenes": sum(len(act.scenes) for act in game.acts)
+        if hasattr(game, "acts")
+        else len(game.scenes),
     }
 
     # Create a title with consistent styling
@@ -709,7 +729,7 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
     content = Text()
     content.append(truncated_description)
     content.append("\n")
-    
+
     # Add active act information if available
     if active_act:
         act_title = active_act.title or "Untitled Act"
@@ -788,9 +808,9 @@ def _create_scene_panels_grid(
 
         scenes_content = st.combine(
             st.subtitle(act_info) if act_info else Text(),
-            st.title(active_scene.title), 
-            "\n", 
-            truncated_description
+            st.title(active_scene.title),
+            "\n",
+            truncated_description,
         )
     else:
         logger.debug("No active scene to display")
@@ -821,7 +841,7 @@ def _create_scene_panels_grid(
         logger.debug(
             f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars"
         )
-        
+
         # Get act information for the previous scene
         act_info = ""
         if hasattr(prev_scene, "act") and prev_scene.act:
@@ -830,9 +850,9 @@ def _create_scene_panels_grid(
 
         prev_scene_content = st.combine(
             st.subtitle(act_info) if act_info else Text(),
-            st.title(prev_scene.title), 
-            "\n", 
-            truncated_description
+            st.title(prev_scene.title),
+            "\n",
+            truncated_description,
         )
     else:
         logger.debug("No previous scene to display")
@@ -1295,16 +1315,13 @@ def get_event_context_header(
     """
     # Create context information for the editor
     # This returns a plain string as it's used for editor context headers
-    context_info = (
-        f"Game: {game_name}\n"
-    )
-    
+    context_info = f"Game: {game_name}\n"
+
     if act_info:
         context_info += f"Act: {act_info}\n"
-        
+
     context_info += (
-        f"Scene: {scene_title}\n\n"
-        f"Scene Description:\n{scene_description}\n\n"
+        f"Scene: {scene_title}\n\nScene Description:\n{scene_description}\n\n"
     )
 
     # Add recent events if any
