@@ -166,7 +166,38 @@ class Scene(Base, TimestampMixin):
     interpretation_sets: Mapped[List["InterpretationSet"]]
     dice_rolls: Mapped[List["DiceRoll"]]
     
-    # Helper Properties
+    # Hybrid Properties (work in both Python and SQL)
+    @hybrid_property
+    def has_events(self) -> bool  # Checks if the scene has any events
+    
+    @hybrid_property
+    def event_count(self) -> int  # Returns the number of events
+    
+    @hybrid_property
+    def has_dice_rolls(self) -> bool  # Checks if the scene has any dice rolls
+    
+    @hybrid_property
+    def dice_roll_count(self) -> int  # Returns the number of dice rolls
+    
+    @hybrid_property
+    def has_interpretation_sets(self) -> bool  # Checks if the scene has any interpretation sets
+    
+    @hybrid_property
+    def interpretation_set_count(self) -> int  # Returns the number of interpretation sets
+    
+    @hybrid_property
+    def has_interpretations(self) -> bool  # Checks if the scene has any interpretations
+    
+    @hybrid_property
+    def interpretation_count(self) -> int  # Returns the total number of interpretations
+    
+    @hybrid_property
+    def has_selected_interpretations(self) -> bool  # Checks if the scene has any selected interpretations
+    
+    @hybrid_property
+    def selected_interpretation_count(self) -> int  # Returns the number of selected interpretations
+    
+    # Regular Properties (Python-only)
     @property
     def game(self) -> "Game"  # Returns the game this scene belongs to
     

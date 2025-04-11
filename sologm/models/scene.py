@@ -4,7 +4,8 @@ import enum
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint, func, select
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from sologm.models.base import Base, TimestampMixin
@@ -186,6 +187,183 @@ class Scene(Base, TimestampMixin):
         if not slug or not slug.strip():
             raise ValueError("Scene slug cannot be empty")
         return slug
+        
+    @hybrid_property
+    def has_events(self) -> bool:
+        """Check if the scene has any events.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if the events list is non-empty
+        - SQL: Performs a subquery to check for events
+        """
+        return len(self.events) > 0
+    
+    @has_events.expression
+    def has_events(cls):
+        """SQL expression for has_events."""
+        from sologm.models.event import Event
+        return select(1).where(Event.scene_id == cls.id).exists().label("has_events")
+
+    @hybrid_property
+    def event_count(self) -> int:
+        """Get the number of events in this scene.
+        
+        Works in both Python and SQL contexts:
+        - Python: Returns the length of the events list
+        - SQL: Performs a count query
+        """
+        return len(self.events)
+    
+    @event_count.expression
+    def event_count(cls):
+        """SQL expression for event_count."""
+        from sologm.models.event import Event
+        return select(func.count(Event.id)).where(Event.scene_id == cls.id).label("event_count")
+        
+    @hybrid_property
+    def has_dice_rolls(self) -> bool:
+        """Check if the scene has any dice rolls.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if the dice_rolls list is non-empty
+        - SQL: Performs a subquery to check for dice rolls
+        """
+        return len(self.dice_rolls) > 0
+    
+    @has_dice_rolls.expression
+    def has_dice_rolls(cls):
+        """SQL expression for has_dice_rolls."""
+        from sologm.models.dice import DiceRoll
+        return select(1).where(DiceRoll.scene_id == cls.id).exists().label("has_dice_rolls")
+
+    @hybrid_property
+    def dice_roll_count(self) -> int:
+        """Get the number of dice rolls in this scene.
+        
+        Works in both Python and SQL contexts:
+        - Python: Returns the length of the dice_rolls list
+        - SQL: Performs a count query
+        """
+        return len(self.dice_rolls)
+    
+    @dice_roll_count.expression
+    def dice_roll_count(cls):
+        """SQL expression for dice_roll_count."""
+        from sologm.models.dice import DiceRoll
+        return select(func.count(DiceRoll.id)).where(DiceRoll.scene_id == cls.id).label("dice_roll_count")
+
+    @hybrid_property
+    def has_interpretation_sets(self) -> bool:
+        """Check if the scene has any interpretation sets.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if the interpretation_sets list is non-empty
+        - SQL: Performs a subquery to check for interpretation sets
+        """
+        return len(self.interpretation_sets) > 0
+    
+    @has_interpretation_sets.expression
+    def has_interpretation_sets(cls):
+        """SQL expression for has_interpretation_sets."""
+        from sologm.models.oracle import InterpretationSet
+        return select(1).where(InterpretationSet.scene_id == cls.id).exists().label("has_interpretation_sets")
+
+    @hybrid_property
+    def interpretation_set_count(self) -> int:
+        """Get the number of interpretation sets in this scene.
+        
+        Works in both Python and SQL contexts:
+        - Python: Returns the length of the interpretation_sets list
+        - SQL: Performs a count query
+        """
+        return len(self.interpretation_sets)
+    
+    @interpretation_set_count.expression
+    def interpretation_set_count(cls):
+        """SQL expression for interpretation_set_count."""
+        from sologm.models.oracle import InterpretationSet
+        return select(func.count(InterpretationSet.id)).where(InterpretationSet.scene_id == cls.id).label("interpretation_set_count")
+
+    @hybrid_property
+    def has_interpretations(self) -> bool:
+        """Check if the scene has any interpretations across all sets.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if all_interpretations is non-empty
+        - SQL: Performs a subquery to check for interpretations
+        """
+        return any(len(interp_set.interpretations) > 0 for interp_set in self.interpretation_sets)
+    
+    @has_interpretations.expression
+    def has_interpretations(cls):
+        """SQL expression for has_interpretations."""
+        from sologm.models.oracle import InterpretationSet, Interpretation
+        return select(1).where(
+            (InterpretationSet.scene_id == cls.id) &
+            (Interpretation.set_id == InterpretationSet.id)
+        ).exists().label("has_interpretations")
+
+    @hybrid_property
+    def interpretation_count(self) -> int:
+        """Get the total number of interpretations across all sets.
+        
+        Works in both Python and SQL contexts:
+        - Python: Returns the length of all_interpretations
+        - SQL: Performs a count query
+        """
+        return sum(len(interp_set.interpretations) for interp_set in self.interpretation_sets)
+    
+    @interpretation_count.expression
+    def interpretation_count(cls):
+        """SQL expression for interpretation_count."""
+        from sologm.models.oracle import InterpretationSet, Interpretation
+        return select(func.count(Interpretation.id)).where(
+            (InterpretationSet.scene_id == cls.id) &
+            (Interpretation.set_id == InterpretationSet.id)
+        ).label("interpretation_count")
+
+    @hybrid_property
+    def has_selected_interpretations(self) -> bool:
+        """Check if the scene has any selected interpretations.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if selected_interpretations is non-empty
+        - SQL: Performs a subquery to check for selected interpretations
+        """
+        return any(
+            any(interp.is_selected for interp in interp_set.interpretations)
+            for interp_set in self.interpretation_sets
+        )
+    
+    @has_selected_interpretations.expression
+    def has_selected_interpretations(cls):
+        """SQL expression for has_selected_interpretations."""
+        from sologm.models.oracle import InterpretationSet, Interpretation
+        return select(1).where(
+            (InterpretationSet.scene_id == cls.id) &
+            (Interpretation.set_id == InterpretationSet.id) &
+            (Interpretation.is_selected == True)
+        ).exists().label("has_selected_interpretations")
+
+    @hybrid_property
+    def selected_interpretation_count(self) -> int:
+        """Get the number of selected interpretations.
+        
+        Works in both Python and SQL contexts:
+        - Python: Returns the length of selected_interpretations
+        - SQL: Performs a count query
+        """
+        return len(self.selected_interpretations)
+    
+    @selected_interpretation_count.expression
+    def selected_interpretation_count(cls):
+        """SQL expression for selected_interpretation_count."""
+        from sologm.models.oracle import InterpretationSet, Interpretation
+        return select(func.count(Interpretation.id)).where(
+            (InterpretationSet.scene_id == cls.id) &
+            (Interpretation.set_id == InterpretationSet.id) &
+            (Interpretation.is_selected == True)
+        ).label("selected_interpretation_count")
 
     @classmethod
     def create(
