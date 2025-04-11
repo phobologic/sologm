@@ -129,13 +129,13 @@ class TestSceneManager:
                 description="Another forest trail",
             )
 
-    def test_create_scene_nonexistent_game(self, scene_manager) -> None:
-        """Test creating a scene in a nonexistent game."""
+    def test_create_scene_nonexistent_act(self, scene_manager) -> None:
+        """Test creating a scene in a nonexistent act."""
         # This will now fail with a SQLAlchemy foreign key constraint error
         # which gets wrapped in a SceneError
         with pytest.raises(SceneError):
             scene_manager.create_scene(
-                game_id="nonexistent-game",
+                act_id="nonexistent-act",
                 title="Test Scene",
                 description="Test Description",
             )
