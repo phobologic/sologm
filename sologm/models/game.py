@@ -48,34 +48,38 @@ class Game(Base, TimestampMixin):
     @hybrid_property
     def has_acts(self) -> bool:
         """Check if the game has any acts.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if the acts list is non-empty
         - SQL: Performs a subquery to check for acts
         """
         return len(self.acts) > 0
-    
+
     @has_acts.expression
     def has_acts(cls):
         """SQL expression for has_acts."""
         from sologm.models.act import Act
+
         return select(1).where(Act.game_id == cls.id).exists().label("has_acts")
 
     @hybrid_property
     def act_count(self) -> int:
         """Get the number of acts in this game.
-        
+
         Works in both Python and SQL contexts:
         - Python: Returns the length of the acts list
         - SQL: Performs a count query
         """
         return len(self.acts)
-    
+
     @act_count.expression
     def act_count(cls):
         """SQL expression for act_count."""
         from sologm.models.act import Act
-        return select(func.count(Act.id)).where(Act.game_id == cls.id).label("act_count")
+
+        return (
+            select(func.count(Act.id)).where(Act.game_id == cls.id).label("act_count")
+        )
 
     @property
     def active_act(self) -> Optional["Act"]:
@@ -92,20 +96,24 @@ class Game(Base, TimestampMixin):
     @hybrid_property
     def has_active_act(self) -> bool:
         """Check if the game has an active act.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if active_act is not None
         - SQL: Performs a subquery to check for active acts
         """
         return any(act.is_active for act in self.acts)
-    
+
     @has_active_act.expression
     def has_active_act(cls):
         """SQL expression for has_active_act."""
         from sologm.models.act import Act
-        return select(1).where(
-            (Act.game_id == cls.id) & (Act.is_active == True)
-        ).exists().label("has_active_act")
+
+        return (
+            select(1)
+            .where((Act.game_id == cls.id) & (Act.is_active == True))
+            .exists()
+            .label("has_active_act")
+        )
 
     @property
     def active_scene(self) -> Optional["Scene"]:
@@ -124,24 +132,30 @@ class Game(Base, TimestampMixin):
     @hybrid_property
     def has_active_scene(self) -> bool:
         """Check if the game has an active scene.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if active_scene is not None
         - SQL: Performs a subquery to check for active scenes
         """
         return self.active_scene is not None
-    
+
     @has_active_scene.expression
     def has_active_scene(cls):
         """SQL expression for has_active_scene."""
         from sologm.models.act import Act
         from sologm.models.scene import Scene
-        return select(1).where(
-            (Act.game_id == cls.id) & 
-            (Act.is_active == True) & 
-            (Scene.act_id == Act.id) & 
-            (Scene.is_active == True)
-        ).exists().label("has_active_scene")
+
+        return (
+            select(1)
+            .where(
+                (Act.game_id == cls.id)
+                & (Act.is_active == True)
+                & (Scene.act_id == Act.id)
+                & (Scene.is_active == True)
+            )
+            .exists()
+            .label("has_active_scene")
+        )
 
     @property
     def completed_acts(self) -> List["Act"]:
@@ -157,22 +171,26 @@ class Game(Base, TimestampMixin):
     @hybrid_property
     def has_completed_acts(self) -> bool:
         """Check if the game has any completed acts.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if completed_acts is non-empty
         - SQL: Performs a subquery to check for completed acts
         """
         from sologm.models.act import ActStatus
+
         return any(act.status == ActStatus.COMPLETED for act in self.acts)
-    
+
     @has_completed_acts.expression
     def has_completed_acts(cls):
         """SQL expression for has_completed_acts."""
         from sologm.models.act import Act, ActStatus
-        return select(1).where(
-            (Act.game_id == cls.id) & 
-            (Act.status == ActStatus.COMPLETED)
-        ).exists().label("has_completed_acts")
+
+        return (
+            select(1)
+            .where((Act.game_id == cls.id) & (Act.status == ActStatus.COMPLETED))
+            .exists()
+            .label("has_completed_acts")
+        )
 
     @property
     def active_acts(self) -> List["Act"]:
