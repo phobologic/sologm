@@ -12,7 +12,6 @@ from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
 if TYPE_CHECKING:
-    from sologm.models.act import Act
     from sologm.models.dice import DiceRoll
     from sologm.models.event import Event
     from sologm.models.game import Game
@@ -328,7 +327,7 @@ class Scene(Base, TimestampMixin):
     @has_interpretations.expression
     def has_interpretations(cls):
         """SQL expression for has_interpretations."""
-        from sologm.models.oracle import InterpretationSet, Interpretation
+        from sologm.models.oracle import Interpretation, InterpretationSet
 
         return (
             select(1)
@@ -355,7 +354,7 @@ class Scene(Base, TimestampMixin):
     @interpretation_count.expression
     def interpretation_count(cls):
         """SQL expression for interpretation_count."""
-        from sologm.models.oracle import InterpretationSet, Interpretation
+        from sologm.models.oracle import Interpretation, InterpretationSet
 
         return (
             select(func.count(Interpretation.id))
@@ -382,7 +381,7 @@ class Scene(Base, TimestampMixin):
     @has_selected_interpretations.expression
     def has_selected_interpretations(cls):
         """SQL expression for has_selected_interpretations."""
-        from sologm.models.oracle import InterpretationSet, Interpretation
+        from sologm.models.oracle import Interpretation, InterpretationSet
 
         return (
             select(1)
@@ -408,7 +407,7 @@ class Scene(Base, TimestampMixin):
     @selected_interpretation_count.expression
     def selected_interpretation_count(cls):
         """SQL expression for selected_interpretation_count."""
-        from sologm.models.oracle import InterpretationSet, Interpretation
+        from sologm.models.oracle import Interpretation, InterpretationSet
 
         return (
             select(func.count(Interpretation.id))
