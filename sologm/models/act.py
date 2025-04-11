@@ -58,7 +58,7 @@ class Act(Base, TimestampMixin):
     @property
     def active_scene(self) -> Optional["Scene"]:
         """Get the active scene for this act, if any.
-        
+
         This property filters the already loaded scenes collection
         and doesn't trigger a new database query.
         """
@@ -66,150 +66,152 @@ class Act(Base, TimestampMixin):
             if scene.is_active:
                 return scene
         return None
-    
+
     @property
     def completed_scenes(self) -> List["Scene"]:
         """Get all completed scenes for this act.
-        
+
         This property filters the already loaded scenes collection
         and doesn't trigger a new database query.
         """
         from sologm.models.scene import SceneStatus
+
         return [scene for scene in self.scenes if scene.status == SceneStatus.COMPLETED]
-    
+
     @property
     def active_scenes(self) -> List["Scene"]:
         """Get all active scenes for this act.
-        
+
         This property filters the already loaded scenes collection
         and doesn't trigger a new database query.
         """
         from sologm.models.scene import SceneStatus
+
         return [scene for scene in self.scenes if scene.status == SceneStatus.ACTIVE]
-    
+
     @property
     def latest_scene(self) -> Optional["Scene"]:
         """Get the most recently created scene for this act, if any.
-        
+
         This property sorts the already loaded scenes collection
         and doesn't trigger a new database query.
         """
         if not self.scenes:
             return None
         return sorted(self.scenes, key=lambda scene: scene.created_at, reverse=True)[0]
-    
+
     @property
     def first_scene(self) -> Optional["Scene"]:
         """Get the first scene (by sequence) for this act, if any.
-        
+
         This property sorts the already loaded scenes collection
         and doesn't trigger a new database query.
         """
         if not self.scenes:
             return None
         return sorted(self.scenes, key=lambda scene: scene.sequence)[0]
-    
+
     @property
     def latest_event(self) -> Optional["Event"]:
         """Get the most recently created event across all scenes in this act.
-        
+
         This property navigates through scenes to find the latest event,
         without triggering new database queries.
         """
         latest_event = None
         latest_time = None
-        
+
         for scene in self.scenes:
             for event in scene.events:
                 if latest_time is None or event.created_at > latest_time:
                     latest_event = event
                     latest_time = event.created_at
-        
+
         return latest_event
-    
+
     @property
     def latest_dice_roll(self) -> Optional["DiceRoll"]:
         """Get the most recently created dice roll across all scenes in this act.
-        
+
         This property navigates through scenes to find the latest dice roll,
         without triggering new database queries.
         """
         latest_roll = None
         latest_time = None
-        
+
         for scene in self.scenes:
             for roll in scene.dice_rolls:
                 if latest_time is None or roll.created_at > latest_time:
                     latest_roll = roll
                     latest_time = roll.created_at
-        
+
         return latest_roll
-    
+
     @property
     def latest_interpretation(self) -> Optional["Interpretation"]:
         """Get the most recently created interpretation across all scenes in this act.
-        
-        This property navigates through scenes and interpretation sets to find 
+
+        This property navigates through scenes and interpretation sets to find
         the latest interpretation, without triggering new database queries.
         """
         latest_interp = None
         latest_time = None
-        
+
         for scene in self.scenes:
             for interp_set in scene.interpretation_sets:
                 for interp in interp_set.interpretations:
                     if latest_time is None or interp.created_at > latest_time:
                         latest_interp = interp
                         latest_time = interp.created_at
-        
+
         return latest_interp
-    
+
     @property
     def all_events(self) -> List["Event"]:
         """Get all events across all scenes in this act.
-        
+
         This property collects events from all scenes without triggering new database queries.
         """
         events = []
         for scene in self.scenes:
             events.extend(scene.events)
-        
+
         return events
-    
+
     @property
     def all_dice_rolls(self) -> List["DiceRoll"]:
         """Get all dice rolls across all scenes in this act.
-        
+
         This property collects dice rolls from all scenes without triggering new database queries.
         """
         rolls = []
         for scene in self.scenes:
             rolls.extend(scene.dice_rolls)
-        
+
         return rolls
-    
+
     @property
     def all_interpretations(self) -> List["Interpretation"]:
         """Get all interpretations across all scenes in this act.
-        
+
         This property collects interpretations from all scenes without triggering new database queries.
         """
         interpretations = []
         for scene in self.scenes:
             for interp_set in scene.interpretation_sets:
                 interpretations.extend(interp_set.interpretations)
-        
+
         return interpretations
-    
+
     @property
     def selected_interpretations(self) -> List["Interpretation"]:
         """Get all selected interpretations across all scenes in this act.
-        
-        This property collects selected interpretations from all scenes 
+
+        This property collects selected interpretations from all scenes
         without triggering new database queries.
         """
         return [interp for interp in self.all_interpretations if interp.is_selected]
-    
+
     @classmethod
     def create(
         cls,
