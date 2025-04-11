@@ -139,9 +139,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting scene {scene_id} in act {act_id}")
 
-        def _get_scene(
-            session: Session, act_id: str, scene_id: str
-        ) -> Optional[Scene]:
+        def _get_scene(session: Session, act_id: str, scene_id: str) -> Optional[Scene]:
             return (
                 session.query(Scene)
                 .filter(and_(Scene.act_id == act_id, Scene.id == scene_id))
@@ -209,7 +207,9 @@ class SceneManager(BaseManager[Scene, Scene]):
             "complete scene", _complete_scene, act_id=act_id, scene_id=scene_id
         )
 
-    def validate_active_context(self, game_manager: GameManager, act_manager: ActManager = None) -> Tuple[str, Scene]:
+    def validate_active_context(
+        self, game_manager: GameManager, act_manager: ActManager = None
+    ) -> Tuple[str, Scene]:
         """Validate active game, act, and scene context.
 
         Args:
@@ -228,7 +228,7 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         if act_manager is None:
             act_manager = ActManager(self._session)
-            
+
         active_act = act_manager.get_active_act(active_game.id)
         if not active_act:
             raise SceneError("No active act. Create one with 'sologm act create'.")

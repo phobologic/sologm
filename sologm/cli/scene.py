@@ -99,7 +99,9 @@ def scene_info() -> None:
     scene_manager = SceneManager()
 
     try:
-        _, active_scene = scene_manager.validate_active_context(game_manager, act_manager)
+        _, active_scene = scene_manager.validate_active_context(
+            game_manager, act_manager
+        )
         display_scene_info(console, active_scene)
     except (SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
@@ -113,7 +115,9 @@ def complete_scene() -> None:
         act_manager = ActManager()
         scene_manager = SceneManager()
 
-        act_id, active_scene = scene_manager.validate_active_context(game_manager, act_manager)
+        act_id, active_scene = scene_manager.validate_active_context(
+            game_manager, act_manager
+        )
         completed_scene = scene_manager.complete_scene(act_id, active_scene.id)
         console.print("[bold green]Scene completed successfully![/]")
         display_scene_info(console, completed_scene)
@@ -135,7 +139,9 @@ def edit_scene(
         scene_manager = SceneManager()
 
         # Get active game and act
-        act_id, active_scene = scene_manager.validate_active_context(game_manager, act_manager)
+        act_id, active_scene = scene_manager.validate_active_context(
+            game_manager, act_manager
+        )
 
         # If no scene_id provided, use the active scene
         if not scene_id:
