@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
+from sologm.core.act import ActManager
 from sologm.core.base_manager import BaseManager
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
@@ -51,15 +52,18 @@ class EventManager(BaseManager[Event, Event]):
             source: str,
             interpretation_id: Optional[str],
         ) -> Event:
-            # Verify scene exists and belongs to the game
+            # Verify scene exists
             from sologm.models.scene import Scene
 
             scene = session.query(Scene).filter(Scene.id == scene_id).first()
             if not scene:
-                raise EventError(f"Scene {scene_id} not found in game {game_id}")
+                raise EventError(f"Scene {scene_id} not found")
 
-            # Verify game exists and scene belongs to game
-            if scene.game_id != game_id:
+            # Verify scene belongs to an act in the game
+            from sologm.models.act import Act
+            
+            act = session.query(Act).filter(Act.id == scene.act_id).first()
+            if not act or act.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
 
             # Validate source exists and get its ID
@@ -101,25 +105,43 @@ class EventManager(BaseManager[Event, Event]):
             raise EventError(f"Failed to add event: {str(e)}") from e
 
     def validate_active_context(
-        self, game_manager: GameManager, scene_manager: SceneManager
+        self, 
+        game_manager: GameManager, 
+        scene_manager: SceneManager,
+        act_manager: Optional[ActManager] = None
     ) -> Tuple[str, str]:
         """Validate and return active game and scene IDs.
+
+        Args:
+            game_manager: GameManager instance
+            scene_manager: SceneManager instance
+            act_manager: Optional ActManager instance
 
         Returns:
             Tuple of (game_id, scene_id)
 
         Raises:
-            EventError: If no active game or scene is found
+            EventError: If no active game, act, or scene is found
         """
         game = game_manager.get_active_game()
         if not game:
             raise EventError("No active game. Use 'sologm game activate' to set one.")
 
-        scene = scene_manager.get_active_scene(game.id)
-        if not scene:
+        # Create an ActManager if not provided
+        if act_manager is None:
+            act_manager = ActManager(self._session)
+
+        # Get the active act
+        active_act = act_manager.get_active_act(game.id)
+        if not active_act:
+            raise EventError("No active act. Use 'sologm act create' or 'sologm act activate' to set one.")
+        
+        # Get the active scene in the active act
+        active_scene = scene_manager.get_active_scene(active_act.id)
+        if not active_scene:
             raise EventError("No current scene. Add one with 'sologm scene add'.")
 
-        return game.id, scene.id
+        return game.id, active_scene.id
 
     def get_event(self, event_id: str) -> Optional[Event]:
         """Get an event by ID.
@@ -203,15 +225,18 @@ class EventManager(BaseManager[Event, Event]):
         def _list_events(
             session: Session, game_id: str, scene_id: str, limit: Optional[int]
         ) -> List[Event]:
-            # Verify scene exists and belongs to the game
+            # Verify scene exists
             from sologm.models.scene import Scene
 
             scene = session.query(Scene).filter(Scene.id == scene_id).first()
             if not scene:
-                raise EventError(f"Scene {scene_id} not found in game {game_id}")
+                raise EventError(f"Scene {scene_id} not found")
 
-            # Verify game exists and scene belongs to game
-            if scene.game_id != game_id:
+            # Verify scene belongs to an act in the game
+            from sologm.models.act import Act
+            
+            act = session.query(Act).filter(Act.id == scene.act_id).first()
+            if not act or act.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
 
             # Query events

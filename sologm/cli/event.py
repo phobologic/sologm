@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 
 from sologm.cli.utils.display import display_events_table
+from sologm.core.act import ActManager
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
@@ -37,17 +38,19 @@ def add_event(
     If no description is provided, opens an editor to create the event.
     """
     game_manager = GameManager()
+    act_manager = ActManager()
     scene_manager = SceneManager()
     event_manager = EventManager()
 
     try:
         game_id, scene_id = event_manager.validate_active_context(
-            game_manager, scene_manager
+            game_manager, scene_manager, act_manager
         )
 
-        # Get the current scene and game for context
-        scene = scene_manager.get_scene(game_id, scene_id)
+        # Get the current scene, act, and game for context
         game = game_manager.get_game(game_id)
+        active_act = act_manager.get_active_act(game_id)
+        scene = scene_manager.get_scene(active_act.id, scene_id)
 
         # If no description is provided, open an editor
         if description is None:
@@ -65,11 +68,18 @@ def add_event(
                 get_event_context_header,
             )
 
+            # Format act info for context header
+            act_info = None
+            if active_act:
+                act_title = active_act.title or f"Act {active_act.sequence} (Untitled)"
+                act_info = f"Act: {act_title}"
+
             context_info = get_event_context_header(
                 game_name=game.name,
                 scene_title=scene.title,
                 scene_description=scene.description,
                 recent_events=recent_events,
+                act_info=act_info,
             )
 
             # Create editor configurations
@@ -156,18 +166,20 @@ def edit_event(
     If no event ID is provided, edits the most recent event in the current scene.
     """
     game_manager = GameManager()
+    act_manager = ActManager()
     scene_manager = SceneManager()
     event_manager = EventManager()
 
     try:
         # Validate active context
         game_id, scene_id = event_manager.validate_active_context(
-            game_manager, scene_manager
+            game_manager, scene_manager, act_manager
         )
 
-        # Get the game and scene objects
+        # Get the game, act, and scene objects
         game = game_manager.get_game(game_id)
-        scene = scene_manager.get_scene(game_id, scene_id)
+        active_act = act_manager.get_active_act(game_id)
+        scene = scene_manager.get_scene(active_act.id, scene_id)
 
         # If no event_id provided, get the most recent event
         if event_id is None:
@@ -221,11 +233,18 @@ def edit_event(
             get_event_context_header,
         )
 
+        # Format act info for context header
+        act_info = None
+        if active_act:
+            act_title = active_act.title or f"Act {active_act.sequence} (Untitled)"
+            act_info = f"Act: {act_title}"
+
         context_info = get_event_context_header(
             game_name=game.name,
             scene_title=scene.title,
             scene_description=scene.description,
             recent_events=recent_events,
+            act_info=act_info,
         )
 
         # Create editor configurations
@@ -320,19 +339,23 @@ def list_events(
 ) -> None:
     """List events in the current scene or a specified scene."""
     game_manager = GameManager()
+    act_manager = ActManager()
     scene_manager = SceneManager()
     event_manager = EventManager()
 
     try:
         game_id, current_scene_id = event_manager.validate_active_context(
-            game_manager, scene_manager
+            game_manager, scene_manager, act_manager
         )
 
         # Use the specified scene_id if provided, otherwise use the current scene
         target_scene_id = scene_id if scene_id else current_scene_id
 
+        # Get the active act
+        active_act = act_manager.get_active_act(game_id)
+        
         # Get the scene to display its title
-        scene = scene_manager.get_scene(game_id, target_scene_id)
+        scene = scene_manager.get_scene(active_act.id, target_scene_id)
         if not scene:
             console.print(f"[red]Error:[/] Scene with ID '{target_scene_id}' not found")
             raise typer.Exit(1)
