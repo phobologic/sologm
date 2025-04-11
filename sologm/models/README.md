@@ -27,7 +27,23 @@ class Game(Base, TimestampMixin):
     # Relationships
     acts: Mapped[List["Act"]]
     
-    # Helper Properties
+    # Hybrid Properties (work in both Python and SQL)
+    @hybrid_property
+    def has_acts(self) -> bool  # Checks if the game has any acts
+    
+    @hybrid_property
+    def act_count(self) -> int  # Returns the number of acts
+    
+    @hybrid_property
+    def has_active_act(self) -> bool  # Checks if the game has an active act
+    
+    @hybrid_property
+    def has_active_scene(self) -> bool  # Checks if the game has an active scene
+    
+    @hybrid_property
+    def has_completed_acts(self) -> bool  # Checks if the game has any completed acts
+    
+    # Regular Properties (Python-only)
     @property
     def active_act(self) -> Optional["Act"]  # Returns the active act for this game
     
