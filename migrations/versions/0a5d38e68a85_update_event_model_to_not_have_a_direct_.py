@@ -24,7 +24,8 @@ def upgrade() -> None:
     # Use batch operations for SQLite compatibility
     # SQLite doesn't support dropping columns directly, so we use batch operations
     with op.batch_alter_table("events") as batch_op:
-        batch_op.drop_constraint("fk_events_game_id_games", type_="foreignkey")
+        # Use None to let SQLAlchemy find the constraint by column
+        batch_op.drop_constraint(None, type_="foreignkey")
         batch_op.drop_column("game_id")
 
 
@@ -35,6 +36,7 @@ def downgrade() -> None:
         batch_op.add_column(
             sa.Column("game_id", sa.VARCHAR(length=255), nullable=False)
         )
+        # Use None for the constraint name in downgrade as well
         batch_op.create_foreign_key(
-            "fk_events_game_id_games", "games", ["game_id"], ["id"]
+            None, "games", ["game_id"], ["id"]
         )
