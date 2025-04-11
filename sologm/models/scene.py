@@ -104,7 +104,7 @@ class Scene(Base, TimestampMixin):
     def latest_interpretation(self) -> Optional["Interpretation"]:
         """Get the most recently created interpretation for this scene, if any.
 
-        This property navigates through interpretation sets to find the latest 
+        This property navigates through interpretation sets to find the latest
         interpretation, without triggering new database queries.
         """
         latest_interp = None
@@ -169,7 +169,7 @@ class Scene(Base, TimestampMixin):
         """Check if this scene has an active status.
 
         This property provides a more readable way to check the scene status.
-        Note: This is different from is_active which indicates if this is the 
+        Note: This is different from is_active which indicates if this is the
         current scene.
         """
         return self.status == SceneStatus.ACTIVE
