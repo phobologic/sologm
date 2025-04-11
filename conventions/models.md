@@ -12,16 +12,16 @@
 - Use proper type annotations with `Mapped[Type]` or `Mapped[List[Type]]`
 - Define cascade behavior explicitly
 
-```python
-# In model class
-from typing import List, TYPE_CHECKING
+See [examples/models.md](examples/models.md) for relationship examples.
 
-if TYPE_CHECKING:
-    from sologm.models.other_model import OtherModel
+## Helper Properties
 
-class MyModel(Base, TimestampMixin):
-    other_id: Mapped[str] = mapped_column(ForeignKey("other_models.id"))
-    other_items: Mapped[List["OtherModel"]] = relationship(
-        "OtherModel", back_populates="my_model", cascade="all, delete-orphan"
-    )
-```
+- Use `@property` for simple derived values and Python-only operations
+- Use `@hybrid_property` for properties that need to work in both Python and SQL contexts:
+  - Properties used in filtering (has_events, is_completed)
+  - Properties used for aggregation (event_count)
+  - Properties that check status or relationships (is_active)
+- Always implement both instance-level and class-level expressions for hybrid properties
+- Document hybrid properties in model documentation with both contexts
+
+See [examples/models.md](examples/models.md) for hybrid property examples.

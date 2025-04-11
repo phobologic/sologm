@@ -7,15 +7,8 @@
 - Define inner functions for database operations
 
 ## Database Operations
-```python
-# Define operation as inner function
-def _operation_name(session: Session, param1: Type1) -> ReturnType:
-    # Operation code
-    return result
 
-# Execute operation
-result = self._execute_db_operation("operation description", _operation_name, param1)
-```
+See [examples/database_access.md](examples/database_access.md) for operation examples.
 
 ## Transaction Management
 - Let `_execute_db_operation` handle session lifecycle
@@ -28,3 +21,6 @@ result = self._execute_db_operation("operation description", _operation_name, pa
 - Multiple items: `session.query(Model).filter(conditions).all()`
 - Ordered lists: `session.query(Model).filter().order_by(Model.field).all()`
 - Bulk updates: `session.query(Model).update({Model.field: value})`
+- Use model hybrid properties in queries when available
+
+See [examples/database_access.md](examples/database_access.md) for query pattern examples.
