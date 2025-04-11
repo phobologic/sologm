@@ -205,12 +205,11 @@ class GameManager(BaseManager[Game, Game]):
             logger.error(f"Failed to get active game: {str(e)}")
             raise GameError(f"Failed to get active game: {str(e)}") from e
 
-    def activate_game(self, game_id: str, deactivate_others: bool = True) -> Game:
+    def activate_game(self, game_id: str) -> Game:
         """Set a game as active.
 
         Args:
             game_id: ID of the game to activate.
-            deactivate_others: Whether to deactivate all other games.
 
         Returns:
             The activated Game instance.
@@ -219,17 +218,14 @@ class GameManager(BaseManager[Game, Game]):
             GameError: If the game cannot be activated.
         """
 
-        def _activate_game(
-            session: Session, game_id: str, deactivate_others: bool
-        ) -> Game:
+        def _activate_game(session: Session, game_id: str) -> Game:
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
                 logger.error(f"Cannot activate nonexistent game: {game_id}")
                 raise GameError(f"Game not found: {game_id}")
 
-            # Deactivate all games if requested
-            if deactivate_others:
-                self._deactivate_all_games(session)
+            # Always deactivate all games first
+            self._deactivate_all_games(session)
 
             # Activate the requested game
             game.is_active = True
@@ -238,9 +234,7 @@ class GameManager(BaseManager[Game, Game]):
             return game
 
         try:
-            return self._execute_db_operation(
-                "activate game", _activate_game, game_id, deactivate_others
-            )
+            return self._execute_db_operation("activate game", _activate_game, game_id)
         except Exception as e:
             logger.error(f"Failed to activate game {game_id}: {str(e)}")
             raise GameError(f"Failed to activate game {game_id}: {str(e)}") from e

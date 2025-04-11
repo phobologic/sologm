@@ -144,21 +144,31 @@ class TestGameManager:
         db_session.refresh(game1)
         assert game1.is_active is False
 
-    def test_activate_game_without_deactivating_others(
-        self, game_manager, db_session
-    ) -> None:
-        """Test activating a game without deactivating others."""
-        game1 = game_manager.create_game(name="Game 1", description="First game")
-        game2 = game_manager.create_game(name="Game 2", description="Second game")
-
-        # Activate the second game without deactivating others
-        activated_game = game_manager.activate_game(game2.id, deactivate_others=False)
-        assert activated_game.id == game2.id
+    def test_activate_game_always_deactivates_others(self, game_manager, db_session) -> None:
+        """Test that activating any game always deactivates all other games."""
+        # Create multiple games
+        games = [
+            game_manager.create_game(name=f"Game {i}", description=f"Game {i}")
+            for i in range(1, 4)
+        ]
+        
+        # Manually set all games to active (this shouldn't happen in practice)
+        for game in games:
+            game.is_active = True
+        db_session.commit()
+        
+        # Now activate one specific game
+        activated_game = game_manager.activate_game(games[1].id)
+        assert activated_game.id == games[1].id
         assert activated_game.is_active is True
-
-        # Verify the first game is still active
-        db_session.refresh(game1)
-        assert game1.is_active is True
+        
+        # Verify all other games are inactive
+        for i, game in enumerate(games):
+            db_session.refresh(game)
+            if i == 1:  # This is our activated game
+                assert game.is_active is True
+            else:
+                assert game.is_active is False
 
     def test_activate_nonexistent_game(self, game_manager) -> None:
         """Test activating a nonexistent game raises an error."""
