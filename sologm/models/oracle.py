@@ -1,7 +1,7 @@
 """Oracle interpretation models for SoloGM."""
 
 import uuid
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Text, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -10,8 +10,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sologm.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from sologm.models.act import Act
     from sologm.models.event import Event
     from sologm.models.game import Game
