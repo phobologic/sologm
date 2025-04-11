@@ -26,6 +26,25 @@ class Game(Base, TimestampMixin):
     
     # Relationships
     acts: Mapped[List["Act"]]
+    
+    # Helper Properties
+    @property
+    def active_act(self) -> Optional["Act"]  # Returns the active act for this game
+    
+    @property
+    def active_scene(self) -> Optional["Scene"]  # Returns the active scene via active act
+    
+    @property
+    def completed_acts(self) -> List["Act"]  # Returns all completed acts
+    
+    @property
+    def active_acts(self) -> List["Act"]  # Returns all active acts
+    
+    @property
+    def latest_act(self) -> Optional["Act"]  # Returns the most recently created act
+    
+    @property
+    def latest_scene(self) -> Optional["Scene"]  # Returns the most recently created scene
 ```
 
 ### Act
@@ -43,6 +62,43 @@ class Act(Base, TimestampMixin):
     # Relationships
     game: Mapped["Game"]
     scenes: Mapped[List["Scene"]]
+    
+    # Helper Properties
+    @property
+    def active_scene(self) -> Optional["Scene"]  # Returns the active scene for this act
+    
+    @property
+    def completed_scenes(self) -> List["Scene"]  # Returns all completed scenes
+    
+    @property
+    def active_scenes(self) -> List["Scene"]  # Returns all active scenes
+    
+    @property
+    def latest_scene(self) -> Optional["Scene"]  # Returns the most recently created scene
+    
+    @property
+    def first_scene(self) -> Optional["Scene"]  # Returns the first scene by sequence
+    
+    @property
+    def latest_event(self) -> Optional["Event"]  # Returns the most recent event across all scenes
+    
+    @property
+    def latest_dice_roll(self) -> Optional["DiceRoll"]  # Returns the most recent dice roll
+    
+    @property
+    def latest_interpretation(self) -> Optional["Interpretation"]  # Returns the most recent interpretation
+    
+    @property
+    def all_events(self) -> List["Event"]  # Returns all events across all scenes
+    
+    @property
+    def all_dice_rolls(self) -> List["DiceRoll"]  # Returns all dice rolls across all scenes
+    
+    @property
+    def all_interpretations(self) -> List["Interpretation"]  # Returns all interpretations
+    
+    @property
+    def selected_interpretations(self) -> List["Interpretation"]  # Returns all selected interpretations
 ```
 
 ### Scene
@@ -62,6 +118,40 @@ class Scene(Base, TimestampMixin):
     events: Mapped[List["Event"]]
     interpretation_sets: Mapped[List["InterpretationSet"]]
     dice_rolls: Mapped[List["DiceRoll"]]
+    
+    # Helper Properties
+    @property
+    def game(self) -> "Game"  # Returns the game this scene belongs to
+    
+    @property
+    def game_id(self) -> str  # Returns the game ID this scene belongs to
+    
+    @property
+    def latest_event(self) -> Optional["Event"]  # Returns the most recent event
+    
+    @property
+    def latest_dice_roll(self) -> Optional["DiceRoll"]  # Returns the most recent dice roll
+    
+    @property
+    def latest_interpretation_set(self) -> Optional["InterpretationSet"]  # Returns the most recent interpretation set
+    
+    @property
+    def latest_interpretation(self) -> Optional["Interpretation"]  # Returns the most recent interpretation
+    
+    @property
+    def current_interpretation_set(self) -> Optional["InterpretationSet"]  # Returns the current interpretation set
+    
+    @property
+    def selected_interpretations(self) -> List["Interpretation"]  # Returns all selected interpretations
+    
+    @property
+    def all_interpretations(self) -> List["Interpretation"]  # Returns all interpretations
+    
+    @property
+    def is_completed(self) -> bool  # Checks if this scene is completed
+    
+    @property
+    def is_active_status(self) -> bool  # Checks if this scene has an active status
 ```
 
 ### Event
@@ -69,7 +159,6 @@ class Scene(Base, TimestampMixin):
 class Event(Base, TimestampMixin):
     id: Mapped[str]
     scene_id: Mapped[str]
-    game_id: Mapped[str]  # Redundant for query performance
     description: Mapped[str]
     source_id: Mapped[int]
     interpretation_id: Mapped[Optional[str]]
@@ -78,6 +167,37 @@ class Event(Base, TimestampMixin):
     scene: Mapped["Scene"]
     source: Mapped["EventSource"]
     interpretation: Mapped["Interpretation"]
+    
+    # Helper Properties
+    @property
+    def game(self) -> "Game"  # Returns the game this event belongs to
+    
+    @property
+    def game_id(self) -> str  # Returns the game ID this event belongs to
+    
+    @property
+    def act(self) -> "Act"  # Returns the act this event belongs to
+    
+    @property
+    def act_id(self) -> str  # Returns the act ID this event belongs to
+    
+    @property
+    def is_from_oracle(self) -> bool  # Checks if this event was created from an oracle interpretation
+    
+    @property
+    def source_name(self) -> str  # Returns the name of the event source
+    
+    @property
+    def is_manual(self) -> bool  # Checks if this event was manually created
+    
+    @property
+    def is_oracle_generated(self) -> bool  # Checks if this event was generated by an oracle
+    
+    @property
+    def is_dice_generated(self) -> bool  # Checks if this event was generated by a dice roll
+    
+    @property
+    def short_description(self) -> str  # Returns a shortened version of the description
 ```
 
 ### EventSource
@@ -85,6 +205,8 @@ class Event(Base, TimestampMixin):
 class EventSource(Base):
     id: Mapped[int]
     name: Mapped[str]
+    
+    # No helper properties
 ```
 
 ### InterpretationSet
@@ -100,6 +222,28 @@ class InterpretationSet(Base, TimestampMixin):
     # Relationships
     scene: Mapped["Scene"]
     interpretations: Mapped[List["Interpretation"]]
+    
+    # Helper Properties
+    @property
+    def act(self) -> "Act"  # Returns the act this interpretation set belongs to
+    
+    @property
+    def act_id(self) -> str  # Returns the act ID this interpretation set belongs to
+    
+    @property
+    def game(self) -> "Game"  # Returns the game this interpretation set belongs to
+    
+    @property
+    def game_id(self) -> str  # Returns the game ID this interpretation set belongs to
+    
+    @property
+    def selected_interpretation(self) -> Optional["Interpretation"]  # Returns the selected interpretation
+    
+    @property
+    def has_selection(self) -> bool  # Checks if any interpretation is selected
+    
+    @property
+    def interpretation_count(self) -> int  # Returns the number of interpretations
 ```
 
 ### Interpretation
@@ -115,6 +259,37 @@ class Interpretation(Base, TimestampMixin):
     # Relationships
     interpretation_set: Mapped["InterpretationSet"]
     events: Mapped[List["Event"]]
+    
+    # Helper Properties
+    @property
+    def scene(self) -> "Scene"  # Returns the scene this interpretation belongs to
+    
+    @property
+    def scene_id(self) -> str  # Returns the scene ID this interpretation belongs to
+    
+    @property
+    def act(self) -> "Act"  # Returns the act this interpretation belongs to
+    
+    @property
+    def act_id(self) -> str  # Returns the act ID this interpretation belongs to
+    
+    @property
+    def game(self) -> "Game"  # Returns the game this interpretation belongs to
+    
+    @property
+    def game_id(self) -> str  # Returns the game ID this interpretation belongs to
+    
+    @property
+    def short_description(self) -> str  # Returns a shortened version of the description
+    
+    @property
+    def event_count(self) -> int  # Returns the number of associated events
+    
+    @property
+    def has_events(self) -> bool  # Checks if there are any associated events
+    
+    @property
+    def latest_event(self) -> Optional["Event"]  # Returns the most recent associated event
 ```
 
 ### DiceRoll
@@ -130,6 +305,28 @@ class DiceRoll(Base, TimestampMixin):
     
     # Relationships
     scene: Mapped["Scene"]
+    
+    # Helper Properties
+    @property
+    def act(self) -> Optional["Act"]  # Returns the act this dice roll belongs to
+    
+    @property
+    def act_id(self) -> Optional[str]  # Returns the act ID this dice roll belongs to
+    
+    @property
+    def game(self) -> Optional["Game"]  # Returns the game this dice roll belongs to
+    
+    @property
+    def game_id(self) -> Optional[str]  # Returns the game ID this dice roll belongs to
+    
+    @property
+    def formatted_results(self) -> str  # Returns a formatted string of the dice roll results
+    
+    @property
+    def short_reason(self) -> Optional[str]  # Returns a shortened version of the reason
+    
+    @property
+    def has_reason(self) -> bool  # Checks if this dice roll has a reason
 ```
 
 ## Key Relationship Chains
