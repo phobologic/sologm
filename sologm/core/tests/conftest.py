@@ -31,14 +31,16 @@ from sologm.core.scene import SceneManager
 from sologm.core.act import ActManager
 from sologm.models.act import Act, ActStatus
 from sologm.models.scene import Scene, SceneStatus
+
+
 # Helper fixtures for testing model properties
 @pytest.fixture
 def assert_model_properties():
     """Helper fixture to assert model properties work correctly.
-    
+
     This fixture provides a function that can be used to verify that model properties
     and hybrid properties return the expected values.
-    
+
     Example:
         def test_game_properties(test_game, assert_model_properties):
             expected = {
@@ -48,40 +50,42 @@ def assert_model_properties():
             }
             assert_model_properties(test_game, expected)
     """
-    
+
     def _assert_properties(model, expected_properties):
         """Assert that model properties match expected values.
-        
+
         Args:
             model: The model instance to check
             expected_properties: Dict of property_name: expected_value
         """
         for prop_name, expected_value in expected_properties.items():
-            assert hasattr(model, prop_name), f"Model {model.__class__.__name__} has no property {prop_name}"
+            assert hasattr(model, prop_name), (
+                f"Model {model.__class__.__name__} has no property {prop_name}"
+            )
             actual_value = getattr(model, prop_name)
             assert actual_value == expected_value, (
                 f"Property {prop_name} doesn't match expected value. "
                 f"Expected: {expected_value}, Got: {actual_value}"
             )
-    
+
     return _assert_properties
 
 
 @pytest.fixture
 def test_hybrid_expressions(db_session):
     """Test fixture for SQL expressions of hybrid properties.
-    
+
     This fixture provides a function that can be used to verify that hybrid property
     SQL expressions work correctly in queries.
-    
+
     Example:
         def test_game_has_acts_expression(db_session, test_hybrid_expressions):
             test_hybrid_expressions(Game, 'has_acts', True, 1)  # Expect 1 game with acts
     """
-    
+
     def _test_expression(model_class, property_name, filter_condition, expected_count):
         """Test that a hybrid property's SQL expression works correctly.
-        
+
         Args:
             model_class: The model class to query
             property_name: The name of the hybrid property
@@ -95,7 +99,7 @@ def test_hybrid_expressions(db_session):
             f"Expected {expected_count} results for {model_class.__name__}.{property_name} == {filter_condition}, "
             f"got {result_count}"
         )
-    
+
     return _test_expression
 
 
@@ -165,20 +169,24 @@ def test_game_with_scenes(
     # Refresh objects to ensure relationships are loaded
     db_session.refresh(game)
     db_session.refresh(act)
-    
+
     return game, scenes
 
 
 @pytest.fixture
 def test_game_with_complete_hierarchy(
-    db_session, create_test_game, create_test_act, create_test_scene, 
-    create_test_event, initialize_event_sources
+    db_session,
+    create_test_game,
+    create_test_act,
+    create_test_scene,
+    create_test_event,
+    initialize_event_sources,
 ):
     """Create a complete game hierarchy with acts, scenes, events, and interpretations.
-    
+
     This fixture creates a comprehensive test game with multiple acts, scenes, and events
     to test complex relationships and hybrid properties.
-    
+
     Returns:
         Tuple containing:
         - game: The created game
@@ -188,23 +196,23 @@ def test_game_with_complete_hierarchy(
     """
     # Initialize event sources if needed
     initialize_event_sources()
-    
+
     game = create_test_game(
         name="Complete Game", description="A test game with complete hierarchy"
     )
-    
+
     # Create acts with varying statuses
     acts = []
     for i in range(1, 3):
         act = create_test_act(
-            game_id=game.id, 
-            title=f"Act {i}", 
+            game_id=game.id,
+            title=f"Act {i}",
             description=f"Test act {i}",
             status=ActStatus.ACTIVE if i == 1 else ActStatus.COMPLETED,
-            is_active=(i == 1)
+            is_active=(i == 1),
         )
         acts.append(act)
-    
+
     # Create scenes with varying statuses
     scenes = []
     events = []
@@ -212,40 +220,42 @@ def test_game_with_complete_hierarchy(
         for j in range(1, 3):
             scene = create_test_scene(
                 act_id=act.id,
-                title=f"Scene {j} in Act {i+1}",
-                description=f"Test scene {j} in act {i+1}",
+                title=f"Scene {j} in Act {i + 1}",
+                description=f"Test scene {j} in act {i + 1}",
                 sequence=j,
                 status=SceneStatus.ACTIVE if j == 1 else SceneStatus.COMPLETED,
-                is_active=(j == 1)
+                is_active=(j == 1),
             )
             scenes.append(scene)
-            
+
             # Add events to each scene
             for k in range(1, 3):
                 event = create_test_event(
                     scene_id=scene.id,
-                    description=f"Event {k} in Scene {j} of Act {i+1}",
-                    source_id=1  # Manual source
+                    description=f"Event {k} in Scene {j} of Act {i + 1}",
+                    source_id=1,  # Manual source
                 )
                 events.append(event)
-    
+
     # Refresh objects to ensure relationships are loaded
     db_session.refresh(game)
     for act in acts:
         db_session.refresh(act)
     for scene in scenes:
         db_session.refresh(scene)
-    
+
     return game, acts, scenes, events
 
 
 @pytest.fixture
-def test_hybrid_property_game(db_session, create_test_game, create_test_act, create_test_scene):
+def test_hybrid_property_game(
+    db_session, create_test_game, create_test_act, create_test_scene
+):
     """Create a game with specific properties for testing hybrid properties.
-    
+
     This fixture creates a game with a specific structure designed to test
     hybrid properties and their SQL expressions.
-    
+
     Returns:
         Dict containing:
         - game: The created game
@@ -253,50 +263,53 @@ def test_hybrid_property_game(db_session, create_test_game, create_test_act, cre
         - scenes: List of created scenes
         - expected_properties: Dict of expected property values for testing
     """
-    game = create_test_game(name="Hybrid Property Test Game", description="Game for testing hybrid properties")
-    
+    game = create_test_game(
+        name="Hybrid Property Test Game",
+        description="Game for testing hybrid properties",
+    )
+
     # Create acts to test has_acts and act_count
     acts = [
         create_test_act(
-            game_id=game.id, 
-            title=f"Act {i}", 
+            game_id=game.id,
+            title=f"Act {i}",
             description=f"Test act {i}",
-            is_active=(i == 1)
-        ) 
+            is_active=(i == 1),
+        )
         for i in range(1, 3)
     ]
-    
+
     # Create scenes to test has_scenes and scene_count
     scenes = [
         create_test_scene(
-            act_id=acts[0].id, 
-            title=f"Scene {i}", 
+            act_id=acts[0].id,
+            title=f"Scene {i}",
             description=f"Test scene {i}",
             sequence=i,
-            is_active=(i == 1)
-        ) 
+            is_active=(i == 1),
+        )
         for i in range(1, 4)
     ]
-    
+
     # Refresh the objects to ensure relationships are loaded
     db_session.refresh(game)
     for act in acts:
         db_session.refresh(act)
-    
+
     return {
-        'game': game,
-        'acts': acts,
-        'scenes': scenes,
-        'expected_properties': {
-            'game': {
-                'has_acts': True,
-                'act_count': 2,
-                'has_active_act': True,
+        "game": game,
+        "acts": acts,
+        "scenes": scenes,
+        "expected_properties": {
+            "game": {
+                "has_acts": True,
+                "act_count": 2,
+                "has_active_act": True,
             },
-            'act': {
-                'has_scenes': True,
-                'scene_count': 3,
-                'has_active_scene': True,
-            }
-        }
+            "act": {
+                "has_scenes": True,
+                "scene_count": 3,
+                "has_active_scene": True,
+            },
+        },
     }
