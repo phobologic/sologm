@@ -43,15 +43,18 @@ class TestOracle:
         assert "No active game found" in str(exc.value)
 
     def test_validate_active_context_no_scene(
-        self, oracle_manager, test_game, game_manager, scene_manager, db_session
+        self, oracle_manager, test_game, game_manager, scene_manager, db_session, act_manager
     ) -> None:
         """Test validation with no active scene."""
-        # Make sure no scene is active
-        db_session.query(Scene).update({Scene.is_active: False})
+        # Get the active act first
+        active_act = act_manager.get_active_act(test_game.id)
+        
+        # Make sure no scene is active in the active act
+        db_session.query(Scene).filter(Scene.act_id == active_act.id).update({Scene.is_active: False})
         db_session.commit()
 
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context(game_manager, scene_manager)
+            oracle_manager.validate_active_context(game_manager, scene_manager, act_manager)
         assert "No active scene found" in str(exc.value)
 
     def test_build_prompt(self, oracle_manager, monkeypatch) -> None:
