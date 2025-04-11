@@ -9,8 +9,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sologm.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from sologm.models.act import Act
     from sologm.models.event_source import EventSource
     from sologm.models.game import Game
+    from sologm.models.interpretation import Interpretation
+    from sologm.models.scene import Scene
 
 
 class Event(Base, TimestampMixin):
@@ -39,11 +42,21 @@ class Event(Base, TimestampMixin):
     def game(self) -> "Game":
         """Get the game this event belongs to through the scene relationship."""
         return self.scene.act.game
-
+    
     @property
     def game_id(self) -> str:
         """Get the game ID this event belongs to (for backward compatibility)."""
         return self.scene.act.game_id
+    
+    @property
+    def act(self) -> "Act":
+        """Get the act this event belongs to through the scene relationship."""
+        return self.scene.act
+    
+    @property
+    def act_id(self) -> str:
+        """Get the act ID this event belongs to."""
+        return self.scene.act_id
 
     @classmethod
     def create(
