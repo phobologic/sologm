@@ -12,6 +12,7 @@ from sologm.core.game import GameManager
 from sologm.core.prompts.oracle import OraclePrompts
 from sologm.core.scene import SceneManager
 from sologm.database.session import get_session
+from sologm.database.session import get_session
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
@@ -52,29 +53,50 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self.event_manager = event_manager or EventManager(session=session)
 
     def validate_active_context(
-        self, game_manager: GameManager, scene_manager: SceneManager
-    ) -> Tuple[str, str]:
-        """Validate active game and scene exist.
+        self, game_manager: GameManager, scene_manager: SceneManager, act_manager: Optional["ActManager"] = None
+    ) -> Tuple[str, str, str]:
+        """Validate active game, act, and scene exist.
 
         Args:
             game_manager: GameManager instance
             scene_manager: SceneManager instance
+            act_manager: Optional ActManager instance
 
         Returns:
-            tuple[str, str]: game_id, scene_id
+            tuple[str, str, str]: game_id, act_id, scene_id
 
         Raises:
-            OracleError: If game or scene not active
+            OracleError: If game, act, or scene not active
         """
         active_game = game_manager.get_active_game()
         if not active_game:
             raise OracleError("No active game found")
 
-        active_scene = scene_manager.get_active_scene(active_game.id)
+        # If act_manager is provided, validate active act
+        if act_manager:
+            active_act = act_manager.get_active_act(active_game.id)
+            if not active_act:
+                raise OracleError("No active act found")
+            act_id = active_act.id
+        else:
+            # For backward compatibility, try to get any act from the game
+            from sologm.models.act import Act
+            
+            session = self._session or get_session()
+            try:
+                act = session.query(Act).filter(Act.game_id == active_game.id, Act.is_active == True).first()
+                if not act:
+                    raise OracleError("No active act found")
+                act_id = act.id
+            finally:
+                if self._session is None:
+                    session.close()
+
+        active_scene = scene_manager.get_active_scene(act_id)
         if not active_scene:
             raise OracleError("No active scene found")
 
-        return active_game.id, active_scene.id
+        return active_game.id, act_id, active_scene.id
 
     def get_interpretation_set(self, set_id: str) -> InterpretationSet:
         """Get an interpretation set by ID.
@@ -226,15 +248,17 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self,
         game_manager: GameManager,
         scene_manager: SceneManager,
-        context: str,
-        oracle_results: str,
-        count: int,
+        act_manager: Optional["ActManager"] = None,
+        context: str = "",
+        oracle_results: str = "",
+        count: int = 5,
     ) -> str:
         """Build an interpretation prompt for the active game and scene.
 
         Args:
             game_manager: GameManager instance
             scene_manager: SceneManager instance
+            act_manager: Optional ActManager instance
             context: User's question or context
             oracle_results: Oracle results to interpret
             count: Number of interpretations to generate
@@ -243,14 +267,14 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             str: The formatted prompt
 
         Raises:
-            OracleError: If no active game or scene
+            OracleError: If no active game, act, or scene
         """
         # Validate active context
-        game_id, scene_id = self.validate_active_context(game_manager, scene_manager)
+        game_id, act_id, scene_id = self.validate_active_context(game_manager, scene_manager, act_manager)
 
         # Get game and scene details
         game = game_manager.get_game(game_id)
-        scene = scene_manager.get_scene(game_id, scene_id)
+        scene = scene_manager.get_scene(act_id, scene_id)
 
         # Get recent events
         from sologm.core.event import EventManager
@@ -272,41 +296,44 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     def _get_context_data(
         self,
         game_id: str,
+        act_id: str,
         scene_id: str,
         retry_attempt: int,
         previous_set_id: Optional[str],
-    ) -> Tuple[object, object, List[object], Optional[List[dict]]]:
+    ) -> Tuple[object, object, object, List[object], Optional[List[dict]]]:
         """Get all context data needed for interpretation.
 
         Args:
             game_id: ID of the current game
+            act_id: ID of the current act
             scene_id: ID of the current scene
             retry_attempt: Current retry attempt number
             previous_set_id: ID of the previous interpretation set
 
         Returns:
-            Tuple containing game, scene, recent events, and previous interpretations
+            Tuple containing game, act, scene, recent events, and previous interpretations
 
         Raises:
-            OracleError: If game or scene not found
+            OracleError: If game, act, or scene not found
         """
 
         def _get_data(session: Session) -> Tuple:
-            # Get game and scene
+            # Get game, act, and scene
             from sologm.models.game import Game
+            from sologm.models.act import Act
             from sologm.models.scene import Scene
 
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
                 raise OracleError(f"Game {game_id} not found")
 
-            scene = (
-                session.query(Scene)
-                .filter(Scene.id == scene_id, Scene.game_id == game_id)
-                .first()
-            )
+            act = session.query(Act).filter(Act.id == act_id, Act.game_id == game_id).first()
+            if not act:
+                raise OracleError(f"Act {act_id} not found in game {game_id}")
+
+            scene = session.query(Scene).filter(Scene.id == scene_id, Scene.act_id == act_id).first()
             if not scene:
-                raise OracleError(f"Scene {scene_id} not found in game {game_id}")
+                raise OracleError(f"Scene {scene_id} not found in act {act_id}")
 
             # Get recent events
             recent_events = (
@@ -331,7 +358,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                         for interp in previous_interps
                     ]
 
-            return game, scene, recent_events, previous_interpretations
+            return game, act, scene, recent_events, previous_interpretations
 
         return self._execute_db_operation("get context data", _get_data)
 
@@ -425,6 +452,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     def get_interpretations(
         self,
         game_id: str,
+        act_id: str,
         scene_id: str,
         context: str,
         oracle_results: str,
@@ -437,6 +465,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
         Args:
             game_id: ID of the current game.
+            act_id: ID of the current act.
             scene_id: ID of the current scene.
             context: User's question or context.
             oracle_results: Oracle results to interpret.
