@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from sologm.models.act import Act
     from sologm.models.dice import DiceRoll
     from sologm.models.event import Event
+    from sologm.models.game import Game
     from sologm.models.oracle import InterpretationSet
 
 
@@ -51,6 +52,16 @@ class Scene(Base, TimestampMixin):
     dice_rolls: Mapped[List["DiceRoll"]] = relationship(
         "DiceRoll", back_populates="scene"
     )
+    
+    @property
+    def game(self) -> "Game":
+        """Get the game this scene belongs to through the act relationship."""
+        return self.act.game
+    
+    @property
+    def game_id(self) -> str:
+        """Get the game ID this scene belongs to."""
+        return self.act.game_id
 
     @validates("title")
     def validate_title(self, _: str, title: str) -> str:
