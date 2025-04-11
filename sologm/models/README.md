@@ -430,14 +430,12 @@ class DiceRoll(Base, TimestampMixin):
 
 ## Notable Design Patterns
 
-1. **Redundant Foreign Keys**: `Event.game_id` provides direct access to the game for performance.
+1. **Ownership Hierarchy**: Clear ownership through `cascade="all, delete-orphan"` parameter.
 
-2. **Ownership Hierarchy**: Clear ownership through `cascade="all, delete-orphan"` parameter.
+2. **Timestamps**: All models include `created_at` and `modified_at` through `TimestampMixin`.
 
-3. **Timestamps**: All models include `created_at` and `modified_at` through `TimestampMixin`.
+3. **Slugs**: Most models include a `slug` field for URL-friendly identifiers.
 
-4. **Slugs**: Most models include a `slug` field for URL-friendly identifiers.
+4. **Active Flags**: `is_active` flags track currently active game, act, and scene.
 
-5. **Active Flags**: `is_active` flags track currently active game, act, and scene.
-
-6. **Status Enums**: Act and Scene use status enums (ACTIVE, COMPLETED).
+5. **Status Enums**: Act and Scene use status enums (ACTIVE, COMPLETED).
