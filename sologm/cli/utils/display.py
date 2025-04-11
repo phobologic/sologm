@@ -271,8 +271,8 @@ def display_games_table(
 
     # Add rows with consistent formatting
     for game in games:
-        # Access scenes relationship directly
-        scene_count = len(game.scenes)
+        # Get scenes count through acts
+        scene_count = sum(len(act.scenes) for act in game.acts) if hasattr(game, "acts") else 0
 
         is_active = active_game and game.id == active_game.id
         active_marker = "✓" if is_active else ""

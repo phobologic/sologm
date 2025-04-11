@@ -25,6 +25,7 @@ from sologm.core.tests.conftest import (
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
+from sologm.models.act import Act  # Import Act model
 
 
 @pytest.fixture
@@ -48,6 +49,51 @@ def oracle_manager(mock_anthropic_client, db_session):
     from sologm.core.oracle import OracleManager
 
     return OracleManager(anthropic_client=mock_anthropic_client, session=db_session)
+
+
+# If test_act fixture isn't being properly imported, define it here
+@pytest.fixture
+def test_act(db_session, test_game):
+    """Create a test act if not already imported."""
+    from sologm.models.act import Act
+
+    # Check if we already have an act for this game
+    existing_act = db_session.query(Act).filter(Act.game_id == test_game.id).first()
+    if existing_act:
+        return existing_act
+        
+    act = Act.create(
+        game_id=test_game.id,
+        title="Test Act",
+        description="A test act",
+        sequence=1,
+    )
+    act.is_active = True
+    db_session.add(act)
+    db_session.commit()
+    return act
+
+
+@pytest.fixture
+def test_scene(db_session, test_act):
+    """Create a test scene."""
+    from sologm.models.scene import Scene
+
+    # Check if we already have a scene for this act
+    existing_scene = db_session.query(Scene).filter(Scene.act_id == test_act.id).first()
+    if existing_scene:
+        return existing_scene
+        
+    scene = Scene.create(
+        act_id=test_act.id,
+        title="Test Scene",
+        description="A test scene",
+        sequence=1,
+    )
+    scene.is_active = True
+    db_session.add(scene)
+    db_session.commit()
+    return scene
 
 
 @pytest.fixture
