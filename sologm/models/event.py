@@ -34,12 +34,12 @@ class Event(Base, TimestampMixin):
     source: Mapped["EventSource"] = relationship("EventSource")
 
     # Relationships will be defined in relationships.py
-    
+
     @property
     def game(self) -> "Game":
         """Get the game this event belongs to through the scene relationship."""
         return self.scene.act.game
-    
+
     @property
     def game_id(self) -> str:
         """Get the game ID this event belongs to (for backward compatibility)."""
