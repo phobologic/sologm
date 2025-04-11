@@ -2,9 +2,9 @@
 
 import json
 import uuid
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from sqlalchemy import ForeignKey, Integer, String, Text, select
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
@@ -14,7 +14,6 @@ from sologm.models.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from sologm.models.act import Act
     from sologm.models.game import Game
-    from sologm.models.scene import Scene
 
 
 class JSONType(TypeDecorator):
