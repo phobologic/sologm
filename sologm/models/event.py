@@ -1,9 +1,9 @@
 """Event model for SoloGM."""
 
 import uuid
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Text, Integer, select
+from sqlalchemy import ForeignKey, Text, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,8 +13,6 @@ if TYPE_CHECKING:
     from sologm.models.act import Act
     from sologm.models.event_source import EventSource
     from sologm.models.game import Game
-    from sologm.models.interpretation import Interpretation
-    from sologm.models.scene import Scene
 
 
 class Event(Base, TimestampMixin):
