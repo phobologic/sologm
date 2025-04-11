@@ -11,7 +11,7 @@ from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
 if TYPE_CHECKING:
-    from sologm.models.act import Act, ActStatus
+    from sologm.models.act import Act
     from sologm.models.scene import Scene
 
 
@@ -56,7 +56,7 @@ class Game(Base, TimestampMixin):
         return len(self.acts) > 0
 
     @has_acts.expression
-    def has_acts(cls):
+    def has_acts(cls):  # noqa: N805
         """SQL expression for has_acts."""
         from sologm.models.act import Act
 
@@ -73,7 +73,7 @@ class Game(Base, TimestampMixin):
         return len(self.acts)
 
     @act_count.expression
-    def act_count(cls):
+    def act_count(cls):  # noqa: N805
         """SQL expression for act_count."""
         from sologm.models.act import Act
 
@@ -104,13 +104,13 @@ class Game(Base, TimestampMixin):
         return any(act.is_active for act in self.acts)
 
     @has_active_act.expression
-    def has_active_act(cls):
+    def has_active_act(cls):  # noqa: N805
         """SQL expression for has_active_act."""
         from sologm.models.act import Act
 
         return (
             select(1)
-            .where((Act.game_id == cls.id) & (Act.is_active == True))
+            .where((Act.game_id == cls.id) & Act.is_active)
             .exists()
             .label("has_active_act")
         )
@@ -140,7 +140,7 @@ class Game(Base, TimestampMixin):
         return self.active_scene is not None
 
     @has_active_scene.expression
-    def has_active_scene(cls):
+    def has_active_scene(cls):  # noqa: N805
         """SQL expression for has_active_scene."""
         from sologm.models.act import Act
         from sologm.models.scene import Scene
@@ -149,9 +149,9 @@ class Game(Base, TimestampMixin):
             select(1)
             .where(
                 (Act.game_id == cls.id)
-                & (Act.is_active == True)
+                & Act.is_active
                 & (Scene.act_id == Act.id)
-                & (Scene.is_active == True)
+                & Scene.is_active
             )
             .exists()
             .label("has_active_scene")
@@ -181,7 +181,7 @@ class Game(Base, TimestampMixin):
         return any(act.status == ActStatus.COMPLETED for act in self.acts)
 
     @has_completed_acts.expression
-    def has_completed_acts(cls):
+    def has_completed_acts(cls):  # noqa: N805
         """SQL expression for has_completed_acts."""
         from sologm.models.act import Act, ActStatus
 
