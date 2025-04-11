@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from sologm.models.dice import DiceRoll
     from sologm.models.event import Event
     from sologm.models.oracle import Interpretation
-    from sologm.models.scene import Scene, SceneStatus
+    from sologm.models.scene import Scene
 
 
 class ActStatus(enum.Enum):
@@ -198,8 +198,8 @@ class Act(Base, TimestampMixin):
     @has_events.expression
     def has_events(cls):
         """SQL expression for has_events."""
-        from sologm.models.scene import Scene
         from sologm.models.event import Event
+        from sologm.models.scene import Scene
 
         return (
             select(1)
@@ -221,8 +221,8 @@ class Act(Base, TimestampMixin):
     @event_count.expression
     def event_count(cls):
         """SQL expression for event_count."""
-        from sologm.models.scene import Scene
         from sologm.models.event import Event
+        from sologm.models.scene import Scene
 
         return (
             select(func.count(Event.id))
@@ -290,8 +290,8 @@ class Act(Base, TimestampMixin):
     @has_dice_rolls.expression
     def has_dice_rolls(cls):
         """SQL expression for has_dice_rolls."""
-        from sologm.models.scene import Scene
         from sologm.models.dice import DiceRoll
+        from sologm.models.scene import Scene
 
         return (
             select(1)
@@ -313,8 +313,8 @@ class Act(Base, TimestampMixin):
     @dice_roll_count.expression
     def dice_roll_count(cls):
         """SQL expression for dice_roll_count."""
-        from sologm.models.scene import Scene
         from sologm.models.dice import DiceRoll
+        from sologm.models.scene import Scene
 
         return (
             select(func.count(DiceRoll.id))
@@ -360,8 +360,8 @@ class Act(Base, TimestampMixin):
     @has_interpretations.expression
     def has_interpretations(cls):
         """SQL expression for has_interpretations."""
+        from sologm.models.oracle import Interpretation, InterpretationSet
         from sologm.models.scene import Scene
-        from sologm.models.oracle import InterpretationSet, Interpretation
 
         return (
             select(1)
@@ -393,8 +393,8 @@ class Act(Base, TimestampMixin):
     @interpretation_count.expression
     def interpretation_count(cls):
         """SQL expression for interpretation_count."""
+        from sologm.models.oracle import Interpretation, InterpretationSet
         from sologm.models.scene import Scene
-        from sologm.models.oracle import InterpretationSet, Interpretation
 
         return (
             select(func.count(Interpretation.id))
