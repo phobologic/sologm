@@ -353,7 +353,7 @@ def list_events(
 
         # Get the active act
         active_act = act_manager.get_active_act(game_id)
-        
+
         # Get the scene to display its title
         scene = scene_manager.get_scene(active_act.id, target_scene_id)
         if not scene:

@@ -61,7 +61,7 @@ class EventManager(BaseManager[Event, Event]):
 
             # Verify scene belongs to an act in the game
             from sologm.models.act import Act
-            
+
             act = session.query(Act).filter(Act.id == scene.act_id).first()
             if not act or act.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
@@ -105,10 +105,10 @@ class EventManager(BaseManager[Event, Event]):
             raise EventError(f"Failed to add event: {str(e)}") from e
 
     def validate_active_context(
-        self, 
-        game_manager: GameManager, 
+        self,
+        game_manager: GameManager,
         scene_manager: SceneManager,
-        act_manager: Optional[ActManager] = None
+        act_manager: Optional[ActManager] = None,
     ) -> Tuple[str, str]:
         """Validate and return active game and scene IDs.
 
@@ -134,8 +134,10 @@ class EventManager(BaseManager[Event, Event]):
         # Get the active act
         active_act = act_manager.get_active_act(game.id)
         if not active_act:
-            raise EventError("No active act. Use 'sologm act create' or 'sologm act activate' to set one.")
-        
+            raise EventError(
+                "No active act. Use 'sologm act create' or 'sologm act activate' to set one."
+            )
+
         # Get the active scene in the active act
         active_scene = scene_manager.get_active_scene(active_act.id)
         if not active_scene:
@@ -234,7 +236,7 @@ class EventManager(BaseManager[Event, Event]):
 
             # Verify scene belongs to an act in the game
             from sologm.models.act import Act
-            
+
             act = session.query(Act).filter(Act.id == scene.act_id).first()
             if not act or act.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
