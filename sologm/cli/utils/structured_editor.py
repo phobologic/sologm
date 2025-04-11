@@ -216,9 +216,7 @@ class TextParser:
         # Validate required fields
         missing_fields = []
         for f in config.fields:
-            if f.required and (
-                f.name not in result or not result[f.name].strip()
-            ):
+            if f.required and (f.name not in result or not result[f.name].strip()):
                 missing_fields.append(f.display_name)
 
         if missing_fields:
@@ -543,18 +541,20 @@ def get_event_context_header(
     context_info = [
         f"Game: {game_name}",
     ]
-    
+
     # Add act information if provided
     if act_info:
         context_info.append(act_info)
-        
-    context_info.extend([
-        f"Scene: {scene_title}",
-        "",
-        "Scene Description:",
-        scene_description,
-        "",
-    ])
+
+    context_info.extend(
+        [
+            f"Scene: {scene_title}",
+            "",
+            "Scene Description:",
+            scene_description,
+            "",
+        ]
+    )
 
     # Add recent events if any
     if recent_events:
