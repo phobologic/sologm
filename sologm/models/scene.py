@@ -62,62 +62,66 @@ class Scene(Base, TimestampMixin):
     def game_id(self) -> str:
         """Get the game ID this scene belongs to."""
         return self.act.game_id
-        
+
     @property
     def latest_event(self) -> Optional["Event"]:
         """Get the most recently created event for this scene, if any.
-        
+
         This property sorts the already loaded events collection
         and doesn't trigger a new database query.
         """
         if not self.events:
             return None
         return sorted(self.events, key=lambda event: event.created_at, reverse=True)[0]
-    
+
     @property
     def latest_dice_roll(self) -> Optional["DiceRoll"]:
         """Get the most recently created dice roll for this scene, if any.
-        
+
         This property sorts the already loaded dice_rolls collection
         and doesn't trigger a new database query.
         """
         if not self.dice_rolls:
             return None
-        return sorted(self.dice_rolls, key=lambda roll: roll.created_at, reverse=True)[0]
-    
+        return sorted(self.dice_rolls, key=lambda roll: roll.created_at, reverse=True)[
+            0
+        ]
+
     @property
     def latest_interpretation_set(self) -> Optional["InterpretationSet"]:
         """Get the most recently created interpretation set for this scene, if any.
-        
+
         This property sorts the already loaded interpretation_sets collection
         and doesn't trigger a new database query.
         """
         if not self.interpretation_sets:
             return None
-        return sorted(self.interpretation_sets, key=lambda iset: iset.created_at, reverse=True)[0]
-    
+        return sorted(
+            self.interpretation_sets, key=lambda iset: iset.created_at, reverse=True
+        )[0]
+
     @property
     def latest_interpretation(self) -> Optional["Interpretation"]:
         """Get the most recently created interpretation for this scene, if any.
-        
+
         This property navigates through interpretation sets to find the latest interpretation,
         without triggering new database queries.
         """
         latest_interp = None
         latest_time = None
-        
+
         for interp_set in self.interpretation_sets:
             for interp in interp_set.interpretations:
                 if latest_time is None or interp.created_at > latest_time:
                     latest_interp = interp
                     latest_time = interp.created_at
-        
+
         return latest_interp
-    
+
     @property
     def current_interpretation_set(self) -> Optional["InterpretationSet"]:
         """Get the current interpretation set for this scene, if any.
-        
+
         This property filters the already loaded interpretation_sets collection
         and doesn't trigger a new database query.
         """
@@ -125,11 +129,11 @@ class Scene(Base, TimestampMixin):
             if interp_set.is_current:
                 return interp_set
         return None
-    
+
     @property
     def selected_interpretations(self) -> List["Interpretation"]:
         """Get all selected interpretations for this scene.
-        
+
         This property collects selected interpretations from all interpretation sets
         without triggering new database queries.
         """
@@ -139,11 +143,11 @@ class Scene(Base, TimestampMixin):
                 if interp.is_selected:
                     selected.append(interp)
         return selected
-    
+
     @property
     def all_interpretations(self) -> List["Interpretation"]:
         """Get all interpretations for this scene.
-        
+
         This property collects interpretations from all interpretation sets
         without triggering new database queries.
         """
@@ -151,19 +155,19 @@ class Scene(Base, TimestampMixin):
         for interp_set in self.interpretation_sets:
             all_interps.extend(interp_set.interpretations)
         return all_interps
-    
+
     @property
     def is_completed(self) -> bool:
         """Check if this scene is completed.
-        
+
         This property provides a more readable way to check the scene status.
         """
         return self.status == SceneStatus.COMPLETED
-    
+
     @property
     def is_active_status(self) -> bool:
         """Check if this scene has an active status.
-        
+
         This property provides a more readable way to check the scene status.
         Note: This is different from is_active which indicates if this is the current scene.
         """
