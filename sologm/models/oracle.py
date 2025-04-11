@@ -41,7 +41,7 @@ class InterpretationSet(Base, TimestampMixin):
 
     @property
     def act(self) -> "Act":
-        """Get the act this interpretation set belongs to through the scene 
+        """Get the act this interpretation set belongs to through the scene
         relationship."""
         return self.scene.act
 
@@ -52,7 +52,7 @@ class InterpretationSet(Base, TimestampMixin):
 
     @property
     def game(self) -> "Game":
-        """Get the game this interpretation set belongs to through the scene 
+        """Get the game this interpretation set belongs to through the scene
         and act relationships."""
         return self.scene.act.game
 
@@ -90,9 +90,7 @@ class InterpretationSet(Base, TimestampMixin):
 
         return (
             select(1)
-            .where(
-                (Interpretation.set_id == cls.id) & Interpretation.is_selected
-            )
+            .where((Interpretation.set_id == cls.id) & Interpretation.is_selected)
             .exists()
             .label("has_selection")
         )
@@ -171,7 +169,7 @@ class Interpretation(Base, TimestampMixin):
 
     @property
     def scene(self) -> "Scene":
-        """Get the scene this interpretation belongs to through the interpretation set 
+        """Get the scene this interpretation belongs to through the interpretation set
         relationship."""
         return self.interpretation_set.scene
 
