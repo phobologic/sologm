@@ -59,72 +59,86 @@ class Act(Base, TimestampMixin):
     @hybrid_property
     def has_scenes(self) -> bool:
         """Check if the act has any scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if the scenes list is non-empty
         - SQL: Performs a subquery to check for scenes
         """
         return len(self.scenes) > 0
-    
+
     @has_scenes.expression
     def has_scenes(cls):
         """SQL expression for has_scenes."""
         from sologm.models.scene import Scene
+
         return select(1).where(Scene.act_id == cls.id).exists().label("has_scenes")
 
     @hybrid_property
     def scene_count(self) -> int:
         """Get the number of scenes in this act.
-        
+
         Works in both Python and SQL contexts:
         - Python: Returns the length of the scenes list
         - SQL: Performs a count query
         """
         return len(self.scenes)
-    
+
     @scene_count.expression
     def scene_count(cls):
         """SQL expression for scene_count."""
         from sologm.models.scene import Scene
-        return select(func.count(Scene.id)).where(Scene.act_id == cls.id).label("scene_count")
+
+        return (
+            select(func.count(Scene.id))
+            .where(Scene.act_id == cls.id)
+            .label("scene_count")
+        )
 
     @hybrid_property
     def has_active_scene(self) -> bool:
         """Check if the act has an active scene.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if active_scene is not None
         - SQL: Performs a subquery to check for active scenes
         """
         return any(scene.is_active for scene in self.scenes)
-    
+
     @has_active_scene.expression
     def has_active_scene(cls):
         """SQL expression for has_active_scene."""
         from sologm.models.scene import Scene
-        return select(1).where(
-            (Scene.act_id == cls.id) & (Scene.is_active == True)
-        ).exists().label("has_active_scene")
+
+        return (
+            select(1)
+            .where((Scene.act_id == cls.id) & (Scene.is_active == True))
+            .exists()
+            .label("has_active_scene")
+        )
 
     @hybrid_property
     def has_completed_scenes(self) -> bool:
         """Check if the act has any completed scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if completed_scenes is non-empty
         - SQL: Performs a subquery to check for completed scenes
         """
         from sologm.models.scene import SceneStatus
+
         return any(scene.status == SceneStatus.COMPLETED for scene in self.scenes)
-    
+
     @has_completed_scenes.expression
     def has_completed_scenes(cls):
         """SQL expression for has_completed_scenes."""
         from sologm.models.scene import Scene, SceneStatus
-        return select(1).where(
-            (Scene.act_id == cls.id) & 
-            (Scene.status == SceneStatus.COMPLETED)
-        ).exists().label("has_completed_scenes")
+
+        return (
+            select(1)
+            .where((Scene.act_id == cls.id) & (Scene.status == SceneStatus.COMPLETED))
+            .exists()
+            .label("has_completed_scenes")
+        )
 
     @property
     def active_scene(self) -> Optional["Scene"]:
@@ -174,42 +188,47 @@ class Act(Base, TimestampMixin):
     @hybrid_property
     def has_events(self) -> bool:
         """Check if the act has any events across all scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if all_events is non-empty
         - SQL: Performs a subquery to check for events
         """
         return any(len(scene.events) > 0 for scene in self.scenes)
-    
+
     @has_events.expression
     def has_events(cls):
         """SQL expression for has_events."""
         from sologm.models.scene import Scene
         from sologm.models.event import Event
-        return select(1).where(
-            (Scene.act_id == cls.id) & 
-            (Event.scene_id == Scene.id)
-        ).exists().label("has_events")
+
+        return (
+            select(1)
+            .where((Scene.act_id == cls.id) & (Event.scene_id == Scene.id))
+            .exists()
+            .label("has_events")
+        )
 
     @hybrid_property
     def event_count(self) -> int:
         """Get the total number of events across all scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Returns the length of all_events
         - SQL: Performs a count query
         """
         return sum(len(scene.events) for scene in self.scenes)
-    
+
     @event_count.expression
     def event_count(cls):
         """SQL expression for event_count."""
         from sologm.models.scene import Scene
         from sologm.models.event import Event
-        return select(func.count(Event.id)).where(
-            (Scene.act_id == cls.id) & 
-            (Event.scene_id == Scene.id)
-        ).label("event_count")
+
+        return (
+            select(func.count(Event.id))
+            .where((Scene.act_id == cls.id) & (Event.scene_id == Scene.id))
+            .label("event_count")
+        )
 
     @property
     def first_scene(self) -> Optional["Scene"]:
@@ -261,42 +280,47 @@ class Act(Base, TimestampMixin):
     @hybrid_property
     def has_dice_rolls(self) -> bool:
         """Check if the act has any dice rolls across all scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if all_dice_rolls is non-empty
         - SQL: Performs a subquery to check for dice rolls
         """
         return any(len(scene.dice_rolls) > 0 for scene in self.scenes)
-    
+
     @has_dice_rolls.expression
     def has_dice_rolls(cls):
         """SQL expression for has_dice_rolls."""
         from sologm.models.scene import Scene
         from sologm.models.dice import DiceRoll
-        return select(1).where(
-            (Scene.act_id == cls.id) & 
-            (DiceRoll.scene_id == Scene.id)
-        ).exists().label("has_dice_rolls")
+
+        return (
+            select(1)
+            .where((Scene.act_id == cls.id) & (DiceRoll.scene_id == Scene.id))
+            .exists()
+            .label("has_dice_rolls")
+        )
 
     @hybrid_property
     def dice_roll_count(self) -> int:
         """Get the total number of dice rolls across all scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Returns the length of all_dice_rolls
         - SQL: Performs a count query
         """
         return sum(len(scene.dice_rolls) for scene in self.scenes)
-    
+
     @dice_roll_count.expression
     def dice_roll_count(cls):
         """SQL expression for dice_roll_count."""
         from sologm.models.scene import Scene
         from sologm.models.dice import DiceRoll
-        return select(func.count(DiceRoll.id)).where(
-            (Scene.act_id == cls.id) & 
-            (DiceRoll.scene_id == Scene.id)
-        ).label("dice_roll_count")
+
+        return (
+            select(func.count(DiceRoll.id))
+            .where((Scene.act_id == cls.id) & (DiceRoll.scene_id == Scene.id))
+            .label("dice_roll_count")
+        )
 
     @property
     def latest_interpretation(self) -> Optional["Interpretation"]:
@@ -320,50 +344,67 @@ class Act(Base, TimestampMixin):
     @hybrid_property
     def has_interpretations(self) -> bool:
         """Check if the act has any interpretations across all scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if all_interpretations is non-empty
         - SQL: Performs a subquery to check for interpretations
         """
         return any(
-            any(len(interp_set.interpretations) > 0 for interp_set in scene.interpretation_sets)
+            any(
+                len(interp_set.interpretations) > 0
+                for interp_set in scene.interpretation_sets
+            )
             for scene in self.scenes
         )
-    
+
     @has_interpretations.expression
     def has_interpretations(cls):
         """SQL expression for has_interpretations."""
         from sologm.models.scene import Scene
         from sologm.models.oracle import InterpretationSet, Interpretation
-        return select(1).where(
-            (Scene.act_id == cls.id) & 
-            (InterpretationSet.scene_id == Scene.id) &
-            (Interpretation.set_id == InterpretationSet.id)
-        ).exists().label("has_interpretations")
+
+        return (
+            select(1)
+            .where(
+                (Scene.act_id == cls.id)
+                & (InterpretationSet.scene_id == Scene.id)
+                & (Interpretation.set_id == InterpretationSet.id)
+            )
+            .exists()
+            .label("has_interpretations")
+        )
 
     @hybrid_property
     def interpretation_count(self) -> int:
         """Get the total number of interpretations across all scenes.
-        
+
         Works in both Python and SQL contexts:
         - Python: Returns the length of all_interpretations
         - SQL: Performs a count query
         """
         return sum(
-            sum(len(interp_set.interpretations) for interp_set in scene.interpretation_sets)
+            sum(
+                len(interp_set.interpretations)
+                for interp_set in scene.interpretation_sets
+            )
             for scene in self.scenes
         )
-    
+
     @interpretation_count.expression
     def interpretation_count(cls):
         """SQL expression for interpretation_count."""
         from sologm.models.scene import Scene
         from sologm.models.oracle import InterpretationSet, Interpretation
-        return select(func.count(Interpretation.id)).where(
-            (Scene.act_id == cls.id) & 
-            (InterpretationSet.scene_id == Scene.id) &
-            (Interpretation.set_id == InterpretationSet.id)
-        ).label("interpretation_count")
+
+        return (
+            select(func.count(Interpretation.id))
+            .where(
+                (Scene.act_id == cls.id)
+                & (InterpretationSet.scene_id == Scene.id)
+                & (Interpretation.set_id == InterpretationSet.id)
+            )
+            .label("interpretation_count")
+        )
 
     @property
     def all_events(self) -> List["Event"]:
