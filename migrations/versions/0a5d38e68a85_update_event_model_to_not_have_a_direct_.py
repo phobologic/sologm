@@ -10,6 +10,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.engine.reflection import Inspector
 
 
 # revision identifiers, used by Alembic.
@@ -21,11 +22,24 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    # Get the connection and inspector
+    conn = op.get_bind()
+    inspector = Inspector.from_engine(conn)
+    
+    # Get foreign key constraints for the events table
+    fks = inspector.get_foreign_keys('events')
+    
+    # Find the constraint that references game_id
+    fk_name = None
+    for fk in fks:
+        if 'game_id' in fk['constrained_columns']:
+            fk_name = fk['name']
+            break
+    
     # Use batch operations for SQLite compatibility
-    # SQLite doesn't support dropping columns directly, so we use batch operations
     with op.batch_alter_table("events") as batch_op:
-        # Use None to let SQLAlchemy find the constraint by column
-        batch_op.drop_constraint(None, type_="foreignkey")
+        if fk_name:
+            batch_op.drop_constraint(fk_name, type_="foreignkey")
         batch_op.drop_column("game_id")
 
 
@@ -36,5 +50,6 @@ def downgrade() -> None:
         batch_op.add_column(
             sa.Column("game_id", sa.VARCHAR(length=255), nullable=False)
         )
-        # Use None for the constraint name in downgrade as well
-        batch_op.create_foreign_key(None, "games", ["game_id"], ["id"])
+        batch_op.create_foreign_key(
+            "fk_events_game_id", "games", ["game_id"], ["id"]
+        )
