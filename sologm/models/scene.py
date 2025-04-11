@@ -35,7 +35,7 @@ class Scene(Base, TimestampMixin):
     slug: Mapped[str] = mapped_column(nullable=False, index=True)
     act_id: Mapped[str] = mapped_column(ForeignKey("acts.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
-    description: Mapped[str] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
     status: Mapped[SceneStatus] = mapped_column(
         Enum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE
     )

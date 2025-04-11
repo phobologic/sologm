@@ -23,7 +23,7 @@ class Game(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(unique=True, nullable=False)
     slug: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
-    description: Mapped[str] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(default=False)
 
     # Relationships this model owns
