@@ -1,33 +1,18 @@
 """Shared test fixtures for CLI utility tests."""
 
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from rich.console import Console
 
 # Import fixtures from core tests to reuse them
 from sologm.core.tests.conftest import (
-    db_engine,
-    db_session,
-    database_session,
-    game_manager,
-    scene_manager,
-    event_manager,
-    dice_manager,
-    test_game,
     test_scene,
-    # Don't import test_events since we need to redefine it
-    test_interpretation_set,
-    test_interpretations,
-    test_dice_roll,
-    initialize_event_sources,  # Make sure we have event sources initialized
-    act_manager,  # Import act_manager fixture
-    create_test_act,  # Import factory fixture for creating acts
 )
 from sologm.integrations.anthropic import AnthropicClient
+from sologm.models.act import Act  # Import Act model
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
-from sologm.models.act import Act  # Import Act model
 
 
 @pytest.fixture
@@ -57,7 +42,6 @@ def oracle_manager(mock_anthropic_client, db_session):
 @pytest.fixture
 def test_act(db_session, test_game):
     """Create a test act if not already imported."""
-    from sologm.models.act import Act
 
     # Check if we already have an act for this game
     existing_act = db_session.query(Act).filter(Act.game_id == test_game.id).first()
@@ -130,8 +114,8 @@ def test_events(db_session, test_game, test_scene):
 def display_helpers():
     """Expose display helper functions for testing."""
     from sologm.cli.utils.display import (
-        _create_empty_oracle_panel,
         _create_dice_rolls_panel,
+        _create_empty_oracle_panel,
         _create_events_panel,
     )
 
