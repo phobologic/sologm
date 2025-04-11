@@ -68,7 +68,7 @@ class Event(Base, TimestampMixin):
         - SQL: Performs a direct column comparison
         """
         return self.interpretation_id is not None
-    
+
     @is_from_oracle.expression
     def is_from_oracle(cls):
         """SQL expression for is_from_oracle."""
@@ -91,16 +91,18 @@ class Event(Base, TimestampMixin):
         - SQL: Performs a join with EventSource and checks the name
         """
         return self.source_name.lower() == "manual"
-    
+
     @is_manual.expression
     def is_manual(cls):
         """SQL expression for is_manual."""
         from sologm.models.event_source import EventSource
+
         return (
-            select(1).where(
-                (EventSource.id == cls.source_id) & 
-                (EventSource.name.ilike("manual"))
-            ).exists()
+            select(1)
+            .where(
+                (EventSource.id == cls.source_id) & (EventSource.name.ilike("manual"))
+            )
+            .exists()
         ).label("is_manual")
 
     @hybrid_property
@@ -112,16 +114,18 @@ class Event(Base, TimestampMixin):
         - SQL: Performs a join with EventSource and checks the name
         """
         return self.source_name.lower() == "oracle"
-    
+
     @is_oracle_generated.expression
     def is_oracle_generated(cls):
         """SQL expression for is_oracle_generated."""
         from sologm.models.event_source import EventSource
+
         return (
-            select(1).where(
-                (EventSource.id == cls.source_id) & 
-                (EventSource.name.ilike("oracle"))
-            ).exists()
+            select(1)
+            .where(
+                (EventSource.id == cls.source_id) & (EventSource.name.ilike("oracle"))
+            )
+            .exists()
         ).label("is_oracle_generated")
 
     @hybrid_property
@@ -133,16 +137,16 @@ class Event(Base, TimestampMixin):
         - SQL: Performs a join with EventSource and checks the name
         """
         return self.source_name.lower() == "dice"
-    
+
     @is_dice_generated.expression
     def is_dice_generated(cls):
         """SQL expression for is_dice_generated."""
         from sologm.models.event_source import EventSource
+
         return (
-            select(1).where(
-                (EventSource.id == cls.source_id) & 
-                (EventSource.name.ilike("dice"))
-            ).exists()
+            select(1)
+            .where((EventSource.id == cls.source_id) & (EventSource.name.ilike("dice")))
+            .exists()
         ).label("is_dice_generated")
 
     @property
