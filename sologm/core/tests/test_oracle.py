@@ -14,13 +14,14 @@ class TestOracle:
     """Tests for oracle interpretation system."""
 
     def test_validate_active_context(
-        self, oracle_manager, test_game, test_scene, game_manager, scene_manager
+        self, oracle_manager, test_game, test_scene, game_manager, scene_manager, act_manager
     ) -> None:
-        """Test validating active game and scene."""
-        game_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager
+        """Test validating active game, act, and scene."""
+        game_id, act_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager, act_manager
         )
         assert game_id == test_game.id
+        assert act_id == test_scene.act_id
         assert scene_id == test_scene.id
 
     def test_validate_active_context_no_game(
@@ -96,7 +97,7 @@ Test Description"""
         mock_anthropic_client.send_message.return_value = response_text
 
         result = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         assert isinstance(result, InterpretationSet)
@@ -116,7 +117,7 @@ Test Description"""
 
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_interpretations(
-                test_game.id, test_scene.id, "What happens?", "Mystery", 1
+                test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
             )
         assert "Failed to get interpretations" in str(exc.value)
 
@@ -131,7 +132,7 @@ Test Description"""
 
         # First create an interpretation set
         interp_set = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         # Test selecting by UUID
@@ -210,7 +211,7 @@ Description of second option"""
 
         # Create an interpretation set with multiple interpretations
         interp_set = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 2
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 2
         )
 
         assert len(interp_set.interpretations) == 2
@@ -248,7 +249,7 @@ Test Description"""
 
         # First interpretation request
         result1 = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
         )
         assert result1.retry_attempt == 0
         assert result1.is_current is True
@@ -284,7 +285,7 @@ Retry Description""",  # Second call - good format
 
         # This should automatically retry once
         result = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         # Verify we got the result from the second attempt
@@ -307,7 +308,7 @@ Retry Description""",  # Second call - good format
         # This should try the original + 2 retries, then fail
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_interpretations(
-                test_game.id, test_scene.id, "What happens?", "Mystery", 1
+                test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
             )
 
         # Verify we tried 3 times total (original + 2 retries)
@@ -330,6 +331,7 @@ Custom Description""",  # Third call
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_interpretations(
                 test_game.id,
+                test_scene.act_id,
                 test_scene.id,
                 "What happens?",
                 "Mystery",
@@ -356,7 +358,7 @@ It also has multiple lines."""
         mock_anthropic_client.send_message.return_value = response_text
 
         result = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery, Danger", 2
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery, Danger", 2
         )
 
         assert len(result.interpretations) == 2
@@ -366,11 +368,12 @@ It also has multiple lines."""
 
     def test_get_context_data(self, oracle_manager, test_game, test_scene):
         """Test getting context data for interpretations."""
-        game, scene, events, previous = oracle_manager._get_context_data(
-            test_game.id, test_scene.id, 0, None
+        game, act, scene, events, previous = oracle_manager._get_context_data(
+            test_game.id, test_scene.act_id, test_scene.id, 0, None
         )
 
         assert game.id == test_game.id
+        assert act.id == test_scene.act_id
         assert scene.id == test_scene.id
         assert isinstance(events, list)
         assert previous is None
@@ -401,7 +404,7 @@ It also has multiple lines."""
         mock_anthropic_client.send_message.return_value = response_text
 
         interp_set = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         # Select an interpretation
@@ -495,13 +498,13 @@ It also has multiple lines."""
 
         # Create three sets
         set1 = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "Question 1", "Result 1", 1
+            test_game.id, test_scene.act_id, test_scene.id, "Question 1", "Result 1", 1
         )
         set2 = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "Question 2", "Result 2", 1
+            test_game.id, test_scene.act_id, test_scene.id, "Question 2", "Result 2", 1
         )
         set3 = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "Question 3", "Result 3", 1
+            test_game.id, test_scene.act_id, test_scene.id, "Question 3", "Result 3", 1
         )
 
         # Verify only the last one is current
@@ -526,7 +529,7 @@ It also has multiple lines."""
         mock_anthropic_client.send_message.return_value = response_text
 
         created_set = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         # Get current set and verify it matches
@@ -537,7 +540,7 @@ It also has multiple lines."""
 
         # Create another set and verify the first is no longer current
         new_set = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens next?", "Danger", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens next?", "Danger", 1
         )
 
         current_set = oracle_manager.get_current_interpretation_set(test_scene.id)
