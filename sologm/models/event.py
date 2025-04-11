@@ -10,6 +10,7 @@ from sologm.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from sologm.models.event_source import EventSource
+    from sologm.models.game import Game
 
 
 class Event(Base, TimestampMixin):
@@ -19,9 +20,6 @@ class Event(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
-    # We keep game_id for direct access and query performance, though it's redundant
-    # with scene -> act -> game relationship
-    game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     source_id: Mapped[int] = mapped_column(
         ForeignKey("event_sources.id"), nullable=False
@@ -36,11 +34,20 @@ class Event(Base, TimestampMixin):
     source: Mapped["EventSource"] = relationship("EventSource")
 
     # Relationships will be defined in relationships.py
+    
+    @property
+    def game(self) -> "Game":
+        """Get the game this event belongs to through the scene relationship."""
+        return self.scene.act.game
+    
+    @property
+    def game_id(self) -> str:
+        """Get the game ID this event belongs to (for backward compatibility)."""
+        return self.scene.act.game_id
 
     @classmethod
     def create(
         cls,
-        game_id: str,
         scene_id: str,
         description: str,
         source_id: int,
@@ -49,7 +56,6 @@ class Event(Base, TimestampMixin):
         """Create a new event.
 
         Args:
-            game_id: ID of the game this event belongs to.
             scene_id: ID of the scene this event belongs to.
             description: Description of the event.
             source_id: ID of the event source.
@@ -60,7 +66,6 @@ class Event(Base, TimestampMixin):
         """
         return cls(
             id=str(uuid.uuid4()),
-            game_id=game_id,
             scene_id=scene_id,
             description=description,
             source_id=source_id,
