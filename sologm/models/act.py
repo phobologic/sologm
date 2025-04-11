@@ -67,7 +67,7 @@ class Act(Base, TimestampMixin):
         return len(self.scenes) > 0
 
     @has_scenes.expression
-    def has_scenes(cls):
+    def has_scenes(cls):  # noqa: N805
         """SQL expression for has_scenes."""
         from sologm.models.scene import Scene
 
@@ -84,7 +84,7 @@ class Act(Base, TimestampMixin):
         return len(self.scenes)
 
     @scene_count.expression
-    def scene_count(cls):
+    def scene_count(cls):  # noqa: N805
         """SQL expression for scene_count."""
         from sologm.models.scene import Scene
 
@@ -105,13 +105,13 @@ class Act(Base, TimestampMixin):
         return any(scene.is_active for scene in self.scenes)
 
     @has_active_scene.expression
-    def has_active_scene(cls):
+    def has_active_scene(cls):  # noqa: N805
         """SQL expression for has_active_scene."""
         from sologm.models.scene import Scene
 
         return (
             select(1)
-            .where((Scene.act_id == cls.id) & (Scene.is_active == True))
+            .where((Scene.act_id == cls.id) & Scene.is_active)
             .exists()
             .label("has_active_scene")
         )
@@ -129,7 +129,7 @@ class Act(Base, TimestampMixin):
         return any(scene.status == SceneStatus.COMPLETED for scene in self.scenes)
 
     @has_completed_scenes.expression
-    def has_completed_scenes(cls):
+    def has_completed_scenes(cls):  # noqa: N805
         """SQL expression for has_completed_scenes."""
         from sologm.models.scene import Scene, SceneStatus
 
@@ -196,7 +196,7 @@ class Act(Base, TimestampMixin):
         return any(len(scene.events) > 0 for scene in self.scenes)
 
     @has_events.expression
-    def has_events(cls):
+    def has_events(cls):  # noqa: N805
         """SQL expression for has_events."""
         from sologm.models.event import Event
         from sologm.models.scene import Scene
@@ -219,7 +219,7 @@ class Act(Base, TimestampMixin):
         return sum(len(scene.events) for scene in self.scenes)
 
     @event_count.expression
-    def event_count(cls):
+    def event_count(cls):  # noqa: N805
         """SQL expression for event_count."""
         from sologm.models.event import Event
         from sologm.models.scene import Scene
@@ -288,7 +288,7 @@ class Act(Base, TimestampMixin):
         return any(len(scene.dice_rolls) > 0 for scene in self.scenes)
 
     @has_dice_rolls.expression
-    def has_dice_rolls(cls):
+    def has_dice_rolls(cls):  # noqa: N805
         """SQL expression for has_dice_rolls."""
         from sologm.models.dice import DiceRoll
         from sologm.models.scene import Scene
@@ -311,7 +311,7 @@ class Act(Base, TimestampMixin):
         return sum(len(scene.dice_rolls) for scene in self.scenes)
 
     @dice_roll_count.expression
-    def dice_roll_count(cls):
+    def dice_roll_count(cls):  # noqa: N805
         """SQL expression for dice_roll_count."""
         from sologm.models.dice import DiceRoll
         from sologm.models.scene import Scene
@@ -358,7 +358,7 @@ class Act(Base, TimestampMixin):
         )
 
     @has_interpretations.expression
-    def has_interpretations(cls):
+    def has_interpretations(cls):  # noqa: N805
         """SQL expression for has_interpretations."""
         from sologm.models.oracle import Interpretation, InterpretationSet
         from sologm.models.scene import Scene
@@ -391,7 +391,7 @@ class Act(Base, TimestampMixin):
         )
 
     @interpretation_count.expression
-    def interpretation_count(cls):
+    def interpretation_count(cls):  # noqa: N805
         """SQL expression for interpretation_count."""
         from sologm.models.oracle import Interpretation, InterpretationSet
         from sologm.models.scene import Scene
@@ -410,7 +410,8 @@ class Act(Base, TimestampMixin):
     def all_events(self) -> List["Event"]:
         """Get all events across all scenes in this act.
 
-        This property collects events from all scenes without triggering new database queries.
+        This property collects events from all scenes without triggering 
+        new database queries.
         """
         events = []
         for scene in self.scenes:
@@ -422,7 +423,8 @@ class Act(Base, TimestampMixin):
     def all_dice_rolls(self) -> List["DiceRoll"]:
         """Get all dice rolls across all scenes in this act.
 
-        This property collects dice rolls from all scenes without triggering new database queries.
+        This property collects dice rolls from all scenes without triggering 
+        new database queries.
         """
         rolls = []
         for scene in self.scenes:
@@ -434,7 +436,8 @@ class Act(Base, TimestampMixin):
     def all_interpretations(self) -> List["Interpretation"]:
         """Get all interpretations across all scenes in this act.
 
-        This property collects interpretations from all scenes without triggering new database queries.
+        This property collects interpretations from all scenes without triggering 
+        new database queries.
         """
         interpretations = []
         for scene in self.scenes:
