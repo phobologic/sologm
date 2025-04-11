@@ -110,20 +110,17 @@ class DiceRoll(Base, TimestampMixin):
     @hybrid_property
     def has_reason(self) -> bool:
         """Check if this dice roll has a reason.
-        
+
         Works in both Python and SQL contexts:
         - Python: Checks if reason is not None and not empty
         - SQL: Performs a direct column comparison
         """
         return self.reason is not None and self.reason.strip() != ""
-    
+
     @has_reason.expression
     def has_reason(cls):
         """SQL expression for has_reason."""
-        return (
-            (cls.reason != None) & 
-            (cls.reason != "")
-        ).label("has_reason")
+        return ((cls.reason != None) & (cls.reason != "")).label("has_reason")
 
     @classmethod
     def create(
