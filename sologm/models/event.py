@@ -42,17 +42,17 @@ class Event(Base, TimestampMixin):
     def game(self) -> "Game":
         """Get the game this event belongs to through the scene relationship."""
         return self.scene.act.game
-    
+
     @property
     def game_id(self) -> str:
         """Get the game ID this event belongs to (for backward compatibility)."""
         return self.scene.act.game_id
-    
+
     @property
     def act(self) -> "Act":
         """Get the act this event belongs to through the scene relationship."""
         return self.scene.act
-    
+
     @property
     def act_id(self) -> str:
         """Get the act ID this event belongs to."""
