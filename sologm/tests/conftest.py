@@ -20,6 +20,7 @@ from sologm.integrations.anthropic import AnthropicClient
 
 logger = logging.getLogger(__name__)
 
+
 # Database fixtures
 @pytest.fixture
 def db_engine():
@@ -28,6 +29,7 @@ def db_engine():
     Base.metadata.create_all(engine)
     yield engine
     engine.dispose()
+
 
 @pytest.fixture
 def db_session(db_engine):
@@ -39,6 +41,7 @@ def db_session(db_engine):
     logger.debug("Closing db session.")
     session.close()
 
+
 @pytest.fixture
 def database_session(db_engine):
     """Create a DatabaseSession instance for testing."""
@@ -48,27 +51,33 @@ def database_session(db_engine):
     yield db_session
     DatabaseSession._instance = old_instance
 
+
 # Mock fixtures
 @pytest.fixture
 def mock_anthropic_client():
     """Create a mock Anthropic client."""
     return MagicMock(spec=AnthropicClient)
 
+
 # Model factory fixtures
 @pytest.fixture
 def create_test_game(db_session):
     """Factory fixture to create test games."""
+
     def _create_game(name="Test Game", description="A test game", is_active=True):
         game = Game.create(name=name, description=description)
         game.is_active = is_active
         db_session.add(game)
         db_session.commit()
         return game
+
     return _create_game
+
 
 @pytest.fixture
 def create_test_act(db_session):
     """Factory fixture to create test acts."""
+
     def _create_act(
         game_id,
         title="Test Act",
@@ -91,11 +100,14 @@ def create_test_act(db_session):
         db_session.add(act)
         db_session.commit()
         return act
+
     return _create_act
+
 
 @pytest.fixture
 def create_test_scene(db_session):
     """Factory fixture to create test scenes."""
+
     def _create_scene(
         act_id,
         title="Test Scene",
@@ -118,11 +130,14 @@ def create_test_scene(db_session):
         db_session.add(scene)
         db_session.commit()
         return scene
+
     return _create_scene
+
 
 @pytest.fixture
 def create_test_event(db_session):
     """Factory fixture to create test events."""
+
     def _create_event(game_id, scene_id, description="Test event", source="manual"):
         # Get the source ID from the name
         source_obj = (
@@ -140,13 +155,16 @@ def create_test_event(db_session):
         db_session.add(event)
         db_session.commit()
         return event
+
     return _create_event
+
 
 # Common test objects
 @pytest.fixture
 def test_game(create_test_game):
     """Create a test game."""
     return create_test_game()
+
 
 @pytest.fixture
 def test_act(db_session, test_game):
@@ -162,6 +180,7 @@ def test_act(db_session, test_game):
     db_session.commit()
     return act
 
+
 @pytest.fixture
 def test_scene(db_session, test_act):
     """Create a test scene for the test act."""
@@ -175,6 +194,7 @@ def test_scene(db_session, test_act):
     db_session.add(scene)
     db_session.commit()
     return scene
+
 
 @pytest.fixture
 def test_events(db_session, test_game, test_scene):
@@ -202,6 +222,7 @@ def test_events(db_session, test_game, test_scene):
     db_session.commit()
     return events
 
+
 @pytest.fixture
 def test_interpretation_set(db_session, test_scene):
     """Create a test interpretation set."""
@@ -214,6 +235,7 @@ def test_interpretation_set(db_session, test_scene):
     db_session.add(interp_set)
     db_session.commit()
     return interp_set
+
 
 @pytest.fixture
 def test_interpretations(db_session, test_interpretation_set):
@@ -231,6 +253,7 @@ def test_interpretations(db_session, test_interpretation_set):
     db_session.commit()
     return interpretations
 
+
 @pytest.fixture
 def test_dice_roll(db_session, test_scene):
     """Create a test dice roll."""
@@ -245,6 +268,7 @@ def test_dice_roll(db_session, test_scene):
     db_session.add(dice_roll)
     db_session.commit()
     return dice_roll
+
 
 @pytest.fixture(autouse=True)
 def initialize_event_sources(db_session):

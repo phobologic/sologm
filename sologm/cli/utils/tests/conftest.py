@@ -35,6 +35,7 @@ from sologm.core.tests.conftest import (
     dice_manager,
 )
 
+
 # CLI-specific fixtures
 @pytest.fixture
 def mock_console():
@@ -43,6 +44,7 @@ def mock_console():
     # Set a default width for the console to avoid type errors
     mock.width = 80
     return mock
+
 
 # Explicitly expose the helper functions needed for testing
 @pytest.fixture
@@ -53,6 +55,7 @@ def display_helpers():
         _create_empty_oracle_panel,
         _create_events_panel,
     )
+
     return {
         "create_empty_oracle_panel": _create_empty_oracle_panel,
         "create_dice_rolls_panel": _create_dice_rolls_panel,
