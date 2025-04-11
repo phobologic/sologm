@@ -187,10 +187,7 @@ def create_test_event(db_session):
     """Factory fixture to create test events."""
 
     def _create_event(
-        scene_id, 
-        description="Test event", 
-        source_id=1, 
-        interpretation_id=None
+        scene_id, description="Test event", source_id=1, interpretation_id=None
     ):
         event = Event.create(
             scene_id=scene_id,
