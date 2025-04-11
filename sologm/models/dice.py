@@ -2,13 +2,18 @@
 
 import json
 import uuid
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
 
 from sologm.models.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from sologm.models.act import Act
+    from sologm.models.game import Game
+    from sologm.models.scene import Scene
 
 
 class JSONType(TypeDecorator):
@@ -48,6 +53,26 @@ class DiceRoll(Base, TimestampMixin):
     )
 
     # Relationships will be defined in relationships.py
+    
+    @property
+    def act(self) -> Optional["Act"]:
+        """Get the act this dice roll belongs to, if any."""
+        return self.scene.act if self.scene else None
+    
+    @property
+    def act_id(self) -> Optional[str]:
+        """Get the act ID this dice roll belongs to, if any."""
+        return self.scene.act_id if self.scene else None
+    
+    @property
+    def game(self) -> Optional["Game"]:
+        """Get the game this dice roll belongs to, if any."""
+        return self.scene.act.game if self.scene else None
+    
+    @property
+    def game_id(self) -> Optional[str]:
+        """Get the game ID this dice roll belongs to, if any."""
+        return self.scene.act.game_id if self.scene else None
 
     @classmethod
     def create(
