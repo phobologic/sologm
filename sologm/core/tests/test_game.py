@@ -26,13 +26,11 @@ class TestGameManager:
         assert db_game.name == "Test Game"
         assert db_game.description == "A test game"
         assert db_game.is_active is True
-        
+
     def test_create_game_inactive(self, game_manager, db_session) -> None:
         """Test creating a new inactive game."""
         game = game_manager.create_game(
-            name="Inactive Game", 
-            description="An inactive test game",
-            is_active=False
+            name="Inactive Game", description="An inactive test game", is_active=False
         )
 
         assert game.is_active is False
@@ -82,7 +80,7 @@ class TestGameManager:
         """Test getting a nonexistent game by ID."""
         game = game_manager.get_game_by_id("nonexistent-game")
         assert game is None
-        
+
     def test_get_game_by_slug(self, game_manager) -> None:
         """Test getting a specific game by slug."""
         created_game = game_manager.create_game(
@@ -145,8 +143,10 @@ class TestGameManager:
         # Verify the first game is no longer active
         db_session.refresh(game1)
         assert game1.is_active is False
-        
-    def test_activate_game_without_deactivating_others(self, game_manager, db_session) -> None:
+
+    def test_activate_game_without_deactivating_others(
+        self, game_manager, db_session
+    ) -> None:
         """Test activating a game without deactivating others."""
         game1 = game_manager.create_game(name="Game 1", description="First game")
         game2 = game_manager.create_game(name="Game 2", description="Second game")
@@ -165,25 +165,25 @@ class TestGameManager:
         with pytest.raises(GameError) as exc:
             game_manager.activate_game("nonexistent-game")
         assert "Game not found" in str(exc.value)
-        
+
     def test_deactivate_game(self, game_manager, db_session) -> None:
         """Test deactivating a game."""
         game = game_manager.create_game(name="Test Game", description="A test game")
         assert game.is_active is True
-        
+
         # Deactivate the game
         deactivated_game = game_manager.deactivate_game(game.id)
         assert deactivated_game.id == game.id
         assert deactivated_game.is_active is False
-        
+
         # Verify it's no longer the active game
         db_session.refresh(game)
         assert game.is_active is False
-        
+
         # Verify there's no active game
         active_game = game_manager.get_active_game()
         assert active_game is None
-        
+
     def test_deactivate_nonexistent_game(self, game_manager) -> None:
         """Test deactivating a nonexistent game raises an error."""
         with pytest.raises(GameError) as exc:
@@ -212,7 +212,7 @@ class TestGameManager:
         retrieved_game = game_manager.get_game_by_id(game.id)
         assert retrieved_game.name == "Updated Name"
         assert retrieved_game.description == "Updated description"
-        
+
     def test_update_game_partial(self, game_manager) -> None:
         """Test updating only some fields of a game."""
         # Create a game first
@@ -221,12 +221,10 @@ class TestGameManager:
         )
 
         # Update only the name
-        updated_game = game_manager.update_game(
-            game_id=game.id, name="Updated Name"
-        )
+        updated_game = game_manager.update_game(game_id=game.id, name="Updated Name")
         assert updated_game.name == "Updated Name"
         assert updated_game.description == "Original description"
-        
+
         # Update only the description
         updated_game = game_manager.update_game(
             game_id=game.id, description="Updated description"
@@ -246,27 +244,23 @@ class TestGameManager:
 
         # Try to update the second game with the first game's name
         with pytest.raises(GameError) as exc:
-            game_manager.update_game(
-                game_id=game2.id, name="First Game"
-            )
+            game_manager.update_game(game_id=game2.id, name="First Game")
 
         assert "already exists" in str(exc.value).lower()
-        
+
     def test_delete_game(self, game_manager, db_session) -> None:
         """Test deleting a game."""
         # Create a game first
-        game = game_manager.create_game(
-            name="Test Game", description="A test game"
-        )
-        
+        game = game_manager.create_game(name="Test Game", description="A test game")
+
         # Delete the game
         result = game_manager.delete_game(game.id)
         assert result is True
-        
+
         # Verify the game is gone
         db_game = db_session.query(Game).filter(Game.id == game.id).first()
         assert db_game is None
-        
+
     def test_delete_nonexistent_game(self, game_manager) -> None:
         """Test deleting a nonexistent game."""
         result = game_manager.delete_game("nonexistent-game")
