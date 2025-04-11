@@ -287,7 +287,13 @@ Test Description"""
 
         # Retry interpretation
         result2 = oracle_manager.get_interpretations(
-            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1, retry_attempt=1
+            test_game.id,
+            test_scene.act_id,
+            test_scene.id,
+            "What happens?",
+            "Mystery",
+            1,
+            retry_attempt=1,
         )
         assert result2.retry_attempt == 1
         assert result2.is_current is True
@@ -488,7 +494,12 @@ It also has multiple lines."""
         mock_anthropic_client.send_message.return_value = response_text
 
         interp_set = oracle_manager.get_interpretations(
-            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id,
+            test_scene.act_id,
+            test_scene.id,
+            "What happens?",
+            "Mystery",
+            1,
         )
 
         interpretation = interp_set.interpretations[0]

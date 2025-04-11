@@ -140,7 +140,7 @@ def retry_interpretation(
                         name="context",
                         display_name="Oracle Context",
                         help_text="The question or context for the oracle "
-                                  "interpretation",
+                        "interpretation",
                         required=True,
                         multiline=True,
                     ),

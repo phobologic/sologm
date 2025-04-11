@@ -53,7 +53,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self.event_manager = event_manager or EventManager(session=session)
 
     def validate_active_context(
-        self, game_manager: GameManager, scene_manager: SceneManager, act_manager: Optional["ActManager"] = None
+        self,
+        game_manager: GameManager,
+        scene_manager: SceneManager,
+        act_manager: Optional["ActManager"] = None,
     ) -> Tuple[str, str, str]:
         """Validate active game, act, and scene exist.
 
@@ -78,29 +81,33 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             if not active_act:
                 raise OracleError("No active act found")
             act_id = active_act.id
-        
+
             # Check for active scene after validating act
             active_scene = scene_manager.get_active_scene(act_id)
             if not active_scene:
                 raise OracleError("No active scene found")
-            
+
             return active_game.id, act_id, active_scene.id
         else:
             # For backward compatibility, try to get any act from the game
             from sologm.models.act import Act
-        
+
             session = self._session or get_session()
             try:
-                act = session.query(Act).filter(Act.game_id == active_game.id, Act.is_active == True).first()
+                act = (
+                    session.query(Act)
+                    .filter(Act.game_id == active_game.id, Act.is_active == True)
+                    .first()
+                )
                 if not act:
                     raise OracleError("No active act found")
                 act_id = act.id
-            
+
                 # Check for active scene after validating act
                 active_scene = scene_manager.get_active_scene(act_id)
                 if not active_scene:
                     raise OracleError("No active scene found")
-                
+
                 return active_game.id, act_id, active_scene.id
             finally:
                 if self._session is None:
@@ -278,7 +285,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             OracleError: If no active game, act, or scene
         """
         # Validate active context
-        game_id, act_id, scene_id = self.validate_active_context(game_manager, scene_manager, act_manager)
+        game_id, act_id, scene_id = self.validate_active_context(
+            game_manager, scene_manager, act_manager
+        )
 
         # Get game and scene details
         game = game_manager.get_game(game_id)
@@ -335,11 +344,19 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             if not game:
                 raise OracleError(f"Game {game_id} not found")
 
-            act = session.query(Act).filter(Act.id == act_id, Act.game_id == game_id).first()
+            act = (
+                session.query(Act)
+                .filter(Act.id == act_id, Act.game_id == game_id)
+                .first()
+            )
             if not act:
                 raise OracleError(f"Act {act_id} not found in game {game_id}")
 
-            scene = session.query(Scene).filter(Scene.id == scene_id, Scene.act_id == act_id).first()
+            scene = (
+                session.query(Scene)
+                .filter(Scene.id == scene_id, Scene.act_id == act_id)
+                .first()
+            )
             if not scene:
                 raise OracleError(f"Scene {scene_id} not found in act {act_id}")
 
@@ -508,7 +525,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             try:
                 # Get game, act, scene details, recent events, etc.
                 game, act, scene, recent_events, previous_interpretations = (
-                    self._get_context_data(game_id, act_id, scene_id, attempt, previous_set_id)
+                    self._get_context_data(
+                        game_id, act_id, scene_id, attempt, previous_set_id
+                    )
                 )
 
                 # Build prompt and get response
@@ -715,10 +734,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
             # Access the scene relationship from the interpretation set
             scene = interp_set.scene
-        
+
             # Get the act to access game_id
             act = scene.act
-        
+
             # Use custom description if provided, otherwise generate from interpretation
             description = (
                 custom_description
