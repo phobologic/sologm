@@ -11,6 +11,7 @@ from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.prompts.oracle import OraclePrompts
 from sologm.core.scene import SceneManager
+from sologm.database.session import get_session
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
@@ -468,9 +469,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         # Try to get interpretations with automatic retry
         for attempt in range(retry_attempt, retry_attempt + max_retries + 1):
             try:
-                # Get game and scene details, recent events, etc.
-                game, scene, recent_events, previous_interpretations = (
-                    self._get_context_data(game_id, scene_id, attempt, previous_set_id)
+                # Get game, act, scene details, recent events, etc.
+                game, act, scene, recent_events, previous_interpretations = (
+                    self._get_context_data(game_id, act_id, scene_id, attempt, previous_set_id)
                 )
 
                 # Build prompt and get response

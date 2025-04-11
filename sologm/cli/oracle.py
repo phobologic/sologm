@@ -6,6 +6,7 @@ import typer
 from rich.console import Console
 
 from sologm.cli.utils import display
+from sologm.core.act import ActManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
@@ -36,6 +37,7 @@ def interpret_oracle(
     """Get interpretations for oracle results."""
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
         oracle_manager = OracleManager()
 
@@ -49,20 +51,20 @@ def interpret_oracle(
         if show_prompt:
             # Get the prompt that would be sent to the AI
             prompt = oracle_manager.build_interpretation_prompt_for_active_context(
-                game_manager, scene_manager, context, results, count
+                game_manager, scene_manager, act_manager, context, results, count
             )
             console.print("\n[bold blue]Prompt that would be sent to AI:[/bold blue]")
             console.print(prompt)
             return
 
         # Validate active context (will raise OracleError if no active game/scene)
-        game_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager
+        game_id, act_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager, act_manager
         )
 
         console.print("\nGenerating interpretations...", style="bold blue")
         interp_set = oracle_manager.get_interpretations(
-            game_id, scene_id, context, results, count
+            game_id, act_id, scene_id, context, results, count
         )
 
         display.display_interpretation_set(console, interp_set)
@@ -85,11 +87,12 @@ def retry_interpretation(
     """Request new interpretations using current context and results."""
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
         oracle_manager = OracleManager()
 
-        game_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager
+        game_id, act_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager, act_manager
         )
 
         current_interp_set = oracle_manager.get_current_interpretation_set(scene_id)
@@ -161,6 +164,7 @@ def retry_interpretation(
         console.print("\nGenerating new interpretations...", style="bold blue")
         new_interp_set = oracle_manager.get_interpretations(
             game_id,
+            act_id,
             scene_id,
             context,  # Use the potentially updated context
             oracle_results,
@@ -182,11 +186,12 @@ def show_interpretation_status() -> None:
     """Show current interpretation set status."""
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
         oracle_manager = OracleManager()
 
-        game_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager
+        game_id, act_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager, act_manager
         )
 
         current_interp_set = oracle_manager.get_current_interpretation_set(scene_id)
@@ -275,11 +280,12 @@ def select_interpretation(
     """
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
         oracle_manager = OracleManager()
 
-        game_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager
+        game_id, act_id, scene_id = oracle_manager.validate_active_context(
+            game_manager, scene_manager, act_manager
         )
 
         if not interpretation_set_id:
