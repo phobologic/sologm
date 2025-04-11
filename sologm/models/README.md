@@ -302,7 +302,14 @@ class InterpretationSet(Base, TimestampMixin):
     scene: Mapped["Scene"]
     interpretations: Mapped[List["Interpretation"]]
     
-    # Helper Properties
+    # Hybrid Properties (work in both Python and SQL)
+    @hybrid_property
+    def has_selection(self) -> bool  # Checks if any interpretation is selected
+    
+    @hybrid_property
+    def interpretation_count(self) -> int  # Returns the number of interpretations
+    
+    # Regular Properties (Python-only)
     @property
     def act(self) -> "Act"  # Returns the act this interpretation set belongs to
     
@@ -317,12 +324,6 @@ class InterpretationSet(Base, TimestampMixin):
     
     @property
     def selected_interpretation(self) -> Optional["Interpretation"]  # Returns the selected interpretation
-    
-    @property
-    def has_selection(self) -> bool  # Checks if any interpretation is selected
-    
-    @property
-    def interpretation_count(self) -> int  # Returns the number of interpretations
 ```
 
 ### Interpretation
@@ -339,7 +340,14 @@ class Interpretation(Base, TimestampMixin):
     interpretation_set: Mapped["InterpretationSet"]
     events: Mapped[List["Event"]]
     
-    # Helper Properties
+    # Hybrid Properties (work in both Python and SQL)
+    @hybrid_property
+    def event_count(self) -> int  # Returns the number of associated events
+    
+    @hybrid_property
+    def has_events(self) -> bool  # Checks if there are any associated events
+    
+    # Regular Properties (Python-only)
     @property
     def scene(self) -> "Scene"  # Returns the scene this interpretation belongs to
     
@@ -360,12 +368,6 @@ class Interpretation(Base, TimestampMixin):
     
     @property
     def short_description(self) -> str  # Returns a shortened version of the description
-    
-    @property
-    def event_count(self) -> int  # Returns the number of associated events
-    
-    @property
-    def has_events(self) -> bool  # Checks if there are any associated events
     
     @property
     def latest_event(self) -> Optional["Event"]  # Returns the most recent associated event

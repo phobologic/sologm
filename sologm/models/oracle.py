@@ -3,7 +3,8 @@
 import uuid
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, Text, select
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sologm.models.base import Base, TimestampMixin
@@ -69,21 +70,42 @@ class InterpretationSet(Base, TimestampMixin):
                 return interpretation
         return None
 
-    @property
+    @hybrid_property
     def has_selection(self) -> bool:
         """Check if this interpretation set has a selected interpretation.
-
-        This property provides a convenient way to check if any interpretation is selected.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if any interpretation is selected
+        - SQL: Performs a subquery to check for selected interpretations
         """
         return any(interp.is_selected for interp in self.interpretations)
+    
+    @has_selection.expression
+    def has_selection(cls):
+        """SQL expression for has_selection."""
+        from sologm.models.oracle import Interpretation
+        return select(1).where(
+            (Interpretation.set_id == cls.id) & 
+            (Interpretation.is_selected == True)
+        ).exists().label("has_selection")
 
-    @property
+    @hybrid_property
     def interpretation_count(self) -> int:
         """Get the number of interpretations in this set.
-
-        This property provides a convenient way to count interpretations.
+        
+        Works in both Python and SQL contexts:
+        - Python: Returns the length of the interpretations list
+        - SQL: Performs a count query
         """
         return len(self.interpretations)
+    
+    @interpretation_count.expression
+    def interpretation_count(cls):
+        """SQL expression for interpretation_count."""
+        from sologm.models.oracle import Interpretation
+        return select(func.count(Interpretation.id)).where(
+            Interpretation.set_id == cls.id
+        ).label("interpretation_count")
 
     @classmethod
     def create(
@@ -177,21 +199,41 @@ class Interpretation(Base, TimestampMixin):
             return self.description
         return self.description[:max_length] + "..."
 
-    @property
+    @hybrid_property
     def event_count(self) -> int:
         """Get the number of events associated with this interpretation.
-
-        This property provides a convenient way to count related events.
+        
+        Works in both Python and SQL contexts:
+        - Python: Returns the length of the events list
+        - SQL: Performs a count query
         """
         return len(self.events)
+    
+    @event_count.expression
+    def event_count(cls):
+        """SQL expression for event_count."""
+        from sologm.models.event import Event
+        return select(func.count(Event.id)).where(
+            Event.interpretation_id == cls.id
+        ).label("event_count")
 
-    @property
+    @hybrid_property
     def has_events(self) -> bool:
         """Check if this interpretation has any associated events.
-
-        This property provides a convenient way to check for related events.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if the events list is non-empty
+        - SQL: Performs a subquery to check for events
         """
         return len(self.events) > 0
+    
+    @has_events.expression
+    def has_events(cls):
+        """SQL expression for has_events."""
+        from sologm.models.event import Event
+        return select(1).where(
+            Event.interpretation_id == cls.id
+        ).exists().label("has_events")
 
     @property
     def latest_event(self) -> Optional["Event"]:
