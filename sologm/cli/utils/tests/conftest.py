@@ -21,6 +21,8 @@ from sologm.core.tests.conftest import (
     test_interpretations,
     test_dice_roll,
     initialize_event_sources,  # Make sure we have event sources initialized
+    act_manager,  # Import act_manager fixture
+    create_test_act,  # Import factory fixture for creating acts
 )
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
