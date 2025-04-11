@@ -41,7 +41,9 @@ class TestOracle:
         db_session.commit()
 
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context(game_manager, scene_manager, act_manager)
+            oracle_manager.validate_active_context(
+                game_manager, scene_manager, act_manager
+            )
         assert "No active game found" in str(exc.value)
 
     def test_validate_active_context_no_act(
@@ -61,7 +63,9 @@ class TestOracle:
         db_session.commit()
 
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context(game_manager, scene_manager, act_manager)
+            oracle_manager.validate_active_context(
+                game_manager, scene_manager, act_manager
+            )
         assert "No active act found" in str(exc.value)
 
     def test_validate_active_context_no_scene(
@@ -171,7 +175,13 @@ Test Description"""
         assert "Failed to get interpretations" in str(exc.value)
 
     def test_select_interpretation(
-        self, oracle_manager, mock_anthropic_client, test_game, test_act, test_scene, db_session
+        self,
+        oracle_manager,
+        mock_anthropic_client,
+        test_game,
+        test_act,
+        test_scene,
+        db_session,
     ) -> None:
         """Test selecting an interpretation."""
         # Configure mock to return string response
@@ -519,7 +529,13 @@ It also has multiple lines."""
         assert result is None
 
     def test_add_interpretation_event(
-        self, oracle_manager, mock_anthropic_client, test_game, test_act, test_scene, db_session
+        self,
+        oracle_manager,
+        mock_anthropic_client,
+        test_game,
+        test_act,
+        test_scene,
+        db_session,
     ):
         """Test adding interpretation as event directly."""
         # Create an interpretation set
@@ -581,7 +597,13 @@ It also has multiple lines."""
         assert parsed[0]["title"] == "Code Block Title"
 
     def test_multiple_interpretation_sets(
-        self, oracle_manager, mock_anthropic_client, test_game, test_act, test_scene, db_session
+        self,
+        oracle_manager,
+        mock_anthropic_client,
+        test_game,
+        test_act,
+        test_scene,
+        db_session,
     ):
         """Test managing multiple interpretation sets."""
         # Create multiple interpretation sets
@@ -668,21 +690,21 @@ It also has multiple lines."""
         # Verify get_current_interpretation_set returns None
         current_set = oracle_manager.get_current_interpretation_set(test_scene.id)
         assert current_set is None
-        
+
     def test_build_interpretation_prompt_for_active_context(
-        self, 
-        oracle_manager, 
-        game_manager, 
-        scene_manager, 
-        act_manager, 
-        test_game, 
-        test_act, 
-        test_scene
+        self,
+        oracle_manager,
+        game_manager,
+        scene_manager,
+        act_manager,
+        test_game,
+        test_act,
+        test_scene,
     ):
         """Test building interpretation prompt for active context with acts."""
         # Mock the _build_prompt method to avoid actual prompt generation
         original_build_prompt = oracle_manager._build_prompt
-        
+
         def mock_build_prompt(*args, **kwargs):
             # Just return the arguments to verify they're correct
             return {
@@ -691,11 +713,11 @@ It also has multiple lines."""
                 "recent_events": args[2],
                 "context": args[3],
                 "oracle_results": args[4],
-                "count": args[5]
+                "count": args[5],
             }
-            
+
         oracle_manager._build_prompt = mock_build_prompt
-        
+
         try:
             # Call the method with act_manager
             result = oracle_manager.build_interpretation_prompt_for_active_context(
@@ -704,9 +726,9 @@ It also has multiple lines."""
                 act_manager,
                 "Test context",
                 "Test results",
-                3
+                3,
             )
-            
+
             # Verify the correct data was passed to _build_prompt
             assert result["game_description"] == test_game.description
             assert result["scene_description"] == test_scene.description
@@ -714,11 +736,11 @@ It also has multiple lines."""
             assert result["context"] == "Test context"
             assert result["oracle_results"] == "Test results"
             assert result["count"] == 3
-            
+
         finally:
             # Restore the original method
             oracle_manager._build_prompt = original_build_prompt
-            
+
     def test_validate_active_context_with_missing_act_manager(
         self,
         oracle_manager,
@@ -727,25 +749,20 @@ It also has multiple lines."""
         test_scene,
         game_manager,
         scene_manager,
-        db_session
+        db_session,
     ):
         """Test validate_active_context when act_manager is not provided."""
         # This tests the backward compatibility path
         game_id, act_id, scene_id = oracle_manager.validate_active_context(
             game_manager, scene_manager
         )
-        
+
         assert game_id == test_game.id
         assert act_id == test_act.id
         assert scene_id == test_scene.id
-        
+
     def test_validate_active_context_with_missing_act_manager_no_active_act(
-        self,
-        oracle_manager,
-        test_game,
-        game_manager,
-        scene_manager,
-        db_session
+        self, oracle_manager, test_game, game_manager, scene_manager, db_session
     ):
         """Test validate_active_context with no act_manager and no active act."""
         # Make sure no act is active
@@ -753,7 +770,7 @@ It also has multiple lines."""
             {Act.is_active: False}
         )
         db_session.commit()
-        
+
         with pytest.raises(OracleError) as exc:
             oracle_manager.validate_active_context(game_manager, scene_manager)
         assert "No active act found" in str(exc.value)
