@@ -73,6 +73,46 @@ class DiceRoll(Base, TimestampMixin):
     def game_id(self) -> Optional[str]:
         """Get the game ID this dice roll belongs to, if any."""
         return self.scene.act.game_id if self.scene else None
+        
+    @property
+    def formatted_results(self) -> str:
+        """Get a formatted string representation of the dice roll results.
+        
+        This property provides a human-readable format of the dice roll.
+        Example: "2d6+3: [2, 5] + 3 = 10"
+        """
+        dice_part = f"{self.notation}"
+        results_part = f"{self.individual_results}"
+        
+        if self.modifier != 0:
+            modifier_sign = "+" if self.modifier > 0 else ""
+            modifier_part = f" {modifier_sign}{self.modifier}"
+        else:
+            modifier_part = ""
+            
+        return f"{dice_part}: {results_part}{modifier_part} = {self.total}"
+    
+    @property
+    def short_reason(self) -> Optional[str]:
+        """Get a shortened version of the reason, if any.
+        
+        This property provides a convenient way to get a preview of the reason.
+        """
+        if not self.reason:
+            return None
+            
+        max_length = 30
+        if len(self.reason) <= max_length:
+            return self.reason
+        return self.reason[:max_length] + "..."
+    
+    @property
+    def has_reason(self) -> bool:
+        """Check if this dice roll has a reason.
+        
+        This property provides a convenient way to check if a reason exists.
+        """
+        return self.reason is not None and self.reason.strip() != ""
 
     @classmethod
     def create(
