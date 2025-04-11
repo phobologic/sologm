@@ -4,7 +4,8 @@ import json
 import uuid
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text, select
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
 
@@ -106,13 +107,23 @@ class DiceRoll(Base, TimestampMixin):
             return self.reason
         return self.reason[:max_length] + "..."
 
-    @property
+    @hybrid_property
     def has_reason(self) -> bool:
         """Check if this dice roll has a reason.
-
-        This property provides a convenient way to check if a reason exists.
+        
+        Works in both Python and SQL contexts:
+        - Python: Checks if reason is not None and not empty
+        - SQL: Performs a direct column comparison
         """
         return self.reason is not None and self.reason.strip() != ""
+    
+    @has_reason.expression
+    def has_reason(cls):
+        """SQL expression for has_reason."""
+        return (
+            (cls.reason != None) & 
+            (cls.reason != "")
+        ).label("has_reason")
 
     @classmethod
     def create(

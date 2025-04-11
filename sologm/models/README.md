@@ -387,7 +387,11 @@ class DiceRoll(Base, TimestampMixin):
     # Relationships
     scene: Mapped["Scene"]
     
-    # Helper Properties
+    # Hybrid Properties (work in both Python and SQL)
+    @hybrid_property
+    def has_reason(self) -> bool  # Checks if this dice roll has a reason
+    
+    # Regular Properties (Python-only)
     @property
     def act(self) -> Optional["Act"]  # Returns the act this dice roll belongs to
     
@@ -405,9 +409,6 @@ class DiceRoll(Base, TimestampMixin):
     
     @property
     def short_reason(self) -> Optional[str]  # Returns a shortened version of the reason
-    
-    @property
-    def has_reason(self) -> bool  # Checks if this dice roll has a reason
 ```
 
 ## Key Relationship Chains
