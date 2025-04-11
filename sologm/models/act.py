@@ -410,7 +410,7 @@ class Act(Base, TimestampMixin):
     def all_events(self) -> List["Event"]:
         """Get all events across all scenes in this act.
 
-        This property collects events from all scenes without triggering 
+        This property collects events from all scenes without triggering
         new database queries.
         """
         events = []
@@ -423,7 +423,7 @@ class Act(Base, TimestampMixin):
     def all_dice_rolls(self) -> List["DiceRoll"]:
         """Get all dice rolls across all scenes in this act.
 
-        This property collects dice rolls from all scenes without triggering 
+        This property collects dice rolls from all scenes without triggering
         new database queries.
         """
         rolls = []
@@ -436,7 +436,7 @@ class Act(Base, TimestampMixin):
     def all_interpretations(self) -> List["Interpretation"]:
         """Get all interpretations across all scenes in this act.
 
-        This property collects interpretations from all scenes without triggering 
+        This property collects interpretations from all scenes without triggering
         new database queries.
         """
         interpretations = []
