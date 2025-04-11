@@ -117,9 +117,9 @@ class DiceRoll(Base, TimestampMixin):
         return self.reason is not None and self.reason.strip() != ""
 
     @has_reason.expression
-    def has_reason(cls):
+    def has_reason(cls):  # noqa: N805
         """SQL expression for has_reason."""
-        return ((cls.reason != None) & (cls.reason != "")).label("has_reason")
+        return ((cls.reason is not None) & (cls.reason != "")).label("has_reason")
 
     @classmethod
     def create(
