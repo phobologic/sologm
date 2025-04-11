@@ -2,6 +2,7 @@
 
 import pytest
 
+from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.models.scene import Scene, SceneStatus
 from sologm.utils.errors import SceneError
@@ -13,7 +14,7 @@ class TestScene:
     def test_scene_creation(self, db_session) -> None:
         """Test creating a Scene object."""
         scene = Scene.create(
-            game_id="test-game",
+            act_id="test-act",
             title="Test Scene",
             description="A test scene",
             sequence=1,
@@ -33,6 +34,28 @@ class TestScene:
 
 class TestSceneManager:
     """Tests for the SceneManager class."""
+    
+    @pytest.fixture(autouse=True)
+    def ensure_active_act(self, test_game, db_session):
+        """Ensure there's an active act for each test."""
+        from sologm.core.act import ActManager
+        act_manager = ActManager(db_session)
+        
+        # Check if there's already an active act
+        active_act = act_manager.get_active_act(test_game.id)
+        if not active_act:
+            # Create a new act
+            act = Act.create(
+                game_id=test_game.id,
+                title="Test Act",
+                description="Test act description",
+                sequence=1
+            )
+            act.is_active = True
+            db_session.add(act)
+            db_session.commit()
+        
+        return act_manager
 
     def test_create_scene(self, scene_manager, test_game, db_session) -> None:
         """Test creating a new scene."""
@@ -166,8 +189,13 @@ class TestSceneManager:
     def test_get_active_scene_none(self, scene_manager, test_game, db_session) -> None:
         """Test getting active scene when none is set."""
         # Create a scene but don't set it as active
+        # First get the active act
+        from sologm.core.act import ActManager
+        act_manager = ActManager(db_session)
+        active_act = act_manager.get_active_act(test_game.id)
+        
         scene = Scene.create(
-            game_id=test_game.id,
+            act_id=active_act.id,
             title="Inactive Scene",
             description="Not active",
             sequence=1,
