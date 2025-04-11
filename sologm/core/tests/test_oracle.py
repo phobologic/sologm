@@ -186,7 +186,7 @@ Test Description"""
         assert len(events) == 0
 
         # Now explicitly add an event
-        event = oracle_manager.add_interpretation_event(test_scene.id, selected)
+        event = oracle_manager.add_interpretation_event(selected)
 
         # Get the oracle source
         oracle_source = (
@@ -287,7 +287,7 @@ Test Description"""
 
         # Retry interpretation
         result2 = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1, retry_attempt=1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1, retry_attempt=1
         )
         assert result2.retry_attempt == 1
         assert result2.is_current is True
@@ -488,13 +488,13 @@ It also has multiple lines."""
         mock_anthropic_client.send_message.return_value = response_text
 
         interp_set = oracle_manager.get_interpretations(
-            test_game.id, test_scene.id, "What happens?", "Mystery", 1
+            test_game.id, test_scene.act_id, test_scene.id, "What happens?", "Mystery", 1
         )
 
         interpretation = interp_set.interpretations[0]
 
         # Add as event directly
-        oracle_manager.add_interpretation_event(test_scene.id, interpretation)
+        oracle_manager.add_interpretation_event(interpretation)
 
         # Get the oracle source
         oracle_source = (

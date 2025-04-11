@@ -371,7 +371,7 @@ def select_interpretation(
 
             # Add the event with possibly edited description
             event = oracle_manager.add_interpretation_event(
-                scene_id, selected, custom_description
+                selected, custom_description
             )
             console.print("[bold green]Interpretation added as event.[/]")
 

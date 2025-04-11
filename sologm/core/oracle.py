@@ -78,25 +78,33 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             if not active_act:
                 raise OracleError("No active act found")
             act_id = active_act.id
+        
+            # Check for active scene after validating act
+            active_scene = scene_manager.get_active_scene(act_id)
+            if not active_scene:
+                raise OracleError("No active scene found")
+            
+            return active_game.id, act_id, active_scene.id
         else:
             # For backward compatibility, try to get any act from the game
             from sologm.models.act import Act
-            
+        
             session = self._session or get_session()
             try:
                 act = session.query(Act).filter(Act.game_id == active_game.id, Act.is_active == True).first()
                 if not act:
                     raise OracleError("No active act found")
                 act_id = act.id
+            
+                # Check for active scene after validating act
+                active_scene = scene_manager.get_active_scene(act_id)
+                if not active_scene:
+                    raise OracleError("No active scene found")
+                
+                return active_game.id, act_id, active_scene.id
             finally:
                 if self._session is None:
                     session.close()
-
-        active_scene = scene_manager.get_active_scene(act_id)
-        if not active_scene:
-            raise OracleError("No active scene found")
-
-        return active_game.id, act_id, active_scene.id
 
     def get_interpretation_set(self, set_id: str) -> InterpretationSet:
         """Get an interpretation set by ID.
@@ -683,14 +691,12 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def add_interpretation_event(
         self,
-        scene_id: str,
         interpretation: Interpretation,
         custom_description: Optional[str] = None,
     ) -> Event:
         """Add an interpretation as an event.
 
         Args:
-            scene_id: ID of the current scene.
             interpretation: The interpretation to add as an event.
             custom_description: Optional custom description for the event.
                 If not provided, uses "{title}: {description}".
@@ -701,7 +707,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
         def _add_interpretation_event(
             session: Session,
-            scene_id: str,
             interpretation: Interpretation,
             custom_description: Optional[str],
         ) -> Event:
@@ -710,7 +715,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
             # Access the scene relationship from the interpretation set
             scene = interp_set.scene
-
+        
+            # Get the act to access game_id
+            act = scene.act
+        
             # Use custom description if provided, otherwise generate from interpretation
             description = (
                 custom_description
@@ -727,8 +735,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
             # Create the event
             event = Event.create(
-                game_id=scene.game_id,
-                scene_id=scene_id,
+                game_id=act.game_id,
+                scene_id=scene.id,
                 description=description,
                 source_id=oracle_source.id,
                 interpretation_id=interpretation.id,
@@ -739,7 +747,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         return self._execute_db_operation(
             "add interpretation event",
             _add_interpretation_event,
-            scene_id,
             interpretation,
             custom_description,
         )
