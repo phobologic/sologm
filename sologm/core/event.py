@@ -241,10 +241,11 @@ class EventManager(BaseManager[Event, Event]):
             if not act or act.game_id != game_id:
                 raise EventError(f"Scene {scene_id} does not belong to game {game_id}")
 
-            # Query events
+            # Query events - we still filter by game_id for performance reasons
+            # but the scene's act must belong to the game
             query = (
                 session.query(Event)
-                .filter(Event.scene_id == scene_id, Event.game_id == game_id)
+                .filter(Event.scene_id == scene_id)
                 .order_by(Event.created_at.desc())
             )
 

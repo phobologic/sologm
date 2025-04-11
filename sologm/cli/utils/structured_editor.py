@@ -525,6 +525,7 @@ def get_event_context_header(
     scene_title: str,
     scene_description: str,
     recent_events: Optional[List[Any]] = None,
+    act_info: Optional[str] = None,
 ) -> str:
     """Create a context header for event editing.
 
@@ -533,6 +534,7 @@ def get_event_context_header(
         scene_title: Title of the current scene
         scene_description: Description of the current scene
         recent_events: Optional list of recent events
+        act_info: Optional act information string
 
     Returns:
         Formatted context header as a string
@@ -540,12 +542,19 @@ def get_event_context_header(
     # Create context information for the editor
     context_info = [
         f"Game: {game_name}",
+    ]
+    
+    # Add act information if provided
+    if act_info:
+        context_info.append(act_info)
+        
+    context_info.extend([
         f"Scene: {scene_title}",
         "",
         "Scene Description:",
         scene_description,
         "",
-    ]
+    ])
 
     # Add recent events if any
     if recent_events:

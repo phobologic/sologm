@@ -19,6 +19,8 @@ class Event(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
+    # We keep game_id for direct access and query performance, though it's redundant
+    # with scene -> act -> game relationship
     game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     source_id: Mapped[int] = mapped_column(
