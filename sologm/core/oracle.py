@@ -77,15 +77,21 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
         # If act_manager is provided, validate active act
         if act_manager:
+            logger.debug(f"Validating active act for game {active_game.id}")
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
+                logger.debug("No active act found")
                 raise OracleError("No active act found")
             act_id = active_act.id
+            logger.debug(f"Found active act: {act_id}")
 
             # Check for active scene after validating act
+            logger.debug(f"Checking for active scene in act {act_id}")
             active_scene = scene_manager.get_active_scene(act_id)
             if not active_scene:
+                logger.debug("No active scene found in the active act")
                 raise OracleError("No active scene found")
+            logger.debug(f"Found active scene: {active_scene.id}")
 
             return active_game.id, act_id, active_scene.id
         else:
