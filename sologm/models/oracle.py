@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from sologm.models.event import Event
     from sologm.models.game import Game
     from sologm.models.scene import Scene
+    from typing import Optional
 
 
 class InterpretationSet(Base, TimestampMixin):
@@ -55,6 +56,34 @@ class InterpretationSet(Base, TimestampMixin):
     def game_id(self) -> str:
         """Get the game ID this interpretation set belongs to."""
         return self.scene.act.game_id
+        
+    @property
+    def selected_interpretation(self) -> Optional["Interpretation"]:
+        """Get the selected interpretation from this set, if any.
+        
+        This property filters the already loaded interpretations collection
+        and doesn't trigger a new database query.
+        """
+        for interpretation in self.interpretations:
+            if interpretation.is_selected:
+                return interpretation
+        return None
+    
+    @property
+    def has_selection(self) -> bool:
+        """Check if this interpretation set has a selected interpretation.
+        
+        This property provides a convenient way to check if any interpretation is selected.
+        """
+        return any(interp.is_selected for interp in self.interpretations)
+    
+    @property
+    def interpretation_count(self) -> int:
+        """Get the number of interpretations in this set.
+        
+        This property provides a convenient way to count interpretations.
+        """
+        return len(self.interpretations)
 
     @classmethod
     def create(
@@ -105,10 +134,7 @@ class Interpretation(Base, TimestampMixin):
         "Event", back_populates="interpretation"
     )
 
-    @property
-    def interpretation_set(self) -> "InterpretationSet":
-        """Get the interpretation set this interpretation belongs to."""
-        return self.interpretation_set
+    # Removed the recursive property
 
     @property
     def scene(self) -> "Scene":
@@ -139,6 +165,44 @@ class Interpretation(Base, TimestampMixin):
     def game_id(self) -> str:
         """Get the game ID this interpretation belongs to."""
         return self.act.game_id
+        
+    @property
+    def short_description(self) -> str:
+        """Get a shortened version of the description.
+        
+        This property provides a convenient way to get a preview of the description.
+        """
+        max_length = 50
+        if len(self.description) <= max_length:
+            return self.description
+        return self.description[:max_length] + "..."
+    
+    @property
+    def event_count(self) -> int:
+        """Get the number of events associated with this interpretation.
+        
+        This property provides a convenient way to count related events.
+        """
+        return len(self.events)
+    
+    @property
+    def has_events(self) -> bool:
+        """Check if this interpretation has any associated events.
+        
+        This property provides a convenient way to check for related events.
+        """
+        return len(self.events) > 0
+    
+    @property
+    def latest_event(self) -> Optional["Event"]:
+        """Get the most recently created event for this interpretation, if any.
+        
+        This property sorts the already loaded events collection
+        and doesn't trigger a new database query.
+        """
+        if not self.events:
+            return None
+        return sorted(self.events, key=lambda event: event.created_at, reverse=True)[0]
 
     @classmethod
     def create(
