@@ -37,6 +37,4 @@ def downgrade() -> None:
             sa.Column("game_id", sa.VARCHAR(length=255), nullable=False)
         )
         # Use None for the constraint name in downgrade as well
-        batch_op.create_foreign_key(
-            None, "games", ["game_id"], ["id"]
-        )
+        batch_op.create_foreign_key(None, "games", ["game_id"], ["id"])
