@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.core.game import GameManager
+from sologm.core.act import ActManager
 from sologm.models.scene import Scene, SceneStatus
 from sologm.utils.errors import SceneError
 
@@ -27,11 +28,11 @@ class SceneManager(BaseManager[Scene, Scene]):
         super().__init__(session)
         logger.debug("Initialized SceneManager")
 
-    def create_scene(self, game_id: str, title: str, description: str) -> Scene:
-        """Create a new scene in the specified game.
+    def create_scene(self, act_id: str, title: str, description: str) -> Scene:
+        """Create a new scene in the specified act.
 
         Args:
-            game_id: ID of the game to create the scene in.
+            act_id: ID of the act to create the scene in.
             title: Title of the scene.
             description: Description of the scene.
 
@@ -42,34 +43,34 @@ class SceneManager(BaseManager[Scene, Scene]):
             SceneError: If there's an error creating the scene or if title is
                         not unique.
         """
-        logger.debug(f"Creating new scene in game {game_id} with title '{title}'")
+        logger.debug(f"Creating new scene in act {act_id} with title '{title}'")
 
         def _create_scene(
-            session: Session, game_id: str, title: str, description: str
+            session: Session, act_id: str, title: str, description: str
         ) -> Scene:
-            # Check if game exists
-            from sologm.models.game import Game
+            # Check if act exists
+            from sologm.models.act import Act
 
-            game = session.query(Game).filter(Game.id == game_id).first()
-            if not game:
-                raise SceneError(f"Game with ID '{game_id}' does not exist")
+            act = session.query(Act).filter(Act.id == act_id).first()
+            if not act:
+                raise SceneError(f"Act with ID '{act_id}' does not exist")
 
             # Check for duplicate titles
             existing = (
                 session.query(Scene)
-                .filter(and_(Scene.game_id == game_id, Scene.title.ilike(title)))
+                .filter(and_(Scene.act_id == act_id, Scene.title.ilike(title)))
                 .first()
             )
 
             if existing:
                 raise SceneError(
-                    f"A scene with title '{title}' already exists in this game"
+                    f"A scene with title '{title}' already exists in this act"
                 )
 
             # Get the next sequence number
             max_sequence = (
                 session.query(Scene.sequence)
-                .filter(Scene.game_id == game_id)
+                .filter(Scene.act_id == act_id)
                 .order_by(desc(Scene.sequence))
                 .first()
             )
@@ -80,12 +81,12 @@ class SceneManager(BaseManager[Scene, Scene]):
 
             # Create new scene
             scene = Scene.create(
-                game_id=game_id, title=title, description=description, sequence=sequence
+                act_id=act_id, title=title, description=description, sequence=sequence
             )
 
             # Deactivate all other scenes
             session.query(Scene).filter(
-                and_(Scene.game_id == game_id, Scene.is_active)
+                and_(Scene.act_id == act_id, Scene.is_active)
             ).update({"is_active": False})
 
             # Set this scene as active
@@ -97,16 +98,16 @@ class SceneManager(BaseManager[Scene, Scene]):
         return self._execute_db_operation(
             "create scene",
             _create_scene,
-            game_id=game_id,
+            act_id=act_id,
             title=title,
             description=description,
         )
 
-    def list_scenes(self, game_id: str) -> List[Scene]:
-        """List all scenes for the specified game.
+    def list_scenes(self, act_id: str) -> List[Scene]:
+        """List all scenes for the specified act.
 
         Args:
-            game_id: ID of the game to list scenes for.
+            act_id: ID of the act to list scenes for.
 
         Returns:
             List of Scene objects.
@@ -114,70 +115,70 @@ class SceneManager(BaseManager[Scene, Scene]):
         Raises:
             SceneError: If there's an error listing the scenes.
         """
-        logger.debug(f"Listing scenes for game {game_id}")
+        logger.debug(f"Listing scenes for act {act_id}")
 
-        def _list_scenes(session: Session, game_id: str) -> List[Scene]:
+        def _list_scenes(session: Session, act_id: str) -> List[Scene]:
             return (
                 session.query(Scene)
-                .filter(Scene.game_id == game_id)
+                .filter(Scene.act_id == act_id)
                 .order_by(Scene.sequence)
                 .all()
             )
 
-        return self._execute_db_operation("list scenes", _list_scenes, game_id=game_id)
+        return self._execute_db_operation("list scenes", _list_scenes, act_id=act_id)
 
-    def get_scene(self, game_id: str, scene_id: str) -> Optional[Scene]:
+    def get_scene(self, act_id: str, scene_id: str) -> Optional[Scene]:
         """Get a specific scene by ID.
 
         Args:
-            game_id: ID of the game the scene belongs to.
+            act_id: ID of the act the scene belongs to.
             scene_id: ID of the scene to get.
 
         Returns:
             Scene object if found, None otherwise.
         """
-        logger.debug(f"Getting scene {scene_id} in game {game_id}")
+        logger.debug(f"Getting scene {scene_id} in act {act_id}")
 
         def _get_scene(
-            session: Session, game_id: str, scene_id: str
+            session: Session, act_id: str, scene_id: str
         ) -> Optional[Scene]:
             return (
                 session.query(Scene)
-                .filter(and_(Scene.game_id == game_id, Scene.id == scene_id))
+                .filter(and_(Scene.act_id == act_id, Scene.id == scene_id))
                 .first()
             )
 
         return self._execute_db_operation(
-            "get scene", _get_scene, game_id=game_id, scene_id=scene_id
+            "get scene", _get_scene, act_id=act_id, scene_id=scene_id
         )
 
-    def get_active_scene(self, game_id: str) -> Optional[Scene]:
-        """Get the active scene for the specified game.
+    def get_active_scene(self, act_id: str) -> Optional[Scene]:
+        """Get the active scene for the specified act.
 
         Args:
-            game_id: ID of the game to get the active scene for.
+            act_id: ID of the act to get the active scene for.
 
         Returns:
             Active Scene object if found, None otherwise.
         """
-        logger.debug(f"Getting active scene for game {game_id}")
+        logger.debug(f"Getting active scene for act {act_id}")
 
-        def _get_active_scene(session: Session, game_id: str) -> Optional[Scene]:
+        def _get_active_scene(session: Session, act_id: str) -> Optional[Scene]:
             return (
                 session.query(Scene)
-                .filter(and_(Scene.game_id == game_id, Scene.is_active))
+                .filter(and_(Scene.act_id == act_id, Scene.is_active))
                 .first()
             )
 
         return self._execute_db_operation(
-            "get active scene", _get_active_scene, game_id=game_id
+            "get active scene", _get_active_scene, act_id=act_id
         )
 
-    def complete_scene(self, game_id: str, scene_id: str) -> Scene:
+    def complete_scene(self, act_id: str, scene_id: str) -> Scene:
         """Mark a scene as complete without changing which scene is current.
 
         Args:
-            game_id: ID of the game the scene belongs to.
+            act_id: ID of the act the scene belongs to.
             scene_id: ID of the scene to complete.
 
         Returns:
@@ -186,17 +187,17 @@ class SceneManager(BaseManager[Scene, Scene]):
         Raises:
             SceneError: If there's an error completing the scene.
         """
-        logger.debug(f"Completing scene {scene_id} in game {game_id}")
+        logger.debug(f"Completing scene {scene_id} in act {act_id}")
 
-        def _complete_scene(session: Session, game_id: str, scene_id: str) -> Scene:
+        def _complete_scene(session: Session, act_id: str, scene_id: str) -> Scene:
             scene = (
                 session.query(Scene)
-                .filter(and_(Scene.game_id == game_id, Scene.id == scene_id))
+                .filter(and_(Scene.act_id == act_id, Scene.id == scene_id))
                 .first()
             )
 
             if not scene:
-                raise SceneError(f"Scene {scene_id} not found in game {game_id}")
+                raise SceneError(f"Scene {scene_id} not found in act {act_id}")
 
             if scene.status == SceneStatus.COMPLETED:
                 raise SceneError(f"Scene {scene_id} is already completed")
@@ -205,36 +206,44 @@ class SceneManager(BaseManager[Scene, Scene]):
             return scene
 
         return self._execute_db_operation(
-            "complete scene", _complete_scene, game_id=game_id, scene_id=scene_id
+            "complete scene", _complete_scene, act_id=act_id, scene_id=scene_id
         )
 
-    def validate_active_context(self, game_manager: GameManager) -> Tuple[str, Scene]:
-        """Validate active game and scene context.
+    def validate_active_context(self, game_manager: GameManager, act_manager: ActManager = None) -> Tuple[str, Scene]:
+        """Validate active game, act, and scene context.
 
         Args:
             game_manager: GameManager instance to check active game
+            act_manager: Optional ActManager instance. If not provided, a new one will be created.
 
         Returns:
-            Tuple of (game_id, active_scene)
+            Tuple of (act_id, active_scene)
 
         Raises:
-            SceneError: If no active game or scene
+            SceneError: If no active game, act, or scene
         """
         active_game = game_manager.get_active_game()
         if not active_game:
             raise SceneError("No active game. Use 'sologm game activate' to set one.")
 
-        active_scene = self.get_active_scene(active_game.id)
+        if act_manager is None:
+            act_manager = ActManager(self._session)
+            
+        active_act = act_manager.get_active_act(active_game.id)
+        if not active_act:
+            raise SceneError("No active act. Create one with 'sologm act create'.")
+
+        active_scene = self.get_active_scene(active_act.id)
         if not active_scene:
             raise SceneError("No active scene. Add one with 'sologm scene add'.")
 
-        return active_game.id, active_scene
+        return active_act.id, active_scene
 
-    def set_current_scene(self, game_id: str, scene_id: str) -> Scene:
+    def set_current_scene(self, act_id: str, scene_id: str) -> Scene:
         """Set which scene is currently being played without changing its status.
 
         Args:
-            game_id: ID of the game the scene belongs to.
+            act_id: ID of the act the scene belongs to.
             scene_id: ID of the scene to make current.
 
         Returns:
@@ -243,22 +252,22 @@ class SceneManager(BaseManager[Scene, Scene]):
         Raises:
             SceneError: If there's an error setting the current scene.
         """
-        logger.debug(f"Setting scene {scene_id} as current in game {game_id}")
+        logger.debug(f"Setting scene {scene_id} as current in act {act_id}")
 
-        def _set_current_scene(session: Session, game_id: str, scene_id: str) -> Scene:
+        def _set_current_scene(session: Session, act_id: str, scene_id: str) -> Scene:
             # Get the scene to make sure it exists
             scene = (
                 session.query(Scene)
-                .filter(and_(Scene.game_id == game_id, Scene.id == scene_id))
+                .filter(and_(Scene.act_id == act_id, Scene.id == scene_id))
                 .first()
             )
 
             if not scene:
-                raise SceneError(f"Scene {scene_id} not found in game {game_id}")
+                raise SceneError(f"Scene {scene_id} not found in act {act_id}")
 
-            # Deactivate all scenes in this game
+            # Deactivate all scenes in this act
             session.query(Scene).filter(
-                and_(Scene.game_id == game_id, Scene.is_active)
+                and_(Scene.act_id == act_id, Scene.is_active)
             ).update({"is_active": False})
 
             # Set this scene as active
@@ -266,16 +275,16 @@ class SceneManager(BaseManager[Scene, Scene]):
             return scene
 
         return self._execute_db_operation(
-            "set current scene", _set_current_scene, game_id=game_id, scene_id=scene_id
+            "set current scene", _set_current_scene, act_id=act_id, scene_id=scene_id
         )
 
     def update_scene(
-        self, game_id: str, scene_id: str, title: str, description: str
+        self, act_id: str, scene_id: str, title: str, description: str
     ) -> Scene:
         """Update a scene's title and description.
 
         Args:
-            game_id: ID of the game the scene belongs to
+            act_id: ID of the act the scene belongs to
             scene_id: ID of the scene to update
             title: New title for the scene
             description: New description for the scene
@@ -286,20 +295,20 @@ class SceneManager(BaseManager[Scene, Scene]):
         Raises:
             SceneError: If there's an error updating the scene
         """
-        logger.debug(f"Updating scene {scene_id} in game {game_id}")
+        logger.debug(f"Updating scene {scene_id} in act {act_id}")
 
         def _update_scene(
-            session: Session, game_id: str, scene_id: str, title: str, description: str
+            session: Session, act_id: str, scene_id: str, title: str, description: str
         ) -> Scene:
             # Get the scene to make sure it exists
             scene = (
                 session.query(Scene)
-                .filter(and_(Scene.game_id == game_id, Scene.id == scene_id))
+                .filter(and_(Scene.act_id == act_id, Scene.id == scene_id))
                 .first()
             )
 
             if not scene:
-                raise SceneError(f"Scene {scene_id} not found in game {game_id}")
+                raise SceneError(f"Scene {scene_id} not found in act {act_id}")
 
             # Check for duplicate titles (only if title is changing)
             if scene.title != title:
@@ -307,7 +316,7 @@ class SceneManager(BaseManager[Scene, Scene]):
                     session.query(Scene)
                     .filter(
                         and_(
-                            Scene.game_id == game_id,
+                            Scene.act_id == act_id,
                             Scene.title.ilike(title),
                             Scene.id != scene_id,
                         )
@@ -317,7 +326,7 @@ class SceneManager(BaseManager[Scene, Scene]):
 
                 if existing:
                     raise SceneError(
-                        f"A scene with title '{title}' already exists in this game"
+                        f"A scene with title '{title}' already exists in this act"
                     )
 
             # Update the scene
@@ -329,17 +338,17 @@ class SceneManager(BaseManager[Scene, Scene]):
         return self._execute_db_operation(
             "update scene",
             _update_scene,
-            game_id=game_id,
+            act_id=act_id,
             scene_id=scene_id,
             title=title,
             description=description,
         )
 
-    def get_previous_scene(self, game_id: str, current_scene: Scene) -> Optional[Scene]:
+    def get_previous_scene(self, act_id: str, current_scene: Scene) -> Optional[Scene]:
         """Get the scene that comes before the current scene in sequence.
 
         Args:
-            game_id: ID of the game
+            act_id: ID of the act
             current_scene: Current scene to find the previous for
 
         Returns:
@@ -351,17 +360,17 @@ class SceneManager(BaseManager[Scene, Scene]):
             return None
 
         def _get_previous_scene(
-            session: Session, game_id: str, sequence: int
+            session: Session, act_id: str, sequence: int
         ) -> Optional[Scene]:
             return (
                 session.query(Scene)
-                .filter(and_(Scene.game_id == game_id, Scene.sequence == sequence - 1))
+                .filter(and_(Scene.act_id == act_id, Scene.sequence == sequence - 1))
                 .first()
             )
 
         return self._execute_db_operation(
             "get previous scene",
             _get_previous_scene,
-            game_id=game_id,
+            act_id=act_id,
             sequence=current_scene.sequence,
         )

@@ -12,8 +12,9 @@ if TYPE_CHECKING:
     app: Typer
 from sologm.cli.utils.display import display_scene_info
 from sologm.core.game import GameManager
+from sologm.core.act import ActManager
 from sologm.core.scene import SceneManager
-from sologm.utils.errors import GameError, SceneError
+from sologm.utils.errors import GameError, SceneError, ActError
 
 # Create scene subcommand
 scene_app = typer.Typer(help="Scene management commands")
@@ -30,9 +31,10 @@ def add_scene(
         ..., "--description", "-d", help="Description of the scene"
     ),
 ) -> None:
-    """Add a new scene to the active game."""
+    """Add a new scene to the active act."""
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
 
         # Get active game
@@ -40,24 +42,30 @@ def add_scene(
         if not active_game:
             raise GameError("No active game. Use 'sologm game activate' to set one.")
 
+        # Get active act
+        active_act = act_manager.get_active_act(active_game.id)
+        if not active_act:
+            raise ActError("No active act. Create one with 'sologm act create'.")
+
         # Create the scene
         scene = scene_manager.create_scene(
-            game_id=active_game.id,
+            act_id=active_act.id,
             title=title,
             description=description,
         )
 
         console.print("[bold green]Scene added successfully![/]")
         display_scene_info(console, scene)
-    except (GameError, SceneError) as e:
+    except (GameError, SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
         raise typer.Exit(1) from e
 
 
 @scene_app.command("list")
 def list_scenes() -> None:
-    """List all scenes in the active game."""
+    """List all scenes in the active act."""
     game_manager = GameManager()
+    act_manager = ActManager()
     scene_manager = SceneManager()
 
     # Get active game
@@ -65,11 +73,16 @@ def list_scenes() -> None:
     if not active_game:
         raise GameError("No active game. Use 'sologm game activate' to set one.")
 
+    # Get active act
+    active_act = act_manager.get_active_act(active_game.id)
+    if not active_act:
+        raise ActError("No active act. Create one with 'sologm act create'.")
+
     # Get scenes
-    scenes = scene_manager.list_scenes(active_game.id)
+    scenes = scene_manager.list_scenes(active_act.id)
 
     # Get active scene
-    active_scene = scene_manager.get_active_scene(active_game.id)
+    active_scene = scene_manager.get_active_scene(active_act.id)
     active_scene_id = active_scene.id if active_scene else None
 
     # Use the display helper function
@@ -82,12 +95,13 @@ def list_scenes() -> None:
 def scene_info() -> None:
     """Show information about the active scene."""
     game_manager = GameManager()
+    act_manager = ActManager()
     scene_manager = SceneManager()
 
     try:
-        _, active_scene = scene_manager.validate_active_context(game_manager)
+        _, active_scene = scene_manager.validate_active_context(game_manager, act_manager)
         display_scene_info(console, active_scene)
-    except SceneError as e:
+    except (SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
 
 
@@ -96,13 +110,14 @@ def complete_scene() -> None:
     """Complete the active scene."""
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
 
-        game_id, active_scene = scene_manager.validate_active_context(game_manager)
-        completed_scene = scene_manager.complete_scene(game_id, active_scene.id)
+        act_id, active_scene = scene_manager.validate_active_context(game_manager, act_manager)
+        completed_scene = scene_manager.complete_scene(act_id, active_scene.id)
         console.print("[bold green]Scene completed successfully![/]")
         display_scene_info(console, completed_scene)
-    except SceneError as e:
+    except (SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
         raise typer.Exit(1) from e
 
@@ -116,17 +131,18 @@ def edit_scene(
     """Edit the title and description of a scene."""
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
 
-        # Get active game
-        game_id, active_scene = scene_manager.validate_active_context(game_manager)
+        # Get active game and act
+        act_id, active_scene = scene_manager.validate_active_context(game_manager, act_manager)
 
         # If no scene_id provided, use the active scene
         if not scene_id:
             scene_id = active_scene.id
 
         # Get the scene to edit
-        scene = scene_manager.get_scene(game_id, scene_id)
+        scene = scene_manager.get_scene(act_id, scene_id)
         if not scene:
             console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
             raise typer.Exit(1)
@@ -183,7 +199,7 @@ def edit_scene(
         if was_modified:
             # Update the scene
             updated_scene = scene_manager.update_scene(
-                game_id=game_id,
+                act_id=act_id,
                 scene_id=scene_id,
                 title=edited_data["title"],
                 description=edited_data["description"],
@@ -192,7 +208,7 @@ def edit_scene(
             console.print("[bold green]Scene updated successfully![/]")
             display_scene_info(console, updated_scene)
 
-    except SceneError as e:
+    except (SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
         raise typer.Exit(1) from e
 
@@ -204,6 +220,7 @@ def set_current_scene(
     """Set which scene is currently being played."""
     try:
         game_manager = GameManager()
+        act_manager = ActManager()
         scene_manager = SceneManager()
 
         # Get active game
@@ -211,8 +228,13 @@ def set_current_scene(
         if not active_game:
             raise GameError("No active game. Use 'sologm game activate' to set one.")
 
+        # Get active act
+        active_act = act_manager.get_active_act(active_game.id)
+        if not active_act:
+            raise ActError("No active act. Create one with 'sologm act create'.")
+
         # Get list of valid scenes first
-        scenes = scene_manager.list_scenes(active_game.id)
+        scenes = scene_manager.list_scenes(active_act.id)
         scene_ids = [s.id for s in scenes]
 
         # Check if scene_id exists before trying to set it
@@ -224,9 +246,9 @@ def set_current_scene(
             return
 
         # Set the current scene
-        new_current = scene_manager.set_current_scene(active_game.id, scene_id)
+        new_current = scene_manager.set_current_scene(active_act.id, scene_id)
         console.print("[bold green]Current scene updated successfully![/]")
         display_scene_info(console, new_current)
-    except (GameError, SceneError) as e:
+    except (GameError, SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
         raise typer.Exit(1) from e
