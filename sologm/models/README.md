@@ -79,7 +79,38 @@ class Act(Base, TimestampMixin):
     game: Mapped["Game"]
     scenes: Mapped[List["Scene"]]
     
-    # Helper Properties
+    # Hybrid Properties (work in both Python and SQL)
+    @hybrid_property
+    def has_scenes(self) -> bool  # Checks if the act has any scenes
+    
+    @hybrid_property
+    def scene_count(self) -> int  # Returns the number of scenes
+    
+    @hybrid_property
+    def has_active_scene(self) -> bool  # Checks if the act has an active scene
+    
+    @hybrid_property
+    def has_completed_scenes(self) -> bool  # Checks if the act has any completed scenes
+    
+    @hybrid_property
+    def has_events(self) -> bool  # Checks if the act has any events across all scenes
+    
+    @hybrid_property
+    def event_count(self) -> int  # Returns the total number of events across all scenes
+    
+    @hybrid_property
+    def has_dice_rolls(self) -> bool  # Checks if the act has any dice rolls
+    
+    @hybrid_property
+    def dice_roll_count(self) -> int  # Returns the total number of dice rolls
+    
+    @hybrid_property
+    def has_interpretations(self) -> bool  # Checks if the act has any interpretations
+    
+    @hybrid_property
+    def interpretation_count(self) -> int  # Returns the total number of interpretations
+    
+    # Regular Properties (Python-only)
     @property
     def active_scene(self) -> Optional["Scene"]  # Returns the active scene for this act
     
