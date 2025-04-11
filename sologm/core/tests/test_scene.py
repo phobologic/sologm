@@ -34,13 +34,14 @@ class TestScene:
 
 class TestSceneManager:
     """Tests for the SceneManager class."""
-    
+
     @pytest.fixture(autouse=True)
     def ensure_active_act(self, test_game, db_session):
         """Ensure there's an active act for each test."""
         from sologm.core.act import ActManager
+
         act_manager = ActManager(db_session)
-        
+
         # Check if there's already an active act
         active_act = act_manager.get_active_act(test_game.id)
         if not active_act:
@@ -49,12 +50,12 @@ class TestSceneManager:
                 game_id=test_game.id,
                 title="Test Act",
                 description="Test act description",
-                sequence=1
+                sequence=1,
             )
             act.is_active = True
             db_session.add(act)
             db_session.commit()
-        
+
         return act_manager
 
     def test_create_scene(self, scene_manager, test_game, db_session) -> None:
@@ -191,9 +192,10 @@ class TestSceneManager:
         # Create a scene but don't set it as active
         # First get the active act
         from sologm.core.act import ActManager
+
         act_manager = ActManager(db_session)
         active_act = act_manager.get_active_act(test_game.id)
-        
+
         scene = Scene.create(
             act_id=active_act.id,
             title="Inactive Scene",
