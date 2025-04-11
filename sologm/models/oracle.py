@@ -35,22 +35,22 @@ class InterpretationSet(Base, TimestampMixin):
         back_populates="interpretation_set",
         cascade="all, delete-orphan",
     )
-    
+
     @property
     def act(self) -> "Act":
         """Get the act this interpretation set belongs to through the scene relationship."""
         return self.scene.act
-    
+
     @property
     def act_id(self) -> str:
         """Get the act ID this interpretation set belongs to."""
         return self.scene.act_id
-    
+
     @property
     def game(self) -> "Game":
         """Get the game this interpretation set belongs to through the scene and act relationships."""
         return self.scene.act.game
-    
+
     @property
     def game_id(self) -> str:
         """Get the game ID this interpretation set belongs to."""
@@ -104,37 +104,37 @@ class Interpretation(Base, TimestampMixin):
     events: Mapped[List["Event"]] = relationship(
         "Event", back_populates="interpretation"
     )
-    
+
     @property
     def interpretation_set(self) -> "InterpretationSet":
         """Get the interpretation set this interpretation belongs to."""
         return self.interpretation_set
-    
+
     @property
     def scene(self) -> "Scene":
         """Get the scene this interpretation belongs to through the interpretation set relationship."""
         return self.interpretation_set.scene
-    
+
     @property
     def scene_id(self) -> str:
         """Get the scene ID this interpretation belongs to."""
         return self.interpretation_set.scene_id
-    
+
     @property
     def act(self) -> "Act":
         """Get the act this interpretation belongs to through the scene relationship."""
         return self.scene.act
-    
+
     @property
     def act_id(self) -> str:
         """Get the act ID this interpretation belongs to."""
         return self.scene.act_id
-    
+
     @property
     def game(self) -> "Game":
         """Get the game this interpretation belongs to through the act relationship."""
         return self.act.game
-    
+
     @property
     def game_id(self) -> str:
         """Get the game ID this interpretation belongs to."""
