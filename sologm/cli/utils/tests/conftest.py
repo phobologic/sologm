@@ -63,7 +63,7 @@ def test_act(db_session, test_game):
     existing_act = db_session.query(Act).filter(Act.game_id == test_game.id).first()
     if existing_act:
         return existing_act
-        
+
     act = Act.create(
         game_id=test_game.id,
         title="Test Act",
@@ -85,7 +85,7 @@ def test_scene(db_session, test_act):
     existing_scene = db_session.query(Scene).filter(Scene.act_id == test_act.id).first()
     if existing_scene:
         return existing_scene
-        
+
     scene = Scene.create(
         act_id=test_act.id,
         title="Test Scene",
