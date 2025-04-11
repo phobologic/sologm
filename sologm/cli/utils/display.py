@@ -226,7 +226,7 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
         )
 
     # Create panel title
-    panel_title = st.title(f"Events in game '{scene.game.name}', scene '{scene.title}'")
+    panel_title = st.title(f"Events in game '{scene.act.game.name}', scene '{scene.title}'")
 
     # Wrap the table in a panel with a title
     panel = Panel(
