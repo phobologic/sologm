@@ -41,7 +41,8 @@ class InterpretationSet(Base, TimestampMixin):
 
     @property
     def act(self) -> "Act":
-        """Get the act this interpretation set belongs to through the scene relationship."""
+        """Get the act this interpretation set belongs to through the scene 
+        relationship."""
         return self.scene.act
 
     @property
@@ -51,7 +52,8 @@ class InterpretationSet(Base, TimestampMixin):
 
     @property
     def game(self) -> "Game":
-        """Get the game this interpretation set belongs to through the scene and act relationships."""
+        """Get the game this interpretation set belongs to through the scene 
+        and act relationships."""
         return self.scene.act.game
 
     @property
@@ -82,14 +84,14 @@ class InterpretationSet(Base, TimestampMixin):
         return any(interp.is_selected for interp in self.interpretations)
 
     @has_selection.expression
-    def has_selection(cls):
+    def has_selection(cls):  # noqa: N805
         """SQL expression for has_selection."""
         from sologm.models.oracle import Interpretation
 
         return (
             select(1)
             .where(
-                (Interpretation.set_id == cls.id) & (Interpretation.is_selected == True)
+                (Interpretation.set_id == cls.id) & Interpretation.is_selected
             )
             .exists()
             .label("has_selection")
@@ -106,7 +108,7 @@ class InterpretationSet(Base, TimestampMixin):
         return len(self.interpretations)
 
     @interpretation_count.expression
-    def interpretation_count(cls):
+    def interpretation_count(cls):  # noqa: N805
         """SQL expression for interpretation_count."""
         from sologm.models.oracle import Interpretation
 
@@ -169,7 +171,8 @@ class Interpretation(Base, TimestampMixin):
 
     @property
     def scene(self) -> "Scene":
-        """Get the scene this interpretation belongs to through the interpretation set relationship."""
+        """Get the scene this interpretation belongs to through the interpretation set 
+        relationship."""
         return self.interpretation_set.scene
 
     @property
@@ -219,7 +222,7 @@ class Interpretation(Base, TimestampMixin):
         return len(self.events)
 
     @event_count.expression
-    def event_count(cls):
+    def event_count(cls):  # noqa: N805
         """SQL expression for event_count."""
         from sologm.models.event import Event
 
@@ -240,7 +243,7 @@ class Interpretation(Base, TimestampMixin):
         return len(self.events) > 0
 
     @has_events.expression
-    def has_events(cls):
+    def has_events(cls):  # noqa: N805
         """SQL expression for has_events."""
         from sologm.models.event import Event
 
