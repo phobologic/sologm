@@ -30,6 +30,12 @@ class TestOracle:
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
         monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
+        
+        # Mock the validate_active_context method to return our test scene
+        def mock_validate_active_context():
+            return "test_act_id", test_scene
+            
+        monkeypatch.setattr(scene_manager, "validate_active_context", mock_validate_active_context)
 
         game_id, act_id, scene_id = oracle_manager.get_active_context()
         assert game_id == test_game.id
@@ -728,6 +734,18 @@ It also has multiple lines."""
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
         monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
+        
+        # Mock get_active_context to return our test IDs
+        def mock_get_active_context():
+            return test_game.id, test_act.id, test_scene.id
+            
+        monkeypatch.setattr(oracle_manager, "get_active_context", mock_get_active_context)
+        
+        # Mock get_scene to return our test scene
+        def mock_get_scene(scene_id):
+            return test_scene
+            
+        monkeypatch.setattr(scene_manager, "get_scene", mock_get_scene)
 
         # Mock the _build_prompt method to avoid actual prompt generation
         original_build_prompt = oracle_manager._build_prompt
@@ -736,11 +754,12 @@ It also has multiple lines."""
             # Just return the arguments to verify they're correct
             return {
                 "game_description": args[0],
-                "scene_description": args[1],
-                "recent_events": args[2],
-                "context": args[3],
-                "oracle_results": args[4],
-                "count": args[5],
+                "act_description": args[1],
+                "scene_description": args[2],
+                "recent_events": args[3],
+                "context": args[4],
+                "oracle_results": args[5],
+                "count": args[6],
             }
 
         oracle_manager._build_prompt = mock_build_prompt
@@ -755,6 +774,7 @@ It also has multiple lines."""
 
             # Verify the correct data was passed to _build_prompt
             assert result["game_description"] == test_game.description
+            assert result["act_description"] == test_act.description
             assert result["scene_description"] == test_scene.description
             assert isinstance(result["recent_events"], list)
             assert result["context"] == "Test context"
