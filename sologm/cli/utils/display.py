@@ -1426,9 +1426,7 @@ def display_interpretation_status(
     metadata = {
         "Set ID": interp_set.id,
         "Retry count": interp_set.retry_attempt,
-        "Resolved": any(
-            interp.is_selected for interp in interp_set.interpretations
-        ),
+        "Resolved": any(interp.is_selected for interp in interp_set.interpretations),
     }
 
     # Create panel content
