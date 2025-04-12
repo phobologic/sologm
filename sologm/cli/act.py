@@ -232,6 +232,11 @@ def act_info() -> None:
         console.print("Create one with 'sologm act create'.")
         raise typer.Exit(1)
 
+    # Display compact game header first
+    from sologm.cli.utils.display import _create_game_header_panel
+    console.print(_create_game_header_panel(active_game, console))
+    console.print()
+    
     # Display act info
     display_act_info(console, active_act, active_game.name)
 

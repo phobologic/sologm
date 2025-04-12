@@ -1328,12 +1328,23 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
     panel_content.append(st.format_metadata(metadata))
 
     # Create panel title
-    title_display = act.title or "[italic]Untitled Act[/italic]"
-    panel_title = st.combine(
-        st.title_blue(f"Act {act.sequence}: {title_display}"),
-        " ",
-        st.timestamp(f"({act.id})"),
-    )
+    if act.title:
+        title_display = act.title
+        panel_title = st.combine(
+            st.title_blue(f"Act {act.sequence}: {title_display}"),
+            " ",
+            st.timestamp(f"({act.id})"),
+        )
+    else:
+        # For untitled acts, use Rich's Text object with proper styling
+        from rich.text import Text
+        untitled_text = Text("Untitled Act", style="italic")
+        panel_title = st.combine(
+            st.title_blue(f"Act {act.sequence}: "),
+            untitled_text,
+            " ",
+            st.timestamp(f"({act.id})"),
+        )
 
     panel = Panel(
         panel_content, title=panel_title, border_style=border_style, title_align="left"
