@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -12,9 +12,12 @@ from sologm.core.game import GameManager
 from sologm.core.prompts.oracle import OraclePrompts
 from sologm.core.scene import SceneManager
 from sologm.integrations.anthropic import AnthropicClient
+from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
+from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene
 from sologm.utils.errors import OracleError
 
 if TYPE_CHECKING:
@@ -313,7 +316,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         scene_id: str,
         retry_attempt: int = 0,
         previous_set_id: Optional[str] = None,
-    ) -> Tuple[object, object, object, List[object], Optional[List[dict]]]:
+    ) -> Tuple["Game", "Act", "Scene", List["Event"], Optional[List[Dict[str, str]]]]:
         """Get all context data needed for interpretation.
 
         Args:
