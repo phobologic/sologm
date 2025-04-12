@@ -17,10 +17,10 @@ console = Console()
 
 def resolve_scene_id(scene_id: Optional[str]) -> Optional[str]:
     """Resolve scene ID from active context if not provided.
-    
+
     Args:
         scene_id: Optional scene ID provided by user
-        
+
     Returns:
         Resolved scene ID or None if not resolvable
     """
