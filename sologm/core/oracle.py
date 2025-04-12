@@ -310,18 +310,14 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def _get_context_data(
         self,
-        game_id: str,
-        act_id: str,
         scene_id: str,
-        retry_attempt: int,
-        previous_set_id: Optional[str],
+        retry_attempt: int = 0,
+        previous_set_id: Optional[str] = None,
     ) -> Tuple[object, object, object, List[object], Optional[List[dict]]]:
         """Get all context data needed for interpretation.
 
         Args:
-            game_id: ID of the current game
-            act_id: ID of the current act
-            scene_id: ID of the current scene
+            scene_id: ID of the scene
             retry_attempt: Current retry attempt number
             previous_set_id: ID of the previous interpretation set
 
@@ -330,39 +326,25 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             interpretations
 
         Raises:
-            OracleError: If game, act, or scene not found
+            OracleError: If scene not found
         """
 
         def _get_data(session: Session) -> Tuple:
-            # Get game, act, and scene
-            from sologm.models.act import Act
-            from sologm.models.game import Game
+            # Get scene (and through relationships, act and game)
             from sologm.models.scene import Scene
 
-            game = session.query(Game).filter(Game.id == game_id).first()
-            if not game:
-                raise OracleError(f"Game {game_id} not found")
-
-            act = (
-                session.query(Act)
-                .filter(Act.id == act_id, Act.game_id == game_id)
-                .first()
-            )
-            if not act:
-                raise OracleError(f"Act {act_id} not found in game {game_id}")
-
-            scene = (
-                session.query(Scene)
-                .filter(Scene.id == scene_id, Scene.act_id == act_id)
-                .first()
-            )
+            scene = session.query(Scene).filter(Scene.id == scene_id).first()
             if not scene:
-                raise OracleError(f"Scene {scene_id} not found in act {act_id}")
+                raise OracleError(f"Scene {scene_id} not found")
+
+            # Access act and game through relationships
+            act = scene.act
+            game = act.game
 
             # Get recent events
             recent_events = (
                 session.query(Event)
-                .filter(Event.scene_id == scene_id, Event.game_id == game_id)
+                .filter(Event.scene_id == scene_id)
                 .order_by(Event.created_at.desc())
                 .limit(5)
                 .all()
@@ -525,7 +507,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 # Get game, act, scene details, recent events, etc.
                 game, act, scene, recent_events, previous_interpretations = (
                     self._get_context_data(
-                        game_id, act_id, scene_id, attempt, previous_set_id
+                        scene_id, attempt, previous_set_id
                     )
                 )
 

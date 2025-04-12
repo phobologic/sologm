@@ -485,7 +485,7 @@ It also has multiple lines."""
     def test_get_context_data(self, oracle_manager, test_game, test_act, test_scene):
         """Test getting context data for interpretations."""
         game, act, scene, events, previous = oracle_manager._get_context_data(
-            test_game.id, test_act.id, test_scene.id, 0, None
+            test_scene.id, 0, None
         )
 
         assert game.id == test_game.id
