@@ -206,9 +206,7 @@ class TestActManager:
         assert other_activated_act.id == other_act.id
         assert other_activated_act.is_active is True
 
-    def test_validate_active_act(
-        self, db_session, test_game, test_act, act_manager
-    ):
+    def test_validate_active_act(self, db_session, test_game, test_act, act_manager):
         """Test validating active act."""
         # Valid context
         act = act_manager.validate_active_act(test_game.id)

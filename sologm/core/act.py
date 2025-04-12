@@ -94,7 +94,7 @@ class ActManager(BaseManager[Act, Act]):
             return session.query(Act).filter(Act.id == act_id).first()
 
         return self._execute_db_operation("get_act", _get_act, act_id)
-        
+
     def list_acts(self, game_id: str) -> List[Act]:
         """List all acts in a game.
 
