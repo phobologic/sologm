@@ -5,7 +5,8 @@ A command-line application designed to assist players of solo or GM-less rolepla
 ## Features
 
 - **Game Management**: Create, list, and activate games to organize your solo RPG sessions
-- **Scene Tracking**: Create scenes, mark them as complete, and track the current active scene
+- **Act Management**: Organize your game into narrative acts that contain multiple scenes
+- **Scene Tracking**: Create scenes within acts, mark them as complete, and track the current active scene
 - **Event Recording**: Log important events that occur during gameplay
 - **Oracle Interpretation**: Use Claude AI to interpret oracle results in the context of your game
 - **Dice Rolling**: Roll dice using standard notation (e.g., 2d6+1) with optional reasons
@@ -77,12 +78,36 @@ sologm game activate --id fantasy-adventure
 sologm game info
 ```
 
+### Act Management
+```bash
+# Create a new act (becomes active automatically)
+sologm act create --title "The Journey Begins" --description "The heroes set out on their quest"
+
+# Create an untitled act
+sologm act create
+
+# List all acts in the current game
+sologm act list
+
+# Show current act info
+sologm act info
+
+# Edit the current act
+sologm act edit --title "New Title" --description "New description"
+
+# Complete the current act
+sologm act complete
+
+# Complete act with AI-generated title and description (when implemented)
+sologm act complete --ai
+```
+
 ### Scene Management
 ```bash
-# Add a new scene (becomes current automatically)
+# Add a new scene to the current act (becomes current automatically)
 sologm scene add --title "The Forest" --description "A dark and mysterious forest"
 
-# List all scenes
+# List all scenes in the current act
 sologm scene list
 
 # Complete current scene
