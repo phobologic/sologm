@@ -41,10 +41,10 @@ class EventManager(BaseManager[Event, Event]):
         """
         if game_manager is None:
             game_manager = GameManager(self._session)
-            
+
         if scene_manager is None:
             scene_manager = SceneManager(self._session)
-            
+
         try:
             return scene_manager.get_active_context(game_manager, act_manager)
         except Exception as e:
@@ -106,7 +106,9 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the source doesn't exist
         """
-        event_source = session.query(EventSource).filter(EventSource.name == source).first()
+        event_source = (
+            session.query(EventSource).filter(EventSource.name == source).first()
+        )
         if not event_source:
             valid_sources = [s.name for s in session.query(EventSource).all()]
             raise EventError(
@@ -146,7 +148,7 @@ class EventManager(BaseManager[Event, Event]):
         ) -> Event:
             # Validate scene exists
             scene = self._validate_scene(session, scene_id)
-            
+
             # Validate source exists
             event_source = self._validate_source(session, source)
 
@@ -231,9 +233,7 @@ class EventManager(BaseManager[Event, Event]):
             self.logger.error(f"Failed to update event: {str(e)}")
             raise EventError(f"Failed to update event: {str(e)}") from e
 
-    def list_events(
-        self, scene_id: str, limit: Optional[int] = None
-    ) -> List[Event]:
+    def list_events(self, scene_id: str, limit: Optional[int] = None) -> List[Event]:
         """List events for the specified scene.
 
         Args:

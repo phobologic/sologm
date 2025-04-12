@@ -53,18 +53,14 @@ class TestEventManager:
         assert events[0].description == "Second event"
         assert events[1].description == "First event"
 
-    def test_list_events_with_limit(
-        self, event_manager, test_scene, create_test_event
-    ):
+    def test_list_events_with_limit(self, event_manager, test_scene, create_test_event):
         """Test listing events with a limit."""
         # Add some events
         create_test_event(test_scene.id, "First event")
         create_test_event(test_scene.id, "Second event")
         create_test_event(test_scene.id, "Third event")
 
-        events = event_manager.list_events(
-            scene_id=test_scene.id, limit=2
-        )
+        events = event_manager.list_events(scene_id=test_scene.id, limit=2)
         assert len(events) == 2
         assert events[0].description == "Third event"
         assert events[1].description == "Second event"
@@ -82,7 +78,7 @@ class TestEventManager:
         context = event_manager.get_active_context(game_manager, scene_manager)
         assert context["game"].id == test_game.id
         assert context["scene"].id == test_scene.id
-        
+
     def test_validate_active_context(
         self, event_manager, game_manager, scene_manager, test_game, test_scene
     ):

@@ -43,6 +43,7 @@ from sologm.tests.conftest import (
     test_hybrid_property_game,
 )
 
+
 # Add core-specific fixtures here
 @pytest.fixture
 def create_test_event(db_session):
@@ -53,7 +54,9 @@ def create_test_event(db_session):
     ):
         # Get the source ID for the specified source
         source_obj = (
-            db_session.query(EventSource).filter(EventSource.name == source_name).first()
+            db_session.query(EventSource)
+            .filter(EventSource.name == source_name)
+            .first()
         )
         if not source_obj:
             # Create it if it doesn't exist
