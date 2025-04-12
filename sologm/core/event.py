@@ -33,13 +33,12 @@ class EventManager(BaseManager[Event, Event]):
         """
         super().__init__(session)
         self._scene_manager = scene_manager
-        
+
     @property
     def scene_manager(self) -> SceneManager:
         """Lazy-initialize scene manager."""
         return self._lazy_init_manager(
-            "_scene_manager", 
-            "sologm.core.scene.SceneManager"
+            "_scene_manager", "sologm.core.scene.SceneManager"
         )
 
     @property
@@ -114,12 +113,12 @@ class EventManager(BaseManager[Event, Event]):
         """
         try:
             return self.get_entity_or_error(
-                session, 
-                EventSource, 
-                source_name, 
+                session,
+                EventSource,
+                source_name,
                 EventError,
                 f"Invalid source '{source_name}'",
-                lambda q, val: q.filter(EventSource.name == val)
+                lambda q, val: q.filter(EventSource.name == val),
             )
         except EventError:
             # If not found, provide more helpful error with valid sources
@@ -203,7 +202,9 @@ class EventManager(BaseManager[Event, Event]):
         try:
             return self._execute_db_operation(
                 "get event",
-                lambda session: session.query(Event).filter(Event.id == event_id).first(),
+                lambda session: session.query(Event)
+                .filter(Event.id == event_id)
+                .first(),
             )
         except Exception as e:
             self._handle_operation_error("get event", e, EventError)
@@ -229,7 +230,11 @@ class EventManager(BaseManager[Event, Event]):
             session: Session, event_id: str, description: str, source: Optional[str]
         ) -> Event:
             event = self.get_entity_or_error(
-                session, Event, event_id, EventError, f"Event with ID '{event_id}' not found"
+                session,
+                Event,
+                event_id,
+                EventError,
+                f"Event with ID '{event_id}' not found",
             )
 
             event.description = description
@@ -266,21 +271,20 @@ class EventManager(BaseManager[Event, Event]):
         """
         if scene_id is None:
             _, scene_id = self.validate_active_context()
-        
+
         try:
             # Validate scene exists (in a separate operation)
             self._execute_db_operation(
-                "validate scene", 
-                lambda session: self._get_scene(session, scene_id)
+                "validate scene", lambda session: self._get_scene(session, scene_id)
             )
-            
+
             # Use list_entities for the actual query
             return self.list_entities(
                 Event,
                 filters={"scene_id": scene_id},
                 order_by="created_at",
                 order_direction="desc",
-                limit=limit
+                limit=limit,
             )
         except Exception as e:
             self._handle_operation_error("list events", e, EventError)
@@ -292,9 +296,6 @@ class EventManager(BaseManager[Event, Event]):
             List of EventSource objects
         """
         try:
-            return self.list_entities(
-                EventSource,
-                order_by="name"
-            )
+            return self.list_entities(EventSource, order_by="name")
         except Exception as e:
             self._handle_operation_error("get event sources", e, EventError)
