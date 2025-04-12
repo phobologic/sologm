@@ -1,7 +1,5 @@
 """Shared test fixtures for core module tests."""
 
-import pytest
-
 # Import common fixtures from central conftest
 # These imports are used by pytest when running tests
 from sologm.tests.conftest import (  # noqa: F401
