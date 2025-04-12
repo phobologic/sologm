@@ -1,7 +1,7 @@
 """Scene management functionality."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
@@ -12,6 +12,12 @@ from sologm.core.game import GameManager
 from sologm.models.act import Act
 from sologm.models.scene import Scene, SceneStatus
 from sologm.utils.errors import SceneError
+
+if TYPE_CHECKING:
+    from sologm.core.dice import DiceManager
+    from sologm.core.event import EventManager
+    from sologm.core.oracle import OracleManager
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +39,10 @@ class SceneManager(BaseManager[Scene, Scene]):
                 a new one will be created for each operation.
         """
         super().__init__(session)
-        self._act_manager = act_manager
+        self._act_manager: Optional["ActManager"] = act_manager
+        self._dice_manager: Optional["DiceManager"] = None
+        self._event_manager: Optional["EventManager"] = None
+        self._oracle_manager: Optional["OracleManager"] = None
         logger.debug("Initialized SceneManager")
 
     @property
@@ -83,7 +92,8 @@ class SceneManager(BaseManager[Scene, Scene]):
         """Get the active game, act, and scene context.
 
         Returns:
-            Dictionary containing 'game', 'act', and 'scene' keys with their respective objects.
+            Dictionary containing 'game', 'act', and 'scene' keys with their
+            respective objects.
 
         Raises:
             SceneError: If no active game, act, or scene is found.

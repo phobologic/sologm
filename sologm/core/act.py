@@ -1,13 +1,18 @@
 """Act manager for SoloGM."""
 
 import logging
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act, ActStatus
 from sologm.utils.errors import GameError
+
+if TYPE_CHECKING:
+    from sologm.core.game import GameManager
+    from sologm.core.scene import SceneManager
+
 
 logger = logging.getLogger(__name__)
 

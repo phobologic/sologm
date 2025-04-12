@@ -1,6 +1,5 @@
 """Tests for cascade delete behavior in SQLAlchemy."""
 
-import pytest
 
 
 def test_cascade_delete_game(db_session, test_game_with_scenes, create_test_event):

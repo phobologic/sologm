@@ -2,28 +2,27 @@
 
 import logging
 from unittest.mock import MagicMock
-from typing import Dict, Any, List, Optional, Callable
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from sologm.database.session import DatabaseSession
-from sologm.models.base import Base
-from sologm.models.game import Game
-from sologm.models.act import Act, ActStatus
-from sologm.models.scene import Scene, SceneStatus
-from sologm.models.event import Event
-from sologm.models.event_source import EventSource
-from sologm.models.dice import DiceRoll
-from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.integrations.anthropic import AnthropicClient
+from sologm.core.act import ActManager
 from sologm.core.dice import DiceManager
 from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
-from sologm.core.act import ActManager
+from sologm.database.session import DatabaseSession
+from sologm.integrations.anthropic import AnthropicClient
+from sologm.models.act import Act, ActStatus
+from sologm.models.base import Base
+from sologm.models.dice import DiceRoll
+from sologm.models.event import Event
+from sologm.models.event_source import EventSource
+from sologm.models.game import Game
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene, SceneStatus
 
 logger = logging.getLogger(__name__)
 

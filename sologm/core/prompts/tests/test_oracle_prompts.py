@@ -1,6 +1,5 @@
 """Tests for oracle prompt templates."""
 
-import pytest
 
 from sologm.core.prompts.oracle import OraclePrompts
 

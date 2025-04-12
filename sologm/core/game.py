@@ -1,7 +1,7 @@
 """Game management functionality."""
 
 import logging
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -10,6 +10,10 @@ from sologm.core.base_manager import BaseManager
 from sologm.models.game import Game
 from sologm.models.utils import slugify
 from sologm.utils.errors import GameError
+
+if TYPE_CHECKING:
+    from sologm.core.act import ActManager
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +28,7 @@ class GameManager(BaseManager[Game, Game]):
             session: Optional database session (primarily for testing).
         """
         super().__init__(session)
-        self._act_manager = None
+        self._act_manager: Optional["ActManager"] = None
 
     # Child manager access
     @property
@@ -315,7 +319,8 @@ class GameManager(BaseManager[Game, Game]):
         Args:
             game_id: ID of the game to update
             name: New name for the game (if None, name won't be updated)
-            description: New description for the game (if None, description won't be updated)
+            description: New description for the game (if None, description
+                         won't be updated)
 
         Returns:
             The updated Game instance.
