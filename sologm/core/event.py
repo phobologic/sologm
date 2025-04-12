@@ -60,10 +60,27 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If no active scene is found
         """
+        self.logger.debug("Getting active scene ID")
         try:
-            context = self.scene_manager.get_active_context()
-            return context["scene"].id
+            # Get the active game first
+            game = self.game_manager.get_active_game()
+            if not game:
+                self.logger.error("No active game found")
+                raise EventError("No active game found")
+                
+            # Use the model hierarchy to get the active scene
+            if not game.has_active_scene:
+                self.logger.error("No active scene found in the active game")
+                raise EventError("No active scene found in the active game")
+                
+            scene_id = game.active_scene.id
+            self.logger.debug(f"Active scene ID: {scene_id}")
+            return scene_id
+        except EventError:
+            # Re-raise EventError directly
+            raise
         except Exception as e:
+            self.logger.error(f"Failed to get active scene: {str(e)}")
             raise EventError(f"Failed to get active scene: {str(e)}") from e
 
     def _get_source_by_name(self, session: Session, source_name: str) -> EventSource:
@@ -79,14 +96,19 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the source doesn't exist
         """
-        source = (
-            session.query(EventSource).filter(EventSource.name == source_name).first()
-        )
+        self.logger.debug(f"Getting event source by name: {source_name}")
+        
+        # Query for the source
+        source = session.query(EventSource).filter(EventSource.name == source_name).first()
+        
+        # If not found, provide helpful error with valid sources
         if not source:
             valid_sources = [s.name for s in session.query(EventSource).all()]
-            raise EventError(
-                f"Invalid source '{source_name}'. Valid sources: {', '.join(valid_sources)}"
-            )
+            error_msg = f"Invalid source '{source_name}'. Valid sources: {', '.join(valid_sources)}"
+            self.logger.error(error_msg)
+            raise EventError(error_msg)
+            
+        self.logger.debug(f"Found source: {source.name} (ID: {source.id})")
         return source
 
     def add_event(
@@ -110,35 +132,51 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the scene is not found or source is invalid
         """
+        self.logger.debug(
+            f"Adding event: description='{description[:30]}...', "
+            f"scene_id={scene_id or 'active'}, source={source}, "
+            f"interpretation_id={interpretation_id or 'None'}"
+        )
+        
         # Use active scene if none provided
         if scene_id is None:
             scene_id = self.get_active_scene_id()
+            self.logger.debug(f"Using active scene ID: {scene_id}")
 
         def _add_event(session: Session) -> Event:
             # Validate scene exists
-            self.get_entity_or_error(
+            scene = self.get_entity_or_error(
                 session, Scene, scene_id, EventError, f"Scene {scene_id} not found"
             )
+            self.logger.debug(f"Found scene: {scene.title} (ID: {scene.id})")
 
             # Get source
             event_source = self._get_source_by_name(session, source)
+            self.logger.debug(f"Using source: {event_source.name} (ID: {event_source.id})")
 
-            # Create and return event
+            # Create event
             event = Event.create(
                 scene_id=scene_id,
                 description=description,
                 source_id=event_source.id,
                 interpretation_id=interpretation_id,
             )
+            self.logger.debug(f"Created event with ID: {event.id}")
 
             session.add(event)
             session.flush()
             return event
 
         try:
-            return self._execute_db_operation("add event", _add_event)
+            event = self._execute_db_operation("add event", _add_event)
+            self.logger.info(
+                f"Added event: ID={event.id}, scene_id={event.scene_id}, "
+                f"source={event.source_name}"
+            )
+            return event
         except Exception as e:
-            self._handle_operation_error("add event", e, EventError)
+            self.logger.error(f"Failed to add event: {str(e)}")
+            raise EventError(f"Failed to add event: {str(e)}") from e
 
     def get_event(self, event_id: str) -> Optional[Event]:
         """Get an event by ID.
@@ -149,14 +187,20 @@ class EventManager(BaseManager[Event, Event]):
         Returns:
             The event if found, None otherwise
         """
+        self.logger.debug(f"Getting event by ID: {event_id}")
         try:
-
             def _get_event(session: Session) -> Optional[Event]:
-                return session.query(Event).filter(Event.id == event_id).first()
+                event = session.query(Event).filter(Event.id == event_id).first()
+                if event:
+                    self.logger.debug(f"Found event: {event.id}")
+                else:
+                    self.logger.debug(f"Event not found with ID: {event_id}")
+                return event
 
             return self._execute_db_operation("get event", _get_event)
         except Exception as e:
-            self._handle_operation_error("get event", e, EventError)
+            self.logger.error(f"Error getting event: {str(e)}")
+            raise EventError(f"Failed to get event: {str(e)}") from e
 
     def update_event(
         self, event_id: str, description: str, source: Optional[str] = None
@@ -174,6 +218,10 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the event is not found
         """
+        self.logger.debug(
+            f"Updating event: id={event_id}, description='{description[:30]}...', "
+            f"source={source or 'unchanged'}"
+        )
 
         def _update_event(session: Session) -> Event:
             # Get the event
@@ -184,21 +232,34 @@ class EventManager(BaseManager[Event, Event]):
                 EventError,
                 f"Event with ID '{event_id}' not found",
             )
+            self.logger.debug(f"Found event: {event.id} (scene: {event.scene_id})")
+            
+            # Store original values for logging
+            original_description = event.description
+            original_source_id = event.source_id
 
             # Update description
             event.description = description
+            self.logger.debug(f"Updated description from '{original_description[:30]}...' to '{description[:30]}...'")
 
             # Update source if provided
             if source is not None:
                 event_source = self._get_source_by_name(session, source)
                 event.source_id = event_source.id
+                self.logger.debug(f"Updated source from ID {original_source_id} to {event_source.id} ({event_source.name})")
 
             return event
 
         try:
-            return self._execute_db_operation("update event", _update_event)
+            event = self._execute_db_operation("update event", _update_event)
+            self.logger.info(
+                f"Updated event: ID={event.id}, scene_id={event.scene_id}, "
+                f"source={event.source_name}"
+            )
+            return event
         except Exception as e:
-            self._handle_operation_error("update event", e, EventError)
+            self.logger.error(f"Failed to update event: {str(e)}")
+            raise EventError(f"Failed to update event: {str(e)}") from e
 
     def list_events(
         self, scene_id: Optional[str] = None, limit: Optional[int] = None
@@ -215,29 +276,43 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the scene is not found
         """
+        self.logger.debug(
+            f"Listing events: scene_id={scene_id or 'active'}, limit={limit or 'None'}"
+        )
+        
         # Use active scene if none provided
         if scene_id is None:
             scene_id = self.get_active_scene_id()
+            self.logger.debug(f"Using active scene ID: {scene_id}")
 
         try:
             # Validate scene exists
-            def _validate_scene(session: Session) -> None:
-                self.get_entity_or_error(
+            def _validate_scene(session: Session) -> Scene:
+                scene = self.get_entity_or_error(
                     session, Scene, scene_id, EventError, f"Scene {scene_id} not found"
                 )
+                self.logger.debug(f"Found scene: {scene.title} (ID: {scene.id})")
+                return scene
 
-            self._execute_db_operation("validate scene", _validate_scene)
-
+            scene = self._execute_db_operation("validate scene", _validate_scene)
+            
+            # If we have a scene with events, we could potentially use the model directly
+            # But for consistency and to handle the limit parameter, we'll use list_entities
+            
             # List events
-            return self.list_entities(
+            events = self.list_entities(
                 Event,
                 filters={"scene_id": scene_id},
                 order_by="created_at",
                 order_direction="desc",
                 limit=limit,
             )
+            
+            self.logger.debug(f"Found {len(events)} events")
+            return events
         except Exception as e:
-            self._handle_operation_error("list events", e, EventError)
+            self.logger.error(f"Failed to list events: {str(e)}")
+            raise EventError(f"Failed to list events: {str(e)}") from e
 
     def get_event_sources(self) -> List[EventSource]:
         """Get all available event sources.
@@ -248,7 +323,11 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If there was an error retrieving the sources
         """
+        self.logger.debug("Getting all event sources")
         try:
-            return self.list_entities(EventSource, order_by="name")
+            sources = self.list_entities(EventSource, order_by="name")
+            self.logger.debug(f"Found {len(sources)} event sources")
+            return sources
         except Exception as e:
-            self._handle_operation_error("get event sources", e, EventError)
+            self.logger.error(f"Failed to get event sources: {str(e)}")
+            raise EventError(f"Failed to get event sources: {str(e)}") from e

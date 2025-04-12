@@ -109,7 +109,7 @@ class TestEventManager:
 
         with pytest.raises(EventError) as exc:
             event_manager.get_active_scene_id()
-        assert "Failed to get active scene" in str(exc.value)
+        assert "No active game found" in str(exc.value)
 
     def test_add_event_from_interpretation(
         self,
