@@ -457,8 +457,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def get_interpretations(
         self,
-        game_id: str,
-        act_id: str,
         scene_id: str,
         context: str,
         oracle_results: str,
@@ -470,8 +468,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """Get interpretations for oracle results.
 
         Args:
-            game_id: ID of the current game.
-            act_id: ID of the current act.
             scene_id: ID of the current scene.
             context: User's question or context.
             oracle_results: Oracle results to interpret.
@@ -509,10 +505,19 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                     self._get_context_data(scene_id, attempt, previous_set_id)
                 )
 
+                game_description = ""
+                if game and game.description:
+                    game_description = game.description
+
+                scene_description = ""
+                if scene and scene.description:
+                    scene_description = scene.description
+
+
                 # Build prompt and get response
                 prompt = self._build_prompt(
-                    game.description,
-                    scene.description,
+                    game_description,
+                    scene_description,
                     [event.description for event in recent_events],
                     context,
                     oracle_results,
