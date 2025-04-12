@@ -228,6 +228,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     def _build_prompt(
         self,
         game_description: str,
+        act_description: str,
         scene_description: str,
         recent_events: List[str],
         context: str,
@@ -240,6 +241,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
         Args:
             game_description: Description of the current game.
+            act_description: Description of the current act.
             scene_description: Description of the current scene.
             recent_events: List of recent events in the scene.
             context: User's question or context.
@@ -254,6 +256,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """
         return OraclePrompts.build_interpretation_prompt(
             game_description,
+            act_description,
             scene_description,
             recent_events,
             context,
@@ -512,6 +515,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 if game and game.description:
                     game_description = game.description
 
+                act_description = ""
+                if act and act.description:
+                    act_description = act.description
+
                 scene_description = ""
                 if scene and scene.description:
                     scene_description = scene.description
@@ -519,6 +526,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 # Build prompt and get response
                 prompt = self._build_prompt(
                     game_description,
+                    act_description,
                     scene_description,
                     [event.description for event in recent_events],
                     context,
