@@ -32,6 +32,7 @@ from sologm.tests.conftest import (  # noqa: F401
     test_scene,
 )
 
+
 # Add core-specific fixtures here
 @pytest.fixture
 def create_test_event(db_session):
