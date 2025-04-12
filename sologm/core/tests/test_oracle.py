@@ -14,7 +14,7 @@ from sologm.utils.errors import OracleError
 class TestOracle:
     """Tests for oracle interpretation system."""
 
-    def test_validate_active_context(
+    def test_get_active_context(
         self,
         oracle_manager,
         test_game,
@@ -23,30 +23,37 @@ class TestOracle:
         game_manager,
         scene_manager,
         act_manager,
+        monkeypatch,
     ) -> None:
-        """Test validating active game, act, and scene."""
-        game_id, act_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager, act_manager
-        )
+        """Test getting active game, act, and scene."""
+        # Monkeypatch the manager properties to use our test managers
+        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
+        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
+        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
+        
+        game_id, act_id, scene_id = oracle_manager.get_active_context()
         assert game_id == test_game.id
         assert act_id == test_act.id
         assert scene_id == test_scene.id
 
-    def test_validate_active_context_no_game(
-        self, oracle_manager, game_manager, scene_manager, act_manager, db_session
+    def test_get_active_context_no_game(
+        self, oracle_manager, game_manager, scene_manager, act_manager, db_session, monkeypatch
     ) -> None:
         """Test validation with no active game."""
+        # Monkeypatch the manager properties to use our test managers
+        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
+        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
+        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
+        
         # Make sure no game is active
         db_session.query(Game).update({Game.is_active: False})
         db_session.commit()
 
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context(
-                game_manager, scene_manager, act_manager
-            )
+            oracle_manager.get_active_context()
         assert "No active game found" in str(exc.value)
 
-    def test_validate_active_context_no_act(
+    def test_get_active_context_no_act(
         self,
         oracle_manager,
         test_game,
@@ -54,8 +61,14 @@ class TestOracle:
         scene_manager,
         act_manager,
         db_session,
+        monkeypatch,
     ) -> None:
         """Test validation with no active act."""
+        # Monkeypatch the manager properties to use our test managers
+        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
+        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
+        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
+        
         # Make sure no act is active
         db_session.query(Act).filter(Act.game_id == test_game.id).update(
             {Act.is_active: False}
@@ -63,12 +76,10 @@ class TestOracle:
         db_session.commit()
 
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context(
-                game_manager, scene_manager, act_manager
-            )
+            oracle_manager.get_active_context()
         assert "No active act found" in str(exc.value)
 
-    def test_validate_active_context_no_scene(
+    def test_get_active_context_no_scene(
         self,
         oracle_manager,
         test_game,
@@ -77,8 +88,14 @@ class TestOracle:
         scene_manager,
         act_manager,
         db_session,
+        monkeypatch,
     ) -> None:
         """Test validation with no active scene."""
+        # Monkeypatch the manager properties to use our test managers
+        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
+        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
+        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
+        
         # Make sure no scene is active in the active act
         db_session.query(Scene).filter(Scene.act_id == test_act.id).update(
             {Scene.is_active: False}
@@ -86,9 +103,7 @@ class TestOracle:
         db_session.commit()
 
         with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context(
-                game_manager, scene_manager, act_manager
-            )
+            oracle_manager.get_active_context()
         assert "No active scene found" in str(exc.value)
 
     def test_build_prompt(self, oracle_manager, monkeypatch) -> None:
@@ -700,8 +715,14 @@ It also has multiple lines."""
         test_game,
         test_act,
         test_scene,
+        monkeypatch,
     ):
         """Test building interpretation prompt for active context with acts."""
+        # Monkeypatch the manager properties to use our test managers
+        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
+        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
+        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
+        
         # Mock the _build_prompt method to avoid actual prompt generation
         original_build_prompt = oracle_manager._build_prompt
 
@@ -719,11 +740,8 @@ It also has multiple lines."""
         oracle_manager._build_prompt = mock_build_prompt
 
         try:
-            # Call the method with act_manager
+            # Call the method
             result = oracle_manager.build_interpretation_prompt_for_active_context(
-                game_manager,
-                scene_manager,
-                act_manager,
                 "Test context",
                 "Test results",
                 3,
@@ -741,36 +759,3 @@ It also has multiple lines."""
             # Restore the original method
             oracle_manager._build_prompt = original_build_prompt
 
-    def test_validate_active_context_with_missing_act_manager(
-        self,
-        oracle_manager,
-        test_game,
-        test_act,
-        test_scene,
-        game_manager,
-        scene_manager,
-        db_session,
-    ):
-        """Test validate_active_context when act_manager is not provided."""
-        # This tests the backward compatibility path
-        game_id, act_id, scene_id = oracle_manager.validate_active_context(
-            game_manager, scene_manager
-        )
-
-        assert game_id == test_game.id
-        assert act_id == test_act.id
-        assert scene_id == test_scene.id
-
-    def test_validate_active_context_with_missing_act_manager_no_active_act(
-        self, oracle_manager, test_game, game_manager, scene_manager, db_session
-    ):
-        """Test validate_active_context with no act_manager and no active act."""
-        # Make sure no act is active
-        db_session.query(Act).filter(Act.game_id == test_game.id).update(
-            {Act.is_active: False}
-        )
-        db_session.commit()
-
-        with pytest.raises(OracleError) as exc:
-            oracle_manager.validate_active_context(game_manager, scene_manager)
-        assert "No active act found" in str(exc.value)

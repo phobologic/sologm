@@ -26,6 +26,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def __init__(
         self,
+        scene_manager: Optional[SceneManager] = None,
         anthropic_client: Optional[AnthropicClient] = None,
         event_manager: Optional[EventManager] = None,
         session: Optional[Session] = None,
@@ -33,11 +34,16 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """Initialize the oracle manager.
 
         Args:
+            scene_manager: Optional SceneManager instance.
             anthropic_client: Optional Anthropic client instance.
             event_manager: Optional event manager instance.
             session: Optional database session (primarily for testing).
         """
         super().__init__(session)
+
+        # Store references to managers
+        self._scene_manager = scene_manager
+        self._event_manager = event_manager
 
         # If no anthropic_client is provided, create one using the config
         if not anthropic_client:
@@ -49,74 +55,59 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         else:
             self.anthropic_client = anthropic_client
 
-        self.event_manager = event_manager or EventManager(session=session)
-
-    def validate_active_context(
-        self,
-        game_manager: GameManager,
-        scene_manager: SceneManager,
-        act_manager: Optional["ActManager"] = None,
-    ) -> Tuple[str, str, str]:
-        """Validate active game, act, and scene exist.
-
-        Args:
-            game_manager: GameManager instance
-            scene_manager: SceneManager instance
-            act_manager: Optional ActManager instance
-
+    @property
+    def scene_manager(self) -> SceneManager:
+        """Lazy-initialize scene manager if not provided."""
+        if self._scene_manager is None:
+            from sologm.core.scene import SceneManager
+            self._scene_manager = SceneManager(session=self._session)
+        return self._scene_manager
+    
+    @property
+    def act_manager(self) -> "ActManager":
+        """Access act manager through scene manager."""
+        return self.scene_manager.act_manager
+    
+    @property
+    def game_manager(self) -> GameManager:
+        """Access game manager through act manager."""
+        return self.act_manager.game_manager
+    
+    @property
+    def event_manager(self) -> EventManager:
+        """Lazy-initialize event manager if not provided."""
+        if self._event_manager is None:
+            self._event_manager = EventManager(session=self._session)
+        return self._event_manager
+    
+    def get_active_context(self) -> Tuple[str, str, str]:
+        """Get active game, act, and scene IDs.
+        
         Returns:
             tuple[str, str, str]: game_id, act_id, scene_id
-
+            
         Raises:
             OracleError: If game, act, or scene not active
         """
-        active_game = game_manager.get_active_game()
+        active_game = self.game_manager.get_active_game()
         if not active_game:
             raise OracleError("No active game found")
-
-        # If act_manager is provided, validate active act
-        if act_manager:
-            logger.debug(f"Validating active act for game {active_game.id}")
-            active_act = act_manager.get_active_act(active_game.id)
-            if not active_act:
-                logger.debug("No active act found")
-                raise OracleError("No active act found")
-            act_id = active_act.id
-            logger.debug(f"Found active act: {act_id}")
-
-            # Check for active scene after validating act
-            logger.debug(f"Checking for active scene in act {act_id}")
-            active_scene = scene_manager.get_active_scene(act_id)
-            if not active_scene:
-                logger.debug("No active scene found in the active act")
-                raise OracleError("No active scene found")
-            logger.debug(f"Found active scene: {active_scene.id}")
-
-            return active_game.id, act_id, active_scene.id
-        else:
-            # For backward compatibility, try to get any act from the game
-            from sologm.models.act import Act
-
-            session = self._session or get_session()
-            try:
-                act = (
-                    session.query(Act)
-                    .filter(Act.game_id == active_game.id, Act.is_active == True)
-                    .first()
-                )
-                if not act:
-                    raise OracleError("No active act found")
-                act_id = act.id
-
-                # Check for active scene after validating act
-                active_scene = scene_manager.get_active_scene(act_id)
-                if not active_scene:
-                    raise OracleError("No active scene found")
-
-                return active_game.id, act_id, active_scene.id
-            finally:
-                if self._session is None:
-                    session.close()
+            
+        logger.debug(f"Validating active act for game {active_game.id}")
+        active_act = self.act_manager.get_active_act(active_game.id)
+        if not active_act:
+            logger.debug("No active act found")
+            raise OracleError("No active act found")
+        
+        logger.debug(f"Found active act: {active_act.id}")
+        logger.debug(f"Checking for active scene in act {active_act.id}")
+        active_scene = self.scene_manager.get_active_scene(active_act.id)
+        if not active_scene:
+            logger.debug("No active scene found in the active act")
+            raise OracleError("No active scene found")
+        
+        logger.debug(f"Found active scene: {active_scene.id}")
+        return active_game.id, active_act.id, active_scene.id
 
     def get_interpretation_set(self, set_id: str) -> InterpretationSet:
         """Get an interpretation set by ID.
@@ -266,9 +257,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def build_interpretation_prompt_for_active_context(
         self,
-        game_manager: GameManager,
-        scene_manager: SceneManager,
-        act_manager: Optional["ActManager"] = None,
         context: str = "",
         oracle_results: str = "",
         count: int = 5,
@@ -276,9 +264,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """Build an interpretation prompt for the active game and scene.
 
         Args:
-            game_manager: GameManager instance
-            scene_manager: SceneManager instance
-            act_manager: Optional ActManager instance
             context: User's question or context
             oracle_results: Oracle results to interpret
             count: Number of interpretations to generate
@@ -289,20 +274,15 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         Raises:
             OracleError: If no active game, act, or scene
         """
-        # Validate active context
-        game_id, act_id, scene_id = self.validate_active_context(
-            game_manager, scene_manager, act_manager
-        )
+        # Get active context
+        game_id, act_id, scene_id = self.get_active_context()
 
         # Get game and scene details
-        game = game_manager.get_game(game_id)
-        scene = scene_manager.get_scene(act_id, scene_id)
+        game = self.game_manager.get_game(game_id)
+        scene = self.scene_manager.get_scene(act_id, scene_id)
 
         # Get recent events
-        from sologm.core.event import EventManager
-
-        event_manager = EventManager(session=self._session)
-        recent_events = event_manager.list_events(game_id, scene_id, limit=5)
+        recent_events = self.event_manager.list_events(game_id, scene_id, limit=5)
         recent_event_descriptions = [event.description for event in recent_events]
 
         # Build and return the prompt
