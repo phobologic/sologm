@@ -38,19 +38,14 @@ class ActManager(BaseManager[Act, Act]):
     @property
     def game_manager(self) -> "GameManager":
         """Lazy-initialize game manager if not provided."""
-        return self._lazy_init_manager(
-            "_game_manager", 
-            "sologm.core.game.GameManager"
-        )
+        return self._lazy_init_manager("_game_manager", "sologm.core.game.GameManager")
 
     # Child manager access
     @property
     def scene_manager(self) -> "SceneManager":
         """Lazy-initialize scene manager."""
         return self._lazy_init_manager(
-            "_scene_manager", 
-            "sologm.core.scene.SceneManager",
-            act_manager=self
+            "_scene_manager", "sologm.core.scene.SceneManager", act_manager=self
         )
 
     def create_act(
@@ -82,14 +77,10 @@ class ActManager(BaseManager[Act, Act]):
         ) -> Act:
             # Check if game exists
             from sologm.models.game import Game
-            
+
             # Use get_entity_or_error instead of manual query and check
             self.get_entity_or_error(
-                session, 
-                Game, 
-                game_id, 
-                GameError, 
-                f"Game with ID {game_id} not found"
+                session, Game, game_id, GameError, f"Game with ID {game_id} not found"
             )
 
             # Get the next sequence number for this game
@@ -148,12 +139,10 @@ class ActManager(BaseManager[Act, Act]):
             List of acts in the game, ordered by sequence
         """
         logger.debug(f"Listing acts for game {game_id}")
-        
+
         # Use list_entities instead of custom query
         return self.list_entities(
-            Act,
-            filters={"game_id": game_id},
-            order_by="sequence"
+            Act, filters={"game_id": game_id}, order_by="sequence"
         )
 
     def get_active_act(self, game_id: str) -> Optional[Act]:
@@ -166,12 +155,10 @@ class ActManager(BaseManager[Act, Act]):
             The active act, or None if no act is active
         """
         logger.debug(f"Getting active act for game {game_id}")
-        
+
         # Use list_entities with filters and limit
         acts = self.list_entities(
-            Act,
-            filters={"game_id": game_id, "is_active": True},
-            limit=1
+            Act, filters={"game_id": game_id, "is_active": True}, limit=1
         )
         return acts[0] if acts else None
 
@@ -204,11 +191,7 @@ class ActManager(BaseManager[Act, Act]):
         ) -> Act:
             # Use get_entity_or_error instead of manual query and check
             act = self.get_entity_or_error(
-                session, 
-                Act, 
-                act_id, 
-                GameError, 
-                f"Act with ID {act_id} not found"
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
             )
 
             # Update fields if provided
@@ -260,11 +243,7 @@ class ActManager(BaseManager[Act, Act]):
         ) -> Act:
             # Use get_entity_or_error instead of manual query and check
             act = self.get_entity_or_error(
-                session, 
-                Act, 
-                act_id, 
-                GameError, 
-                f"Act with ID {act_id} not found"
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
             )
 
             # Update fields if provided
@@ -305,11 +284,7 @@ class ActManager(BaseManager[Act, Act]):
         def _set_active(session: Session, act_id: str) -> Act:
             # Use get_entity_or_error instead of manual query and check
             act = self.get_entity_or_error(
-                session, 
-                Act, 
-                act_id, 
-                GameError, 
-                f"Act with ID {act_id} not found"
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
             )
 
             # Deactivate all acts in this game
