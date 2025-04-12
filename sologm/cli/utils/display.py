@@ -1408,6 +1408,53 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
         console.print(empty_panel)
 
 
+def display_interpretation_status(
+    console: Console, interp_set: InterpretationSet
+) -> None:
+    """Display the status of the current interpretation set.
+
+    Args:
+        console: Rich console instance
+        interp_set: The current interpretation set to display
+    """
+    logger.debug(f"Displaying interpretation status for set {interp_set.id}")
+
+    st = StyledText
+    panel_title = st.title("Current Oracle Interpretation")
+
+    # Create metadata with consistent formatting
+    metadata = {
+        "Set ID": interp_set.id,
+        "Retry count": interp_set.retry_attempt,
+        "Resolved": any(
+            interp.is_selected for interp in interp_set.interpretations
+        ),
+    }
+
+    # Create panel content
+    panel_content = st.combine(
+        st.subtitle("Context:"),
+        " ",
+        interp_set.context,
+        "\n",
+        st.subtitle("Results:"),
+        " ",
+        interp_set.oracle_results,
+        "\n",
+        st.format_metadata(metadata),
+    )
+
+    # Create and display the panel
+    panel = Panel(
+        panel_content,
+        title=panel_title,
+        border_style=BORDER_STYLES["current"],
+        title_align="left",
+    )
+    console.print(panel)
+    console.print()
+
+
 def get_event_context_header(
     game_name: str,
     scene_title: str,

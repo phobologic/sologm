@@ -181,45 +181,8 @@ def show_interpretation_status() -> None:
             console.print("[yellow]No current interpretation set.[/yellow]")
             raise typer.Exit(0)
 
-        # Use a more consistent display approach
-        from rich.panel import Panel
-
-        from sologm.cli.utils.styled_text import StyledText
-
-        st = StyledText
-        panel_title = st.title("Current Oracle Interpretation")
-
-        # Create metadata with consistent formatting
-        metadata = {
-            "Set ID": current_interp_set.id,
-            "Retry count": current_interp_set.retry_attempt,
-            "Resolved": any(
-                interp.is_selected for interp in current_interp_set.interpretations
-            ),
-        }
-
-        # Create panel content
-        panel_content = st.combine(
-            st.subtitle("Context:"),
-            " ",
-            current_interp_set.context,
-            "\n",
-            st.subtitle("Results:"),
-            " ",
-            current_interp_set.oracle_results,
-            "\n",
-            st.format_metadata(metadata),
-        )
-
-        # Create and display the panel
-        panel = Panel(
-            panel_content,
-            title=panel_title,
-            border_style="bright_blue",
-            title_align="left",
-        )
-        console.print(panel)
-        console.print()
+        # Display the interpretation status using the display helper
+        display.display_interpretation_status(console, current_interp_set)
 
         # Display the interpretation set
         display.display_interpretation_set(
