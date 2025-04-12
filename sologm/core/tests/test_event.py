@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class TestEventManager:
     """Tests for the EventManager class."""
 
-    def test_add_event(self, event_manager, test_game, test_scene, db_session):
+    def test_add_event(self, event_manager, test_scene, db_session):
         """Test adding an event."""
         event = event_manager.add_event(
             scene_id=test_scene.id,
@@ -109,7 +109,6 @@ class TestEventManager:
         self,
         event_manager,
         test_scene,
-        test_interpretation_set,
         test_interpretations,
         db_session,
     ):
@@ -130,7 +129,7 @@ class TestEventManager:
         assert event.interpretation is not None
         assert event.interpretation.id == interpretation.id
 
-    def test_get_event(self, event_manager, test_game, test_scene, create_test_event):
+    def test_get_event(self, event_manager, test_scene, create_test_event):
         """Test getting an event by ID."""
         # Create a test event
         logger.debug(f"Creating test event with scene_id={test_scene.id}")
@@ -144,7 +143,8 @@ class TestEventManager:
         logger.debug(f"Retrieved event: {retrieved_event}")
         if retrieved_event:
             logger.debug(
-                f"Retrieved event id={retrieved_event.id}, description={retrieved_event.description}"
+                f"Retrieved event id={retrieved_event.id}, "
+                f"description={retrieved_event.description}"
             )
 
         # Verify the event was retrieved correctly
@@ -161,7 +161,7 @@ class TestEventManager:
         assert event is None
 
     def test_update_event(
-        self, event_manager, test_game, test_scene, create_test_event
+        self, event_manager, test_scene, create_test_event
     ):
         """Test updating an event's description."""
         # Create a test event
@@ -192,7 +192,7 @@ class TestEventManager:
         assert retrieved_event.description == "Updated description"
 
     def test_update_event_with_source(
-        self, event_manager, test_game, test_scene, create_test_event
+        self, event_manager, test_scene, create_test_event
     ):
         """Test updating an event's description and source."""
         # Create a test event
@@ -237,7 +237,7 @@ class TestEventManager:
         # Verify the correct error was raised
         assert "Event with ID 'nonexistent-event-id' not found" in str(exc.value)
 
-    def test_get_event_sources(self, event_manager, db_session):
+    def test_get_event_sources(self, event_manager):
         """Test getting all event sources."""
         # Get all event sources
         sources = event_manager.get_event_sources()

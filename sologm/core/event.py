@@ -29,12 +29,16 @@ class EventManager(BaseManager[Event, Event]):
         """Get the active game, act, and scene context.
 
         Args:
-            game_manager: Optional GameManager instance. If not provided, a new one will be created.
-            scene_manager: Optional SceneManager instance. If not provided, a new one will be created.
-            act_manager: Optional ActManager instance. If not provided, a new one will be created.
+            game_manager: Optional GameManager instance. If not provided, a new one 
+                will be created.
+            scene_manager: Optional SceneManager instance. If not provided, a new one 
+                will be created.
+            act_manager: Optional ActManager instance. If not provided, a new one 
+                will be created.
 
         Returns:
-            Dictionary containing 'game', 'act', and 'scene' keys with their respective objects.
+            Dictionary containing 'game', 'act', and 'scene' keys with their 
+            respective objects.
 
         Raises:
             EventError: If no active game, act, or scene is found.
@@ -147,7 +151,7 @@ class EventManager(BaseManager[Event, Event]):
             interpretation_id: Optional[str],
         ) -> Event:
             # Validate scene exists
-            scene = self._validate_scene(session, scene_id)
+            self._validate_scene(session, scene_id)
 
             # Validate source exists
             event_source = self._validate_source(session, source)
