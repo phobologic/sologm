@@ -1356,7 +1356,7 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
         scenes_table = Table(
             border_style=BORDER_STYLES["game_info"],
         )
-        
+
         # Add columns with consistent styling
         scenes_table.add_column("ID", style=st.STYLES["timestamp"])
         scenes_table.add_column("Sequence", justify="right")
@@ -1364,17 +1364,19 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
         scenes_table.add_column("Description")
         scenes_table.add_column("Status", style=st.STYLES["success"])
         scenes_table.add_column("Current", style=st.STYLES["success"], justify="center")
-        
+
         # Add rows for each scene
         for scene in act.scenes:
             active_marker = "✓" if scene.is_active else ""
-            
+
             # Create scene title with appropriate styling
-            scene_title = st.title(scene.title).plain if scene.is_active else scene.title
-            
+            scene_title = (
+                st.title(scene.title).plain if scene.is_active else scene.title
+            )
+
             # Truncate description for table display
             truncated_description = truncate_text(scene.description, max_length=40)
-            
+
             scenes_table.add_row(
                 scene.id,
                 str(scene.sequence),
@@ -1383,10 +1385,10 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
                 scene.status.value,
                 active_marker,
             )
-        
+
         # Create panel title
         panel_title = st.title(f"Scenes in Act {act.sequence}")
-        
+
         # Wrap the table in a panel with a title
         scenes_panel = Panel(
             scenes_table,
