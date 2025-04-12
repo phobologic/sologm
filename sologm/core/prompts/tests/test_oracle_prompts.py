@@ -63,7 +63,6 @@ class TestOraclePrompts:
         result = OraclePrompts._get_retry_text(0)
         assert result == ""
 
-
     def test_build_interpretation_prompt(self, test_scene, test_events):
         """Test building the complete interpretation prompt."""
         result = OraclePrompts.build_interpretation_prompt(
