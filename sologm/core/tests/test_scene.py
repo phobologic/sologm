@@ -473,18 +473,21 @@ class TestSceneManager:
         with pytest.raises(SceneError) as exc:
             scene_manager.validate_active_context()
         assert "No active game" in str(exc.value)
+
     def test_create_scene_in_active_act(
         self, scene_manager, test_game, db_session, ensure_active_act, monkeypatch
     ) -> None:
         """Test creating a scene in the active act."""
         active_act = ensure_active_act
-        
+
         # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(scene_manager, "game_manager", GameManager(session=db_session))
+        monkeypatch.setattr(
+            scene_manager, "game_manager", GameManager(session=db_session)
+        )
         monkeypatch.setattr(
             scene_manager, "act_manager", ActManager(session=db_session)
         )
-        
+
         scene = scene_manager.create_scene_in_active_act(
             title="Active Act Scene",
             description="Scene in active act",
@@ -501,13 +504,15 @@ class TestSceneManager:
     ) -> None:
         """Test listing scenes in the active act."""
         active_act = ensure_active_act
-        
+
         # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(scene_manager, "game_manager", GameManager(session=db_session))
+        monkeypatch.setattr(
+            scene_manager, "game_manager", GameManager(session=db_session)
+        )
         monkeypatch.setattr(
             scene_manager, "act_manager", ActManager(session=db_session)
         )
-        
+
         # Create some test scenes
         scene1 = scene_manager.create_scene(
             title="First Scene",
@@ -525,19 +530,21 @@ class TestSceneManager:
         assert scenes[0].id == scene1.id
         assert scenes[1].id == scene2.id
         assert scenes[0].sequence < scenes[1].sequence
-        
+
     def test_get_active_scene_without_act_id(
         self, scene_manager, test_game, db_session, ensure_active_act, monkeypatch
     ) -> None:
         """Test getting the active scene without providing an act_id."""
         active_act = ensure_active_act
-        
+
         # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(scene_manager, "game_manager", GameManager(session=db_session))
+        monkeypatch.setattr(
+            scene_manager, "game_manager", GameManager(session=db_session)
+        )
         monkeypatch.setattr(
             scene_manager, "act_manager", ActManager(session=db_session)
         )
-        
+
         # Create a scene to be active
         scene = scene_manager.create_scene(
             title="Active Scene",
