@@ -14,7 +14,6 @@ from rich.console import Console
 from sologm.cli.utils.display import (
     display_act_info,
     display_acts_table,
-    display_game_info,
 )
 from sologm.cli.utils.structured_editor import (
     FieldConfig,
@@ -236,7 +235,6 @@ def act_info() -> None:
     from sologm.cli.utils.display import _create_game_header_panel
 
     console.print(_create_game_header_panel(active_game, console))
-    console.print()
 
     # Display act info
     display_act_info(console, active_act, active_game.name)

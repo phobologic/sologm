@@ -1336,9 +1336,6 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
             st.timestamp(f"({act.id})"),
         )
     else:
-        # For untitled acts, use Rich's Text object with proper styling
-        from rich.text import Text
-
         untitled_text = Text("Untitled Act", style="italic")
         panel_title = st.combine(
             st.title_blue(f"Act {act.sequence}: "),
