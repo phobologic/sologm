@@ -5,9 +5,8 @@ from unittest.mock import Mock
 import pytest
 from rich.console import Console
 
-# Import core fixtures that might be needed
-
-# Import common fixtures from central conftest
+# Import all fixtures from central conftest
+from sologm.tests.conftest import *  # noqa: F401, F403
 
 
 # CLI-specific fixtures
