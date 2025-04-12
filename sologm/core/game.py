@@ -17,6 +17,24 @@ logger = logging.getLogger(__name__)
 class GameManager(BaseManager[Game, Game]):
     """Manages game operations."""
 
+    def __init__(self, session: Optional[Session] = None):
+        """Initialize the game manager.
+
+        Args:
+            session: Optional database session (primarily for testing).
+        """
+        super().__init__(session)
+        self._act_manager = None
+
+    # Child manager access
+    @property
+    def act_manager(self) -> "ActManager":
+        """Lazy-initialize act manager."""
+        if self._act_manager is None:
+            from sologm.core.act import ActManager
+            self._act_manager = ActManager(game_manager=self, session=self._session)
+        return self._act_manager
+
     def create_game(self, name: str, description: str, is_active: bool = True) -> Game:
         """Create a new game.
 
@@ -121,6 +139,20 @@ class GameManager(BaseManager[Game, Game]):
         except Exception as e:
             logger.error(f"Failed to list games: {str(e)}")
             raise GameError(f"Failed to list games: {str(e)}") from e
+
+    def get_game(self, game_id: str) -> Optional[Game]:
+        """Get a game by ID.
+
+        Args:
+            game_id: ID of the game to get.
+
+        Returns:
+            Game instance if found, None otherwise.
+
+        Raises:
+            GameError: If the game cannot be retrieved.
+        """
+        return self.get_game_by_id(game_id)
 
     def get_game_by_id(self, game_id: str) -> Optional[Game]:
         """Get a specific game by ID.

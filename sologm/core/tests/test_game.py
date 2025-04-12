@@ -64,6 +64,18 @@ class TestGameManager:
         assert games[0].id == game1.id  # Should be sorted by created_at
         assert games[1].id == game2.id
 
+    def test_get_game(self, game_manager) -> None:
+        """Test getting a game by ID."""
+        created_game = game_manager.create_game(
+            name="Test Game", description="A test game"
+        )
+
+        game = game_manager.get_game(created_game.id)
+        assert game is not None
+        assert game.id == created_game.id
+        assert game.name == created_game.name
+        assert game.description == created_game.description
+
     def test_get_game_by_id(self, game_manager) -> None:
         """Test getting a specific game by ID."""
         created_game = game_manager.create_game(
@@ -277,6 +289,21 @@ class TestGameManager:
         """Test deleting a nonexistent game."""
         result = game_manager.delete_game("nonexistent-game")
         assert result is False
+
+    def test_act_manager_property(self, game_manager):
+        """Test the act_manager property."""
+        # Access the act_manager property
+        act_manager = game_manager.act_manager
+        
+        # Verify it's the correct type
+        from sologm.core.act import ActManager
+        assert isinstance(act_manager, ActManager)
+        
+        # Verify it has a reference back to the game_manager
+        assert act_manager.game_manager is game_manager
+        
+        # Verify it shares the same session
+        assert act_manager._session is game_manager._session
 
     def test_game_model_validation(self, db_session):
         """Test Game model validation."""
