@@ -21,14 +21,14 @@ class EventManager(BaseManager[Event, Event]):
     """Manages event operations."""
 
     def __init__(
-        self, 
+        self,
         session: Optional[Session] = None,
         game_manager: Optional[GameManager] = None,
         scene_manager: Optional[SceneManager] = None,
-        act_manager: Optional[ActManager] = None
+        act_manager: Optional[ActManager] = None,
     ):
         """Initialize the EventManager.
-        
+
         Args:
             session: Optional SQLAlchemy session
             game_manager: Optional GameManager instance
@@ -74,14 +74,14 @@ class EventManager(BaseManager[Event, Event]):
 
     def _get_scene(self, session: Session, scene_id: str) -> Scene:
         """Get a scene by ID, raising EventError if not found.
-        
+
         Args:
             session: SQLAlchemy session
             scene_id: ID of the scene to validate
-            
+
         Returns:
             The validated Scene object
-            
+
         Raises:
             EventError: If the scene doesn't exist
         """
@@ -92,18 +92,20 @@ class EventManager(BaseManager[Event, Event]):
 
     def _get_source(self, session: Session, source_name: str) -> EventSource:
         """Get an event source by name, raising EventError if not found.
-        
+
         Args:
             session: SQLAlchemy session
             source_name: Name of the source to validate
-            
+
         Returns:
             The validated EventSource object
-            
+
         Raises:
             EventError: If the source doesn't exist
         """
-        source = session.query(EventSource).filter(EventSource.name == source_name).first()
+        source = (
+            session.query(EventSource).filter(EventSource.name == source_name).first()
+        )
         if not source:
             valid_sources = [s.name for s in session.query(EventSource).all()]
             raise EventError(

@@ -30,11 +30,11 @@ class TestEventManager:
         db_event = db_session.query(Event).filter(Event.id == event.id).first()
         assert db_event is not None
         assert db_event.description == "Test event"
-        
+
     def test_add_event_with_active_scene(self, event_manager, test_scene):
         """Test adding an event using the active scene."""
         event = event_manager.add_event(description="Test event with active scene")
-        
+
         assert event.scene_id == test_scene.id
         assert event.description == "Test event with active scene"
 
@@ -51,13 +51,15 @@ class TestEventManager:
         """Test listing events when none exist."""
         events = event_manager.list_events(scene_id=test_scene.id)
         assert len(events) == 0
-        
-    def test_list_events_with_active_scene(self, event_manager, test_scene, create_test_event):
+
+    def test_list_events_with_active_scene(
+        self, event_manager, test_scene, create_test_event
+    ):
         """Test listing events using the active scene."""
         # Add some events
         create_test_event(test_scene.id, "First event")
         create_test_event(test_scene.id, "Second event")
-        
+
         events = event_manager.list_events()
         assert len(events) == 2
         # Events should be in reverse chronological order (newest first)
@@ -94,25 +96,19 @@ class TestEventManager:
             event_manager.list_events(scene_id="nonexistent-scene")
         assert "Scene nonexistent-scene not found" in str(exc.value)
 
-    def test_get_active_context(
-        self, event_manager, test_game, test_scene
-    ):
+    def test_get_active_context(self, event_manager, test_game, test_scene):
         """Test getting active game, act, and scene context."""
         context = event_manager.get_active_context()
         assert context["game"].id == test_game.id
         assert context["scene"].id == test_scene.id
 
-    def test_validate_active_context(
-        self, event_manager, test_game, test_scene
-    ):
+    def test_validate_active_context(self, event_manager, test_game, test_scene):
         """Test validating active game and scene context."""
         game_id, scene_id = event_manager.validate_active_context()
         assert game_id == test_game.id
         assert scene_id == test_scene.id
 
-    def test_validate_active_context_no_game(
-        self, event_manager, db_session
-    ):
+    def test_validate_active_context_no_game(self, event_manager, db_session):
         """Test validation with no active game."""
         # Deactivate all games
         db_session.query(Game).update({Game.is_active: False})
