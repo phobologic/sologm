@@ -1,7 +1,7 @@
 """Game management functionality."""
 
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
