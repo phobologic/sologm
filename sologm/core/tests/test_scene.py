@@ -336,11 +336,11 @@ class TestSceneManager:
         # Test get_previous_scene with scene_id
         prev_scene = scene_manager.get_previous_scene(scene_id=scene3.id)
         assert prev_scene.id == scene2.id
-    
+
         # Test get_previous_scene for first scene
         prev_scene = scene_manager.get_previous_scene(scene_id=scene1.id)
         assert prev_scene is None
-    
+
         # Test get_previous_scene with invalid scene_id
         prev_scene = scene_manager.get_previous_scene(scene_id="nonexistent-id")
         assert prev_scene is None
@@ -371,7 +371,7 @@ class TestSceneManager:
         retrieved_scene = scene_manager.get_scene(scene.id)
         assert retrieved_scene.title == "Updated Title"
         assert retrieved_scene.description == "Updated description"
-    
+
         # Test updating only title
         updated_scene = scene_manager.update_scene(
             scene_id=scene.id,
@@ -379,7 +379,7 @@ class TestSceneManager:
         )
         assert updated_scene.title == "Only Title Updated"
         assert updated_scene.description == "Updated description"
-    
+
         # Test updating only description
         updated_scene = scene_manager.update_scene(
             scene_id=scene.id,
@@ -578,19 +578,21 @@ class TestSceneManager:
         active_scene = scene_manager.get_active_scene()
         assert active_scene is not None
         assert active_scene.id == scene.id
+
+
 def test_create_scene_with_make_active_false(
     self, scene_manager, test_game, ensure_active_act
 ) -> None:
     """Test creating a scene without making it active."""
     active_act = ensure_active_act
-    
+
     # Create a first scene that will be active
     scene1 = scene_manager.create_scene(
         title="First Scene",
         description="This will be active",
         act_id=active_act.id,
     )
-    
+
     # Create a second scene without making it active
     scene2 = scene_manager.create_scene(
         title="Second Scene",
@@ -598,20 +600,21 @@ def test_create_scene_with_make_active_false(
         act_id=active_act.id,
         make_active=False,
     )
-    
+
     # Verify scene1 is still active
     active_scene = scene_manager.get_active_scene(active_act.id)
     assert active_scene.id == scene1.id
-    
+
     # Verify scene2 is not active
     assert not scene2.is_active
+
 
 def test_get_act_id_or_active(
     self, scene_manager, test_game, ensure_active_act, monkeypatch
 ) -> None:
     """Test the _get_act_id_or_active helper method."""
     active_act = ensure_active_act
-    
+
     # Monkeypatch the game_manager and act_manager properties
     monkeypatch.setattr(
         scene_manager, "game_manager", GameManager(session=scene_manager._session)
@@ -619,11 +622,11 @@ def test_get_act_id_or_active(
     monkeypatch.setattr(
         scene_manager, "act_manager", ActManager(session=scene_manager._session)
     )
-    
+
     # Test with provided act_id
     act_id = scene_manager._get_act_id_or_active("test-act-id")
     assert act_id == "test-act-id"
-    
+
     # Test with no act_id (should use active act)
     act_id = scene_manager._get_act_id_or_active(None)
     assert act_id == active_act.id
