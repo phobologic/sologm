@@ -49,9 +49,7 @@ def add_event(
         # If no description is provided, open an editor
         if description is None:
             # Get recent events for context
-            recent_events = event_manager.list_events(
-                scene_id=scene_id, limit=3
-            )
+            recent_events = event_manager.list_events(scene_id=scene_id, limit=3)
 
             # Import the structured editor
             from sologm.cli.utils.structured_editor import (
