@@ -18,8 +18,6 @@ from typing import (
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
-from sologm.utils.errors import SoloGMError
-
 # Type variables for domain and database models
 T = TypeVar("T")  # Domain model type
 M = TypeVar("M")  # Database model type

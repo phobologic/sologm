@@ -11,10 +11,10 @@ if TYPE_CHECKING:
 
     app: Typer
 from sologm.cli.utils.display import display_scene_info
-from sologm.core.game import GameManager
 from sologm.core.act import ActManager
+from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
-from sologm.utils.errors import GameError, SceneError, ActError
+from sologm.utils.errors import ActError, GameError, SceneError
 
 # Create scene subcommand
 scene_app = typer.Typer(help="Scene management commands")

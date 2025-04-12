@@ -1,6 +1,5 @@
 """Tests for oracle prompt templates."""
 
-from unittest.mock import MagicMock
 
 from sologm.core.prompts.oracle import OraclePrompts
 

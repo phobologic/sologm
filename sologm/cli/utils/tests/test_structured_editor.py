@@ -4,12 +4,9 @@ import pytest
 from rich.console import Console
 
 from sologm.cli.utils.structured_editor import (
-    EditorConfig,
     FieldConfig,
     StructuredEditor,
     StructuredEditorConfig,
-    TextFormatter,
-    TextParser,
     ValidationError,
     format_structured_text,
     parse_structured_text,

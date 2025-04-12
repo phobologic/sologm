@@ -1,7 +1,8 @@
 """Tests for the Act manager."""
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager

@@ -1,6 +1,5 @@
 """Tests for styled text helper."""
 
-import pytest
 from rich.style import Style
 from rich.text import Text
 

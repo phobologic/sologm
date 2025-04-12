@@ -1,6 +1,7 @@
 """Tests for dice rolling functionality."""
 
 import logging
+
 import pytest
 
 from sologm.models.dice import DiceRoll as DiceRollModel

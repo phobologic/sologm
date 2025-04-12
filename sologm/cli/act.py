@@ -17,12 +17,10 @@ from sologm.cli.utils.display import (
     display_game_info,
 )
 from sologm.cli.utils.structured_editor import (
-    EditorConfig,
     FieldConfig,
     StructuredEditorConfig,
     edit_structured_data,
 )
-from sologm.cli.utils.styled_text import StyledText
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
 from sologm.models.act import ActStatus

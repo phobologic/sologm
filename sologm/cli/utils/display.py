@@ -735,7 +735,7 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
     # Add active act information if available
     if active_act:
         act_title = active_act.title or "Untitled Act"
-        content.append(f"\nCurrent Act: ")
+        content.append("\nCurrent Act: ")
         content.append(st.title(f"Act {active_act.sequence}: {act_title}"))
         content.append("\n")
 

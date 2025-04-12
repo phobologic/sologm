@@ -73,7 +73,7 @@ class SceneManager(BaseManager[Scene, Scene]):
     def dice_manager(self) -> "DiceManager":
         """Lazy-initialize dice manager."""
         return self._lazy_init_manager("_dice_manager", "sologm.core.dice.DiceManager")
-    
+
     def _get_act_id_or_active(self, act_id: Optional[str] = None) -> str:
         """Get the provided act_id or retrieve the active act's ID.
         
@@ -89,20 +89,20 @@ class SceneManager(BaseManager[Scene, Scene]):
         if act_id:
             logger.debug(f"Using provided act ID: {act_id}")
             return act_id
-            
+
         logger.debug("No act_id provided, retrieving active act")
         active_game = self.game_manager.get_active_game()
         if not active_game:
             msg = "No active game. Use 'sologm game activate' to set one."
             logger.warning(msg)
             raise SceneError(msg)
-            
+
         active_act = self.act_manager.get_active_act(active_game.id)
         if not active_act:
             msg = "No active act. Create one with 'sologm act create'."
             logger.warning(msg)
             raise SceneError(msg)
-            
+
         logger.debug(f"Using active act with ID {active_act.id}")
         return active_act.id
 
@@ -154,7 +154,7 @@ class SceneManager(BaseManager[Scene, Scene]):
                 logger.warning(msg)
                 raise SceneError(msg)
             logger.debug(f"Active game: {active_game.id} ({active_game.name})")
-            
+
             # Get the active act for this game
             active_act = self.act_manager.get_active_act(active_game.id)
             if not active_act:
@@ -162,7 +162,7 @@ class SceneManager(BaseManager[Scene, Scene]):
                 logger.warning(msg)
                 raise SceneError(msg)
             logger.debug(f"Active act: {active_act.id} ({active_act.title})")
-            
+
             # Get the active scene for this act
             active_scene = self.get_active_scene(active_act.id)
             if not active_scene:
@@ -170,7 +170,7 @@ class SceneManager(BaseManager[Scene, Scene]):
                 logger.warning(msg)
                 raise SceneError(msg)
             logger.debug(f"Active scene: {active_scene.id} ({active_scene.title})")
-            
+
             logger.debug("Active context retrieved successfully")
             return {"game": active_game, "act": active_act, "scene": active_scene}
         except Exception as e:
@@ -251,7 +251,7 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         try:
             act_id = self._get_act_id_or_active(act_id)
-            
+
             scenes = self.list_entities(
                 Scene, filters={"act_id": act_id, "is_active": True}, limit=1
             )
@@ -384,7 +384,7 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         try:
             act_id = self._get_act_id_or_active(act_id)
-            
+
             scenes = self.list_entities(
                 Scene, filters={"act_id": act_id}, order_by="sequence"
             )
@@ -392,7 +392,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             return scenes
         except Exception as e:
             logger.error(
-                f"Error listing scenes for act {act_id or 'unknown'}: {str(e)}", 
+                f"Error listing scenes for act {act_id or 'unknown'}: {str(e)}",
                 exc_info=True
             )
             self._handle_operation_error(
@@ -546,25 +546,25 @@ class SceneManager(BaseManager[Scene, Scene]):
             SceneError: If the scene is not found
         """
         logger.debug(f"Getting previous scene for scene_id={scene_id}")
-        
+
         try:
             scene = self.get_scene(scene_id)
             if not scene:
                 logger.warning(f"Scene with ID {scene_id} not found")
                 return None
-                
+
             logger.debug(f"Found scene {scene_id}, sequence={scene.sequence}")
-            
+
             if scene.sequence <= 1:
                 logger.debug(f"Scene {scene_id} is the first scene (sequence {scene.sequence})")
                 return None
-                
+
             scenes = self.list_entities(
                 Scene,
                 filters={"act_id": scene.act_id, "sequence": scene.sequence - 1},
                 limit=1,
             )
-            
+
             result = scenes[0] if scenes else None
             logger.debug(f"Previous scene for {scene_id}: {result.id if result else 'None'}")
             return result

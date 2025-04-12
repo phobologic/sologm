@@ -1,9 +1,7 @@
 """Tests for display helper functions."""
 
-from unittest.mock import MagicMock
 
 import pytest
-from rich.console import Console
 from rich.text import Text
 
 from sologm.cli.utils.display import (
@@ -25,7 +23,6 @@ from sologm.cli.utils.display import (
     truncate_text,
 )
 from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
-from sologm.core.scene import SceneManager
 
 
 def test_display_dice_roll(mock_console, test_dice_roll):
@@ -323,7 +320,7 @@ def test_format_metadata():
     metadata = {}
     result = format_metadata(metadata)
     assert result == ""
-    
+
     # Verify it's using StyledText under the hood
     styled_result = StyledText.format_metadata(metadata)
     assert isinstance(styled_result, Text)
@@ -331,11 +328,10 @@ def test_format_metadata():
 def display_helpers():
     """Fixture to provide access to private display helper functions."""
     from sologm.cli.utils.display import (
-        _create_empty_oracle_panel,
-        _create_events_panel,
         _create_dice_rolls_panel,
+        _create_empty_oracle_panel,
     )
-    
+
     return {
         "create_empty_oracle_panel": _create_empty_oracle_panel,
         "create_events_panel": _create_events_panel,
