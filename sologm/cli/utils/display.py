@@ -705,11 +705,8 @@ def _create_act_panel(game: Game, active_act: Optional[Act] = None) -> Panel:
     else:
         # Create a properly styled "Untitled Act" text
         untitled_text = Text("Untitled Act", style="italic")
-        title_text = st.combine(
-            st.title(f"Act {active_act.sequence}: "), 
-            untitled_text
-        )
-    
+        title_text = st.combine(st.title(f"Act {active_act.sequence}: "), untitled_text)
+
     panel_content.append(title_text)
 
     # Add act description if available
