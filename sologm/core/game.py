@@ -35,9 +35,7 @@ class GameManager(BaseManager[Game, Game]):
     def act_manager(self) -> "ActManager":
         """Lazy-initialize act manager."""
         return self._lazy_init_manager(
-            "_act_manager", 
-            "sologm.core.act.ActManager",
-            game_manager=self
+            "_act_manager", "sologm.core.act.ActManager", game_manager=self
         )
 
     def create_game(self, name: str, description: str, is_active: bool = True) -> Game:
@@ -135,10 +133,7 @@ class GameManager(BaseManager[Game, Game]):
         """
         logger.debug("Listing all games")
         try:
-            games = self.list_entities(
-                Game,
-                order_by="created_at"
-            )
+            games = self.list_entities(Game, order_by="created_at")
             logger.debug(f"Listed {len(games)} games")
             return games
         except Exception as e:
@@ -227,18 +222,14 @@ class GameManager(BaseManager[Game, Game]):
         """
         logger.debug("Getting active game")
         try:
-            games = self.list_entities(
-                Game,
-                filters={"is_active": True},
-                limit=1
-            )
+            games = self.list_entities(Game, filters={"is_active": True}, limit=1)
             game = games[0] if games else None
-            
+
             if not game:
                 logger.debug("No active game set")
             else:
                 logger.debug(f"Getting active game: {game.id}")
-                
+
             return game
         except Exception as e:
             self._handle_operation_error("get active game", e, GameError)
@@ -259,11 +250,7 @@ class GameManager(BaseManager[Game, Game]):
         def _activate_game(session: Session, game_id: str) -> Game:
             # Use get_entity_or_error instead of manual query and check
             game = self.get_entity_or_error(
-                session, 
-                Game, 
-                game_id, 
-                GameError, 
-                f"Game not found: {game_id}"
+                session, Game, game_id, GameError, f"Game not found: {game_id}"
             )
 
             # Always deactivate all games first
@@ -296,11 +283,7 @@ class GameManager(BaseManager[Game, Game]):
         def _deactivate_game(session: Session, game_id: str) -> Game:
             # Use get_entity_or_error instead of manual query and check
             game = self.get_entity_or_error(
-                session, 
-                Game, 
-                game_id, 
-                GameError, 
-                f"Game not found: {game_id}"
+                session, Game, game_id, GameError, f"Game not found: {game_id}"
             )
 
             game.is_active = False
@@ -344,11 +327,7 @@ class GameManager(BaseManager[Game, Game]):
         ) -> Game:
             # Use get_entity_or_error instead of manual query and check
             game = self.get_entity_or_error(
-                session, 
-                Game, 
-                game_id, 
-                GameError, 
-                f"Game not found: {game_id}"
+                session, Game, game_id, GameError, f"Game not found: {game_id}"
             )
 
             # Update the game properties if provided
