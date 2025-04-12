@@ -406,7 +406,9 @@ class TestSceneManager:
 
         # Monkeypatch the game_manager and act_manager properties
         monkeypatch.setattr(scene_manager, "game_manager", game_manager)
-        monkeypatch.setattr(scene_manager, "act_manager", ActManager(session=scene_manager._session))
+        monkeypatch.setattr(
+            scene_manager, "act_manager", ActManager(session=scene_manager._session)
+        )
 
         context = scene_manager.get_active_context()
         assert context["game"].id == test_game.id
@@ -427,7 +429,9 @@ class TestSceneManager:
 
         # Monkeypatch the game_manager and act_manager properties
         monkeypatch.setattr(scene_manager, "game_manager", game_manager)
-        monkeypatch.setattr(scene_manager, "act_manager", ActManager(session=scene_manager._session))
+        monkeypatch.setattr(
+            scene_manager, "act_manager", ActManager(session=scene_manager._session)
+        )
 
         act_id, active_scene = scene_manager.validate_active_context()
         assert act_id == active_act.id

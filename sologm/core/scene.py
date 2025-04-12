@@ -27,7 +27,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         """Initialize the scene manager.
 
         Args:
-            act_manager: Optional ActManager instance. If not provided, 
+            act_manager: Optional ActManager instance. If not provided,
                 a new one will be lazy-initialized when needed.
             session: Optional SQLAlchemy session. If not provided,
                 a new one will be created for each operation.
@@ -35,49 +35,48 @@ class SceneManager(BaseManager[Scene, Scene]):
         super().__init__(session)
         self._act_manager = act_manager
         logger.debug("Initialized SceneManager")
-        
+
     @property
     def act_manager(self) -> ActManager:
         """Lazy-initialize act manager if not provided."""
         if self._act_manager is None:
             from sologm.core.act import ActManager
+
             self._act_manager = ActManager(session=self._session)
         return self._act_manager
-        
+
     @property
     def game_manager(self) -> GameManager:
         """Access game manager through act manager."""
         return self.act_manager.game_manager
-    
+
     @property
     def oracle_manager(self) -> "OracleManager":
         """Lazy-initialize oracle manager."""
         if not hasattr(self, "_oracle_manager") or self._oracle_manager is None:
             from sologm.core.oracle import OracleManager
+
             self._oracle_manager = OracleManager(
-                scene_manager=self,
-                session=self._session
+                scene_manager=self, session=self._session
             )
         return self._oracle_manager
-        
+
     @property
     def event_manager(self) -> "EventManager":
         """Lazy-initialize event manager."""
         if not hasattr(self, "_event_manager") or self._event_manager is None:
             from sologm.core.event import EventManager
-            self._event_manager = EventManager(
-                session=self._session
-            )
+
+            self._event_manager = EventManager(session=self._session)
         return self._event_manager
-        
+
     @property
     def dice_manager(self) -> "DiceManager":
         """Lazy-initialize dice manager."""
         if not hasattr(self, "_dice_manager") or self._dice_manager is None:
             from sologm.core.dice import DiceManager
-            self._dice_manager = DiceManager(
-                session=self._session
-            )
+
+            self._dice_manager = DiceManager(session=self._session)
         return self._dice_manager
 
     def get_active_context(self) -> Dict[str, Any]:
