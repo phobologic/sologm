@@ -80,8 +80,7 @@ def create_act(
         raise typer.Exit(1)
 
     # Check if there's an active act that needs to be completed
-    act_manager = ActManager()
-    active_act = act_manager.get_active_act(active_game.id)
+    active_act = game_manager.act_manager.get_active_act(active_game.id)
 
     if active_act and active_act.status != ActStatus.COMPLETED:
         # There's an active act that's not completed
@@ -144,7 +143,7 @@ def create_act(
 
     # Create the act
     try:
-        act = act_manager.create_act(
+        act = game_manager.act_manager.create_act(
             game_id=active_game.id,
             title=title,
             description=description,
@@ -191,11 +190,10 @@ def list_acts() -> None:
         raise typer.Exit(1)
 
     # Get all acts for the game
-    act_manager = ActManager()
-    acts = act_manager.list_acts(active_game.id)
+    acts = game_manager.act_manager.list_acts(active_game.id)
 
     # Get active act ID
-    active_act = act_manager.get_active_act(active_game.id)
+    active_act = game_manager.act_manager.get_active_act(active_game.id)
     active_act_id = active_act.id if active_act else None
 
     # Display game info
@@ -226,8 +224,7 @@ def act_info() -> None:
         raise typer.Exit(1)
 
     # Get the active act
-    act_manager = ActManager()
-    active_act = act_manager.get_active_act(active_game.id)
+    active_act = game_manager.act_manager.get_active_act(active_game.id)
     if not active_act:
         console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
         console.print("Create one with 'sologm act create'.")
@@ -332,7 +329,7 @@ def edit_act(
 
     # Update the act
     try:
-        updated_act = act_manager.edit_act(
+        updated_act = game_manager.act_manager.edit_act(
             act_id=active_act.id,
             title=title,
             description=description,
@@ -485,7 +482,7 @@ def complete_act(
 
     # Complete the act
     try:
-        completed_act = act_manager.complete_act(
+        completed_act = game_manager.act_manager.complete_act(
             act_id=active_act.id,
             title=title,
             description=description,
