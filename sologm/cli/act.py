@@ -196,8 +196,9 @@ def list_acts() -> None:
     active_act = game_manager.act_manager.get_active_act(active_game.id)
     active_act_id = active_act.id if active_act else None
 
-    # Display game info
-    display_game_info(console, active_game)
+    # Display compact game header instead of full game info
+    from sologm.cli.utils.display import _create_game_header_panel
+    console.print(_create_game_header_panel(active_game, console))
     console.print()
 
     # Display acts table
