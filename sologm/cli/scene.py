@@ -43,12 +43,14 @@ def add_scene(
             # If there's no active scene, we still need the active act
             active_game = scene_manager.game_manager.get_active_game()
             if not active_game:
-                raise GameError("No active game. Use 'sologm game activate' to set one.")
-            
+                raise GameError(
+                    "No active game. Use 'sologm game activate' to set one."
+                )
+
             active_act = scene_manager.act_manager.get_active_act(active_game.id)
             if not active_act:
                 raise ActError("No active act. Create one with 'sologm act create'.")
-            
+
             act_id = active_act.id
 
         # Create the scene
@@ -79,11 +81,11 @@ def list_scenes() -> None:
         active_game = scene_manager.game_manager.get_active_game()
         if not active_game:
             raise GameError("No active game. Use 'sologm game activate' to set one.")
-        
+
         active_act = scene_manager.act_manager.get_active_act(active_game.id)
         if not active_act:
             raise ActError("No active act. Create one with 'sologm act create'.")
-        
+
         act_id = active_act.id
         active_scene_id = None
 
@@ -226,12 +228,14 @@ def set_current_scene(
             # If there's no active scene, we still need the active act
             active_game = scene_manager.game_manager.get_active_game()
             if not active_game:
-                raise GameError("No active game. Use 'sologm game activate' to set one.")
-            
+                raise GameError(
+                    "No active game. Use 'sologm game activate' to set one."
+                )
+
             active_act = scene_manager.act_manager.get_active_act(active_game.id)
             if not active_act:
                 raise ActError("No active act. Create one with 'sologm act create'.")
-            
+
             act_id = active_act.id
 
         # Get list of valid scenes first
