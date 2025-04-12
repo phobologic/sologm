@@ -1,7 +1,7 @@
 """Event management functionality."""
 
 import logging
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 

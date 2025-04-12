@@ -1,6 +1,7 @@
 """Tests for event management functionality."""
 
 import logging
+
 import pytest
 
 from sologm.models.event import Event
