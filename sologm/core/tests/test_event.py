@@ -160,9 +160,7 @@ class TestEventManager:
         # Verify no event was found
         assert event is None
 
-    def test_update_event(
-        self, event_manager, test_scene, create_test_event
-    ):
+    def test_update_event(self, event_manager, test_scene, create_test_event):
         """Test updating an event's description."""
         # Create a test event
         logger.debug(f"Creating test event with scene_id={test_scene.id}")

@@ -29,15 +29,15 @@ class EventManager(BaseManager[Event, Event]):
         """Get the active game, act, and scene context.
 
         Args:
-            game_manager: Optional GameManager instance. If not provided, a new one 
+            game_manager: Optional GameManager instance. If not provided, a new one
                 will be created.
-            scene_manager: Optional SceneManager instance. If not provided, a new one 
+            scene_manager: Optional SceneManager instance. If not provided, a new one
                 will be created.
-            act_manager: Optional ActManager instance. If not provided, a new one 
+            act_manager: Optional ActManager instance. If not provided, a new one
                 will be created.
 
         Returns:
-            Dictionary containing 'game', 'act', and 'scene' keys with their 
+            Dictionary containing 'game', 'act', and 'scene' keys with their
             respective objects.
 
         Raises:
