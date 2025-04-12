@@ -11,21 +11,21 @@ from sologm.utils.errors import GameError
 
 class TestActManager:
     """Tests for the ActManager class."""
-    
+
     def test_manager_relationships(self, db_session, act_manager):
         """Test manager relationships."""
         # Test game_manager property
         assert isinstance(act_manager.game_manager, GameManager)
-        
+
         # Test scene_manager property
         assert isinstance(act_manager.scene_manager, SceneManager)
-        
+
         # Test passing explicit game_manager
         mock_game_manager = MagicMock(spec=GameManager)
         from sologm.core.act import ActManager
+
         act_manager_with_parent = ActManager(
-            game_manager=mock_game_manager,
-            session=db_session
+            game_manager=mock_game_manager, session=db_session
         )
         assert act_manager_with_parent.game_manager is mock_game_manager
 

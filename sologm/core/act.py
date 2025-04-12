@@ -35,6 +35,7 @@ class ActManager(BaseManager[Act, Act]):
         """Lazy-initialize game manager if not provided."""
         if self._game_manager is None:
             from sologm.core.game import GameManager
+
             self._game_manager = GameManager(session=self._session)
         return self._game_manager
 
@@ -44,10 +45,8 @@ class ActManager(BaseManager[Act, Act]):
         """Lazy-initialize scene manager."""
         if not hasattr(self, "_scene_manager") or self._scene_manager is None:
             from sologm.core.scene import SceneManager
-            self._scene_manager = SceneManager(
-                act_manager=self,
-                session=self._session
-            )
+
+            self._scene_manager = SceneManager(act_manager=self, session=self._session)
         return self._scene_manager
 
     def create_act(
