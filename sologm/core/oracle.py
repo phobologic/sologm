@@ -96,34 +96,34 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             OracleError: If no active scene, act, or game is found
         """
         self.logger.debug("Getting active context (scene, act, game)")
-        
+
         try:
             # Get active game first
             game = self.game_manager.get_active_game()
             if not game:
                 self.logger.error("No active game found")
                 raise OracleError("No active game found")
-                
+
             # Get active act from game
             if not game.has_active_act:
                 self.logger.error(f"No active act found in game '{game.name}'")
                 raise OracleError(f"No active act found in game '{game.name}'")
-            
+
             act = game.active_act
-            
+
             # Get active scene from act
             if not act.has_active_scene:
                 self.logger.error(f"No active scene found in act '{act.title}'")
                 raise OracleError(f"No active scene found in act '{act.title}'")
-                
+
             scene = act.active_scene
-            
+
             self.logger.debug(
                 f"Found active context: game='{game.name}' (ID: {game.id}), "
                 f"act='{act.title}' (ID: {act.id}), "
                 f"scene='{scene.title}' (ID: {scene.id})"
             )
-            
+
             return scene, act, game
         except OracleError:
             # Re-raise OracleError directly
@@ -154,7 +154,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 OracleError,
                 f"Interpretation set {set_id} not found",
             )
-            self.logger.debug(f"Found interpretation set for scene ID: {interp_set.scene_id}")
+            self.logger.debug(
+                f"Found interpretation set for scene ID: {interp_set.scene_id}"
+            )
             return interp_set
 
         try:
@@ -176,31 +178,37 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         Returns:
             Optional[InterpretationSet]: Current interpretation set or None
         """
-        self.logger.debug(f"Getting current interpretation set for scene ID: {scene_id}")
-        
+        self.logger.debug(
+            f"Getting current interpretation set for scene ID: {scene_id}"
+        )
+
         try:
             # First try to get the scene to use its property
-            def _get_scene_with_current_set(session: Session) -> Optional[InterpretationSet]:
+            def _get_scene_with_current_set(
+                session: Session,
+            ) -> Optional[InterpretationSet]:
                 scene = self.get_entity_or_error(
                     session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
                 )
-                
+
                 # Use the scene's current_interpretation_set property
                 current_set = scene.current_interpretation_set
-                
+
                 if current_set:
                     self.logger.debug(
                         f"Found current interpretation set ID: {current_set.id} "
                         f"for scene: {scene.title}"
                     )
                 else:
-                    self.logger.debug(f"No current interpretation set for scene: {scene.title}")
-                    
+                    self.logger.debug(
+                        f"No current interpretation set for scene: {scene.title}"
+                    )
+
                 return current_set
-                
+
             return self._execute_db_operation(
                 f"get current interpretation set for scene {scene_id}",
-                _get_scene_with_current_set
+                _get_scene_with_current_set,
             )
         except OracleError:
             # If scene not found, just return None
@@ -223,7 +231,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             Optional tuple of (InterpretationSet, selected Interpretation) or None if
             none found
         """
-        self.logger.debug(f"Getting most recent interpretation for scene ID: {scene_id}")
+        self.logger.debug(
+            f"Getting most recent interpretation for scene ID: {scene_id}"
+        )
 
         def _get_most_recent_interpretation(
             session: Session, scene_id: str
@@ -233,23 +243,27 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 scene = self.get_entity_or_error(
                     session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
                 )
-                
+
                 # Use scene's selected_interpretations property
                 selected_interpretations = scene.selected_interpretations
-                
+
                 if not selected_interpretations:
-                    self.logger.debug(f"No selected interpretations found for scene: {scene.title}")
+                    self.logger.debug(
+                        f"No selected interpretations found for scene: {scene.title}"
+                    )
                     return None
-                    
+
                 # Get the most recent one
-                most_recent = selected_interpretations[0]  # Assuming they're ordered by created_at desc
+                most_recent = selected_interpretations[
+                    0
+                ]  # Assuming they're ordered by created_at desc
                 interp_set = most_recent.interpretation_set
-                
+
                 self.logger.debug(
                     f"Found most recent interpretation: '{most_recent.title}' "
                     f"(ID: {most_recent.id}) in set ID: {interp_set.id}"
                 )
-                
+
                 return (interp_set, most_recent)
             except OracleError:
                 # If scene not found, return None
@@ -262,7 +276,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 _get_most_recent_interpretation,
                 scene_id,
             )
-            
+
             if result:
                 interp_set, interp = result
                 self.logger.debug(
@@ -271,7 +285,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 )
             else:
                 self.logger.debug("No interpretation found, returning None")
-                
+
             return result
         except Exception as e:
             self.logger.error(f"Error getting most recent interpretation: {str(e)}")
@@ -342,11 +356,12 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def _get_max_retries(self) -> int:
         """Get the maximum number of retries from configuration.
-        
+
         Returns:
             int: Maximum number of retries
         """
         from sologm.utils.config import get_config
+
         config = get_config()
         return int(config.get("oracle_retries", 2))
 
@@ -354,31 +369,33 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self, session: Session, previous_set_id: str
     ) -> Optional[List[Dict[str, str]]]:
         """Get previous interpretations for a set.
-        
+
         Args:
             session: Database session
             previous_set_id: ID of the previous interpretation set
-            
+
         Returns:
             Optional list of interpretation dictionaries
         """
-        self.logger.debug(f"Getting previous interpretations for set ID: {previous_set_id}")
-        
+        self.logger.debug(
+            f"Getting previous interpretations for set ID: {previous_set_id}"
+        )
+
         try:
             # Get the interpretation set
             interp_set = self.get_entity_or_error(
-                session, 
-                InterpretationSet, 
-                previous_set_id, 
-                OracleError, 
-                f"Interpretation set {previous_set_id} not found"
+                session,
+                InterpretationSet,
+                previous_set_id,
+                OracleError,
+                f"Interpretation set {previous_set_id} not found",
             )
-            
+
             # Use the relationship to get interpretations
             if not interp_set.interpretations:
                 self.logger.debug(f"No interpretations found in set {previous_set_id}")
                 return None
-                
+
             # Convert to dictionaries
             previous_interpretations = [
                 {
@@ -387,8 +404,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 }
                 for interp in interp_set.interpretations
             ]
-            
-            self.logger.debug(f"Found {len(previous_interpretations)} previous interpretations")
+
+            self.logger.debug(
+                f"Found {len(previous_interpretations)} previous interpretations"
+            )
             return previous_interpretations
         except OracleError:
             # Re-raise OracleError
@@ -397,25 +416,31 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             self.logger.error(f"Error getting previous interpretations: {str(e)}")
             return None
 
-    def _clear_current_interpretation_sets(self, session: Session, scene_id: str) -> None:
+    def _clear_current_interpretation_sets(
+        self, session: Session, scene_id: str
+    ) -> None:
         """Clear any current interpretation sets for a scene.
-        
+
         Args:
             session: Database session
             scene_id: ID of the scene
         """
-        self.logger.debug(f"Clearing current interpretation sets for scene ID: {scene_id}")
-        
+        self.logger.debug(
+            f"Clearing current interpretation sets for scene ID: {scene_id}"
+        )
+
         # Get the scene
         scene = self.get_entity_or_error(
             session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
         )
-        
+
         # Get current interpretation sets using the scene relationship
         current_set = scene.current_interpretation_set
-        
+
         if current_set:
-            self.logger.debug(f"Clearing current flag on interpretation set ID: {current_set.id}")
+            self.logger.debug(
+                f"Clearing current flag on interpretation set ID: {current_set.id}"
+            )
             current_set.is_current = False
         else:
             self.logger.debug("No current interpretation sets found")
@@ -429,8 +454,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         Returns:
             List[dict]: List of parsed interpretations.
         """
-        self.logger.debug(f"Parsing interpretations from response of length {len(response_text)}")
-        
+        self.logger.debug(
+            f"Parsing interpretations from response of length {len(response_text)}"
+        )
+
         # Clean up the response to handle potential formatting issues
         # Remove any markdown code block markers if present
         cleaned_text = re.sub(r"```markdown|```", "", response_text)
@@ -446,7 +473,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             interpretations.append(
                 {"title": title.strip(), "description": description.strip()}
             )
-            
+
         self.logger.debug(f"Parsed {len(interpretations)} interpretations")
         return interpretations
 
@@ -484,14 +511,16 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             f"retry_attempt={retry_attempt}, max_retries={max_retries or 'from config'}, "
             f"previous_set_id={previous_set_id or 'None'}"
         )
-        
+
         # If this is a retry but no previous_set_id was provided,
         # try to find the current interpretation set for this scene
         if retry_attempt > 0 and previous_set_id is None:
             current_set = self.get_current_interpretation_set(scene_id)
             if current_set:
                 previous_set_id = current_set.id
-                self.logger.debug(f"Using current set ID as previous set: {previous_set_id}")
+                self.logger.debug(
+                    f"Using current set ID as previous set: {previous_set_id}"
+                )
 
         # Get max_retries from config if not provided
         if max_retries is None:
@@ -507,8 +536,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
             # Try to get interpretations with automatic retry
             for attempt in range(retry_attempt, retry_attempt + max_retries + 1):
-                self.logger.debug(f"Attempt {attempt + 1}/{retry_attempt + max_retries + 1}")
-                
+                self.logger.debug(
+                    f"Attempt {attempt + 1}/{retry_attempt + max_retries + 1}"
+                )
+
                 try:
                     # Get previous interpretations if this is a retry
                     previous_interpretations = None
@@ -532,7 +563,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                     try:
                         self.logger.debug("Sending prompt to Claude API")
                         response = self.anthropic_client.send_message(prompt)
-                        self.logger.debug(f"Received response with {len(response)} characters")
+                        self.logger.debug(
+                            f"Received response with {len(response)} characters"
+                        )
                     except Exception as e:
                         self.logger.error(f"Error from AI service: {str(e)}")
                         raise OracleError(
@@ -558,7 +591,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                         )
                         session.add(interp_set)
                         session.flush()  # Flush to get the ID
-                        self.logger.debug(f"Created interpretation set with ID: {interp_set.id}")
+                        self.logger.debug(
+                            f"Created interpretation set with ID: {interp_set.id}"
+                        )
 
                         # Create interpretations
                         for i, interp_data in enumerate(parsed):
@@ -570,7 +605,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                             )
                             session.add(interpretation)
                             self.logger.debug(
-                                f"Created interpretation {i+1}/{len(parsed)}: "
+                                f"Created interpretation {i + 1}/{len(parsed)}: "
                                 f"'{interp_data['title']}' (ID: {interpretation.id})"
                             )
 
@@ -582,7 +617,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
                     # If we're on the last attempt and parsing failed, raise error
                     if attempt >= retry_attempt + max_retries:
-                        self.logger.warning("Failed to parse any interpretations from response")
+                        self.logger.warning(
+                            "Failed to parse any interpretations from response"
+                        )
                         self.logger.debug(f"Raw response: {response}")
                         raise OracleError(
                             f"Failed to parse interpretations from AI response after "
@@ -604,7 +641,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             raise OracleError("Failed to get interpretations after maximum retries")
 
         try:
-            return self._execute_db_operation("get interpretations", _get_interpretations)
+            return self._execute_db_operation(
+                "get interpretations", _get_interpretations
+            )
         except Exception as e:
             self.logger.error(f"Failed to get interpretations: {str(e)}")
             raise OracleError(f"Failed to get interpretations: {str(e)}") from e
@@ -640,7 +679,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 OracleError,
                 f"Interpretation set {set_id} not found",
             )
-            self.logger.debug(f"Found interpretation set for scene ID: {interp_set.scene_id}")
+            self.logger.debug(
+                f"Found interpretation set for scene ID: {interp_set.scene_id}"
+            )
 
             # Get all interpretations in the set
             interpretations = interp_set.interpretations
@@ -727,7 +768,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             f"Selecting interpretation with identifier '{interpretation_identifier}' "
             f"in set ID: {interpretation_set_id}"
         )
-        
+
         # Find the interpretation using the flexible identifier
         interpretation = self.find_interpretation(
             interpretation_set_id, interpretation_identifier
@@ -749,7 +790,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 OracleError,
                 f"Interpretation {interpretation_id} not found",
             )
-            self.logger.debug(f"Retrieved interpretation: '{interp.title}' (ID: {interp.id})")
+            self.logger.debug(
+                f"Retrieved interpretation: '{interp.title}' (ID: {interp.id})"
+            )
 
             # Get the set
             interp_set = self.get_entity_or_error(
