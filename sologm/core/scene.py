@@ -255,7 +255,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         self,
         title: str,
         description: str,
-        act_id: Optional[str] = None,
+        act_id: Optional[str] = "",
         make_active: bool = True,
     ) -> Scene:
         """Create a new scene.
