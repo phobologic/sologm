@@ -516,7 +516,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 if scene and scene.description:
                     scene_description = scene.description
 
-
                 # Build prompt and get response
                 prompt = self._build_prompt(
                     game_description,
