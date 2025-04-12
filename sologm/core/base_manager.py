@@ -2,7 +2,18 @@
 
 import importlib
 import logging
-from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
@@ -119,8 +130,12 @@ class BaseManager(Generic[T, M]):
             raise  # Re-raise the original exception
 
     def get_entity_or_error(
-        self, session: Session, model_class: Type[M], entity_id: str, 
-        error_class: Type[Exception], error_message: Optional[str] = None
+        self,
+        session: Session,
+        model_class: Type[M],
+        entity_id: str,
+        error_class: Type[Exception],
+        error_message: Optional[str] = None,
     ) -> M:
         """Get an entity by ID or raise an error if not found.
 
@@ -139,17 +154,19 @@ class BaseManager(Generic[T, M]):
         """
         entity = session.query(model_class).filter(model_class.id == entity_id).first()
         if not entity:
-            msg = error_message or f"{model_class.__name__} with ID {entity_id} not found"
+            msg = (
+                error_message or f"{model_class.__name__} with ID {entity_id} not found"
+            )
             raise error_class(msg)
         return entity
 
     def list_entities(
-        self, 
-        model_class: Type[M], 
-        filters: Optional[Dict[str, Any]] = None, 
+        self,
+        model_class: Type[M],
+        filters: Optional[Dict[str, Any]] = None,
         order_by: Optional[Union[str, List[str]]] = None,
         order_direction: str = "asc",
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ) -> List[M]:
         """List entities with optional filtering, ordering, and limit.
 
@@ -163,32 +180,33 @@ class BaseManager(Generic[T, M]):
         Returns:
             List of entities matching the criteria
         """
+
         def _list_operation(session: Session) -> List[M]:
             query = session.query(model_class)
-            
+
             # Apply filters
             if filters:
                 for key, value in filters.items():
                     if value is not None:
                         query = query.filter(getattr(model_class, key) == value)
-            
+
             # Apply ordering
             if order_by:
                 if isinstance(order_by, str):
                     order_attrs = [order_by]
                 else:
                     order_attrs = order_by
-                    
+
                 for attr in order_attrs:
                     direction_func = asc if order_direction == "asc" else desc
                     query = query.order_by(direction_func(getattr(model_class, attr)))
-                
+
             # Apply limit
             if limit:
                 query = query.limit(limit)
-                
+
             return query.all()
-        
+
         return self._execute_db_operation(
             f"list {model_class.__name__}", _list_operation
         )
@@ -210,12 +228,12 @@ class BaseManager(Generic[T, M]):
             module_path, class_name = manager_class_path.rsplit(".", 1)
             module = importlib.import_module(module_path)
             manager_class = getattr(module, class_name)
-            
+
             # Always pass the session
             kwargs["session"] = self._session
-            
+
             setattr(self, attr_name, manager_class(**kwargs))
-        
+
         return getattr(self, attr_name)
 
     def _handle_operation_error(

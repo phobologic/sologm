@@ -48,10 +48,7 @@ class SceneManager(BaseManager[Scene, Scene]):
     @property
     def act_manager(self) -> ActManager:
         """Lazy-initialize act manager if not provided."""
-        return self._lazy_init_manager(
-            "_act_manager", 
-            "sologm.core.act.ActManager"
-        )
+        return self._lazy_init_manager("_act_manager", "sologm.core.act.ActManager")
 
     @property
     def game_manager(self) -> GameManager:
@@ -62,26 +59,20 @@ class SceneManager(BaseManager[Scene, Scene]):
     def oracle_manager(self) -> "OracleManager":
         """Lazy-initialize oracle manager."""
         return self._lazy_init_manager(
-            "_oracle_manager", 
-            "sologm.core.oracle.OracleManager",
-            scene_manager=self
+            "_oracle_manager", "sologm.core.oracle.OracleManager", scene_manager=self
         )
 
     @property
     def event_manager(self) -> "EventManager":
         """Lazy-initialize event manager."""
         return self._lazy_init_manager(
-            "_event_manager", 
-            "sologm.core.event.EventManager"
+            "_event_manager", "sologm.core.event.EventManager"
         )
 
     @property
     def dice_manager(self) -> "DiceManager":
         """Lazy-initialize dice manager."""
-        return self._lazy_init_manager(
-            "_dice_manager", 
-            "sologm.core.dice.DiceManager"
-        )
+        return self._lazy_init_manager("_dice_manager", "sologm.core.dice.DiceManager")
 
     def get_active_context(self) -> Dict[str, Any]:
         """Get the active game, act, and scene context.
@@ -259,11 +250,9 @@ class SceneManager(BaseManager[Scene, Scene]):
             SceneError: If there's an error listing the scenes.
         """
         logger.debug(f"Listing scenes for act {act_id}")
-        
+
         return self.list_entities(
-            Scene, 
-            filters={"act_id": act_id}, 
-            order_by="sequence"
+            Scene, filters={"act_id": act_id}, order_by="sequence"
         )
 
     def complete_scene(self, scene_id: str) -> Scene:
@@ -282,8 +271,7 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         def _complete_scene(session: Session, scene_id: str) -> Scene:
             scene = self.get_entity_or_error(
-                session, Scene, scene_id, SceneError,
-                f"Scene {scene_id} not found"
+                session, Scene, scene_id, SceneError, f"Scene {scene_id} not found"
             )
 
             if scene.status == SceneStatus.COMPLETED:
@@ -313,8 +301,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         def _set_current_scene(session: Session, scene_id: str) -> Scene:
             # Get the scene and raise error if not found
             scene = self.get_entity_or_error(
-                session, Scene, scene_id, SceneError, 
-                f"Scene {scene_id} not found"
+                session, Scene, scene_id, SceneError, f"Scene {scene_id} not found"
             )
 
             # Deactivate all scenes in this act
@@ -351,8 +338,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         ) -> Scene:
             # Get the scene and raise error if not found
             scene = self.get_entity_or_error(
-                session, Scene, scene_id, SceneError,
-                f"Scene {scene_id} not found"
+                session, Scene, scene_id, SceneError, f"Scene {scene_id} not found"
             )
 
             act_id = scene.act_id
