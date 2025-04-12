@@ -99,7 +99,7 @@ def game_info(
         act_manager = game_manager.act_manager
         scene_manager = act_manager.scene_manager
         active_scene = scene_manager.get_active_scene()
-        
+
         # Get oracle_manager through the chain
         oracle_manager = scene_manager.oracle_manager
 
@@ -107,14 +107,16 @@ def game_info(
             # Access other managers through the chain
             event_manager = scene_manager.event_manager
             dice_manager = scene_manager.dice_manager
-            
+
             recent_events = []
             recent_rolls = []
             if active_scene:
                 logger.debug(
                     f"Getting recent events and dice rolls for scene {active_scene.id}"
                 )
-                recent_events = event_manager.list_events(limit=5)[:5]  # Ensure we get at most 5 events
+                recent_events = event_manager.list_events(limit=5)[
+                    :5
+                ]  # Ensure we get at most 5 events
                 logger.debug(f"Retrieved {len(recent_events)} recent events")
 
                 recent_rolls = dice_manager.get_recent_rolls(active_scene, limit=3)
@@ -247,7 +249,7 @@ def dump_game(
     """Export a game with all scenes and events as a markdown document to stdout."""
     try:
         game_manager = GameManager()
-        
+
         # Get the game (active or specified)
         game = None
         if game_id:
@@ -263,7 +265,7 @@ def dump_game(
                     "game first.[/red]"
                 )
                 raise typer.Exit(1)
-                
+
         # Access other managers through the chain
         act_manager = game_manager.act_manager
         scene_manager = act_manager.scene_manager
