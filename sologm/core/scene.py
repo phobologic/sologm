@@ -73,28 +73,32 @@ class SceneManager(BaseManager[Scene, Scene]):
     def dice_manager(self) -> "DiceManager":
         """Lazy-initialize dice manager."""
         return self._lazy_init_manager("_dice_manager", "sologm.core.dice.DiceManager")
-        
+
     def _check_title_uniqueness(
-        self, session: Session, act_id: str, title: str, exclude_scene_id: Optional[str] = None
+        self,
+        session: Session,
+        act_id: str,
+        title: str,
+        exclude_scene_id: Optional[str] = None,
     ) -> None:
         """Check if a scene title is unique within an act.
-        
+
         Args:
             session: Database session
             act_id: ID of the act to check in
             title: Title to check for uniqueness
             exclude_scene_id: Optional scene ID to exclude from the check (for updates)
-            
+
         Raises:
             SceneError: If a scene with the same title already exists
         """
         query = session.query(Scene).filter(
             and_(Scene.act_id == act_id, Scene.title.ilike(title))
         )
-        
+
         if exclude_scene_id:
             query = query.filter(Scene.id != exclude_scene_id)
-            
+
         existing = query.first()
         if existing:
             raise SceneError(f"A scene with title '{title}' already exists in this act")
@@ -201,9 +205,13 @@ class SceneManager(BaseManager[Scene, Scene]):
         def _create_scene(session: Session) -> Scene:
             # Check if act exists
             self.act_manager.get_entity_or_error(
-                session, Act, act_id, SceneError, f"Act with ID '{act_id}' does not exist"
+                session,
+                Act,
+                act_id,
+                SceneError,
+                f"Act with ID '{act_id}' does not exist",
             )
-            
+
             # Check for duplicate titles
             self._check_title_uniqueness(session, act_id, title)
 
@@ -364,10 +372,12 @@ class SceneManager(BaseManager[Scene, Scene]):
         def _get_previous_scene(session: Session) -> Optional[Scene]:
             return (
                 session.query(Scene)
-                .filter(and_(
-                    Scene.act_id == scene.act_id, 
-                    Scene.sequence == scene.sequence - 1
-                ))
+                .filter(
+                    and_(
+                        Scene.act_id == scene.act_id,
+                        Scene.sequence == scene.sequence - 1,
+                    )
+                )
                 .first()
             )
 
