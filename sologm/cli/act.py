@@ -198,6 +198,7 @@ def list_acts() -> None:
 
     # Display compact game header instead of full game info
     from sologm.cli.utils.display import _create_game_header_panel
+
     console.print(_create_game_header_panel(active_game, console))
     console.print()
 
