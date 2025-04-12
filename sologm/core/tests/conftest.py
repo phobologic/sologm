@@ -3,11 +3,43 @@
 import logging
 
 import pytest
+from pytest import fixture
+
+# Import common fixtures from central conftest
+from sologm.tests.conftest import (
+    # Database fixtures
+    db_engine,
+    db_session,
+    database_session,
+    
+    # Manager fixtures
+    game_manager,
+    act_manager,
+    scene_manager,
+    event_manager,
+    dice_manager,
+    oracle_manager,
+    
+    # Model factory fixtures
+    create_test_game,
+    create_test_act,
+    create_test_scene,
+    
+    # Common test objects
+    test_game,
+    test_act,
+    test_scene,
+    test_events,
+    test_interpretation_set,
+    test_interpretations,
+    test_dice_roll,
+    
+    # Other fixtures
+    initialize_event_sources,
+)
 
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
-
-# Import common fixtures from central conftest
 
 
 # Add core-specific fixtures here
