@@ -16,8 +16,18 @@ console = Console()
 
 
 def resolve_scene_id(scene_id: Optional[str]) -> Optional[str]:
+    """Resolve scene ID from active context if not provided.
+    
+    Args:
+        scene_id: Optional scene ID provided by user
+        
+    Returns:
+        Resolved scene ID or None if not resolvable
+    """
     if scene_id is None:
         try:
+            # Create a new DiceManager instance
+            dice_manager = DiceManager()
             # Access scene manager through dice manager
             scene_manager = dice_manager.scene_manager
             context = scene_manager.get_active_context()
@@ -25,8 +35,10 @@ def resolve_scene_id(scene_id: Optional[str]) -> Optional[str]:
             logger.debug(f"Using current scene: {scene_id}")
         except SceneError as e:
             logger.debug(f"Could not determine current scene: {str(e)}")
+            # Return None when scene can't be determined
+            return None
 
-        return scene_id
+    return scene_id
 
 
 @dice_app.command("roll")
