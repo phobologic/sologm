@@ -30,12 +30,14 @@ class TestOracle:
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
         monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
-        
+
         # Mock the validate_active_context method to return our test scene
         def mock_validate_active_context():
             return "test_act_id", test_scene
-            
-        monkeypatch.setattr(scene_manager, "validate_active_context", mock_validate_active_context)
+
+        monkeypatch.setattr(
+            scene_manager, "validate_active_context", mock_validate_active_context
+        )
 
         game_id, act_id, scene_id = oracle_manager.get_active_context()
         assert game_id == test_game.id
@@ -734,17 +736,19 @@ It also has multiple lines."""
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
         monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
-        
+
         # Mock get_active_context to return our test IDs
         def mock_get_active_context():
             return test_game.id, test_act.id, test_scene.id
-            
-        monkeypatch.setattr(oracle_manager, "get_active_context", mock_get_active_context)
-        
+
+        monkeypatch.setattr(
+            oracle_manager, "get_active_context", mock_get_active_context
+        )
+
         # Mock get_scene to return our test scene
         def mock_get_scene(scene_id):
             return test_scene
-            
+
         monkeypatch.setattr(scene_manager, "get_scene", mock_get_scene)
 
         # Mock the _build_prompt method to avoid actual prompt generation

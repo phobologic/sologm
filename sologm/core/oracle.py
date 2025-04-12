@@ -103,22 +103,22 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             raise OracleError("No active scene found")
 
         logger.debug(f"Found active scene: {active_scene.id}")
-        
+
         # Access act and game through scene relationships
         active_act = active_scene.act
         if not active_act:
             logger.debug("No active act found")
             raise OracleError("No active act found")
-            
+
         logger.debug(f"Found active act: {active_act.id}")
-        
+
         active_game = active_act.game
         if not active_game:
             logger.debug("No active game found")
             raise OracleError("No active game found")
-            
+
         logger.debug(f"Found active game: {active_game.id}")
-        
+
         return active_game.id, active_act.id, active_scene.id
 
     def get_interpretation_set(self, set_id: str) -> InterpretationSet:
@@ -293,19 +293,19 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         # Get active scene
         _, _, scene_id = self.get_active_context()
         scene = self.scene_manager.get_scene(scene_id)
-        
+
         # Access game and act through scene relationships
         act = scene.act
         game = act.game
-        
+
         game_description = game.description or ""
         act_description = act.description or ""
         scene_description = scene.description or ""
-        
+
         # Get recent events
         recent_events = self.event_manager.list_events(scene_id, limit=5)
         recent_event_descriptions = [event.description for event in recent_events]
-        
+
         # Build and return the prompt
         return self._build_prompt(
             game_description,
