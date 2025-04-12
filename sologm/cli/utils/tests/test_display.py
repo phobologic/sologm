@@ -6,6 +6,7 @@ from rich.text import Text
 from sologm.cli.utils.display import (
     METADATA_SEPARATOR,
     _calculate_truncation_length,
+    _create_act_panel,
     _create_events_panel,
     _create_game_header_panel,
     _create_oracle_panel,
@@ -170,6 +171,22 @@ def test_calculate_truncation_length(mock_console):
     mock_console.width = None
     result = _calculate_truncation_length(mock_console)
     assert result == 40  # default value
+
+
+def test_create_act_panel(test_game, test_act):
+    """Test creating the act panel."""
+    # Test with active act
+    panel = _create_act_panel(test_game, test_act)
+    assert panel is not None
+    assert panel.title is not None
+    assert panel.border_style == BORDER_STYLES["current"]
+    
+    # Test with no active act
+    panel = _create_act_panel(test_game, None)
+    assert panel is not None
+    assert panel.title is not None
+    assert panel.border_style == BORDER_STYLES["neutral"]
+    assert "No active act" in panel.renderable
 
 
 def test_create_game_header_panel(test_game, mock_console):
