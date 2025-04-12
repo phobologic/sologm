@@ -50,7 +50,7 @@ def add_event(
         if description is None:
             # Get recent events for context
             recent_events = event_manager.list_events(
-                game_id=game_id, scene_id=scene_id, limit=3
+                scene_id=scene_id, limit=3
             )
 
             # Import the structured editor
