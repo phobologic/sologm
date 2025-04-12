@@ -78,17 +78,31 @@ def activate_game(
 
 
 @game_app.command("info")
-def game_info(
-    status: bool = typer.Option(
-        False,
-        "--status",
-        "-s",
-        help="Show detailed game status including recent events",
-    ),
-) -> None:
-    """Show information about the active game."""
+def game_info() -> None:
+    """Show basic information about the active game."""
     try:
         logger.debug("Getting active game info")
+        game_manager = GameManager()
+        game = game_manager.get_active_game()
+        if not game:
+            console.print("No active game. Use 'sologm game activate' to set one.")
+            return
+
+        # Access scene_manager through the chain
+        act_manager = game_manager.act_manager
+        scene_manager = act_manager.scene_manager
+        active_scene = scene_manager.get_active_scene()
+
+        display_game_info(console, game, active_scene)
+    except GameError as e:
+        console.print(f"[red]Error getting game info: {str(e)}[/red]")
+
+
+@game_app.command("status")
+def game_status() -> None:
+    """Show detailed status of the active game including recent events and dice rolls."""
+    try:
+        logger.debug("Getting active game status")
         game_manager = GameManager()
         game = game_manager.get_active_game()
         if not game:
@@ -103,47 +117,40 @@ def game_info(
         # Get oracle_manager through the chain
         oracle_manager = scene_manager.oracle_manager
 
-        if status:
-            # Access other managers through the chain
-            event_manager = scene_manager.event_manager
-            dice_manager = scene_manager.dice_manager
+        # Access other managers through the chain
+        event_manager = scene_manager.event_manager
+        dice_manager = scene_manager.dice_manager
 
-            recent_events = []
-            recent_rolls = []
-            if active_scene:
-                logger.debug(
-                    f"Getting recent events and dice rolls for scene {active_scene.id}"
-                )
-                recent_events = event_manager.list_events(limit=5)[
-                    :5
-                ]  # Ensure we get at most 5 events
-                logger.debug(f"Retrieved {len(recent_events)} recent events")
+        recent_events = []
+        recent_rolls = []
+        if active_scene:
+            logger.debug(f"Getting recent events and dice rolls for scene {active_scene.id}")
+            recent_events = event_manager.list_events(limit=5)[:5]  # Ensure we get at most 5 events
+            logger.debug(f"Retrieved {len(recent_events)} recent events")
 
-                recent_rolls = dice_manager.get_recent_rolls(active_scene, limit=3)
-                logger.debug(
-                    f"Retrieved {len(recent_rolls)} recent dice rolls for "
-                    f"scene {active_scene.id}"
-                )
-                # Log details of each roll to verify data
-                for i, roll in enumerate(recent_rolls):
-                    logger.debug(
-                        f"Roll {i + 1}: {roll.notation} = {roll.total} (ID: {roll.id})"
-                    )
-
-            logger.debug("Calling display_game_status with recent_rolls parameter")
-            display_game_status(
-                console,
-                game,
-                active_scene,
-                recent_events,
-                scene_manager=scene_manager,
-                oracle_manager=oracle_manager,
-                recent_rolls=recent_rolls,
+            recent_rolls = dice_manager.get_recent_rolls(active_scene, limit=3)
+            logger.debug(
+                f"Retrieved {len(recent_rolls)} recent dice rolls for "
+                f"scene {active_scene.id}"
             )
-        else:
-            display_game_info(console, game, active_scene)
+            # Log details of each roll to verify data
+            for i, roll in enumerate(recent_rolls):
+                logger.debug(
+                    f"Roll {i + 1}: {roll.notation} = {roll.total} (ID: {roll.id})"
+                )
+
+        logger.debug("Calling display_game_status with recent_rolls parameter")
+        display_game_status(
+            console,
+            game,
+            active_scene,
+            recent_events,
+            scene_manager=scene_manager,
+            oracle_manager=oracle_manager,
+            recent_rolls=recent_rolls,
+        )
     except GameError as e:
-        console.print(f"[red]Error getting game info: {str(e)}[/red]")
+        console.print(f"[red]Error getting game status: {str(e)}[/red]")
 
 
 @game_app.command("edit")
