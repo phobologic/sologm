@@ -180,7 +180,7 @@ def test_create_act_panel(test_game, test_act):
     assert panel is not None
     assert panel.title is not None
     assert panel.border_style == BORDER_STYLES["current"]
-    
+
     # Test with no active act
     panel = _create_act_panel(test_game, None)
     assert panel is not None

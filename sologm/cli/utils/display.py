@@ -594,14 +594,14 @@ def display_game_status(
 
     # Display game header
     console.print(_create_game_header_panel(game, console))
-    
+
     # Get active act
     active_act = (
         next((act for act in game.acts if act.is_active), None)
         if hasattr(game, "acts")
         else None
     )
-    
+
     # Display act panel
     console.print(_create_act_panel(game, active_act))
 
@@ -672,19 +672,21 @@ def _calculate_truncation_length(console: Console) -> int:
 
 def _create_act_panel(game: Game, active_act: Optional[Act] = None) -> Panel:
     """Create a panel showing act information.
-    
+
     Args:
         game: The current game
         active_act: The currently active act, if any
-        
+
     Returns:
         Panel containing formatted act information
     """
     st = StyledText
-    
+
     if not active_act:
         # No active act
-        panel_content = st.subtitle("No active act. Create one with 'sologm act create'.")
+        panel_content = st.subtitle(
+            "No active act. Create one with 'sologm act create'."
+        )
         return Panel(
             panel_content,
             title=st.title("Current Act"),
@@ -692,19 +694,19 @@ def _create_act_panel(game: Game, active_act: Optional[Act] = None) -> Panel:
             expand=True,
             title_align="left",
         )
-    
+
     # Create panel content with act information
     panel_content = Text()
-    
+
     # Add act title and sequence
     act_title = active_act.title or "[italic]Untitled Act[/italic]"
     panel_content.append(st.title(f"Act {active_act.sequence}: {act_title}"))
-    
+
     # Add act description if available
     if active_act.description:
         panel_content.append("\n")
         panel_content.append(active_act.description)
-    
+
     # Add metadata
     metadata = {
         "Status": active_act.status.value,
@@ -713,7 +715,7 @@ def _create_act_panel(game: Game, active_act: Optional[Act] = None) -> Panel:
     }
     panel_content.append("\n")
     panel_content.append(st.format_metadata(metadata))
-    
+
     return Panel(
         panel_content,
         title=st.title("Current Act"),
@@ -787,7 +789,6 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
     content = Text()
     content.append(truncated_description)
     content.append("\n")
-
 
     # Add metadata with dim style
     metadata_text = st.format_metadata(metadata)
