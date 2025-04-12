@@ -99,9 +99,7 @@ def scene_info() -> None:
     scene_manager = SceneManager()
 
     try:
-        _, active_scene = scene_manager.validate_active_context(
-            game_manager, act_manager
-        )
+        act_id, active_scene = scene_manager.validate_active_context()
         display_scene_info(console, active_scene)
     except (SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
