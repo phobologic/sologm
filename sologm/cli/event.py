@@ -174,9 +174,7 @@ def edit_event(
         # If no event_id provided, get the most recent event
         if event_id is None:
             # Get the most recent event (limit=1)
-            recent_events = event_manager.list_events(
-                scene_id=scene_id, limit=1
-            )
+            recent_events = event_manager.list_events(scene_id=scene_id, limit=1)
 
             if not recent_events:
                 console.print(
@@ -204,9 +202,7 @@ def edit_event(
 
         # Get recent events for context, excluding the event being edited
         # First get more events than we need, then filter
-        all_recent_events = event_manager.list_events(
-            scene_id=scene_id, limit=5
-        )
+        all_recent_events = event_manager.list_events(scene_id=scene_id, limit=5)
 
         # Filter out the event being edited
         recent_events = [e for e in all_recent_events if e.id != event_id]
