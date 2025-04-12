@@ -1352,15 +1352,58 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
 
     # Display scenes in this act if any
     if hasattr(act, "scenes") and act.scenes:
-        console.print("\nScenes in this act:")
+        # Create a table for scenes
+        scenes_table = Table(
+            border_style=BORDER_STYLES["game_info"],
+        )
+        
+        # Add columns with consistent styling
+        scenes_table.add_column("ID", style=st.STYLES["timestamp"])
+        scenes_table.add_column("Sequence", justify="right")
+        scenes_table.add_column("Title", style=st.STYLES["category"])
+        scenes_table.add_column("Description")
+        scenes_table.add_column("Status", style=st.STYLES["success"])
+        scenes_table.add_column("Current", style=st.STYLES["success"], justify="center")
+        
+        # Add rows for each scene
         for scene in act.scenes:
-            active_marker = "[bold green]✓[/bold green] " if scene.is_active else ""
-            status_style = "green" if scene.status.value == "COMPLETED" else "yellow"
-            console.print(
-                f"{active_marker}Scene {scene.sequence}: [bold]{scene.title}[/bold] [bold {status_style}]({scene.status.value})[/bold {status_style}]"
+            active_marker = "✓" if scene.is_active else ""
+            
+            # Create scene title with appropriate styling
+            scene_title = st.title(scene.title).plain if scene.is_active else scene.title
+            
+            # Truncate description for table display
+            truncated_description = truncate_text(scene.description, max_length=40)
+            
+            scenes_table.add_row(
+                scene.id,
+                str(scene.sequence),
+                scene_title,
+                truncated_description,
+                scene.status.value,
+                active_marker,
             )
+        
+        # Create panel title
+        panel_title = st.title(f"Scenes in Act {act.sequence}")
+        
+        # Wrap the table in a panel with a title
+        scenes_panel = Panel(
+            scenes_table,
+            title=panel_title,
+            title_align="left",
+            border_style=BORDER_STYLES["game_info"],
+        )
+        console.print(scenes_panel)
     else:
-        console.print("\nNo scenes in this act yet.")
+        # Create an empty panel for no scenes
+        empty_panel = Panel(
+            st.subtitle("No scenes in this act yet."),
+            title=st.title("Scenes"),
+            title_align="left",
+            border_style=BORDER_STYLES["neutral"],
+        )
+        console.print(empty_panel)
 
 
 def get_event_context_header(
