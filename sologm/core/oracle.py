@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -11,12 +11,15 @@ from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.prompts.oracle import OraclePrompts
 from sologm.core.scene import SceneManager
-from sologm.database.session import get_session
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.utils.errors import OracleError
+
+if TYPE_CHECKING:
+    from sologm.core.act import ActManager
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,16 +29,16 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def __init__(
         self,
-        scene_manager: Optional[SceneManager] = None,
         anthropic_client: Optional[AnthropicClient] = None,
+        scene_manager: Optional[SceneManager] = None,
         event_manager: Optional[EventManager] = None,
         session: Optional[Session] = None,
     ):
         """Initialize the oracle manager.
 
         Args:
-            scene_manager: Optional SceneManager instance.
             anthropic_client: Optional Anthropic client instance.
+            scene_manager: Optional SceneManager instance.
             event_manager: Optional event manager instance.
             session: Optional database session (primarily for testing).
         """
@@ -239,7 +242,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             context: User's question or context.
             oracle_results: Oracle results to interpret.
             count: Number of interpretations to generate.
-            previous_interpretations: Optional list of previous interpretations to avoid.
+            previous_interpretations: Optional list of previous
+                                      interpretations to avoid.
             retry_attempt: Number of retry attempts made.
 
         Returns:
@@ -280,16 +284,24 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
         # Get game and scene details
         game = self.game_manager.get_game(game_id)
-        scene = self.scene_manager.get_scene(act_id, scene_id)
+        scene = self.scene_manager.get_scene(scene_id)
+
+        game_description = ""
+        if game and game.description:
+            game_description = game.description
+
+        scene_description = ""
+        if scene and scene.description:
+            scene_description = scene.description
 
         # Get recent events
-        recent_events = self.event_manager.list_events(game_id, scene_id, limit=5)
+        recent_events = self.event_manager.list_events(scene_id, limit=5)
         recent_event_descriptions = [event.description for event in recent_events]
 
         # Build and return the prompt
         return self._build_prompt(
-            game.description,
-            scene.description,
+            game_description or "",
+            scene_description or "",
             recent_event_descriptions,
             context,
             oracle_results,
@@ -314,7 +326,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             previous_set_id: ID of the previous interpretation set
 
         Returns:
-            Tuple containing game, act, scene, recent events, and previous interpretations
+            Tuple containing game, act, scene, recent events, and previous
+            interpretations
 
         Raises:
             OracleError: If game, act, or scene not found
@@ -647,7 +660,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
         Args:
             interpretation_set_id: ID of the interpretation set.
-            interpretation_identifier: Identifier of the interpretation (sequence number, slug, or UUID).
+            interpretation_identifier: Identifier of the interpretation
+                                       (sequence number, slug, or UUID).
 
         Returns:
             Interpretation: The selected interpretation.
@@ -660,7 +674,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         def _select_interpretation(
             session: Session,
             interpretation_set_id: str,
-            interpretation_id: str,
+            interpretation: Interpretation,
         ) -> Interpretation:
             # Get the interpretation set
             interp_set = (
@@ -721,9 +735,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             # Access the scene relationship from the interpretation set
             scene = interp_set.scene
 
-            # Get the act to access game_id
-            act = scene.act
-
             # Use custom description if provided, otherwise generate from interpretation
             description = (
                 custom_description
@@ -738,15 +749,12 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             if not oracle_source:
                 raise OracleError("Oracle event source not found")
 
-            # Create the event
-            event = Event.create(
-                game_id=act.game_id,
+            event = self.event_manager.add_event(
                 scene_id=scene.id,
+                source="oracle",
                 description=description,
-                source_id=oracle_source.id,
-                interpretation_id=interpretation.id,
+                interpretation_id=interpretation.id
             )
-            session.add(event)
             return event
 
         return self._execute_db_operation(
