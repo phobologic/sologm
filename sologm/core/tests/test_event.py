@@ -1,10 +1,13 @@
 """Tests for event management functionality."""
 
+import logging
 import pytest
 
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.utils.errors import EventError
+
+logger = logging.getLogger(__name__)
 
 
 class TestEventManager:
@@ -129,18 +132,18 @@ class TestEventManager:
     def test_get_event(self, event_manager, test_game, test_scene, create_test_event):
         """Test getting an event by ID."""
         # Create a test event
-        print(f"DEBUG: Creating test event with scene_id={test_scene.id}")
+        logger.debug(f"Creating test event with scene_id={test_scene.id}")
         event = create_test_event(test_scene.id, "Test event to retrieve")
-        print(
-            f"DEBUG: Created event with id={event.id}, description={event.description}"
+        logger.debug(
+            f"Created event with id={event.id}, description={event.description}"
         )
 
         # Get the event
         retrieved_event = event_manager.get_event(event.id)
-        print(f"DEBUG: Retrieved event: {retrieved_event}")
+        logger.debug(f"Retrieved event: {retrieved_event}")
         if retrieved_event:
-            print(
-                f"DEBUG: Retrieved event id={retrieved_event.id}, description={retrieved_event.description}"
+            logger.debug(
+                f"Retrieved event id={retrieved_event.id}, description={retrieved_event.description}"
             )
 
         # Verify the event was retrieved correctly
@@ -161,22 +164,22 @@ class TestEventManager:
     ):
         """Test updating an event's description."""
         # Create a test event
-        print(f"DEBUG: Creating test event with scene_id={test_scene.id}")
+        logger.debug(f"Creating test event with scene_id={test_scene.id}")
         event = create_test_event(test_scene.id, "Original description")
-        print(
-            f"DEBUG: Created event with id={event.id}, description={event.description}"
+        logger.debug(
+            f"Created event with id={event.id}, description={event.description}"
         )
-        print(f"DEBUG: Event source: {event.source_id}")
+        logger.debug(f"Event source: {event.source_id}")
         if hasattr(event, "source") and event.source:
-            print(f"DEBUG: Event source name: {event.source.name}")
+            logger.debug(f"Event source name: {event.source.name}")
 
         # Update the event
         updated_event = event_manager.update_event(event.id, "Updated description")
-        print(f"DEBUG: Updated event: {updated_event}")
-        print(f"DEBUG: Updated event description: {updated_event.description}")
-        print(f"DEBUG: Updated event source_id: {updated_event.source_id}")
+        logger.debug(f"Updated event: {updated_event}")
+        logger.debug(f"Updated event description: {updated_event.description}")
+        logger.debug(f"Updated event source_id: {updated_event.source_id}")
         if hasattr(updated_event, "source") and updated_event.source:
-            print(f"DEBUG: Updated event source name: {updated_event.source.name}")
+            logger.debug(f"Updated event source name: {updated_event.source.name}")
 
         # Verify the event was updated correctly
         assert updated_event.id == event.id
@@ -192,14 +195,14 @@ class TestEventManager:
     ):
         """Test updating an event's description and source."""
         # Create a test event
-        print(f"DEBUG: Creating test event with scene_id={test_scene.id}")
+        logger.debug(f"Creating test event with scene_id={test_scene.id}")
         event = create_test_event(test_scene.id, "Original description")
-        print(
-            f"DEBUG: Created event with id={event.id}, description={event.description}"
+        logger.debug(
+            f"Created event with id={event.id}, description={event.description}"
         )
-        print(f"DEBUG: Event source_id: {event.source_id}")
+        logger.debug(f"Event source_id: {event.source_id}")
         if hasattr(event, "source") and event.source:
-            print(f"DEBUG: Event source name: {event.source.name}")
+            logger.debug(f"Event source name: {event.source.name}")
 
         # Check source name
         assert event.source.name == "manual"  # Default source
@@ -208,11 +211,11 @@ class TestEventManager:
         updated_event = event_manager.update_event(
             event.id, "Updated description", "oracle"
         )
-        print(f"DEBUG: Updated event: {updated_event}")
-        print(f"DEBUG: Updated event description: {updated_event.description}")
-        print(f"DEBUG: Updated event source_id: {updated_event.source_id}")
+        logger.debug(f"Updated event: {updated_event}")
+        logger.debug(f"Updated event description: {updated_event.description}")
+        logger.debug(f"Updated event source_id: {updated_event.source_id}")
         if hasattr(updated_event, "source") and updated_event.source:
-            print(f"DEBUG: Updated event source name: {updated_event.source.name}")
+            logger.debug(f"Updated event source name: {updated_event.source.name}")
 
         # Verify the event was updated correctly
         assert updated_event.id == event.id
