@@ -19,26 +19,69 @@ logger = logging.getLogger(__name__)
 class SceneManager(BaseManager[Scene, Scene]):
     """Manages scene operations."""
 
-    def __init__(self, session: Optional[Session] = None):
+    def __init__(
+        self,
+        act_manager: Optional[ActManager] = None,
+        session: Optional[Session] = None,
+    ):
         """Initialize the scene manager.
 
         Args:
+            act_manager: Optional ActManager instance. If not provided, 
+                a new one will be lazy-initialized when needed.
             session: Optional SQLAlchemy session. If not provided,
                 a new one will be created for each operation.
         """
         super().__init__(session)
+        self._act_manager = act_manager
         logger.debug("Initialized SceneManager")
+        
+    @property
+    def act_manager(self) -> ActManager:
+        """Lazy-initialize act manager if not provided."""
+        if self._act_manager is None:
+            from sologm.core.act import ActManager
+            self._act_manager = ActManager(session=self._session)
+        return self._act_manager
+        
+    @property
+    def game_manager(self) -> GameManager:
+        """Access game manager through act manager."""
+        return self.act_manager.game_manager
+    
+    @property
+    def oracle_manager(self) -> "OracleManager":
+        """Lazy-initialize oracle manager."""
+        if not hasattr(self, "_oracle_manager") or self._oracle_manager is None:
+            from sologm.core.oracle import OracleManager
+            self._oracle_manager = OracleManager(
+                scene_manager=self,
+                session=self._session
+            )
+        return self._oracle_manager
+        
+    @property
+    def event_manager(self) -> "EventManager":
+        """Lazy-initialize event manager."""
+        if not hasattr(self, "_event_manager") or self._event_manager is None:
+            from sologm.core.event import EventManager
+            self._event_manager = EventManager(
+                session=self._session
+            )
+        return self._event_manager
+        
+    @property
+    def dice_manager(self) -> "DiceManager":
+        """Lazy-initialize dice manager."""
+        if not hasattr(self, "_dice_manager") or self._dice_manager is None:
+            from sologm.core.dice import DiceManager
+            self._dice_manager = DiceManager(
+                session=self._session
+            )
+        return self._dice_manager
 
-    def get_active_context(
-        self,
-        game_manager: Optional[GameManager] = None,
-        act_manager: Optional[ActManager] = None,
-    ) -> Dict[str, Any]:
+    def get_active_context(self) -> Dict[str, Any]:
         """Get the active game, act, and scene context.
-
-        Args:
-            game_manager: Optional GameManager instance. If not provided, a new one will be created.
-            act_manager: Optional ActManager instance. If not provided, a new one will be created.
 
         Returns:
             Dictionary containing 'game', 'act', and 'scene' keys with their respective objects.
@@ -46,17 +89,11 @@ class SceneManager(BaseManager[Scene, Scene]):
         Raises:
             SceneError: If no active game, act, or scene is found.
         """
-        if game_manager is None:
-            game_manager = GameManager(self._session)
-
-        active_game = game_manager.get_active_game()
+        active_game = self.game_manager.get_active_game()
         if not active_game:
             raise SceneError("No active game. Use 'sologm game activate' to set one.")
 
-        if act_manager is None:
-            act_manager = ActManager(self._session)
-
-        active_act = act_manager.get_active_act(active_game.id)
+        active_act = self.act_manager.get_active_act(active_game.id)
         if not active_act:
             raise SceneError("No active act. Create one with 'sologm act create'.")
 
@@ -380,14 +417,8 @@ class SceneManager(BaseManager[Scene, Scene]):
             sequence=scene.sequence,
         )
 
-    def validate_active_context(
-        self, game_manager: GameManager, act_manager: ActManager = None
-    ) -> Tuple[str, Scene]:
+    def validate_active_context(self) -> Tuple[str, Scene]:
         """Validate active game, act, and scene context.
-
-        Args:
-            game_manager: GameManager instance to check active game
-            act_manager: Optional ActManager instance. If not provided, a new one will be created.
 
         Returns:
             Tuple of (act_id, active_scene)
@@ -395,5 +426,5 @@ class SceneManager(BaseManager[Scene, Scene]):
         Raises:
             SceneError: If no active game, act, or scene
         """
-        context = self.get_active_context(game_manager, act_manager)
+        context = self.get_active_context()
         return context["act"].id, context["scene"]

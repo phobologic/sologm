@@ -2,6 +2,7 @@
 
 import pytest
 
+from sologm.core.act import ActManager
 from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.models.scene import Scene, SceneStatus
@@ -392,7 +393,7 @@ class TestSceneManager:
             )
 
     def test_get_active_context(
-        self, scene_manager, game_manager, test_game, ensure_active_act
+        self, scene_manager, game_manager, test_game, ensure_active_act, monkeypatch
     ):
         """Test getting active game, act, and scene context."""
         active_act = ensure_active_act
@@ -403,13 +404,17 @@ class TestSceneManager:
             description="Currently active",
         )
 
-        context = scene_manager.get_active_context(game_manager)
+        # Monkeypatch the game_manager and act_manager properties
+        monkeypatch.setattr(scene_manager, "game_manager", game_manager)
+        monkeypatch.setattr(scene_manager, "act_manager", ActManager(session=scene_manager._session))
+
+        context = scene_manager.get_active_context()
         assert context["game"].id == test_game.id
         assert context["act"].id == active_act.id
         assert context["scene"].id == scene.id
 
     def test_validate_active_context(
-        self, scene_manager, game_manager, test_game, ensure_active_act
+        self, scene_manager, game_manager, test_game, ensure_active_act, monkeypatch
     ):
         """Test validating active game and scene context."""
         active_act = ensure_active_act
@@ -420,7 +425,11 @@ class TestSceneManager:
             description="Currently active",
         )
 
-        act_id, active_scene = scene_manager.validate_active_context(game_manager)
+        # Monkeypatch the game_manager and act_manager properties
+        monkeypatch.setattr(scene_manager, "game_manager", game_manager)
+        monkeypatch.setattr(scene_manager, "act_manager", ActManager(session=scene_manager._session))
+
+        act_id, active_scene = scene_manager.validate_active_context()
         assert act_id == active_act.id
         assert active_scene.id == scene.id
 
@@ -447,13 +456,16 @@ class TestSceneManager:
         assert wrong_scene is None
 
     def test_validate_active_context_no_game(
-        self, scene_manager, game_manager, db_session
+        self, scene_manager, game_manager, db_session, monkeypatch
     ):
         """Test validation with no active game."""
         # Deactivate all games
         db_session.query(Game).update({Game.is_active: False})
         db_session.commit()
 
+        # Monkeypatch the game_manager property
+        monkeypatch.setattr(scene_manager, "game_manager", game_manager)
+
         with pytest.raises(SceneError) as exc:
-            scene_manager.validate_active_context(game_manager)
+            scene_manager.validate_active_context()
         assert "No active game" in str(exc.value)

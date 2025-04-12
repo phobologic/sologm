@@ -15,7 +15,7 @@ GameManager
         └── DiceManager
 ```
 
-Each manager has access to its parent managers through properties, allowing operations to easily access the full context.
+Each manager has access to its parent managers through properties, allowing operations to easily access the full context. Additionally, managers can access child and sibling managers through lazy-initialized properties, enabling bidirectional traversal of the manager hierarchy.
 
 ### Manager Implementation Guidelines
 
@@ -23,11 +23,13 @@ Each manager has access to its parent managers through properties, allowing oper
 
 2. **Accept Parent Manager**: Managers should accept their parent manager as an optional constructor parameter.
 
-3. **Lazy Initialization**: Use lazy initialization for parent managers to avoid circular dependencies.
+3. **Lazy Initialization**: Use lazy initialization for parent, child, and sibling managers to avoid circular dependencies.
 
 4. **Database Operations**: Use `self._execute_db_operation()` for all database operations.
 
 5. **Session Consistency**: Pass the session down the manager chain to ensure consistent transaction boundaries.
+
+6. **Bidirectional Access**: Provide properties for accessing both parent and child/sibling managers.
 
 ### Example Manager Structure
 
@@ -41,6 +43,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         super().__init__(session)
         self._act_manager = act_manager
         
+    # Parent manager access
     @property
     def act_manager(self) -> ActManager:
         """Lazy-initialize act manager if not provided."""
@@ -53,6 +56,18 @@ class SceneManager(BaseManager[Scene, Scene]):
     def game_manager(self) -> GameManager:
         """Access game manager through act manager."""
         return self.act_manager.game_manager
+        
+    # Child/sibling manager access
+    @property
+    def oracle_manager(self) -> OracleManager:
+        """Lazy-initialize oracle manager."""
+        if not hasattr(self, "_oracle_manager") or self._oracle_manager is None:
+            from sologm.core.oracle import OracleManager
+            self._oracle_manager = OracleManager(
+                scene_manager=self,
+                session=self._session
+            )
+        return self._oracle_manager
 ```
 
 ## Database Operations
