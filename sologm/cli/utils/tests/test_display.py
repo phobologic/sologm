@@ -1,6 +1,5 @@
 """Tests for display helper functions."""
 
-
 import pytest
 from rich.text import Text
 
@@ -324,6 +323,8 @@ def test_format_metadata():
     # Verify it's using StyledText under the hood
     styled_result = StyledText.format_metadata(metadata)
     assert isinstance(styled_result, Text)
+
+
 @pytest.fixture
 def display_helpers():
     """Fixture to provide access to private display helper functions."""
