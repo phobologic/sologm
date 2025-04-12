@@ -63,48 +63,9 @@ class TestOraclePrompts:
         result = OraclePrompts._get_retry_text(0)
         assert result == ""
 
-    def test_build_interpretation_prompt_with_mocks(self):
-        """Test building the complete interpretation prompt with mock objects."""
-        # Create mock scene with relationships
-        mock_game = MagicMock()
-        mock_game.description = "Test Game"
 
-        mock_act = MagicMock()
-        mock_act.description = "Test Act"
-        mock_act.game = mock_game
-
-        mock_scene = MagicMock()
-        mock_scene.description = "Test Scene"
-        mock_scene.act = mock_act
-        mock_scene.events = [
-            MagicMock(description="Event 1"),
-            MagicMock(description="Event 2"),
-        ]
-
-        # Call the method
-        result = OraclePrompts.build_interpretation_prompt(
-            mock_scene,
-            "What happens next?",
-            "Mystery, Danger",
-            3,
-        )
-
-        # Check that all components are included
-        assert "You are interpreting oracle results for a solo RPG player" in result
-        assert "Game: Test Game" in result
-        assert "Act: Test Act" in result
-        assert "Current Scene: Test Scene" in result
-        assert "- Event 1" in result
-        assert "- Event 2" in result
-        assert "Player's Question/Context: What happens next?" in result
-        assert "Oracle Results: Mystery, Danger" in result
-        assert "Please provide 3 different interpretations" in result
-        assert "## [Title of first interpretation]" in result
-        assert "## The Mysterious Footprints" in result
-        assert "## An Inside Job" in result
-
-    def test_build_interpretation_prompt_with_fixtures(self, test_scene, test_events):
-        """Test building the prompt with test fixtures."""
+    def test_build_interpretation_prompt(self, test_scene, test_events):
+        """Test building the complete interpretation prompt."""
         result = OraclePrompts.build_interpretation_prompt(
             test_scene,
             "What happens next?",
