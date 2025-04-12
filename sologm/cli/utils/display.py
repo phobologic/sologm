@@ -180,13 +180,21 @@ def display_interpretation(
     console.print()
 
 
-def display_events_table(console: Console, events: List[Event], scene: Scene) -> None:
+def display_events_table(
+    console: Console, 
+    events: List[Event], 
+    scene: Scene,
+    truncate_descriptions: bool = True,
+    max_description_length: int = 80
+) -> None:
     """Display events in a formatted table.
 
     Args:
         console: Rich console instance
         events: List of events to display
         scene: The Scene to display events from.
+        truncate_descriptions: Whether to truncate long descriptions
+        max_description_length: Maximum length for descriptions if truncating
     """
     logger.debug(
         f"Displaying events table for scene '{scene.title}' with {len(events)} events"
@@ -218,11 +226,16 @@ def display_events_table(console: Console, events: List[Event], scene: Scene) ->
             event.source.name if hasattr(event.source, "name") else str(event.source)
         )
 
+        # Truncate description if needed
+        description = event.description
+        if truncate_descriptions:
+            description = truncate_text(description, max_length=max_description_length)
+
         table.add_row(
             event.id,
             event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             source_name,
-            event.description,  # Show full description without truncation
+            description,
         )
 
     # Create panel title
