@@ -832,7 +832,7 @@ def _create_scene_panels_grid(
         logger.debug(
             f"Attempting to get previous scene for active scene {active_scene.id}"
         )
-        prev_scene = scene_manager.get_previous_scene(game.id, active_scene)
+        prev_scene = scene_manager.get_previous_scene(active_scene.id)
 
     prev_scene_content = Text()
     if prev_scene:
