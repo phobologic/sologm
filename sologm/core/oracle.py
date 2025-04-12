@@ -60,52 +60,53 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """Lazy-initialize scene manager if not provided."""
         if self._scene_manager is None:
             from sologm.core.scene import SceneManager
+
             self._scene_manager = SceneManager(session=self._session)
         return self._scene_manager
-    
+
     @property
     def act_manager(self) -> "ActManager":
         """Access act manager through scene manager."""
         return self.scene_manager.act_manager
-    
+
     @property
     def game_manager(self) -> GameManager:
         """Access game manager through act manager."""
         return self.act_manager.game_manager
-    
+
     @property
     def event_manager(self) -> EventManager:
         """Lazy-initialize event manager if not provided."""
         if self._event_manager is None:
             self._event_manager = EventManager(session=self._session)
         return self._event_manager
-    
+
     def get_active_context(self) -> Tuple[str, str, str]:
         """Get active game, act, and scene IDs.
-        
+
         Returns:
             tuple[str, str, str]: game_id, act_id, scene_id
-            
+
         Raises:
             OracleError: If game, act, or scene not active
         """
         active_game = self.game_manager.get_active_game()
         if not active_game:
             raise OracleError("No active game found")
-            
+
         logger.debug(f"Validating active act for game {active_game.id}")
         active_act = self.act_manager.get_active_act(active_game.id)
         if not active_act:
             logger.debug("No active act found")
             raise OracleError("No active act found")
-        
+
         logger.debug(f"Found active act: {active_act.id}")
         logger.debug(f"Checking for active scene in act {active_act.id}")
         active_scene = self.scene_manager.get_active_scene(active_act.id)
         if not active_scene:
             logger.debug("No active scene found in the active act")
             raise OracleError("No active scene found")
-        
+
         logger.debug(f"Found active scene: {active_scene.id}")
         return active_game.id, active_act.id, active_scene.id
 
