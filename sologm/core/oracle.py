@@ -12,7 +12,6 @@ from sologm.core.game import GameManager
 from sologm.core.prompts.oracle import OraclePrompts
 from sologm.core.scene import SceneManager
 from sologm.database.session import get_session
-from sologm.database.session import get_session
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
@@ -342,8 +341,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
         def _get_data(session: Session) -> Tuple:
             # Get game, act, and scene
-            from sologm.models.game import Game
             from sologm.models.act import Act
+            from sologm.models.game import Game
             from sologm.models.scene import Scene
 
             game = session.query(Game).filter(Game.id == game_id).first()
