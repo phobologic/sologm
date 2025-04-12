@@ -231,10 +231,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def _build_prompt(
         self,
-        game_description: str,
-        act_description: str,
-        scene_description: str,
-        recent_events: List[str],
+        scene: Scene,
         context: str,
         oracle_results: str,
         count: int,
@@ -244,25 +241,18 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """Build the prompt for Claude API.
 
         Args:
-            game_description: Description of the current game.
-            act_description: Description of the current act.
-            scene_description: Description of the current scene.
-            recent_events: List of recent events in the scene.
-            context: User's question or context.
-            oracle_results: Oracle results to interpret.
-            count: Number of interpretations to generate.
-            previous_interpretations: Optional list of previous
-                                      interpretations to avoid.
-            retry_attempt: Number of retry attempts made.
+            scene: Scene object with loaded relationships
+            context: User's question or context
+            oracle_results: Oracle results to interpret
+            count: Number of interpretations to generate
+            previous_interpretations: Optional list of previous interpretations to avoid
+            retry_attempt: Number of retry attempts made
 
         Returns:
-            str: The formatted prompt.
+            str: The formatted prompt
         """
         return OraclePrompts.build_interpretation_prompt(
-            game_description,
-            act_description,
-            scene_description,
-            recent_events,
+            scene,
             context,
             oracle_results,
             count,
@@ -292,89 +282,17 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         # Get active scene
         _, _, scene_id = self.get_active_context()
         scene = self.scene_manager.get_scene(scene_id)
-
-        # Access game and act through scene relationships
-        act = scene.act
-        game = act.game
-
-        game_description = ""
-        if game and game.description:
-            game_description = game.description
-
-        act_description = ""
-        if act and act.description:
-            act_description = act.description
-
-        scene_description = ""
-        if scene and scene.description:
-            scene_description = scene.description
-
-        # Get recent events
-        recent_events = self.event_manager.list_events(scene_id, limit=5)
-        recent_event_descriptions = [event.description for event in recent_events]
+        if not scene:
+            raise OracleError(f"Scene {scene_id} not found")
 
         # Build and return the prompt
         return self._build_prompt(
-            game_description,
-            act_description,
-            scene_description,
-            recent_event_descriptions,
+            scene,
             context,
             oracle_results,
             count,
         )
 
-    def _get_context_data(
-        self,
-        scene_id: str,
-        retry_attempt: int = 0,
-        previous_set_id: Optional[str] = None,
-    ) -> Tuple["Game", "Act", "Scene", List["Event"], Optional[List[Dict[str, str]]]]:
-        """Get all context data needed for interpretation.
-
-        Args:
-            scene_id: ID of the scene
-            retry_attempt: Current retry attempt number
-            previous_set_id: ID of the previous interpretation set
-
-        Returns:
-            Tuple containing game, act, scene, recent events, and previous
-            interpretations
-
-        Raises:
-            OracleError: If scene not found
-        """
-
-        def _get_data(session: Session) -> Tuple:
-            # Get scene directly
-            scene = self.scene_manager.get_scene(scene_id)
-            if not scene:
-                raise OracleError(f"Scene {scene_id} not found")
-
-            # Access act and game through relationships
-            act = scene.act
-            game = act.game
-
-            # Get recent events through scene relationship
-            recent_events = self.event_manager.list_events(scene_id, limit=5)
-
-            # Get previous interpretations if this is a retry
-            previous_interpretations = None
-            if retry_attempt > 0 and previous_set_id:
-                previous_interps = (
-                    session.query(Interpretation)
-                    .filter(Interpretation.set_id == previous_set_id)
-                    .all()
-                )
-                if previous_interps:
-                    previous_interpretations = [
-                        {"title": interp.title, "description": interp.description}
-                        for interp in previous_interps
-                    ]
-
-            return game, act, scene, recent_events, previous_interpretations
-
-        return self._execute_db_operation("get context data", _get_data)
 
     def _create_interpretation_set(
         self,
@@ -513,21 +431,28 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         # Try to get interpretations with automatic retry
         for attempt in range(retry_attempt, retry_attempt + max_retries + 1):
             try:
-                # Get context data using scene relationships
-                game, act, scene, recent_events, previous_interpretations = (
-                    self._get_context_data(scene_id, attempt, previous_set_id)
-                )
-
-                game_description = game.description or ""
-                act_description = act.description or ""
-                scene_description = scene.description or ""
+                # Get scene and previous interpretations
+                scene = self.scene_manager.get_scene(scene_id)
+                if not scene:
+                    raise OracleError(f"Scene {scene_id} not found")
+                
+                # Get previous interpretations if this is a retry
+                previous_interpretations = None
+                if attempt > 0 and previous_set_id:
+                    previous_interps = (
+                        self._session.query(Interpretation)
+                        .filter(Interpretation.set_id == previous_set_id)
+                        .all()
+                    )
+                    if previous_interps:
+                        previous_interpretations = [
+                            {"title": interp.title, "description": interp.description}
+                            for interp in previous_interps
+                        ]
 
                 # Build prompt and get response
                 prompt = self._build_prompt(
-                    game_description,
-                    act_description,
-                    scene_description,
-                    [event.description for event in recent_events],
+                    scene,
                     context,
                     oracle_results,
                     count,

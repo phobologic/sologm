@@ -2,93 +2,25 @@
 
 from typing import List, Optional
 
+from sologm.models.scene import Scene
+
 
 class OraclePrompts:
     """Prompt templates for oracle interpretations."""
 
     @staticmethod
-    def format_events(recent_events: List[str]) -> str:
-        """Format recent events for the prompt.
-
-        Args:
-            recent_events: List of recent event descriptions
-
-        Returns:
-            Formatted events text for the prompt
-        """
-        if not recent_events:
-            return "No recent events"
-        return "\n".join([f"- {event}" for event in recent_events])
-
-    @staticmethod
-    def get_example_format() -> str:
-        """Get example format for interpretations.
-
-        Returns:
-            Example interpretations to show the AI the expected format
-        """
-        return """## The Mysterious Footprints
-The footprints suggest someone sneaked into the cellar during the night. Based on their size and depth, they likely belong to a heavier individual carrying something substantial - possibly the stolen brandy barrel.
-
-## An Inside Job
-The lack of forced entry and the selective theft of only the special brandy barrel suggests this was done by someone familiar with the cellar layout and the value of that specific barrel."""
-
-    @staticmethod
-    def format_previous_interpretations(
-        previous_interpretations: Optional[List[dict]], retry_attempt: int
-    ) -> str:
-        """Format previous interpretations for the prompt.
-
-        Args:
-            previous_interpretations: List of previous interpretations to avoid repeating
-            retry_attempt: Current retry attempt number
-
-        Returns:
-            Formatted previous interpretations section
-        """
-        if not previous_interpretations or retry_attempt <= 0:
-            return ""
-
-        text = "\n=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===\n\n"
-        for interp in previous_interpretations:
-            text += f"## {interp['title']}\n{interp['description']}\n\n"
-        text += "=== END OF PREVIOUS INTERPRETATIONS ===\n\n"
-        return text
-
-    @staticmethod
-    def get_retry_text(retry_attempt: int) -> str:
-        """Get retry-specific instructions.
-
-        Args:
-            retry_attempt: Current retry attempt number
-
-        Returns:
-            Text with retry-specific instructions
-        """
-        if retry_attempt <= 0:
-            return ""
-        return f"This is retry attempt #{retry_attempt + 1}. Please provide COMPLETELY DIFFERENT interpretations than those listed above."
-
-    @classmethod
     def build_interpretation_prompt(
-        cls,
-        game_description: str,
-        act_description: str,
-        scene_description: str,
-        recent_events: List[str],
+        scene: Scene,
         context: str,
         oracle_results: str,
-        count: int,
+        count: int = 5,
         previous_interpretations: Optional[List[dict]] = None,
         retry_attempt: int = 0,
     ) -> str:
         """Build the complete prompt for interpretation generation.
 
         Args:
-            game_description: Description of the current game
-            act_description: Description of the current act
-            scene_description: Description of the current scene
-            recent_events: List of recent event descriptions
+            scene: Scene object with loaded relationships
             context: User's question or context
             oracle_results: Oracle results to interpret
             count: Number of interpretations to generate
@@ -98,18 +30,33 @@ The lack of forced entry and the selective theft of only the special brandy barr
         Returns:
             Complete prompt for the AI
         """
-        events_text = cls.format_events(recent_events)
-        example_format = cls.get_example_format()
-        previous_interps_text = cls.format_previous_interpretations(
+        # Access related models through relationships
+        act = scene.act
+        game = act.game
+        
+        # Get recent events through scene relationship (limited to 5)
+        recent_events = [event.description for event in scene.events[:5]]
+        
+        # Format the events
+        events_text = OraclePrompts._format_events(recent_events)
+        
+        # Get example format
+        example_format = OraclePrompts._get_example_format()
+        
+        # Format previous interpretations if any
+        previous_interps_text = OraclePrompts._format_previous_interpretations(
             previous_interpretations, retry_attempt
         )
-        retry_text = cls.get_retry_text(retry_attempt)
+        
+        # Get retry-specific text if applicable
+        retry_text = OraclePrompts._get_retry_text(retry_attempt)
 
+        # Build the complete prompt
         return f"""You are interpreting oracle results for a solo RPG player.
 
-Game: {game_description}
-Act: {act_description}
-Current Scene: {scene_description}
+Game: {game.description or ""}
+Act: {act.description or ""}
+Current Scene: {scene.description or ""}
 Recent Events:
 {events_text}
 
@@ -148,3 +95,66 @@ Important:
 - Do not include the ```markdown and ``` delimiters in your actual response
 - Do not number the interpretations
 """
+
+    @staticmethod
+    def _format_events(recent_events: List[str]) -> str:
+        """Format recent events for the prompt.
+
+        Args:
+            recent_events: List of recent event descriptions
+
+        Returns:
+            Formatted events text for the prompt
+        """
+        if not recent_events:
+            return "No recent events"
+        return "\n".join([f"- {event}" for event in recent_events])
+
+    @staticmethod
+    def _get_example_format() -> str:
+        """Get example format for interpretations.
+
+        Returns:
+            Example interpretations to show the AI the expected format
+        """
+        return """## The Mysterious Footprints
+The footprints suggest someone sneaked into the cellar during the night. Based on their size and depth, they likely belong to a heavier individual carrying something substantial - possibly the stolen brandy barrel.
+
+## An Inside Job
+The lack of forced entry and the selective theft of only the special brandy barrel suggests this was done by someone familiar with the cellar layout and the value of that specific barrel."""
+
+    @staticmethod
+    def _format_previous_interpretations(
+        previous_interpretations: Optional[List[dict]], retry_attempt: int
+    ) -> str:
+        """Format previous interpretations for the prompt.
+
+        Args:
+            previous_interpretations: List of previous interpretations to avoid repeating
+            retry_attempt: Current retry attempt number
+
+        Returns:
+            Formatted previous interpretations section
+        """
+        if not previous_interpretations or retry_attempt <= 0:
+            return ""
+
+        text = "\n=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===\n\n"
+        for interp in previous_interpretations:
+            text += f"## {interp['title']}\n{interp['description']}\n\n"
+        text += "=== END OF PREVIOUS INTERPRETATIONS ===\n\n"
+        return text
+
+    @staticmethod
+    def _get_retry_text(retry_attempt: int) -> str:
+        """Get retry-specific instructions.
+
+        Args:
+            retry_attempt: Current retry attempt number
+
+        Returns:
+            Text with retry-specific instructions
+        """
+        if retry_attempt <= 0:
+            return ""
+        return f"This is retry attempt #{retry_attempt + 1}. Please provide COMPLETELY DIFFERENT interpretations than those listed above."
