@@ -96,28 +96,20 @@ class TestEventManager:
             event_manager.list_events(scene_id="nonexistent-scene")
         assert "Scene nonexistent-scene not found" in str(exc.value)
 
-    def test_get_active_context(self, event_manager, test_game, test_act, test_scene):
-        """Test getting active game, act, and scene context."""
-        context = event_manager.get_active_context()
-        assert context["game"].id == test_game.id
-        assert context["act"].id == test_act.id
-        assert context["scene"].id == test_scene.id
-
-    def test_validate_active_context(self, event_manager, test_game, test_scene):
-        """Test validating active game and scene context."""
-        game_id, scene_id = event_manager.validate_active_context()
-        assert game_id == test_game.id
+    def test_get_active_scene_id(self, event_manager, test_scene):
+        """Test getting active scene ID."""
+        scene_id = event_manager.get_active_scene_id()
         assert scene_id == test_scene.id
 
-    def test_validate_active_context_no_game(self, event_manager, db_session):
-        """Test validation with no active game."""
+    def test_get_active_scene_id_no_game(self, event_manager, db_session):
+        """Test getting active scene ID with no active game."""
         # Deactivate all games
         db_session.query(Game).update({Game.is_active: False})
         db_session.commit()
 
         with pytest.raises(EventError) as exc:
-            event_manager.validate_active_context()
-        assert "No active game" in str(exc.value)
+            event_manager.get_active_scene_id()
+        assert "Failed to get active scene" in str(exc.value)
 
     def test_add_event_from_interpretation(
         self,
