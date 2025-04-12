@@ -2,7 +2,6 @@
 
 import pytest
 
-from sologm.core.act import ActManager
 from sologm.models.act import ActStatus
 from sologm.utils.errors import GameError
 
