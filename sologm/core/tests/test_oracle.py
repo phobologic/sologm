@@ -39,10 +39,10 @@ class TestOracle:
             scene_manager, "validate_active_context", mock_validate_active_context
         )
 
-        game_id, act_id, scene_id = oracle_manager.get_active_context()
-        assert game_id == test_game.id
-        assert act_id == test_act.id
-        assert scene_id == test_scene.id
+        scene, act, game = oracle_manager.get_active_context()
+        assert scene.id == test_scene.id
+        assert act.id == test_act.id
+        assert game.id == test_game.id
 
     def test_get_active_context_no_game(
         self,
@@ -490,34 +490,9 @@ It also has multiple lines."""
         assert "multiple lines" in result.interpretations[0].description
         assert result.interpretations[1].title == "Second Interpretation"
 
-    def test_get_context_data(self, oracle_manager, test_game, test_act, test_scene):
-        """Test getting context data for interpretations."""
-        game, act, scene, events, previous = oracle_manager._get_context_data(
-            test_scene.id, 0, None
-        )
+    # This test is removed as _get_context_data method no longer exists
 
-        assert game.id == test_game.id
-        assert act.id == test_act.id
-        assert scene.id == test_scene.id
-        assert isinstance(events, list)
-        assert previous is None
-
-    def test_create_interpretation_set(self, oracle_manager, test_scene):
-        """Test creating interpretation set."""
-        parsed = [{"title": "Test Title", "description": "Test Description"}]
-
-        result = oracle_manager._create_interpretation_set(
-            test_scene.id, "Test context", "Test results", parsed, 0
-        )
-
-        assert isinstance(result, InterpretationSet)
-        assert result.scene_id == test_scene.id
-        assert result.context == "Test context"
-        assert result.oracle_results == "Test results"
-        assert result.retry_attempt == 0
-        assert result.is_current is True
-        assert len(result.interpretations) == 1
-        assert result.interpretations[0].title == "Test Title"
+    # This test is removed as _create_interpretation_set method no longer exists
 
     def test_get_most_recent_interpretation(
         self, oracle_manager, mock_anthropic_client, test_game, test_act, test_scene
@@ -737,19 +712,13 @@ It also has multiple lines."""
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
         monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
 
-        # Mock get_active_context to return our test IDs
+        # Mock get_active_context to return our test objects
         def mock_get_active_context():
-            return test_game.id, test_act.id, test_scene.id
+            return test_scene, test_act, test_game
 
         monkeypatch.setattr(
             oracle_manager, "get_active_context", mock_get_active_context
         )
-
-        # Mock get_scene to return our test scene
-        def mock_get_scene(scene_id):
-            return test_scene
-
-        monkeypatch.setattr(scene_manager, "get_scene", mock_get_scene)
 
         # Mock the _build_prompt method to avoid actual prompt generation
         original_build_prompt = oracle_manager._build_prompt
@@ -757,13 +726,10 @@ It also has multiple lines."""
         def mock_build_prompt(*args, **kwargs):
             # Just return the arguments to verify they're correct
             return {
-                "game_description": args[0],
-                "act_description": args[1],
-                "scene_description": args[2],
-                "recent_events": args[3],
-                "context": args[4],
-                "oracle_results": args[5],
-                "count": args[6],
+                "scene": args[0],
+                "context": args[1],
+                "oracle_results": args[2],
+                "count": args[3],
             }
 
         oracle_manager._build_prompt = mock_build_prompt
@@ -777,10 +743,7 @@ It also has multiple lines."""
             )
 
             # Verify the correct data was passed to _build_prompt
-            assert result["game_description"] == test_game.description
-            assert result["act_description"] == test_act.description
-            assert result["scene_description"] == test_scene.description
-            assert isinstance(result["recent_events"], list)
+            assert result["scene"] == test_scene
             assert result["context"] == "Test context"
             assert result["oracle_results"] == "Test results"
             assert result["count"] == 3
