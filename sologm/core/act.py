@@ -15,6 +15,41 @@ logger = logging.getLogger(__name__)
 class ActManager(BaseManager[Act, Act]):
     """Manages act operations."""
 
+    def __init__(
+        self,
+        game_manager: Optional["GameManager"] = None,
+        session: Optional[Session] = None,
+    ):
+        """Initialize the act manager.
+
+        Args:
+            game_manager: Optional GameManager instance.
+            session: Optional database session (primarily for testing).
+        """
+        super().__init__(session)
+        self._game_manager = game_manager
+
+    # Parent manager access
+    @property
+    def game_manager(self) -> "GameManager":
+        """Lazy-initialize game manager if not provided."""
+        if self._game_manager is None:
+            from sologm.core.game import GameManager
+            self._game_manager = GameManager(session=self._session)
+        return self._game_manager
+
+    # Child manager access
+    @property
+    def scene_manager(self) -> "SceneManager":
+        """Lazy-initialize scene manager."""
+        if not hasattr(self, "_scene_manager") or self._scene_manager is None:
+            from sologm.core.scene import SceneManager
+            self._scene_manager = SceneManager(
+                act_manager=self,
+                session=self._session
+            )
+        return self._scene_manager
+
     def create_act(
         self,
         game_id: str,
