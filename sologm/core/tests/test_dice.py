@@ -3,6 +3,7 @@
 import pytest
 
 from sologm.models.dice import DiceRoll as DiceRollModel
+from sologm.models.scene import Scene
 from sologm.utils.errors import DiceError
 
 
@@ -197,3 +198,61 @@ class TestDiceManager:
         with pytest.raises(ValueError) as exc:
             dice_manager._execute_db_operation("test operation", _test_operation)
         assert "Test error" in str(exc.value)
+            
+    def test_roll_for_active_scene(self, dice_manager, scene_manager, test_scene, monkeypatch):
+        """Test rolling dice for the active scene."""
+        # Mock validate_active_context to return our test scene
+        def mock_validate_active_context():
+            return "test_act_id", test_scene
+
+        monkeypatch.setattr(
+            scene_manager, "validate_active_context", mock_validate_active_context
+        )
+        monkeypatch.setattr(dice_manager, "scene_manager", scene_manager)
+
+        # Roll dice for active scene
+        roll = dice_manager.roll_for_active_scene("1d20", "Test roll")
+
+        assert roll.notation == "1d20"
+        assert roll.scene_id == test_scene.id
+        assert roll.reason == "Test roll"
+
+    def test_get_rolls_for_scene(self, dice_manager, test_scene):
+        """Test getting rolls for a specific scene."""
+        # Create some rolls for the test scene
+        dice_manager.roll("1d6", "Roll 1", test_scene.id)
+        dice_manager.roll("2d8", "Roll 2", test_scene.id)
+        
+        # Create a roll for a different scene
+        dice_manager.roll("3d10", "Roll 3", "different-scene-id")
+        
+        # Get rolls for the test scene
+        rolls = dice_manager.get_rolls_for_scene(test_scene.id)
+        
+        assert len(rolls) == 2
+        assert all(roll.scene_id == test_scene.id for roll in rolls)
+        assert rolls[0].reason == "Roll 2"  # Most recent first
+        assert rolls[1].reason == "Roll 1"
+
+    def test_get_rolls_for_active_scene(self, dice_manager, scene_manager, test_scene, monkeypatch):
+        """Test getting rolls for the active scene."""
+        # Mock validate_active_context to return our test scene
+        def mock_validate_active_context():
+            return "test_act_id", test_scene
+
+        monkeypatch.setattr(
+            scene_manager, "validate_active_context", mock_validate_active_context
+        )
+        monkeypatch.setattr(dice_manager, "scene_manager", scene_manager)
+        
+        # Create some rolls for the test scene
+        dice_manager.roll("1d6", "Roll 1", test_scene.id)
+        dice_manager.roll("2d8", "Roll 2", test_scene.id)
+        
+        # Get rolls for active scene
+        rolls = dice_manager.get_rolls_for_active_scene()
+        
+        assert len(rolls) == 2
+        assert all(roll.scene_id == test_scene.id for roll in rolls)
+        assert rolls[0].reason == "Roll 2"  # Most recent first
+        assert rolls[1].reason == "Roll 1"
