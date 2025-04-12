@@ -90,31 +90,34 @@ def game_info(
     try:
         logger.debug("Getting active game info")
         game_manager = GameManager()
-        oracle_manager = OracleManager()
         game = game_manager.get_active_game()
         if not game:
             console.print("No active game. Use 'sologm game activate' to set one.")
             return
 
-        scene_manager = SceneManager()
-        active_scene = scene_manager.get_active_scene(game.id)
+        # Access scene_manager through the chain
+        act_manager = game_manager.act_manager
+        scene_manager = act_manager.scene_manager
+        active_scene = scene_manager.get_active_scene()
+        
+        # Get oracle_manager through the chain
+        oracle_manager = scene_manager.oracle_manager
 
         if status:
-            # Get additional status information
-            event_manager = EventManager()
-            dice_manager = DiceManager()
+            # Access other managers through the chain
+            event_manager = scene_manager.event_manager
+            dice_manager = scene_manager.dice_manager
+            
             recent_events = []
             recent_rolls = []
             if active_scene:
                 logger.debug(
                     f"Getting recent events and dice rolls for scene {active_scene.id}"
                 )
-                recent_events = event_manager.list_events(
-                    game.id, active_scene.id, limit=5
-                )[:5]  # Ensure we get at most 5 events
+                recent_events = event_manager.list_events(limit=5)[:5]  # Ensure we get at most 5 events
                 logger.debug(f"Retrieved {len(recent_events)} recent events")
 
-                recent_rolls = dice_manager.get_recent_rolls(active_scene.id, limit=3)
+                recent_rolls = dice_manager.get_recent_rolls(active_scene, limit=3)
                 logger.debug(
                     f"Retrieved {len(recent_rolls)} recent dice rolls for "
                     f"scene {active_scene.id}"
@@ -244,9 +247,7 @@ def dump_game(
     """Export a game with all scenes and events as a markdown document to stdout."""
     try:
         game_manager = GameManager()
-        scene_manager = SceneManager()
-        event_manager = EventManager()
-
+        
         # Get the game (active or specified)
         game = None
         if game_id:
@@ -262,6 +263,11 @@ def dump_game(
                     "game first.[/red]"
                 )
                 raise typer.Exit(1)
+                
+        # Access other managers through the chain
+        act_manager = game_manager.act_manager
+        scene_manager = act_manager.scene_manager
+        event_manager = scene_manager.event_manager
 
         # Generate the markdown content
         markdown_content = generate_game_markdown(
