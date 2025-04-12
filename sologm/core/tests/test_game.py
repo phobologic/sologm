@@ -294,14 +294,15 @@ class TestGameManager:
         """Test the act_manager property."""
         # Access the act_manager property
         act_manager = game_manager.act_manager
-        
+
         # Verify it's the correct type
         from sologm.core.act import ActManager
+
         assert isinstance(act_manager, ActManager)
-        
+
         # Verify it has a reference back to the game_manager
         assert act_manager.game_manager is game_manager
-        
+
         # Verify it shares the same session
         assert act_manager._session is game_manager._session
 

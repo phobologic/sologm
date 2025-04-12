@@ -32,6 +32,7 @@ class GameManager(BaseManager[Game, Game]):
         """Lazy-initialize act manager."""
         if self._act_manager is None:
             from sologm.core.act import ActManager
+
             self._act_manager = ActManager(game_manager=self, session=self._session)
         return self._act_manager
 
