@@ -131,13 +131,17 @@ class TestEventManager:
         # Create a test event
         print(f"DEBUG: Creating test event with scene_id={test_scene.id}")
         event = create_test_event(test_scene.id, "Test event to retrieve")
-        print(f"DEBUG: Created event with id={event.id}, description={event.description}")
+        print(
+            f"DEBUG: Created event with id={event.id}, description={event.description}"
+        )
 
         # Get the event
         retrieved_event = event_manager.get_event(event.id)
         print(f"DEBUG: Retrieved event: {retrieved_event}")
         if retrieved_event:
-            print(f"DEBUG: Retrieved event id={retrieved_event.id}, description={retrieved_event.description}")
+            print(
+                f"DEBUG: Retrieved event id={retrieved_event.id}, description={retrieved_event.description}"
+            )
 
         # Verify the event was retrieved correctly
         assert retrieved_event is not None
@@ -159,9 +163,11 @@ class TestEventManager:
         # Create a test event
         print(f"DEBUG: Creating test event with scene_id={test_scene.id}")
         event = create_test_event(test_scene.id, "Original description")
-        print(f"DEBUG: Created event with id={event.id}, description={event.description}")
+        print(
+            f"DEBUG: Created event with id={event.id}, description={event.description}"
+        )
         print(f"DEBUG: Event source: {event.source_id}")
-        if hasattr(event, 'source') and event.source:
+        if hasattr(event, "source") and event.source:
             print(f"DEBUG: Event source name: {event.source.name}")
 
         # Update the event
@@ -169,7 +175,7 @@ class TestEventManager:
         print(f"DEBUG: Updated event: {updated_event}")
         print(f"DEBUG: Updated event description: {updated_event.description}")
         print(f"DEBUG: Updated event source_id: {updated_event.source_id}")
-        if hasattr(updated_event, 'source') and updated_event.source:
+        if hasattr(updated_event, "source") and updated_event.source:
             print(f"DEBUG: Updated event source name: {updated_event.source.name}")
 
         # Verify the event was updated correctly
@@ -188,11 +194,13 @@ class TestEventManager:
         # Create a test event
         print(f"DEBUG: Creating test event with scene_id={test_scene.id}")
         event = create_test_event(test_scene.id, "Original description")
-        print(f"DEBUG: Created event with id={event.id}, description={event.description}")
+        print(
+            f"DEBUG: Created event with id={event.id}, description={event.description}"
+        )
         print(f"DEBUG: Event source_id: {event.source_id}")
-        if hasattr(event, 'source') and event.source:
+        if hasattr(event, "source") and event.source:
             print(f"DEBUG: Event source name: {event.source.name}")
-        
+
         # Check source name
         assert event.source.name == "manual"  # Default source
 
@@ -203,7 +211,7 @@ class TestEventManager:
         print(f"DEBUG: Updated event: {updated_event}")
         print(f"DEBUG: Updated event description: {updated_event.description}")
         print(f"DEBUG: Updated event source_id: {updated_event.source_id}")
-        if hasattr(updated_event, 'source') and updated_event.source:
+        if hasattr(updated_event, "source") and updated_event.source:
             print(f"DEBUG: Updated event source name: {updated_event.source.name}")
 
         # Verify the event was updated correctly
