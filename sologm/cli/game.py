@@ -124,8 +124,12 @@ def game_status() -> None:
         recent_events = []
         recent_rolls = []
         if active_scene:
-            logger.debug(f"Getting recent events and dice rolls for scene {active_scene.id}")
-            recent_events = event_manager.list_events(limit=5)[:5]  # Ensure we get at most 5 events
+            logger.debug(
+                f"Getting recent events and dice rolls for scene {active_scene.id}"
+            )
+            recent_events = event_manager.list_events(limit=5)[
+                :5
+            ]  # Ensure we get at most 5 events
             logger.debug(f"Retrieved {len(recent_events)} recent events")
 
             recent_rolls = dice_manager.get_recent_rolls(active_scene, limit=3)
