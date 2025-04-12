@@ -35,7 +35,7 @@ def roll_dice_command(
     try:
         # Start with DiceManager as our entry point
         dice_manager = DiceManager()
-        
+
         # If no scene_id is provided, try to get the current scene
         if scene_id is None:
             try:
@@ -47,13 +47,15 @@ def roll_dice_command(
             except SceneError as e:
                 logger.debug(f"Could not determine current scene: {str(e)}")
                 console.print(f"Warning: {str(e)}", style="yellow")
-                console.print("Dice roll will not be associated with any scene.", style="yellow")
+                console.print(
+                    "Dice roll will not be associated with any scene.", style="yellow"
+                )
 
         logger.debug(
             f"Rolling dice with notation: {notation}, reason: "
             f"{reason}, scene_id: {scene_id}"
         )
-        
+
         result = dice_manager.roll(notation, reason, scene_id)
         display.display_dice_roll(console, result)
 
@@ -73,7 +75,7 @@ def dice_history_command(
     try:
         # Start with DiceManager as our entry point
         dice_manager = DiceManager()
-        
+
         # If scene_id is not provided, try to get the active scene
         if scene_id is None:
             try:
@@ -86,7 +88,7 @@ def dice_history_command(
             except SceneError as e:
                 logger.debug(f"No active scene found: {str(e)}")
                 # Continue without a scene_id, which will show all rolls
-        
+
         rolls = dice_manager.get_recent_rolls(scene_id=scene_id, limit=limit)
 
         if not rolls:
