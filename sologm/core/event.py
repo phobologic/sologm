@@ -67,12 +67,12 @@ class EventManager(BaseManager[Event, Event]):
             if not game:
                 self.logger.error("No active game found")
                 raise EventError("No active game found")
-                
+
             # Use the model hierarchy to get the active scene
             if not game.has_active_scene:
                 self.logger.error("No active scene found in the active game")
                 raise EventError("No active scene found in the active game")
-                
+
             scene_id = game.active_scene.id
             self.logger.debug(f"Active scene ID: {scene_id}")
             return scene_id
@@ -97,17 +97,19 @@ class EventManager(BaseManager[Event, Event]):
             EventError: If the source doesn't exist
         """
         self.logger.debug(f"Getting event source by name: {source_name}")
-        
+
         # Query for the source
-        source = session.query(EventSource).filter(EventSource.name == source_name).first()
-        
+        source = (
+            session.query(EventSource).filter(EventSource.name == source_name).first()
+        )
+
         # If not found, provide helpful error with valid sources
         if not source:
             valid_sources = [s.name for s in session.query(EventSource).all()]
             error_msg = f"Invalid source '{source_name}'. Valid sources: {', '.join(valid_sources)}"
             self.logger.error(error_msg)
             raise EventError(error_msg)
-            
+
         self.logger.debug(f"Found source: {source.name} (ID: {source.id})")
         return source
 
@@ -137,7 +139,7 @@ class EventManager(BaseManager[Event, Event]):
             f"scene_id={scene_id or 'active'}, source={source}, "
             f"interpretation_id={interpretation_id or 'None'}"
         )
-        
+
         # Use active scene if none provided
         if scene_id is None:
             scene_id = self.get_active_scene_id()
@@ -152,7 +154,9 @@ class EventManager(BaseManager[Event, Event]):
 
             # Get source
             event_source = self._get_source_by_name(session, source)
-            self.logger.debug(f"Using source: {event_source.name} (ID: {event_source.id})")
+            self.logger.debug(
+                f"Using source: {event_source.name} (ID: {event_source.id})"
+            )
 
             # Create event
             event = Event.create(
@@ -189,6 +193,7 @@ class EventManager(BaseManager[Event, Event]):
         """
         self.logger.debug(f"Getting event by ID: {event_id}")
         try:
+
             def _get_event(session: Session) -> Optional[Event]:
                 event = session.query(Event).filter(Event.id == event_id).first()
                 if event:
@@ -233,20 +238,24 @@ class EventManager(BaseManager[Event, Event]):
                 f"Event with ID '{event_id}' not found",
             )
             self.logger.debug(f"Found event: {event.id} (scene: {event.scene_id})")
-            
+
             # Store original values for logging
             original_description = event.description
             original_source_id = event.source_id
 
             # Update description
             event.description = description
-            self.logger.debug(f"Updated description from '{original_description[:30]}...' to '{description[:30]}...'")
+            self.logger.debug(
+                f"Updated description from '{original_description[:30]}...' to '{description[:30]}...'"
+            )
 
             # Update source if provided
             if source is not None:
                 event_source = self._get_source_by_name(session, source)
                 event.source_id = event_source.id
-                self.logger.debug(f"Updated source from ID {original_source_id} to {event_source.id} ({event_source.name})")
+                self.logger.debug(
+                    f"Updated source from ID {original_source_id} to {event_source.id} ({event_source.name})"
+                )
 
             return event
 
@@ -279,7 +288,7 @@ class EventManager(BaseManager[Event, Event]):
         self.logger.debug(
             f"Listing events: scene_id={scene_id or 'active'}, limit={limit or 'None'}"
         )
-        
+
         # Use active scene if none provided
         if scene_id is None:
             scene_id = self.get_active_scene_id()
@@ -295,10 +304,10 @@ class EventManager(BaseManager[Event, Event]):
                 return scene
 
             scene = self._execute_db_operation("validate scene", _validate_scene)
-            
+
             # If we have a scene with events, we could potentially use the model directly
             # But for consistency and to handle the limit parameter, we'll use list_entities
-            
+
             # List events
             events = self.list_entities(
                 Event,
@@ -307,7 +316,7 @@ class EventManager(BaseManager[Event, Event]):
                 order_direction="desc",
                 limit=limit,
             )
-            
+
             self.logger.debug(f"Found {len(events)} events")
             return events
         except Exception as e:
