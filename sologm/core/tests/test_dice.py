@@ -1,5 +1,6 @@
 """Tests for dice rolling functionality."""
 
+import logging
 import pytest
 
 from sologm.models.dice import DiceRoll as DiceRollModel
@@ -106,19 +107,18 @@ class TestDiceManager:
         assert 1 <= roll.individual_results[0] <= 20
         assert roll.reason == "Attack roll"
 
-    def test_roll_with_scene_id(self, dice_manager, db_session) -> None:
-        """Test rolling with a scene ID."""
-        scene_id = "test-scene-123"
-        roll = dice_manager.roll("1d20", scene_id=scene_id)
+    def test_roll_with_scene(self, dice_manager, db_session, test_scene) -> None:
+        """Test rolling with a scene object."""
+        roll = dice_manager.roll("1d20", scene=test_scene)
 
-        assert roll.scene_id == scene_id
+        assert roll.scene_id == test_scene.id
 
         # Verify it's in the database with the scene ID
         db_roll = (
             db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
         )
         assert db_roll is not None
-        assert db_roll.scene_id == scene_id
+        assert db_roll.scene_id == test_scene.id
 
     def test_get_recent_rolls(self, dice_manager) -> None:
         """Test getting recent rolls."""
@@ -135,21 +135,22 @@ class TestDiceManager:
         assert rolls[0].reason == "Roll 3"  # Most recent first
         assert rolls[1].reason == "Roll 2"
 
-    def test_get_recent_rolls_by_scene(self, dice_manager) -> None:
+    def test_get_recent_rolls_by_scene(self, dice_manager, test_scene) -> None:
         """Test getting recent rolls filtered by scene."""
-        scene_id = "test-scene-456"
-
-        # Create some rolls with different scene IDs
-        dice_manager.roll("1d20", reason="Roll 1", scene_id="other-scene")
-        dice_manager.roll("2d6", reason="Roll 2", scene_id=scene_id)
-        dice_manager.roll("3d8", reason="Roll 3", scene_id=scene_id)
+        # Create a mock scene for "other-scene"
+        other_scene = Scene(id="other-scene", title="Other Scene")
+        
+        # Create some rolls with different scene objects
+        dice_manager.roll("1d20", reason="Roll 1", scene=other_scene)
+        dice_manager.roll("2d6", reason="Roll 2", scene=test_scene)
+        dice_manager.roll("3d8", reason="Roll 3", scene=test_scene)
 
         # Get recent rolls for the specific scene
-        rolls = dice_manager.get_recent_rolls(scene_id=scene_id)
+        rolls = dice_manager.get_recent_rolls(scene=test_scene)
 
         # Verify we got only rolls for the specified scene
         assert len(rolls) == 2
-        assert all(roll.scene_id == scene_id for roll in rolls)
+        assert all(roll.scene_id == test_scene.id for roll in rolls)
         assert rolls[0].reason == "Roll 3"  # Most recent first
         assert rolls[1].reason == "Roll 2"
 
@@ -198,6 +199,20 @@ class TestDiceManager:
         with pytest.raises(ValueError) as exc:
             dice_manager._execute_db_operation("test operation", _test_operation)
         assert "Test error" in str(exc.value)
+        
+    def test_logging_functionality(self, dice_manager, caplog):
+        """Test that enhanced logging is working properly."""
+        caplog.set_level(logging.DEBUG)
+        
+        # Test logging in roll method
+        roll = dice_manager.roll("2d6+3")
+        
+        # Check for expected log messages
+        assert "Rolling dice with notation: 2d6+3" in caplog.text
+        assert "Parsed notation: 2d6+3" in caplog.text
+        assert "Individual dice results:" in caplog.text
+        assert "Final result:" in caplog.text
+        assert "Created dice roll with ID:" in caplog.text
 
     def test_roll_for_active_scene(
         self, dice_manager, scene_manager, test_scene, monkeypatch
@@ -222,15 +237,18 @@ class TestDiceManager:
 
     def test_get_rolls_for_scene(self, dice_manager, test_scene):
         """Test getting rolls for a specific scene."""
+        # Create a different scene
+        different_scene = Scene(id="different-scene-id", title="Different Scene")
+        
         # Create some rolls for the test scene
-        dice_manager.roll("1d6", "Roll 1", test_scene.id)
-        dice_manager.roll("2d8", "Roll 2", test_scene.id)
+        dice_manager.roll("1d6", "Roll 1", test_scene)
+        dice_manager.roll("2d8", "Roll 2", test_scene)
 
         # Create a roll for a different scene
-        dice_manager.roll("3d10", "Roll 3", "different-scene-id")
+        dice_manager.roll("3d10", "Roll 3", different_scene)
 
         # Get rolls for the test scene
-        rolls = dice_manager.get_rolls_for_scene(test_scene.id)
+        rolls = dice_manager.get_rolls_for_scene(test_scene)
 
         assert len(rolls) == 2
         assert all(roll.scene_id == test_scene.id for roll in rolls)
@@ -252,8 +270,8 @@ class TestDiceManager:
         monkeypatch.setattr(dice_manager, "scene_manager", scene_manager)
 
         # Create some rolls for the test scene
-        dice_manager.roll("1d6", "Roll 1", test_scene.id)
-        dice_manager.roll("2d8", "Roll 2", test_scene.id)
+        dice_manager.roll("1d6", "Roll 1", test_scene)
+        dice_manager.roll("2d8", "Roll 2", test_scene)
 
         # Get rolls for active scene
         rolls = dice_manager.get_rolls_for_active_scene()
