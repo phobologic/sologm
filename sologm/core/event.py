@@ -82,6 +82,38 @@ class EventManager(BaseManager[Event, Event]):
         except Exception as e:
             self.logger.error(f"Failed to get active scene: {str(e)}")
             raise EventError(f"Failed to get active scene: {str(e)}") from e
+            
+    def validate_active_context(self) -> tuple[str, str]:
+        """Validate active game, act, and scene context.
+
+        Returns:
+            Tuple of (game_id, scene_id)
+
+        Raises:
+            EventError: If no active game, act, or scene
+        """
+        self.logger.debug("Validating active context from EventManager")
+        try:
+            # Use the scene_manager to validate the active context
+            act_id, scene = self.scene_manager.validate_active_context()
+            
+            # Get the game_id from the act
+            act = self.act_manager.get_act(act_id)
+            game_id = act.game_id
+            
+            self.logger.debug(
+                f"Active context validated: game={game_id}, "
+                f"act={act_id}, scene={scene.id}"
+            )
+            return game_id, scene.id
+        except Exception as e:
+            if not isinstance(e, EventError):
+                self.logger.error(
+                    f"Error validating active context: {str(e)}", exc_info=True
+                )
+                self._handle_operation_error("validate active context", e, EventError)
+            self.logger.warning(f"Active context validation failed: {str(e)}")
+            raise
 
     def _get_source_by_name(self, session: Session, source_name: str) -> EventSource:
         """Get an event source by name.
