@@ -506,9 +506,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             try:
                 # Get game, act, scene details, recent events, etc.
                 game, act, scene, recent_events, previous_interpretations = (
-                    self._get_context_data(
-                        scene_id, attempt, previous_set_id
-                    )
+                    self._get_context_data(scene_id, attempt, previous_set_id)
                 )
 
                 # Build prompt and get response
@@ -735,7 +733,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 scene_id=scene.id,
                 source="oracle",
                 description=description,
-                interpretation_id=interpretation.id
+                interpretation_id=interpretation.id,
             )
             return event
 
