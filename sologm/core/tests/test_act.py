@@ -62,6 +62,21 @@ class TestActManager:
         # Refresh the first act to see if it was deactivated
         db_session.refresh(act)
         assert act.is_active is False  # Previous act should be deactivated
+        
+        # Test creating an act with make_active=False
+        non_active_act = act_manager.create_act(
+            game_id=test_game.id,
+            title="Non-active Act",
+            description="This act won't be active",
+            make_active=False,
+        )
+        
+        assert non_active_act.id is not None
+        assert non_active_act.is_active is False
+        
+        # Verify the previous act is still active
+        db_session.refresh(untitled_act)
+        assert untitled_act.is_active is True
 
     def test_create_act_invalid_game(self, db_session, act_manager):
         """Test creating an act with an invalid game ID."""
@@ -83,12 +98,25 @@ class TestActManager:
             is_active=False,
         )
 
-        # List acts
+        # List acts with explicit game_id
         acts = act_manager.list_acts(test_game.id)
 
         assert len(acts) == 2
         assert acts[0].id == test_act.id
         assert acts[1].id == second_act.id
+        
+        # Test listing acts with active game (requires mocking)
+        from unittest.mock import patch
+        with patch.object(act_manager.game_manager, 'get_active_game', return_value=test_game):
+            acts = act_manager.list_acts()
+            assert len(acts) == 2
+            assert acts[0].id == test_act.id
+            assert acts[1].id == second_act.id
+            
+        # Test listing acts with no active game
+        with patch.object(act_manager.game_manager, 'get_active_game', return_value=None):
+            with pytest.raises(GameError, match="No active game"):
+                act_manager.list_acts()
 
     def test_get_act(self, db_session, test_act, act_manager):
         """Test getting an act by ID."""
@@ -105,20 +133,31 @@ class TestActManager:
 
     def test_get_active_act(self, db_session, test_game, test_act, act_manager):
         """Test getting the active act."""
-        # Get active act
+        # Get active act with explicit game_id
         active_act = act_manager.get_active_act(test_game.id)
 
         assert active_act is not None
         assert active_act.id == test_act.id
 
+        # Test getting active act with active game (requires mocking)
+        from unittest.mock import patch
+        with patch.object(act_manager.game_manager, 'get_active_game', return_value=test_game):
+            active_act = act_manager.get_active_act()
+            assert active_act is not None
+            assert active_act.id == test_act.id
+            
         # Deactivate all acts
         act_manager._deactivate_all_acts(db_session, test_game.id)
         db_session.commit()
 
         # Get active act when none is active
         active_act = act_manager.get_active_act(test_game.id)
-
         assert active_act is None
+        
+        # Test getting active act with no active game
+        with patch.object(act_manager.game_manager, 'get_active_game', return_value=None):
+            with pytest.raises(GameError, match="No active game"):
+                act_manager.get_active_act()
 
     def test_edit_act(self, db_session, test_act, act_manager):
         """Test editing an act."""
@@ -227,14 +266,25 @@ class TestActManager:
 
     def test_validate_active_act(self, db_session, test_game, test_act, act_manager):
         """Test validating active act."""
-        # Valid context
+        # Valid context with explicit game_id
         act = act_manager.validate_active_act(test_game.id)
         assert act.id == test_act.id
 
+        # Test validating with active game (requires mocking)
+        from unittest.mock import patch
+        with patch.object(act_manager.game_manager, 'get_active_game', return_value=test_game):
+            act = act_manager.validate_active_act()
+            assert act.id == test_act.id
+            
         # Deactivate all acts
         act_manager._deactivate_all_acts(db_session, test_game.id)
         db_session.commit()
 
         # Invalid context - no active act
-        with pytest.raises(GameError):
+        with pytest.raises(GameError, match="No active act"):
             act_manager.validate_active_act(test_game.id)
+            
+        # Test validating with no active game
+        with patch.object(act_manager.game_manager, 'get_active_game', return_value=None):
+            with pytest.raises(GameError, match="No active game"):
+                act_manager.validate_active_act()
