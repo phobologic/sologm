@@ -293,7 +293,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             count,
         )
 
-
     def _create_interpretation_set(
         self,
         scene_id: str,
@@ -435,7 +434,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 scene = self.scene_manager.get_scene(scene_id)
                 if not scene:
                     raise OracleError(f"Scene {scene_id} not found")
-                
+
                 # Get previous interpretations if this is a retry
                 previous_interpretations = None
                 if attempt > 0 and previous_set_id:

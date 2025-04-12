@@ -33,21 +33,21 @@ class OraclePrompts:
         # Access related models through relationships
         act = scene.act
         game = act.game
-        
+
         # Get recent events through scene relationship (limited to 5)
         recent_events = [event.description for event in scene.events[:5]]
-        
+
         # Format the events
         events_text = OraclePrompts._format_events(recent_events)
-        
+
         # Get example format
         example_format = OraclePrompts._get_example_format()
-        
+
         # Format previous interpretations if any
         previous_interps_text = OraclePrompts._format_previous_interpretations(
             previous_interpretations, retry_attempt
         )
-        
+
         # Get retry-specific text if applicable
         retry_text = OraclePrompts._get_retry_text(retry_attempt)
 

@@ -68,16 +68,19 @@ class TestOraclePrompts:
         # Create mock scene with relationships
         mock_game = MagicMock()
         mock_game.description = "Test Game"
-        
+
         mock_act = MagicMock()
         mock_act.description = "Test Act"
         mock_act.game = mock_game
-        
+
         mock_scene = MagicMock()
         mock_scene.description = "Test Scene"
         mock_scene.act = mock_act
-        mock_scene.events = [MagicMock(description="Event 1"), MagicMock(description="Event 2")]
-        
+        mock_scene.events = [
+            MagicMock(description="Event 1"),
+            MagicMock(description="Event 2"),
+        ]
+
         # Call the method
         result = OraclePrompts.build_interpretation_prompt(
             mock_scene,
@@ -85,7 +88,7 @@ class TestOraclePrompts:
             "Mystery, Danger",
             3,
         )
-        
+
         # Check that all components are included
         assert "You are interpreting oracle results for a solo RPG player" in result
         assert "Game: Test Game" in result
@@ -108,7 +111,7 @@ class TestOraclePrompts:
             "Mystery, Danger",
             3,
         )
-        
+
         # Check that all components are included
         assert "You are interpreting oracle results for a solo RPG player" in result
         assert f"Game: {test_scene.act.game.description}" in result
