@@ -69,18 +69,22 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         Raises:
             DiceError: If notation is invalid
         """
-        self.logger.debug(f"Rolling dice with notation: {notation}, reason: {reason}, scene: {scene}")
-        
+        self.logger.debug(
+            f"Rolling dice with notation: {notation}, reason: {reason}, scene: {scene}"
+        )
+
         try:
             # Parse notation and roll dice
             count, sides, modifier = self._parse_notation(notation)
             self.logger.debug(f"Parsed notation: {count}d{sides}{modifier:+d}")
-            
+
             individual_results = [random.randint(1, sides) for _ in range(count)]
             self.logger.debug(f"Individual dice results: {individual_results}")
-            
+
             total = sum(individual_results) + modifier
-            self.logger.debug(f"Final result: {sum(individual_results)} + {modifier} = {total}")
+            self.logger.debug(
+                f"Final result: {sum(individual_results)} + {modifier} = {total}"
+            )
 
             # Define the database operation
             def create_roll_operation(session: Session) -> DiceRoll:
@@ -93,10 +97,10 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
                     reason=reason,
                     scene_id=scene.id if scene else None,
                 )
-                
+
                 session.add(dice_roll_model)
                 session.flush()
-                
+
                 return dice_roll_model
 
             # Execute the operation
@@ -125,16 +129,22 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         Raises:
             DiceError: If notation is invalid or no active scene
         """
-        self.logger.debug(f"Rolling dice for active scene with notation: {notation}, reason: {reason}")
-        
+        self.logger.debug(
+            f"Rolling dice for active scene with notation: {notation}, reason: {reason}"
+        )
+
         try:
             # Get active scene
             _, active_scene = self.scene_manager.validate_active_context()
-            self.logger.debug(f"Found active scene: {active_scene.id} - {active_scene.title}")
-            
+            self.logger.debug(
+                f"Found active scene: {active_scene.id} - {active_scene.title}"
+            )
+
             # Roll dice for this scene
             result = self.roll(notation, reason, active_scene)
-            self.logger.debug(f"Created dice roll with ID: {result.id} for active scene")
+            self.logger.debug(
+                f"Created dice roll with ID: {result.id} for active scene"
+            )
             return result
         except Exception as e:
             if not isinstance(e, DiceError):
@@ -158,7 +168,7 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         """
         scene_desc = f"{scene.id} - {scene.title}" if scene else "any scene"
         self.logger.debug(f"Getting recent dice rolls for {scene_desc}, limit: {limit}")
-        
+
         try:
             filters = {}
             if scene:
@@ -191,8 +201,10 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         Raises:
             DiceError: If operation fails
         """
-        self.logger.debug(f"Getting dice rolls for scene: {scene.id} - {scene.title}, limit: {limit}")
-        
+        self.logger.debug(
+            f"Getting dice rolls for scene: {scene.id} - {scene.title}, limit: {limit}"
+        )
+
         try:
             result = self.list_entities(
                 DiceRoll,
@@ -221,12 +233,14 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
             DiceError: If no active scene or operation fails
         """
         self.logger.debug(f"Getting dice rolls for active scene, limit: {limit}")
-        
+
         try:
             # Get active scene
             _, active_scene = self.scene_manager.validate_active_context()
-            self.logger.debug(f"Found active scene: {active_scene.id} - {active_scene.title}")
-            
+            self.logger.debug(
+                f"Found active scene: {active_scene.id} - {active_scene.title}"
+            )
+
             # Get rolls for this scene
             result = self.get_rolls_for_scene(active_scene, limit)
             self.logger.debug(f"Found {len(result)} dice rolls for active scene")
@@ -249,7 +263,7 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
             DiceError: If notation is invalid
         """
         self.logger.debug(f"Parsing dice notation: {notation}")
-        
+
         pattern = r"^(\d+)d(\d+)([+-]\d+)?$"
         match = re.match(pattern, notation)
 

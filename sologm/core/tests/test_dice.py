@@ -139,7 +139,7 @@ class TestDiceManager:
         """Test getting recent rolls filtered by scene."""
         # Create a mock scene for "other-scene"
         other_scene = Scene(id="other-scene", title="Other Scene")
-        
+
         # Create some rolls with different scene objects
         dice_manager.roll("1d20", reason="Roll 1", scene=other_scene)
         dice_manager.roll("2d6", reason="Roll 2", scene=test_scene)
@@ -199,14 +199,14 @@ class TestDiceManager:
         with pytest.raises(ValueError) as exc:
             dice_manager._execute_db_operation("test operation", _test_operation)
         assert "Test error" in str(exc.value)
-        
+
     def test_logging_functionality(self, dice_manager, caplog):
         """Test that enhanced logging is working properly."""
         caplog.set_level(logging.DEBUG)
-        
+
         # Test logging in roll method
         roll = dice_manager.roll("2d6+3")
-        
+
         # Check for expected log messages
         assert "Rolling dice with notation: 2d6+3" in caplog.text
         assert "Parsed notation: 2d6+3" in caplog.text
@@ -239,7 +239,7 @@ class TestDiceManager:
         """Test getting rolls for a specific scene."""
         # Create a different scene
         different_scene = Scene(id="different-scene-id", title="Different Scene")
-        
+
         # Create some rolls for the test scene
         dice_manager.roll("1d6", "Roll 1", test_scene)
         dice_manager.roll("2d8", "Roll 2", test_scene)
