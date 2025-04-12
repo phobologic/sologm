@@ -345,7 +345,7 @@ def list_events(
             raise typer.Exit(1)
 
         events = event_manager.list_events(
-            game_id=game_id, scene_id=target_scene_id, limit=limit
+            scene_id=target_scene_id, limit=limit
         )
 
         logger.debug(f"Found {len(events)} events")
