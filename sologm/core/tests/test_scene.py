@@ -257,9 +257,7 @@ class TestSceneManager:
         self, scene_manager, test_game, ensure_active_act
     ) -> None:
         """Test completing a nonexistent scene."""
-        with pytest.raises(
-            SceneError, match="Scene nonexistent-scene not found"
-        ):
+        with pytest.raises(SceneError, match="Scene nonexistent-scene not found"):
             scene_manager.complete_scene("nonexistent-scene")
 
     def test_complete_scene_already_completed(
@@ -426,7 +424,9 @@ class TestSceneManager:
         assert act_id == active_act.id
         assert active_scene.id == scene.id
 
-    def test_get_scene_in_act(self, scene_manager, test_game, ensure_active_act) -> None:
+    def test_get_scene_in_act(
+        self, scene_manager, test_game, ensure_active_act
+    ) -> None:
         """Test getting a specific scene within an act."""
         active_act = ensure_active_act
         created_scene = scene_manager.create_scene(
@@ -435,11 +435,13 @@ class TestSceneManager:
             description="Test Description",
         )
 
-        retrieved_scene = scene_manager.get_scene_in_act(active_act.id, created_scene.id)
+        retrieved_scene = scene_manager.get_scene_in_act(
+            active_act.id, created_scene.id
+        )
         assert retrieved_scene is not None
         assert retrieved_scene.id == created_scene.id
         assert retrieved_scene.title == created_scene.title
-        
+
         # Test with wrong act_id
         wrong_scene = scene_manager.get_scene_in_act("wrong-act-id", created_scene.id)
         assert wrong_scene is None

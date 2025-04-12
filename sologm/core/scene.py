@@ -30,7 +30,9 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug("Initialized SceneManager")
 
     def get_active_context(
-        self, game_manager: Optional[GameManager] = None, act_manager: Optional[ActManager] = None
+        self,
+        game_manager: Optional[GameManager] = None,
+        act_manager: Optional[ActManager] = None,
     ) -> Dict[str, Any]:
         """Get the active game, act, and scene context.
 
@@ -46,7 +48,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         if game_manager is None:
             game_manager = GameManager(self._session)
-        
+
         active_game = game_manager.get_active_game()
         if not active_game:
             raise SceneError("No active game. Use 'sologm game activate' to set one.")
@@ -62,11 +64,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         if not active_scene:
             raise SceneError("No active scene. Add one with 'sologm scene add'.")
 
-        return {
-            "game": active_game,
-            "act": active_act,
-            "scene": active_scene
-        }
+        return {"game": active_game, "act": active_act, "scene": active_scene}
 
     def get_scene(self, scene_id: str) -> Optional[Scene]:
         """Get a specific scene by ID.
@@ -96,7 +94,9 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting scene {scene_id} in act {act_id}")
 
-        def _get_scene_in_act(session: Session, act_id: str, scene_id: str) -> Optional[Scene]:
+        def _get_scene_in_act(
+            session: Session, act_id: str, scene_id: str
+        ) -> Optional[Scene]:
             return (
                 session.query(Scene)
                 .filter(and_(Scene.act_id == act_id, Scene.id == scene_id))
