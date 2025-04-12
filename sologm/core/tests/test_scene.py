@@ -178,7 +178,7 @@ class TestSceneManager:
             description="Test Description",
         )
 
-        retrieved_scene = scene_manager.get_scene(active_act.id, created_scene.id)
+        retrieved_scene = scene_manager.get_scene(created_scene.id)
         assert retrieved_scene is not None
         assert retrieved_scene.id == created_scene.id
         assert retrieved_scene.title == created_scene.title
@@ -187,8 +187,7 @@ class TestSceneManager:
         self, scene_manager, test_game, ensure_active_act
     ) -> None:
         """Test getting a nonexistent scene."""
-        active_act = ensure_active_act
-        scene = scene_manager.get_scene(active_act.id, "nonexistent-scene")
+        scene = scene_manager.get_scene("nonexistent-scene")
         assert scene is None
 
     def test_get_active_scene(
@@ -246,7 +245,7 @@ class TestSceneManager:
         )
 
         # Complete scene1 and verify it doesn't change current scene
-        completed_scene = scene_manager.complete_scene(active_act.id, scene1.id)
+        completed_scene = scene_manager.complete_scene(scene1.id)
         assert completed_scene.status == SceneStatus.COMPLETED
 
         current_scene = scene_manager.get_active_scene(active_act.id)
@@ -258,11 +257,10 @@ class TestSceneManager:
         self, scene_manager, test_game, ensure_active_act
     ) -> None:
         """Test completing a nonexistent scene."""
-        active_act = ensure_active_act
         with pytest.raises(
-            SceneError, match="Scene nonexistent-scene not found in act"
+            SceneError, match="Scene nonexistent-scene not found"
         ):
-            scene_manager.complete_scene(active_act.id, "nonexistent-scene")
+            scene_manager.complete_scene("nonexistent-scene")
 
     def test_complete_scene_already_completed(
         self, scene_manager, test_game, ensure_active_act
@@ -275,10 +273,10 @@ class TestSceneManager:
             description="To be completed",
         )
 
-        scene_manager.complete_scene(active_act.id, scene.id)
+        scene_manager.complete_scene(scene.id)
 
         with pytest.raises(SceneError, match=f"Scene {scene.id} is already completed"):
-            scene_manager.complete_scene(active_act.id, scene.id)
+            scene_manager.complete_scene(scene.id)
 
     def test_set_current_scene(
         self, scene_manager, test_game, ensure_active_act
@@ -298,11 +296,11 @@ class TestSceneManager:
         )
 
         # Complete both scenes
-        scene_manager.complete_scene(active_act.id, scene1.id)
-        scene_manager.complete_scene(active_act.id, scene2.id)
+        scene_manager.complete_scene(scene1.id)
+        scene_manager.complete_scene(scene2.id)
 
         # Make scene1 current (scene2 is currently active)
-        scene_manager.set_current_scene(active_act.id, scene1.id)
+        scene_manager.set_current_scene(scene1.id)
 
         current_scene = scene_manager.get_active_scene(active_act.id)
         assert current_scene.id == scene1.id
@@ -337,7 +335,7 @@ class TestSceneManager:
         assert scene3.sequence == 3
 
         # Test get_previous_scene
-        prev_scene = scene_manager.get_previous_scene(active_act.id, scene3)
+        prev_scene = scene_manager.get_previous_scene(scene3)
         assert prev_scene.id == scene2.id
 
     def test_update_scene(self, scene_manager, test_game, ensure_active_act) -> None:
@@ -352,7 +350,6 @@ class TestSceneManager:
 
         # Update the scene
         updated_scene = scene_manager.update_scene(
-            act_id=active_act.id,
             scene_id=scene.id,
             title="Updated Title",
             description="Updated description",
@@ -364,7 +361,7 @@ class TestSceneManager:
         assert updated_scene.description == "Updated description"
 
         # Verify the scene was updated in the database
-        retrieved_scene = scene_manager.get_scene(active_act.id, scene.id)
+        retrieved_scene = scene_manager.get_scene(scene.id)
         assert retrieved_scene.title == "Updated Title"
         assert retrieved_scene.description == "Updated description"
 
@@ -391,11 +388,27 @@ class TestSceneManager:
             match="A scene with title 'First Scene' already exists in this act",
         ):
             scene_manager.update_scene(
-                act_id=active_act.id,
                 scene_id=scene2.id,
                 title="First Scene",
                 description="Updated description",
             )
+
+    def test_get_active_context(
+        self, scene_manager, game_manager, test_game, ensure_active_act
+    ):
+        """Test getting active game, act, and scene context."""
+        active_act = ensure_active_act
+        # Create a scene to be active
+        scene = scene_manager.create_scene(
+            act_id=active_act.id,
+            title="Active Scene",
+            description="Currently active",
+        )
+
+        context = scene_manager.get_active_context(game_manager)
+        assert context["game"].id == test_game.id
+        assert context["act"].id == active_act.id
+        assert context["scene"].id == scene.id
 
     def test_validate_active_context(
         self, scene_manager, game_manager, test_game, ensure_active_act
@@ -412,6 +425,24 @@ class TestSceneManager:
         act_id, active_scene = scene_manager.validate_active_context(game_manager)
         assert act_id == active_act.id
         assert active_scene.id == scene.id
+
+    def test_get_scene_in_act(self, scene_manager, test_game, ensure_active_act) -> None:
+        """Test getting a specific scene within an act."""
+        active_act = ensure_active_act
+        created_scene = scene_manager.create_scene(
+            act_id=active_act.id,
+            title="Test Scene",
+            description="Test Description",
+        )
+
+        retrieved_scene = scene_manager.get_scene_in_act(active_act.id, created_scene.id)
+        assert retrieved_scene is not None
+        assert retrieved_scene.id == created_scene.id
+        assert retrieved_scene.title == created_scene.title
+        
+        # Test with wrong act_id
+        wrong_scene = scene_manager.get_scene_in_act("wrong-act-id", created_scene.id)
+        assert wrong_scene is None
 
     def test_validate_active_context_no_game(
         self, scene_manager, game_manager, db_session
