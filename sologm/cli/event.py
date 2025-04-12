@@ -132,7 +132,7 @@ def add_event(
 
         # Add the event with the provided or edited description
         event = event_manager.add_event(
-            game_id=game_id, scene_id=scene_id, description=description, source=source
+            scene_id=scene_id, description=description, source=source
         )
 
         logger.debug(f"Added event {event.id}")
