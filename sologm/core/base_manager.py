@@ -1,9 +1,13 @@
 """Base manager class for SoloGM."""
 
+import importlib
 import logging
-from typing import Any, Callable, Generic, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
+
+from sologm.utils.errors import SoloGMError
 
 # Type variables for domain and database models
 T = TypeVar("T")  # Domain model type
@@ -17,6 +21,7 @@ class BaseManager(Generic[T, M]):
     - Database session management
     - Error handling
     - Model conversion
+    - Common utility methods for entity operations
 
     Attributes:
         logger: Logger instance for this manager
@@ -112,3 +117,119 @@ class BaseManager(Generic[T, M]):
             session.rollback()
             self.logger.error(f"Error in {operation_name}: {str(e)}")
             raise  # Re-raise the original exception
+
+    def get_entity_or_error(
+        self, session: Session, model_class: Type[M], entity_id: str, 
+        error_class: Type[Exception], error_message: Optional[str] = None
+    ) -> M:
+        """Get an entity by ID or raise an error if not found.
+
+        Args:
+            session: Database session
+            model_class: Model class to query
+            entity_id: ID of the entity to retrieve
+            error_class: Exception class to raise if entity not found
+            error_message: Optional custom error message
+
+        Returns:
+            Entity if found
+
+        Raises:
+            error_class: If entity not found
+        """
+        entity = session.query(model_class).filter(model_class.id == entity_id).first()
+        if not entity:
+            msg = error_message or f"{model_class.__name__} with ID {entity_id} not found"
+            raise error_class(msg)
+        return entity
+
+    def list_entities(
+        self, 
+        model_class: Type[M], 
+        filters: Optional[Dict[str, Any]] = None, 
+        order_by: Optional[Union[str, List[str]]] = None,
+        order_direction: str = "asc",
+        limit: Optional[int] = None
+    ) -> List[M]:
+        """List entities with optional filtering, ordering, and limit.
+
+        Args:
+            model_class: Model class to query
+            filters: Optional dictionary of attribute:value pairs to filter by
+            order_by: Optional attribute(s) to order by
+            order_direction: Direction to order ("asc" or "desc")
+            limit: Optional maximum number of results to return
+
+        Returns:
+            List of entities matching the criteria
+        """
+        def _list_operation(session: Session) -> List[M]:
+            query = session.query(model_class)
+            
+            # Apply filters
+            if filters:
+                for key, value in filters.items():
+                    if value is not None:
+                        query = query.filter(getattr(model_class, key) == value)
+            
+            # Apply ordering
+            if order_by:
+                if isinstance(order_by, str):
+                    order_attrs = [order_by]
+                else:
+                    order_attrs = order_by
+                    
+                for attr in order_attrs:
+                    direction_func = asc if order_direction == "asc" else desc
+                    query = query.order_by(direction_func(getattr(model_class, attr)))
+                
+            # Apply limit
+            if limit:
+                query = query.limit(limit)
+                
+            return query.all()
+        
+        return self._execute_db_operation(
+            f"list {model_class.__name__}", _list_operation
+        )
+
+    def _lazy_init_manager(
+        self, attr_name: str, manager_class_path: str, **kwargs
+    ) -> Any:
+        """Lazily initialize a manager.
+
+        Args:
+            attr_name: Attribute name to store the manager instance
+            manager_class_path: Fully qualified path to the manager class
+            **kwargs: Additional arguments to pass to the manager constructor
+
+        Returns:
+            Initialized manager instance
+        """
+        if not hasattr(self, attr_name) or getattr(self, attr_name) is None:
+            module_path, class_name = manager_class_path.rsplit(".", 1)
+            module = importlib.import_module(module_path)
+            manager_class = getattr(module, class_name)
+            
+            # Always pass the session
+            kwargs["session"] = self._session
+            
+            setattr(self, attr_name, manager_class(**kwargs))
+        
+        return getattr(self, attr_name)
+
+    def _handle_operation_error(
+        self, operation: str, error: Exception, error_class: Type[Exception]
+    ) -> None:
+        """Handle operation errors consistently.
+
+        Args:
+            operation: Name of the operation that failed
+            error: Original exception
+            error_class: Exception class to raise
+
+        Raises:
+            error_class: With context about the failed operation
+        """
+        self.logger.error(f"Failed to {operation}: {str(error)}")
+        raise error_class(f"Failed to {operation}: {str(error)}") from error

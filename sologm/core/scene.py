@@ -48,11 +48,10 @@ class SceneManager(BaseManager[Scene, Scene]):
     @property
     def act_manager(self) -> ActManager:
         """Lazy-initialize act manager if not provided."""
-        if self._act_manager is None:
-            from sologm.core.act import ActManager
-
-            self._act_manager = ActManager(session=self._session)
-        return self._act_manager
+        return self._lazy_init_manager(
+            "_act_manager", 
+            "sologm.core.act.ActManager"
+        )
 
     @property
     def game_manager(self) -> GameManager:
@@ -62,31 +61,27 @@ class SceneManager(BaseManager[Scene, Scene]):
     @property
     def oracle_manager(self) -> "OracleManager":
         """Lazy-initialize oracle manager."""
-        if not hasattr(self, "_oracle_manager") or self._oracle_manager is None:
-            from sologm.core.oracle import OracleManager
-
-            self._oracle_manager = OracleManager(
-                scene_manager=self, session=self._session
-            )
-        return self._oracle_manager
+        return self._lazy_init_manager(
+            "_oracle_manager", 
+            "sologm.core.oracle.OracleManager",
+            scene_manager=self
+        )
 
     @property
     def event_manager(self) -> "EventManager":
         """Lazy-initialize event manager."""
-        if not hasattr(self, "_event_manager") or self._event_manager is None:
-            from sologm.core.event import EventManager
-
-            self._event_manager = EventManager(session=self._session)
-        return self._event_manager
+        return self._lazy_init_manager(
+            "_event_manager", 
+            "sologm.core.event.EventManager"
+        )
 
     @property
     def dice_manager(self) -> "DiceManager":
         """Lazy-initialize dice manager."""
-        if not hasattr(self, "_dice_manager") or self._dice_manager is None:
-            from sologm.core.dice import DiceManager
-
-            self._dice_manager = DiceManager(session=self._session)
-        return self._dice_manager
+        return self._lazy_init_manager(
+            "_dice_manager", 
+            "sologm.core.dice.DiceManager"
+        )
 
     def get_active_context(self) -> Dict[str, Any]:
         """Get the active game, act, and scene context.
@@ -124,7 +119,10 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug(f"Getting scene {scene_id}")
 
         def _get_scene(session: Session, scene_id: str) -> Optional[Scene]:
-            return session.query(Scene).filter(Scene.id == scene_id).first()
+            try:
+                return self.get_entity_or_error(session, Scene, scene_id, SceneError)
+            except SceneError:
+                return None
 
         return self._execute_db_operation("get scene", _get_scene, scene_id=scene_id)
 
@@ -261,16 +259,12 @@ class SceneManager(BaseManager[Scene, Scene]):
             SceneError: If there's an error listing the scenes.
         """
         logger.debug(f"Listing scenes for act {act_id}")
-
-        def _list_scenes(session: Session, act_id: str) -> List[Scene]:
-            return (
-                session.query(Scene)
-                .filter(Scene.act_id == act_id)
-                .order_by(Scene.sequence)
-                .all()
-            )
-
-        return self._execute_db_operation("list scenes", _list_scenes, act_id=act_id)
+        
+        return self.list_entities(
+            Scene, 
+            filters={"act_id": act_id}, 
+            order_by="sequence"
+        )
 
     def complete_scene(self, scene_id: str) -> Scene:
         """Mark a scene as complete without changing which scene is current.
@@ -287,10 +281,10 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug(f"Completing scene {scene_id}")
 
         def _complete_scene(session: Session, scene_id: str) -> Scene:
-            scene = session.query(Scene).filter(Scene.id == scene_id).first()
-
-            if not scene:
-                raise SceneError(f"Scene {scene_id} not found")
+            scene = self.get_entity_or_error(
+                session, Scene, scene_id, SceneError,
+                f"Scene {scene_id} not found"
+            )
 
             if scene.status == SceneStatus.COMPLETED:
                 raise SceneError(f"Scene {scene_id} is already completed")
@@ -317,11 +311,11 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug(f"Setting scene {scene_id} as current")
 
         def _set_current_scene(session: Session, scene_id: str) -> Scene:
-            # Get the scene to make sure it exists
-            scene = session.query(Scene).filter(Scene.id == scene_id).first()
-
-            if not scene:
-                raise SceneError(f"Scene {scene_id} not found")
+            # Get the scene and raise error if not found
+            scene = self.get_entity_or_error(
+                session, Scene, scene_id, SceneError, 
+                f"Scene {scene_id} not found"
+            )
 
             # Deactivate all scenes in this act
             session.query(Scene).filter(
@@ -355,11 +349,11 @@ class SceneManager(BaseManager[Scene, Scene]):
         def _update_scene(
             session: Session, scene_id: str, title: str, description: str
         ) -> Scene:
-            # Get the scene to make sure it exists
-            scene = session.query(Scene).filter(Scene.id == scene_id).first()
-
-            if not scene:
-                raise SceneError(f"Scene {scene_id} not found")
+            # Get the scene and raise error if not found
+            scene = self.get_entity_or_error(
+                session, Scene, scene_id, SceneError,
+                f"Scene {scene_id} not found"
+            )
 
             act_id = scene.act_id
 

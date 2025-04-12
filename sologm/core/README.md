@@ -31,6 +31,11 @@ Each manager has access to its parent managers through properties, allowing oper
 
 6. **Bidirectional Access**: Provide properties for accessing both parent and child/sibling managers.
 
+7. **Use Common Utility Methods**: Leverage BaseManager's utility methods for common operations:
+   - `get_entity_or_error()` for entity retrieval with error handling
+   - `list_entities()` for filtered entity listing
+   - `_lazy_init_manager()` for consistent manager initialization
+
 ### Example Manager Structure
 
 ```python
@@ -43,14 +48,14 @@ class SceneManager(BaseManager[Scene, Scene]):
         super().__init__(session)
         self._act_manager = act_manager
         
-    # Parent manager access
+    # Parent manager access using lazy initialization
     @property
     def act_manager(self) -> ActManager:
         """Lazy-initialize act manager if not provided."""
-        if self._act_manager is None:
-            from sologm.core.act import ActManager
-            self._act_manager = ActManager(session=self._session)
-        return self._act_manager
+        return self._lazy_init_manager(
+            "_act_manager", 
+            "sologm.core.act.ActManager"
+        )
         
     @property
     def game_manager(self) -> GameManager:
@@ -61,14 +66,19 @@ class SceneManager(BaseManager[Scene, Scene]):
     @property
     def oracle_manager(self) -> OracleManager:
         """Lazy-initialize oracle manager."""
-        if not hasattr(self, "_oracle_manager") or self._oracle_manager is None:
-            from sologm.core.oracle import OracleManager
-            self._oracle_manager = OracleManager(
-                scene_manager=self,
-                session=self._session
-            )
-        return self._oracle_manager
+        return self._lazy_init_manager(
+            "_oracle_manager", 
+            "sologm.core.oracle.OracleManager",
+            scene_manager=self
+        )
 ```
+
+## Common Utility Methods
+
+- `get_entity_or_error()`: Retrieve an entity by ID or raise a specific error
+- `list_entities()`: List entities with filtering, ordering, and pagination
+- `_lazy_init_manager()`: Consistently initialize related managers
+- `_handle_operation_error()`: Standardize error handling across operations
 
 ## Database Operations
 
