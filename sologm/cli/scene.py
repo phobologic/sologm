@@ -109,22 +109,22 @@ def scene_info(
 
     try:
         _, active_scene = scene_manager.validate_active_context()
-        
+
         # Display scene information
         display_scene_info(console, active_scene)
-        
+
         # If show_events is True, fetch and display events
         if show_events:
             from sologm.cli.utils.display import display_events_table
-            
+
             # Access event_manager through scene_manager instead of creating a new instance
             event_manager = scene_manager.event_manager
             events = event_manager.list_events(scene_id=active_scene.id)
-            
+
             # Display events table
             console.print()  # Add a blank line for separation
             display_events_table(console, events, active_scene)
-            
+
     except (SceneError, ActError) as e:
         console.print(f"[bold red]Error:[/] {str(e)}")
 
