@@ -73,6 +73,31 @@ class SceneManager(BaseManager[Scene, Scene]):
     def dice_manager(self) -> "DiceManager":
         """Lazy-initialize dice manager."""
         return self._lazy_init_manager("_dice_manager", "sologm.core.dice.DiceManager")
+        
+    def _check_title_uniqueness(
+        self, session: Session, act_id: str, title: str, exclude_scene_id: Optional[str] = None
+    ) -> None:
+        """Check if a scene title is unique within an act.
+        
+        Args:
+            session: Database session
+            act_id: ID of the act to check in
+            title: Title to check for uniqueness
+            exclude_scene_id: Optional scene ID to exclude from the check (for updates)
+            
+        Raises:
+            SceneError: If a scene with the same title already exists
+        """
+        query = session.query(Scene).filter(
+            and_(Scene.act_id == act_id, Scene.title.ilike(title))
+        )
+        
+        if exclude_scene_id:
+            query = query.filter(Scene.id != exclude_scene_id)
+            
+        existing = query.first()
+        if existing:
+            raise SceneError(f"A scene with title '{title}' already exists in this act")
 
     def get_active_context(self) -> Dict[str, Any]:
         """Get the active game, act, and scene context.
@@ -109,13 +134,11 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting scene {scene_id}")
 
-        def _get_scene(session: Session, scene_id: str) -> Optional[Scene]:
-            try:
-                return self.get_entity_or_error(session, Scene, scene_id, SceneError)
-            except SceneError:
-                return None
+        def _get_scene(session: Session) -> Optional[Scene]:
+            scene = session.query(Scene).filter(Scene.id == scene_id).first()
+            return scene
 
-        return self._execute_db_operation("get scene", _get_scene, scene_id=scene_id)
+        return self._execute_db_operation("get scene", _get_scene)
 
     def get_scene_in_act(self, act_id: str, scene_id: str) -> Optional[Scene]:
         """Get a specific scene by ID within a specific act.
@@ -129,18 +152,14 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting scene {scene_id} in act {act_id}")
 
-        def _get_scene_in_act(
-            session: Session, act_id: str, scene_id: str
-        ) -> Optional[Scene]:
+        def _get_scene_in_act(session: Session) -> Optional[Scene]:
             return (
                 session.query(Scene)
                 .filter(and_(Scene.act_id == act_id, Scene.id == scene_id))
                 .first()
             )
 
-        return self._execute_db_operation(
-            "get scene in act", _get_scene_in_act, act_id=act_id, scene_id=scene_id
-        )
+        return self._execute_db_operation("get scene in act", _get_scene_in_act)
 
     def get_active_scene(self, act_id: str) -> Optional[Scene]:
         """Get the active scene for the specified act.
@@ -153,16 +172,14 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting active scene for act {act_id}")
 
-        def _get_active_scene(session: Session, act_id: str) -> Optional[Scene]:
+        def _get_active_scene(session: Session) -> Optional[Scene]:
             return (
                 session.query(Scene)
                 .filter(and_(Scene.act_id == act_id, Scene.is_active))
                 .first()
             )
 
-        return self._execute_db_operation(
-            "get active scene", _get_active_scene, act_id=act_id
-        )
+        return self._execute_db_operation("get active scene", _get_active_scene)
 
     def create_scene(self, act_id: str, title: str, description: str) -> Scene:
         """Create a new scene in the specified act.
@@ -181,25 +198,14 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Creating new scene in act {act_id} with title '{title}'")
 
-        def _create_scene(
-            session: Session, act_id: str, title: str, description: str
-        ) -> Scene:
+        def _create_scene(session: Session) -> Scene:
             # Check if act exists
-            act = session.query(Act).filter(Act.id == act_id).first()
-            if not act:
-                raise SceneError(f"Act with ID '{act_id}' does not exist")
-
-            # Check for duplicate titles
-            existing = (
-                session.query(Scene)
-                .filter(and_(Scene.act_id == act_id, Scene.title.ilike(title)))
-                .first()
+            self.act_manager.get_entity_or_error(
+                session, Act, act_id, SceneError, f"Act with ID '{act_id}' does not exist"
             )
-
-            if existing:
-                raise SceneError(
-                    f"A scene with title '{title}' already exists in this act"
-                )
+            
+            # Check for duplicate titles
+            self._check_title_uniqueness(session, act_id, title)
 
             # Get the next sequence number
             max_sequence = (
@@ -229,13 +235,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             session.add(scene)
             return scene
 
-        return self._execute_db_operation(
-            "create scene",
-            _create_scene,
-            act_id=act_id,
-            title=title,
-            description=description,
-        )
+        return self._execute_db_operation("create scene", _create_scene)
 
     def list_scenes(self, act_id: str) -> List[Scene]:
         """List all scenes for the specified act.
@@ -269,7 +269,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Completing scene {scene_id}")
 
-        def _complete_scene(session: Session, scene_id: str) -> Scene:
+        def _complete_scene(session: Session) -> Scene:
             scene = self.get_entity_or_error(
                 session, Scene, scene_id, SceneError, f"Scene {scene_id} not found"
             )
@@ -280,9 +280,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             scene.status = SceneStatus.COMPLETED
             return scene
 
-        return self._execute_db_operation(
-            "complete scene", _complete_scene, scene_id=scene_id
-        )
+        return self._execute_db_operation("complete scene", _complete_scene)
 
     def set_current_scene(self, scene_id: str) -> Scene:
         """Set which scene is currently being played without changing its status.
@@ -298,7 +296,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Setting scene {scene_id} as current")
 
-        def _set_current_scene(session: Session, scene_id: str) -> Scene:
+        def _set_current_scene(session: Session) -> Scene:
             # Get the scene and raise error if not found
             scene = self.get_entity_or_error(
                 session, Scene, scene_id, SceneError, f"Scene {scene_id} not found"
@@ -313,9 +311,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             scene.is_active = True
             return scene
 
-        return self._execute_db_operation(
-            "set current scene", _set_current_scene, scene_id=scene_id
-        )
+        return self._execute_db_operation("set current scene", _set_current_scene)
 
     def update_scene(self, scene_id: str, title: str, description: str) -> Scene:
         """Update a scene's title and description.
@@ -333,34 +329,15 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Updating scene {scene_id}")
 
-        def _update_scene(
-            session: Session, scene_id: str, title: str, description: str
-        ) -> Scene:
+        def _update_scene(session: Session) -> Scene:
             # Get the scene and raise error if not found
             scene = self.get_entity_or_error(
                 session, Scene, scene_id, SceneError, f"Scene {scene_id} not found"
             )
 
-            act_id = scene.act_id
-
             # Check for duplicate titles (only if title is changing)
             if scene.title != title:
-                existing = (
-                    session.query(Scene)
-                    .filter(
-                        and_(
-                            Scene.act_id == act_id,
-                            Scene.title.ilike(title),
-                            Scene.id != scene_id,
-                        )
-                    )
-                    .first()
-                )
-
-                if existing:
-                    raise SceneError(
-                        f"A scene with title '{title}' already exists in this act"
-                    )
+                self._check_title_uniqueness(session, scene.act_id, title, scene_id)
 
             # Update the scene
             scene.title = title
@@ -368,13 +345,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             session.add(scene)
             return scene
 
-        return self._execute_db_operation(
-            "update scene",
-            _update_scene,
-            scene_id=scene_id,
-            title=title,
-            description=description,
-        )
+        return self._execute_db_operation("update scene", _update_scene)
 
     def get_previous_scene(self, scene: Scene) -> Optional[Scene]:
         """Get the scene that comes before the current scene in sequence.
@@ -390,21 +361,17 @@ class SceneManager(BaseManager[Scene, Scene]):
         if scene.sequence <= 1:
             return None
 
-        def _get_previous_scene(
-            session: Session, act_id: str, sequence: int
-        ) -> Optional[Scene]:
+        def _get_previous_scene(session: Session) -> Optional[Scene]:
             return (
                 session.query(Scene)
-                .filter(and_(Scene.act_id == act_id, Scene.sequence == sequence - 1))
+                .filter(and_(
+                    Scene.act_id == scene.act_id, 
+                    Scene.sequence == scene.sequence - 1
+                ))
                 .first()
             )
 
-        return self._execute_db_operation(
-            "get previous scene",
-            _get_previous_scene,
-            act_id=scene.act_id,
-            sequence=scene.sequence,
-        )
+        return self._execute_db_operation("get previous scene", _get_previous_scene)
 
     def validate_active_context(self) -> Tuple[str, Scene]:
         """Validate active game, act, and scene context.
