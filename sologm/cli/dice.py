@@ -97,14 +97,16 @@ def dice_history_command(
 
         # If scene_id is not provided, try to get the active scene
         scene_id = resolve_scene_id(scene_id)
-        
+
         # Get the scene object if scene_id is provided
         scene = None
         if scene_id:
             scene = dice_manager.scene_manager.get_scene(scene_id)
             if not scene:
-                console.print(f"Warning: Scene with ID {scene_id} not found", style="yellow")
-        
+                console.print(
+                    f"Warning: Scene with ID {scene_id} not found", style="yellow"
+                )
+
         # Call get_recent_rolls with the scene object (or None)
         rolls = dice_manager.get_recent_rolls(scene=scene, limit=limit)
 
