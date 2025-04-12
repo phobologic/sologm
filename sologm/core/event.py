@@ -23,22 +23,34 @@ class EventManager(BaseManager[Event, Event]):
     def __init__(
         self,
         session: Optional[Session] = None,
-        game_manager: Optional[GameManager] = None,
         scene_manager: Optional[SceneManager] = None,
-        act_manager: Optional[ActManager] = None,
     ):
         """Initialize the EventManager.
 
         Args:
             session: Optional SQLAlchemy session
-            game_manager: Optional GameManager instance
             scene_manager: Optional SceneManager instance
-            act_manager: Optional ActManager instance
         """
         super().__init__(session)
-        self._game_manager = game_manager or GameManager(session)
-        self._scene_manager = scene_manager or SceneManager(session)
-        self._act_manager = act_manager or ActManager(session)
+        self._scene_manager = scene_manager
+        
+    @property
+    def scene_manager(self) -> SceneManager:
+        """Lazy-initialize scene manager."""
+        return self._lazy_init_manager(
+            "_scene_manager", 
+            "sologm.core.scene.SceneManager"
+        )
+
+    @property
+    def act_manager(self) -> ActManager:
+        """Access act manager through scene manager."""
+        return self.scene_manager.act_manager
+
+    @property
+    def game_manager(self) -> GameManager:
+        """Access game manager through act manager."""
+        return self.act_manager.game_manager
 
     def get_active_context(self) -> Dict[str, Any]:
         """Get the active game, act, and scene context.
@@ -51,9 +63,7 @@ class EventManager(BaseManager[Event, Event]):
             EventError: If no active game, act, or scene is found.
         """
         try:
-            return self._scene_manager.get_active_context(
-                self._game_manager, self._act_manager
-            )
+            return self.scene_manager.get_active_context()
         except Exception as e:
             raise EventError(str(e)) from e
 
@@ -85,10 +95,9 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the scene doesn't exist
         """
-        scene = session.query(Scene).filter(Scene.id == scene_id).first()
-        if not scene:
-            raise EventError(f"Scene {scene_id} not found")
-        return scene
+        return self.get_entity_or_error(
+            session, Scene, scene_id, EventError, f"Scene {scene_id} not found"
+        )
 
     def _get_source(self, session: Session, source_name: str) -> EventSource:
         """Get an event source by name, raising EventError if not found.
@@ -103,15 +112,21 @@ class EventManager(BaseManager[Event, Event]):
         Raises:
             EventError: If the source doesn't exist
         """
-        source = (
-            session.query(EventSource).filter(EventSource.name == source_name).first()
-        )
-        if not source:
+        try:
+            return self.get_entity_or_error(
+                session, 
+                EventSource, 
+                source_name, 
+                EventError,
+                f"Invalid source '{source_name}'",
+                lambda q, val: q.filter(EventSource.name == val)
+            )
+        except EventError:
+            # If not found, provide more helpful error with valid sources
             valid_sources = [s.name for s in session.query(EventSource).all()]
             raise EventError(
                 f"Invalid source '{source_name}'. Valid sources: {', '.join(valid_sources)}"
             )
-        return source
 
     def add_event(
         self,
@@ -174,8 +189,7 @@ class EventManager(BaseManager[Event, Event]):
                 interpretation_id,
             )
         except Exception as e:
-            self.logger.error(f"Failed to add event: {str(e)}")
-            raise EventError(f"Failed to add event: {str(e)}") from e
+            self._handle_operation_error("add event", e, EventError)
 
     def get_event(self, event_id: str) -> Optional[Event]:
         """Get an event by ID.
@@ -186,10 +200,13 @@ class EventManager(BaseManager[Event, Event]):
         Returns:
             The event if found, None otherwise
         """
-        return self._execute_db_operation(
-            "get event",
-            lambda session: session.query(Event).filter(Event.id == event_id).first(),
-        )
+        try:
+            return self._execute_db_operation(
+                "get event",
+                lambda session: session.query(Event).filter(Event.id == event_id).first(),
+            )
+        except Exception as e:
+            self._handle_operation_error("get event", e, EventError)
 
     def update_event(
         self, event_id: str, description: str, source: Optional[str] = None
@@ -211,9 +228,9 @@ class EventManager(BaseManager[Event, Event]):
         def _update_event(
             session: Session, event_id: str, description: str, source: Optional[str]
         ) -> Event:
-            event = session.query(Event).filter(Event.id == event_id).first()
-            if not event:
-                raise EventError(f"Event with ID '{event_id}' not found")
+            event = self.get_entity_or_error(
+                session, Event, event_id, EventError, f"Event with ID '{event_id}' not found"
+            )
 
             event.description = description
             if source is not None:
@@ -229,8 +246,7 @@ class EventManager(BaseManager[Event, Event]):
                 "update event", _update_event, event_id, description, source
             )
         except Exception as e:
-            self.logger.error(f"Failed to update event: {str(e)}")
-            raise EventError(f"Failed to update event: {str(e)}") from e
+            self._handle_operation_error("update event", e, EventError)
 
     def list_events(
         self, scene_id: Optional[str] = None, limit: Optional[int] = None
@@ -250,32 +266,24 @@ class EventManager(BaseManager[Event, Event]):
         """
         if scene_id is None:
             _, scene_id = self.validate_active_context()
-
-        def _list_events(
-            session: Session, scene_id: str, limit: Optional[int]
-        ) -> List[Event]:
-            # Validate scene exists
-            self._get_scene(session, scene_id)
-
-            # Query events
-            query = (
-                session.query(Event)
-                .filter(Event.scene_id == scene_id)
-                .order_by(Event.created_at.desc())
-            )
-
-            if limit is not None:
-                query = query.limit(limit)
-
-            return query.all()
-
+        
         try:
-            return self._execute_db_operation(
-                "list events", _list_events, scene_id, limit
+            # Validate scene exists (in a separate operation)
+            self._execute_db_operation(
+                "validate scene", 
+                lambda session: self._get_scene(session, scene_id)
+            )
+            
+            # Use list_entities for the actual query
+            return self.list_entities(
+                Event,
+                filters={"scene_id": scene_id},
+                order_by="created_at",
+                order_direction="desc",
+                limit=limit
             )
         except Exception as e:
-            self.logger.error(f"Failed to list events: {str(e)}")
-            raise EventError(f"Failed to list events: {str(e)}") from e
+            self._handle_operation_error("list events", e, EventError)
 
     def get_event_sources(self) -> List[EventSource]:
         """Get all available event sources.
@@ -283,7 +291,10 @@ class EventManager(BaseManager[Event, Event]):
         Returns:
             List of EventSource objects
         """
-        return self._execute_db_operation(
-            "get event sources",
-            lambda session: session.query(EventSource).order_by(EventSource.name).all(),
-        )
+        try:
+            return self.list_entities(
+                EventSource,
+                order_by="name"
+            )
+        except Exception as e:
+            self._handle_operation_error("get event sources", e, EventError)

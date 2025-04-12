@@ -96,10 +96,11 @@ class TestEventManager:
             event_manager.list_events(scene_id="nonexistent-scene")
         assert "Scene nonexistent-scene not found" in str(exc.value)
 
-    def test_get_active_context(self, event_manager, test_game, test_scene):
+    def test_get_active_context(self, event_manager, test_game, test_act, test_scene):
         """Test getting active game, act, and scene context."""
         context = event_manager.get_active_context()
         assert context["game"].id == test_game.id
+        assert context["act"].id == test_act.id
         assert context["scene"].id == test_scene.id
 
     def test_validate_active_context(self, event_manager, test_game, test_scene):
