@@ -67,7 +67,7 @@ class GameManager(BaseManager[Game, Game]):
 
             session.add(game)
             session.flush()  # Flush to get the ID
-            
+
             return game
 
         try:
@@ -165,10 +165,10 @@ class GameManager(BaseManager[Game, Game]):
             GameError: If the game cannot be retrieved.
         """
         logger.debug(f"Getting game by ID: {game_id}")
-        
+
         def _get_game(session: Session) -> Optional[Game]:
             return session.query(Game).filter(Game.id == game_id).first()
-        
+
         try:
             game = self._execute_db_operation(f"get game {game_id}", _get_game)
             logger.debug(f"Retrieved game: {game.id if game else 'None'}")
@@ -189,10 +189,10 @@ class GameManager(BaseManager[Game, Game]):
             GameError: If the game cannot be retrieved.
         """
         logger.debug(f"Getting game by slug: {slug}")
-        
+
         def _get_game(session: Session) -> Optional[Game]:
             return session.query(Game).filter(Game.slug == slug).first()
-        
+
         try:
             game = self._execute_db_operation(f"get game by slug {slug}", _get_game)
             logger.debug(f"Retrieved game by slug: {game.id if game else 'None'}")
@@ -248,7 +248,7 @@ class GameManager(BaseManager[Game, Game]):
 
             # Activate the requested game
             game.is_active = True
-            
+
             return game
 
         try:
@@ -279,7 +279,7 @@ class GameManager(BaseManager[Game, Game]):
             )
 
             game.is_active = False
-            
+
             return game
 
         try:
@@ -309,7 +309,9 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be updated.
         """
-        logger.debug(f"Updating game: {game_id}, name={name}, description={description is not None}")
+        logger.debug(
+            f"Updating game: {game_id}, name={name}, description={description is not None}"
+        )
 
         def _update_game(session: Session) -> Game:
             # Use get_entity_or_error instead of manual query and check
@@ -328,7 +330,7 @@ class GameManager(BaseManager[Game, Game]):
 
             if description is not None:
                 game.description = description
-                
+
             return game
 
         try:
