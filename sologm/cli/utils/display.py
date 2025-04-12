@@ -181,11 +181,11 @@ def display_interpretation(
 
 
 def display_events_table(
-    console: Console, 
-    events: List[Event], 
+    console: Console,
+    events: List[Event],
     scene: Scene,
     truncate_descriptions: bool = True,
-    max_description_length: int = 80
+    max_description_length: int = 80,
 ) -> None:
     """Display events in a formatted table.
 

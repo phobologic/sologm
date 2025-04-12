@@ -125,10 +125,10 @@ def scene_info(
             truncate_descriptions = len(events) > 3  # Truncate if more than 3 events
             console.print()  # Add a blank line for separation
             display_events_table(
-                console, 
-                events, 
-                active_scene, 
-                truncate_descriptions=truncate_descriptions
+                console,
+                events,
+                active_scene,
+                truncate_descriptions=truncate_descriptions,
             )
 
     except (SceneError, ActError) as e:

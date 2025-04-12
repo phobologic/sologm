@@ -36,24 +36,22 @@ def test_display_events_table_with_events(mock_console, test_events, test_scene)
     display_events_table(mock_console, test_events, test_scene)
     assert mock_console.print.called
 
+
 def test_display_events_table_with_truncation(mock_console, test_events, test_scene):
     """Test displaying events table with truncated descriptions."""
     # Test with truncation enabled
     display_events_table(
-        mock_console, 
-        test_events, 
-        test_scene, 
+        mock_console,
+        test_events,
+        test_scene,
         truncate_descriptions=True,
-        max_description_length=20
+        max_description_length=20,
     )
     assert mock_console.print.called
-    
+
     # Test with truncation disabled
     display_events_table(
-        mock_console, 
-        test_events, 
-        test_scene, 
-        truncate_descriptions=False
+        mock_console, test_events, test_scene, truncate_descriptions=False
     )
     assert mock_console.print.called
 
