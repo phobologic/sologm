@@ -185,8 +185,16 @@ class SceneManager(BaseManager[Scene, Scene]):
             scenes = self.list_entities(
                 Scene, filters={"act_id": act_id, "id": scene_id}, limit=1
             )
-            return scenes[0] if scenes else None
+            result = scenes[0] if scenes else None
+            logger.debug(
+                f"Found scene in act {act_id}: {result.id if result else 'None'}"
+            )
+            return result
         except Exception as e:
+            logger.error(
+                f"Error getting scene {scene_id} in act {act_id}: {str(e)}", 
+                exc_info=True
+            )
             self._handle_operation_error(
                 f"get scene {scene_id} in act {act_id}", e, SceneError
             )
