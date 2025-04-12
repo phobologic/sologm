@@ -19,6 +19,12 @@ class GameError(SoloGMError):
     pass
 
 
+class ActError(SoloGMError):
+    """Errors related to act management."""
+
+    pass
+
+
 class SceneError(SoloGMError):
     """Errors related to scene management."""
 
