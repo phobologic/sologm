@@ -13,14 +13,12 @@ class TestEventManager:
     def test_add_event(self, event_manager, test_game, test_scene, db_session):
         """Test adding an event."""
         event = event_manager.add_event(
-            game_id=test_game.id,
             scene_id=test_scene.id,
             description="Test event",
             source="manual",
         )
 
         assert event.scene_id == test_scene.id
-        assert event.game_id == test_game.id
         assert event.description == "Test event"
         assert event.source.name == "manual"
 
@@ -29,57 +27,62 @@ class TestEventManager:
         assert db_event is not None
         assert db_event.description == "Test event"
 
-    def test_add_event_nonexistent_scene(self, event_manager, test_game):
+    def test_add_event_nonexistent_scene(self, event_manager):
         """Test adding an event to a nonexistent scene."""
         with pytest.raises(EventError) as exc:
             event_manager.add_event(
-                game_id=test_game.id,
                 scene_id="nonexistent-scene",
                 description="Test event",
             )
         assert "Scene nonexistent-scene not found" in str(exc.value)
 
-    def test_list_events_empty(self, event_manager, test_game, test_scene):
+    def test_list_events_empty(self, event_manager, test_scene):
         """Test listing events when none exist."""
-        events = event_manager.list_events(game_id=test_game.id, scene_id=test_scene.id)
+        events = event_manager.list_events(scene_id=test_scene.id)
         assert len(events) == 0
 
-    def test_list_events(self, event_manager, test_game, test_scene, create_test_event):
+    def test_list_events(self, event_manager, test_scene, create_test_event):
         """Test listing multiple events."""
         # Add some events
-        create_test_event(test_game.id, test_scene.id, "First event")
-        create_test_event(test_game.id, test_scene.id, "Second event")
+        create_test_event(test_scene.id, "First event")
+        create_test_event(test_scene.id, "Second event")
 
-        events = event_manager.list_events(game_id=test_game.id, scene_id=test_scene.id)
+        events = event_manager.list_events(scene_id=test_scene.id)
         assert len(events) == 2
         # Events should be in reverse chronological order (newest first)
         assert events[0].description == "Second event"
         assert events[1].description == "First event"
 
     def test_list_events_with_limit(
-        self, event_manager, test_game, test_scene, create_test_event
+        self, event_manager, test_scene, create_test_event
     ):
         """Test listing events with a limit."""
         # Add some events
-        create_test_event(test_game.id, test_scene.id, "First event")
-        create_test_event(test_game.id, test_scene.id, "Second event")
-        create_test_event(test_game.id, test_scene.id, "Third event")
+        create_test_event(test_scene.id, "First event")
+        create_test_event(test_scene.id, "Second event")
+        create_test_event(test_scene.id, "Third event")
 
         events = event_manager.list_events(
-            game_id=test_game.id, scene_id=test_scene.id, limit=2
+            scene_id=test_scene.id, limit=2
         )
         assert len(events) == 2
         assert events[0].description == "Third event"
         assert events[1].description == "Second event"
 
-    def test_list_events_nonexistent_scene(self, event_manager, test_game):
+    def test_list_events_nonexistent_scene(self, event_manager):
         """Test listing events for a nonexistent scene."""
         with pytest.raises(EventError) as exc:
-            event_manager.list_events(
-                game_id=test_game.id, scene_id="nonexistent-scene"
-            )
+            event_manager.list_events(scene_id="nonexistent-scene")
         assert "Scene nonexistent-scene not found" in str(exc.value)
 
+    def test_get_active_context(
+        self, event_manager, game_manager, scene_manager, test_game, test_scene
+    ):
+        """Test getting active game, act, and scene context."""
+        context = event_manager.get_active_context(game_manager, scene_manager)
+        assert context["game"].id == test_game.id
+        assert context["scene"].id == test_scene.id
+        
     def test_validate_active_context(
         self, event_manager, game_manager, scene_manager, test_game, test_scene
     ):
@@ -105,7 +108,6 @@ class TestEventManager:
     def test_add_event_from_interpretation(
         self,
         event_manager,
-        test_game,
         test_scene,
         test_interpretation_set,
         test_interpretations,
@@ -115,7 +117,6 @@ class TestEventManager:
         interpretation = test_interpretations[0]
 
         event = event_manager.add_event(
-            game_id=test_game.id,
             scene_id=test_scene.id,
             description="Event from interpretation",
             source="oracle",
