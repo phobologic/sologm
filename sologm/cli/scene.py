@@ -137,9 +137,7 @@ def edit_scene(
         scene_manager = SceneManager()
 
         # Get active game and act
-        act_id, active_scene = scene_manager.validate_active_context(
-            game_manager, act_manager
-        )
+        act_id, active_scene = scene_manager.validate_active_context()
 
         # If no scene_id provided, use the active scene
         if not scene_id:
