@@ -52,10 +52,9 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be created.
         """
+        logger.debug(f"Creating game: name='{name}', is_active={is_active}")
 
-        def _create_game(
-            session: Session, name: str, description: str, is_active: bool
-        ) -> Game:
+        def _create_game(session: Session) -> Game:
             # Use the create class method from the SQLAlchemy model
             game = Game.create(name=name, description=description)
 
@@ -68,19 +67,17 @@ class GameManager(BaseManager[Game, Game]):
 
             session.add(game)
             session.flush()  # Flush to get the ID
-
-            logger.debug(f"Created game {game.id}: {name}")
+            
             return game
 
         try:
-            return self._execute_db_operation(
-                "create game", _create_game, name, description, is_active
-            )
+            game = self._execute_db_operation("create game", _create_game)
+            logger.debug(f"Created game: {game.id}, name='{game.name}'")
+            return game
         except IntegrityError as e:
             self._handle_integrity_error(e, "create", name)
         except Exception as e:
-            logger.error(f"Failed to create game {name}: {str(e)}")
-            raise GameError(f"Failed to create game: {str(e)}") from e
+            self._handle_operation_error(f"create game {name}", e, GameError)
 
     def _handle_integrity_error(
         self, error: IntegrityError, operation: str, name: str
@@ -120,6 +117,7 @@ class GameManager(BaseManager[Game, Game]):
         Args:
             session: SQLAlchemy session
         """
+        logger.debug("Deactivating all games")
         session.query(Game).update({Game.is_active: False})
 
     def list_games(self) -> List[Game]:
@@ -151,6 +149,7 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be retrieved.
         """
+        logger.debug(f"Getting game: {game_id}")
         return self.get_game_by_id(game_id)
 
     def get_game_by_id(self, game_id: str) -> Optional[Game]:
@@ -165,22 +164,17 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be retrieved.
         """
-
-        def _get_game_by_id(session: Session, game_id: str) -> Optional[Game]:
-            game = session.query(Game).filter(Game.id == game_id).first()
-            if not game:
-                logger.debug(f"Game {game_id} not found")
-                return None
-
-            logger.debug(f"Retrieved game {game_id}")
-            return game
-
+        logger.debug(f"Getting game by ID: {game_id}")
+        
+        def _get_game(session: Session) -> Optional[Game]:
+            return session.query(Game).filter(Game.id == game_id).first()
+        
         try:
-            return self._execute_db_operation(
-                "get game by id", _get_game_by_id, game_id
-            )
+            game = self._execute_db_operation(f"get game {game_id}", _get_game)
+            logger.debug(f"Retrieved game: {game.id if game else 'None'}")
+            return game
         except Exception as e:
-            raise GameError(f"Failed to get game {game_id}: {str(e)}") from e
+            self._handle_operation_error(f"get game {game_id}", e, GameError)
 
     def get_game_by_slug(self, slug: str) -> Optional[Game]:
         """Get a specific game by slug.
@@ -194,22 +188,17 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be retrieved.
         """
-
-        def _get_game_by_slug(session: Session, slug: str) -> Optional[Game]:
-            game = session.query(Game).filter(Game.slug == slug).first()
-            if not game:
-                logger.debug(f"Game with slug '{slug}' not found")
-                return None
-
-            logger.debug(f"Retrieved game with slug '{slug}'")
-            return game
-
+        logger.debug(f"Getting game by slug: {slug}")
+        
+        def _get_game(session: Session) -> Optional[Game]:
+            return session.query(Game).filter(Game.slug == slug).first()
+        
         try:
-            return self._execute_db_operation(
-                "get game by slug", _get_game_by_slug, slug
-            )
+            game = self._execute_db_operation(f"get game by slug {slug}", _get_game)
+            logger.debug(f"Retrieved game by slug: {game.id if game else 'None'}")
+            return game
         except Exception as e:
-            raise GameError(f"Failed to get game with slug '{slug}': {str(e)}") from e
+            self._handle_operation_error(f"get game by slug {slug}", e, GameError)
 
     def get_active_game(self) -> Optional[Game]:
         """Get the currently active game.
@@ -226,9 +215,9 @@ class GameManager(BaseManager[Game, Game]):
             game = games[0] if games else None
 
             if not game:
-                logger.debug("No active game set")
+                logger.debug("No active game found")
             else:
-                logger.debug(f"Getting active game: {game.id}")
+                logger.debug(f"Found active game: {game.id}")
 
             return game
         except Exception as e:
@@ -246,8 +235,9 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be activated.
         """
+        logger.debug(f"Activating game: {game_id}")
 
-        def _activate_game(session: Session, game_id: str) -> Game:
+        def _activate_game(session: Session) -> Game:
             # Use get_entity_or_error instead of manual query and check
             game = self.get_entity_or_error(
                 session, Game, game_id, GameError, f"Game not found: {game_id}"
@@ -258,14 +248,15 @@ class GameManager(BaseManager[Game, Game]):
 
             # Activate the requested game
             game.is_active = True
-
-            logger.debug(f"Activated game: {game_id}")
+            
             return game
 
         try:
-            return self._execute_db_operation("activate game", _activate_game, game_id)
+            game = self._execute_db_operation("activate game", _activate_game)
+            logger.debug(f"Activated game: {game.id}")
+            return game
         except Exception as e:
-            self._handle_operation_error("activate game", e, GameError)
+            self._handle_operation_error(f"activate game {game_id}", e, GameError)
 
     def deactivate_game(self, game_id: str) -> Game:
         """Set a game as inactive.
@@ -279,24 +270,24 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be deactivated
         """
+        logger.debug(f"Deactivating game: {game_id}")
 
-        def _deactivate_game(session: Session, game_id: str) -> Game:
+        def _deactivate_game(session: Session) -> Game:
             # Use get_entity_or_error instead of manual query and check
             game = self.get_entity_or_error(
                 session, Game, game_id, GameError, f"Game not found: {game_id}"
             )
 
             game.is_active = False
-
-            logger.debug(f"Deactivated game: {game_id}")
+            
             return game
 
         try:
-            return self._execute_db_operation(
-                "deactivate game", _deactivate_game, game_id
-            )
+            game = self._execute_db_operation("deactivate game", _deactivate_game)
+            logger.debug(f"Deactivated game: {game.id}")
+            return game
         except Exception as e:
-            self._handle_operation_error("deactivate game", e, GameError)
+            self._handle_operation_error(f"deactivate game {game_id}", e, GameError)
 
     def update_game(
         self,
@@ -318,13 +309,9 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If the game cannot be updated.
         """
+        logger.debug(f"Updating game: {game_id}, name={name}, description={description is not None}")
 
-        def _update_game(
-            session: Session,
-            game_id: str,
-            name: Optional[str],
-            description: Optional[str],
-        ) -> Game:
+        def _update_game(session: Session) -> Game:
             # Use get_entity_or_error instead of manual query and check
             game = self.get_entity_or_error(
                 session, Game, game_id, GameError, f"Game not found: {game_id}"
@@ -341,18 +328,17 @@ class GameManager(BaseManager[Game, Game]):
 
             if description is not None:
                 game.description = description
-
-            logger.debug(f"Updated game: {game_id}")
+                
             return game
 
         try:
-            return self._execute_db_operation(
-                "update game", _update_game, game_id, name, description
-            )
+            game = self._execute_db_operation("update game", _update_game)
+            logger.debug(f"Updated game: {game.id}")
+            return game
         except IntegrityError as e:
             self._handle_integrity_error(e, "update", name or "")
         except Exception as e:
-            self._handle_operation_error("update game", e, GameError)
+            self._handle_operation_error(f"update game {game_id}", e, GameError)
 
     def delete_game(self, game_id: str) -> bool:
         """Delete a game.
@@ -366,18 +352,23 @@ class GameManager(BaseManager[Game, Game]):
         Raises:
             GameError: If there was an error during deletion
         """
+        logger.debug(f"Deleting game: {game_id}")
 
-        def _delete_game(session: Session, game_id: str) -> bool:
+        def _delete_game(session: Session) -> bool:
             game = session.query(Game).filter(Game.id == game_id).first()
             if not game:
                 logger.debug(f"Cannot delete nonexistent game: {game_id}")
                 return False
 
             session.delete(game)
-            logger.debug(f"Deleted game: {game_id}")
             return True
 
         try:
-            return self._execute_db_operation("delete game", _delete_game, game_id)
+            result = self._execute_db_operation("delete game", _delete_game)
+            if result:
+                logger.debug(f"Deleted game: {game_id}")
+            else:
+                logger.debug(f"Game not found for deletion: {game_id}")
+            return result
         except Exception as e:
-            self._handle_operation_error("delete game", e, GameError)
+            self._handle_operation_error(f"delete game {game_id}", e, GameError)
