@@ -344,9 +344,7 @@ def list_events(
             console.print(f"[red]Error:[/] Scene with ID '{target_scene_id}' not found")
             raise typer.Exit(1)
 
-        events = event_manager.list_events(
-            scene_id=target_scene_id, limit=limit
-        )
+        events = event_manager.list_events(scene_id=target_scene_id, limit=limit)
 
         logger.debug(f"Found {len(events)} events")
         display_events_table(console, events, scene)
