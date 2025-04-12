@@ -8,7 +8,7 @@ from rich.console import Console
 
 from sologm.cli.utils import display
 from sologm.core.dice import DiceManager
-from sologm.utils.errors import DiceError
+from sologm.utils.errors import DiceError, SceneError
 
 logger = logging.getLogger(__name__)
 dice_app = typer.Typer(help="Dice rolling commands")
@@ -33,32 +33,28 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
+        # Start with DiceManager as our entry point
+        dice_manager = DiceManager()
+        
         # If no scene_id is provided, try to get the current scene
         if scene_id is None:
             try:
-                from sologm.core.game import GameManager
-                from sologm.core.scene import SceneManager
-
-                game_manager = GameManager()
-                scene_manager = SceneManager()
-
-                # Get active game
-                active_game = game_manager.get_active_game()
-                if active_game:
-                    # Get active scene for the game
-                    active_scene = scene_manager.get_active_scene(active_game.id)
-                    if active_scene:
-                        scene_id = active_scene.id
-                        logger.debug(f"Using current scene: {scene_id}")
-            except Exception as e:
+                # Access scene manager through dice manager
+                scene_manager = dice_manager.scene_manager
+                context = scene_manager.get_active_context()
+                scene_id = context["scene"].id
+                logger.debug(f"Using current scene: {scene_id}")
+            except SceneError as e:
                 logger.debug(f"Could not determine current scene: {str(e)}")
+                console.print(f"Warning: {str(e)}", style="yellow")
+                console.print("Dice roll will not be associated with any scene.", style="yellow")
 
         logger.debug(
             f"Rolling dice with notation: {notation}, reason: "
             f"{reason}, scene_id: {scene_id}"
         )
-        manager = DiceManager()
-        result = manager.roll(notation, reason, scene_id)
+        
+        result = dice_manager.roll(notation, reason, scene_id)
         display.display_dice_roll(console, result)
 
     except DiceError as e:
@@ -75,8 +71,23 @@ def dice_history_command(
 ) -> None:
     """Show recent dice roll history."""
     try:
-        manager = DiceManager()
-        rolls = manager.get_recent_rolls(scene_id=scene_id, limit=limit)
+        # Start with DiceManager as our entry point
+        dice_manager = DiceManager()
+        
+        # If scene_id is not provided, try to get the active scene
+        if scene_id is None:
+            try:
+                # Access scene manager through dice manager
+                scene_manager = dice_manager.scene_manager
+                context = scene_manager.get_active_context()
+                scene = context["scene"]
+                scene_id = scene.id
+                logger.debug(f"Using current scene: {scene_id}")
+            except SceneError as e:
+                logger.debug(f"No active scene found: {str(e)}")
+                # Continue without a scene_id, which will show all rolls
+        
+        rolls = dice_manager.get_recent_rolls(scene_id=scene_id, limit=limit)
 
         if not rolls:
             console.print("No dice rolls found.", style="yellow")
