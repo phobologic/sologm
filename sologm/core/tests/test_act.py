@@ -157,7 +157,7 @@ class TestActManager:
                 act_id="invalid-id",
             )
 
-    def test_set_active_act(
+    def test_set_active(
         self, db_session, test_game, test_act, create_test_act, act_manager
     ):
         """Test setting an act as active."""
@@ -175,7 +175,7 @@ class TestActManager:
         assert second_act.is_active is True
 
         # Set first act as active
-        activated_act = act_manager.set_active_act(test_game.id, test_act.id)
+        activated_act = act_manager.set_active(test_act.id)
 
         assert activated_act.id == test_act.id
         assert activated_act.is_active is True
@@ -186,9 +186,9 @@ class TestActManager:
 
         # Set non-existent act as active
         with pytest.raises(GameError):
-            act_manager.set_active_act(test_game.id, "invalid-id")
+            act_manager.set_active("invalid-id")
 
-        # Create another game and act to test cross-game validation
+        # Create another game and act
         from sologm.models.game import Game
 
         other_game = Game.create(name="Other Game", description="Another test game")
@@ -201,18 +201,17 @@ class TestActManager:
             sequence=1,
         )
 
-        # Try to set act from different game as active
-        with pytest.raises(GameError):
-            act_manager.set_active_act(test_game.id, other_act.id)
+        # Set act from different game as active (should work now since we don't validate game_id)
+        other_activated_act = act_manager.set_active(other_act.id)
+        assert other_activated_act.id == other_act.id
+        assert other_activated_act.is_active is True
 
-    def test_validate_active_context(
+    def test_validate_active_act(
         self, db_session, test_game, test_act, act_manager
     ):
-        """Test validating active context."""
+        """Test validating active act."""
         # Valid context
-        game_id, act = act_manager.validate_active_context(test_game.id)
-
-        assert game_id == test_game.id
+        act = act_manager.validate_active_act(test_game.id)
         assert act.id == test_act.id
 
         # Deactivate all acts
@@ -221,4 +220,4 @@ class TestActManager:
 
         # Invalid context - no active act
         with pytest.raises(GameError):
-            act_manager.validate_active_context(test_game.id)
+            act_manager.validate_active_act(test_game.id)

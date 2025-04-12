@@ -1,7 +1,7 @@
 """Act manager for SoloGM."""
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -79,6 +79,22 @@ class ActManager(BaseManager[Act, Act]):
             "create_act", _create_act, game_id, title, description
         )
 
+    def get_act(self, act_id: str) -> Optional[Act]:
+        """Get an act by ID.
+
+        Args:
+            act_id: ID of the act to get
+
+        Returns:
+            The act, or None if not found
+        """
+        logger.debug(f"Getting act {act_id}")
+
+        def _get_act(session: Session, act_id: str) -> Optional[Act]:
+            return session.query(Act).filter(Act.id == act_id).first()
+
+        return self._execute_db_operation("get_act", _get_act, act_id)
+        
     def list_acts(self, game_id: str) -> List[Act]:
         """List all acts in a game.
 
@@ -99,22 +115,6 @@ class ActManager(BaseManager[Act, Act]):
             )
 
         return self._execute_db_operation("list_acts", _list_acts, game_id)
-
-    def get_act(self, act_id: str) -> Optional[Act]:
-        """Get an act by ID.
-
-        Args:
-            act_id: ID of the act to get
-
-        Returns:
-            The act, or None if not found
-        """
-        logger.debug(f"Getting act {act_id}")
-
-        def _get_act(session: Session, act_id: str) -> Optional[Act]:
-            return session.query(Act).filter(Act.id == act_id).first()
-
-        return self._execute_db_operation("get_act", _get_act, act_id)
 
     def get_active_act(self, game_id: str) -> Optional[Act]:
         """Get the active act in a game.
@@ -239,39 +239,33 @@ class ActManager(BaseManager[Act, Act]):
             "complete_act", _complete_act, act_id, title, description
         )
 
-    def set_active_act(self, game_id: str, act_id: str) -> Act:
-        """Set an act as the active act in a game.
+    def set_active(self, act_id: str) -> Act:
+        """Set an act as the active act in its game.
 
         Args:
-            game_id: ID of the game
             act_id: ID of the act to set as active
 
         Returns:
             The activated act
 
         Raises:
-            GameError: If the act doesn't exist or doesn't belong to the game
+            GameError: If the act doesn't exist
         """
-        logger.debug(f"Setting act {act_id} as active in game {game_id}")
+        logger.debug(f"Setting act {act_id} as active")
 
-        def _set_active_act(session: Session, game_id: str, act_id: str) -> Act:
+        def _set_active(session: Session, act_id: str) -> Act:
             act = session.query(Act).filter(Act.id == act_id).first()
             if not act:
                 raise GameError(f"Act with ID {act_id} not found")
 
-            if act.game_id != game_id:
-                raise GameError(f"Act {act_id} does not belong to game {game_id}")
-
             # Deactivate all acts in this game
-            self._deactivate_all_acts(session, game_id)
+            self._deactivate_all_acts(session, act.game_id)
 
             # Set this act as active
             act.is_active = True
             return act
 
-        return self._execute_db_operation(
-            "set_active_act", _set_active_act, game_id, act_id
-        )
+        return self._execute_db_operation("set_active", _set_active, act_id)
 
     def _deactivate_all_acts(self, session: Session, game_id: str) -> None:
         """Deactivate all acts in a game.
@@ -283,20 +277,20 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(f"Deactivating all acts in game {game_id}")
         session.query(Act).filter(Act.game_id == game_id).update({Act.is_active: False})
 
-    def validate_active_context(self, game_id: str) -> Tuple[str, Act]:
-        """Validate that there is an active game and act.
+    def validate_active_act(self, game_id: str) -> Act:
+        """Validate that there is an active act for the game.
 
         Args:
             game_id: ID of the game to validate
 
         Returns:
-            Tuple of (game_id, active_act)
+            The active act
 
         Raises:
             GameError: If there is no active act
         """
-        logger.debug(f"Validating active context for game {game_id}")
+        logger.debug(f"Validating active act for game {game_id}")
         active_act = self.get_active_act(game_id)
         if not active_act:
             raise GameError(f"No active act in game {game_id}")
-        return game_id, active_act
+        return active_act
