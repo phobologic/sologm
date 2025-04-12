@@ -7,10 +7,7 @@ import typer
 from rich.console import Console
 
 from sologm.cli.utils.display import display_events_table
-from sologm.core.act import ActManager
 from sologm.core.event import EventManager
-from sologm.core.game import GameManager
-from sologm.core.scene import SceneManager
 from sologm.utils.errors import EventError
 
 logger = logging.getLogger(__name__)
@@ -340,9 +337,6 @@ def list_events(
 
         # Use the specified scene_id if provided, otherwise use the current scene
         target_scene_id = scene_id if scene_id else current_scene_id
-
-        # Get the active act through manager chain
-        active_act = event_manager.scene_manager.act_manager.get_active_act(game_id)
 
         # Get the scene to display its title
         scene = event_manager.scene_manager.get_scene(target_scene_id)
