@@ -76,7 +76,7 @@ class ActManager(BaseManager[Act, Act]):
             f"description='{description[:20] + '...' if description else 'None'}', "
             f"make_active={make_active}"
         )
-        
+
         # Get game_id from active context if not provided
         if not game_id:
             active_game = self.game_manager.get_active_game()
@@ -91,8 +91,13 @@ class ActManager(BaseManager[Act, Act]):
             try:
                 # Check if game exists
                 from sologm.models.game import Game
+
                 game = self.get_entity_or_error(
-                    session, Game, game_id, GameError, f"Game with ID {game_id} not found"
+                    session,
+                    Game,
+                    game_id,
+                    GameError,
+                    f"Game with ID {game_id} not found",
                 )
                 logger.debug(f"Found game: {game.name}")
 
@@ -104,7 +109,7 @@ class ActManager(BaseManager[Act, Act]):
                     order_direction="desc",
                     limit=1,
                 )
-                
+
                 next_sequence = 1
                 if acts:
                     next_sequence = acts[0].sequence + 1
@@ -129,7 +134,7 @@ class ActManager(BaseManager[Act, Act]):
                     # Set this act as active
                     act.is_active = True
                     logger.debug(f"Set act {act.id} as active")
-                
+
                 logger.info(
                     f"Created act with ID {act.id} in game {game_id}: "
                     f"title='{act.title or 'Untitled'}'"
@@ -137,10 +142,11 @@ class ActManager(BaseManager[Act, Act]):
                 return act
             except Exception as e:
                 logger.error(
-                    f"Error creating act in game {game_id}: {str(e)}", 
-                    exc_info=True
+                    f"Error creating act in game {game_id}: {str(e)}", exc_info=True
                 )
-                self._handle_operation_error(f"create act in game {game_id}", e, GameError)
+                self._handle_operation_error(
+                    f"create act in game {game_id}", e, GameError
+                )
 
         return self._execute_db_operation("create_act", _create_act)
 
@@ -167,19 +173,19 @@ class ActManager(BaseManager[Act, Act]):
 
     def list_acts(self, game_id: Optional[str] = None) -> List[Act]:
         """List all acts in a game.
-        
+
         Args:
             game_id: Optional ID of the game to list acts for
                     If not provided, uses the active game
-                    
+
         Returns:
             List of acts in the game, ordered by sequence
-            
+
         Raises:
             GameError: If game_id is not provided and no active game is found
         """
         logger.debug(f"Listing acts for game_id={game_id or 'active game'}")
-        
+
         if not game_id:
             active_game = self.game_manager.get_active_game()
             if not active_game:
@@ -188,7 +194,7 @@ class ActManager(BaseManager[Act, Act]):
                 raise GameError(msg)
             game_id = active_game.id
             logger.debug(f"Using active game with ID {game_id}")
-        
+
         try:
             acts = self.list_entities(
                 Act, filters={"game_id": game_id}, order_by="sequence"
@@ -196,7 +202,9 @@ class ActManager(BaseManager[Act, Act]):
             logger.debug(f"Found {len(acts)} acts in game {game_id}")
             return acts
         except Exception as e:
-            logger.error(f"Error listing acts for game {game_id}: {str(e)}", exc_info=True)
+            logger.error(
+                f"Error listing acts for game {game_id}: {str(e)}", exc_info=True
+            )
             self._handle_operation_error(f"list acts for game {game_id}", e, GameError)
             return []  # This will never be reached as _handle_operation_error raises
 
@@ -214,7 +222,7 @@ class ActManager(BaseManager[Act, Act]):
             GameError: If game_id is not provided and no active game is found
         """
         logger.debug(f"Getting active act for game_id={game_id or 'active game'}")
-        
+
         try:
             if not game_id:
                 active_game = self.game_manager.get_active_game()
@@ -228,7 +236,7 @@ class ActManager(BaseManager[Act, Act]):
             acts = self.list_entities(
                 Act, filters={"game_id": game_id, "is_active": True}, limit=1
             )
-            
+
             result = acts[0] if acts else None
             logger.debug(
                 f"Active act for game {game_id}: "
@@ -280,11 +288,14 @@ class ActManager(BaseManager[Act, Act]):
                 if title is not None:
                     old_title = act.title
                     act.title = title
-                    logger.debug(f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'")
-                    
+                    logger.debug(
+                        f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'"
+                    )
+
                     # Update slug if title changes
                     if title:
                         from sologm.models.utils import slugify
+
                         act.slug = f"act-{act.sequence}-{slugify(title)}"
                     else:
                         act.slug = f"act-{act.sequence}-untitled"
@@ -339,11 +350,14 @@ class ActManager(BaseManager[Act, Act]):
                 if title is not None:
                     old_title = act.title
                     act.title = title
-                    logger.debug(f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'")
-                    
+                    logger.debug(
+                        f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'"
+                    )
+
                     # Update slug if title changes
                     if title:
                         from sologm.models.utils import slugify
+
                         act.slug = f"act-{act.sequence}-{slugify(title)}"
                         logger.debug(f"Updated slug to '{act.slug}'")
 
@@ -356,7 +370,9 @@ class ActManager(BaseManager[Act, Act]):
                 act.status = ActStatus.COMPLETED
                 logger.debug(f"Updated status from {old_status} to {act.status}")
 
-                logger.info(f"Completed act {act_id}: title='{act.title or 'Untitled'}'")
+                logger.info(
+                    f"Completed act {act_id}: title='{act.title or 'Untitled'}'"
+                )
                 return act
             except Exception as e:
                 logger.error(f"Error completing act {act_id}: {str(e)}", exc_info=True)
@@ -384,7 +400,9 @@ class ActManager(BaseManager[Act, Act]):
                 act = self.get_entity_or_error(
                     session, Act, act_id, GameError, f"Act with ID {act_id} not found"
                 )
-                logger.debug(f"Found act: {act.title or 'Untitled'} in game {act.game_id}")
+                logger.debug(
+                    f"Found act: {act.title or 'Untitled'} in game {act.game_id}"
+                )
 
                 # Deactivate all acts in this game
                 self._deactivate_all_acts(session, act.game_id)
@@ -395,8 +413,12 @@ class ActManager(BaseManager[Act, Act]):
                 logger.info(f"Set act {act_id} as active")
                 return act
             except Exception as e:
-                logger.error(f"Error setting act {act_id} as active: {str(e)}", exc_info=True)
-                self._handle_operation_error(f"set act {act_id} as active", e, GameError)
+                logger.error(
+                    f"Error setting act {act_id} as active: {str(e)}", exc_info=True
+                )
+                self._handle_operation_error(
+                    f"set act {act_id} as active", e, GameError
+                )
 
         return self._execute_db_operation("set_active", _set_active)
 
@@ -412,20 +434,20 @@ class ActManager(BaseManager[Act, Act]):
 
     def validate_active_act(self, game_id: Optional[str] = None) -> Act:
         """Validate that there is an active act for the game.
-        
+
         If game_id is not provided, uses the active game.
-        
+
         Args:
             game_id: Optional ID of the game to validate
-            
+
         Returns:
             The active act
-            
+
         Raises:
             GameError: If there is no active act or no active game
         """
         logger.debug(f"Validating active act for game_id={game_id or 'active game'}")
-        
+
         if not game_id:
             active_game = self.game_manager.get_active_game()
             if not active_game:
@@ -434,12 +456,16 @@ class ActManager(BaseManager[Act, Act]):
                 raise GameError(msg)
             game_id = active_game.id
             logger.debug(f"Using active game with ID {game_id}")
-        
+
         active_act = self.get_active_act(game_id)
         if not active_act:
-            msg = f"No active act in game {game_id}. Create one with 'sologm act create'."
+            msg = (
+                f"No active act in game {game_id}. Create one with 'sologm act create'."
+            )
             logger.warning(msg)
             raise GameError(msg)
-        
-        logger.debug(f"Found active act: {active_act.id} ({active_act.title or 'Untitled'})")
+
+        logger.debug(
+            f"Found active act: {active_act.id} ({active_act.title or 'Untitled'})"
+        )
         return active_act
