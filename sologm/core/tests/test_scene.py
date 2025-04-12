@@ -505,10 +505,10 @@ class TestSceneManager:
             scene_manager.validate_active_context()
         assert "No active game" in str(exc.value)
 
-    def test_create_scene_in_active_act(
+    def test_create_scene_with_active_act(
         self, scene_manager, test_game, db_session, ensure_active_act, monkeypatch
     ) -> None:
-        """Test creating a scene in the active act."""
+        """Test creating a scene using the active act."""
         active_act = ensure_active_act
 
         # Monkeypatch the game_manager and act_manager properties
@@ -519,7 +519,7 @@ class TestSceneManager:
             scene_manager, "act_manager", ActManager(session=db_session)
         )
 
-        scene = scene_manager.create_scene_in_active_act(
+        scene = scene_manager.create_scene(
             title="Active Act Scene",
             description="Scene in active act",
         )
@@ -530,10 +530,10 @@ class TestSceneManager:
         assert scene.description == "Scene in active act"
         assert scene.is_active
 
-    def test_list_scenes_in_active_act(
+    def test_list_scenes_with_active_act(
         self, scene_manager, test_game, db_session, ensure_active_act, monkeypatch
     ) -> None:
-        """Test listing scenes in the active act."""
+        """Test listing scenes using the active act."""
         active_act = ensure_active_act
 
         # Monkeypatch the game_manager and act_manager properties
@@ -556,7 +556,7 @@ class TestSceneManager:
             act_id=active_act.id,
         )
 
-        scenes = scene_manager.list_scenes_in_active_act()
+        scenes = scene_manager.list_scenes()
         assert len(scenes) == 2
         assert scenes[0].id == scene1.id
         assert scenes[1].id == scene2.id
