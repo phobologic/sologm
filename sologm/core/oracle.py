@@ -14,7 +14,6 @@ from sologm.core.scene import SceneManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.act import Act
 from sologm.models.event import Event
-from sologm.models.event_source import EventSource
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene
@@ -298,9 +297,17 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         act = scene.act
         game = act.game
 
-        game_description = game.description or ""
-        act_description = act.description or ""
-        scene_description = scene.description or ""
+        game_description = ""
+        if game and game.description:
+            game_description = game.description
+
+        act_description = ""
+        if act and act.description:
+            act_description = act.description
+
+        scene_description = ""
+        if scene and scene.description:
+            scene_description = scene.description
 
         # Get recent events
         recent_events = self.event_manager.list_events(scene_id, limit=5)
@@ -712,7 +719,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """
 
         def _add_interpretation_event(
-            session: Session,
+            _: Session,
             interpretation: Interpretation,
             custom_description: Optional[str],
         ) -> Event:

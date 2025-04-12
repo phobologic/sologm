@@ -73,6 +73,7 @@ The lack of forced entry and the selective theft of only the special brandy barr
     def build_interpretation_prompt(
         cls,
         game_description: str,
+        act_description: str,
         scene_description: str,
         recent_events: List[str],
         context: str,
@@ -85,6 +86,7 @@ The lack of forced entry and the selective theft of only the special brandy barr
 
         Args:
             game_description: Description of the current game
+            act_description: Description of the current act
             scene_description: Description of the current scene
             recent_events: List of recent event descriptions
             context: User's question or context
@@ -106,6 +108,7 @@ The lack of forced entry and the selective theft of only the special brandy barr
         return f"""You are interpreting oracle results for a solo RPG player.
 
 Game: {game_description}
+Act: {act_description}
 Current Scene: {scene_description}
 Recent Events:
 {events_text}
