@@ -6,7 +6,7 @@ unfold through multiple connected Scenes.
 """
 
 import logging
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 import typer
 from rich.console import Console
@@ -22,8 +22,9 @@ from sologm.cli.utils.structured_editor import (
 )
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
+from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.act import ActStatus
-from sologm.utils.errors import GameError
+from sologm.utils.errors import GameError, APIError
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +168,329 @@ def create_act(
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")
         raise typer.Exit(1)
+
+
+@act_app.command("summary")
+def generate_act_summary(
+    context: Optional[str] = typer.Option(
+        None, "--context", "-c", help="Additional context to include in the summary generation"
+    ),
+    act_id: Optional[str] = typer.Option(
+        None, "--act-id", "-a", help="ID of the act to summarize (defaults to current act)"
+    ),
+) -> None:
+    """Generate a summary and title for an act using AI.
+    
+    This command uses the Anthropic API to analyze the act's content (scenes and events)
+    and generate a concise summary and title. The generated content is presented in an
+    editor where you can review and modify it before saving.
+    
+    Examples:
+        Generate summary for the current act:
+        $ sologm act summary
+        
+        Generate summary with additional context:
+        $ sologm act summary --context "Focus on the character's internal struggles"
+        
+        Generate summary for a specific act:
+        $ sologm act summary --act-id abc123
+    """
+    logger.debug("Generating act summary")
+    
+    # Get the active game
+    game_manager = GameManager()
+    active_game = game_manager.get_active_game()
+    if not active_game:
+        console.print("[red]Error:[/] No active game. Activate a game first.")
+        raise typer.Exit(1)
+    
+    # Get the act to summarize
+    act_manager = ActManager()
+    if act_id:
+        act = act_manager.get_act(act_id)
+        if not act:
+            console.print(f"[red]Error:[/] Act with ID '{act_id}' not found.")
+            raise typer.Exit(1)
+    else:
+        act = act_manager.get_active_act(active_game.id)
+        if not act:
+            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+            console.print("Create one with 'sologm act create'.")
+            raise typer.Exit(1)
+    
+    # Collect data for the summary
+    try:
+        # Get all scenes in the act with their events
+        scenes = act_manager.scene_manager.list_scenes(act.id)
+        
+        # Prepare the data for the AI prompt
+        act_data = _prepare_act_data_for_summary(active_game, act, scenes, context)
+        
+        # Generate the summary using Anthropic
+        console.print("[yellow]Generating summary with AI...[/yellow]")
+        summary_data = _generate_act_summary(act_data)
+        
+        # Create editor configuration
+        editor_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(
+                    name="title",
+                    display_name="Title",
+                    help_text="AI-generated title for the act",
+                    required=True,
+                ),
+                FieldConfig(
+                    name="summary",
+                    display_name="Summary",
+                    help_text="AI-generated summary of the act",
+                    multiline=True,
+                    required=True,
+                ),
+            ],
+            wrap_width=70,
+        )
+        
+        # Create context information
+        title_display = act.title or "Untitled Act"
+        context_info = f"AI-Generated Summary for Act {act.sequence}: {title_display}\n"
+        context_info += f"Game: {active_game.name}\n"
+        context_info += f"Status: {act.status.value}\n"
+        context_info += f"ID: {act.id}\n\n"
+        context_info += "Review and edit the AI-generated title and summary below."
+        
+        # Open editor with the generated content
+        result, modified = edit_structured_data(
+            summary_data,
+            console,
+            editor_config,
+            context_info=context_info,
+        )
+        
+        if not modified:
+            console.print("[yellow]Summary generation canceled.[/yellow]")
+            raise typer.Exit(0)
+        
+        # Update the act with the edited summary and title
+        updated_act = act_manager.edit_act(
+            act_id=act.id,
+            title=result.get("title"),
+            description=result.get("summary"),
+        )
+        
+        # Display success message
+        title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
+        console.print(
+            f"[bold green]Act {title_display} updated with AI-generated summary![/bold green]"
+        )
+        
+    except APIError as e:
+        console.print(f"[red]AI Error:[/] {str(e)}")
+        raise typer.Exit(1)
+    except GameError as e:
+        console.print(f"[red]Error:[/] {str(e)}")
+        raise typer.Exit(1)
+
+
+def _prepare_act_data_for_summary(game, act, scenes, additional_context=None):
+    """Prepare act data for the summary generation prompt.
+    
+    Args:
+        game: The game object
+        act: The act to summarize
+        scenes: List of scenes in the act
+        additional_context: Optional additional context from the user
+        
+    Returns:
+        Dict containing structured data about the act
+    """
+    # Collect all events from all scenes
+    events_by_scene = {}
+    for scene in scenes:
+        # Get events for this scene
+        if hasattr(scene, "events") and scene.events:
+            events_by_scene[scene.id] = scene.events
+        else:
+            # If events aren't loaded, load them
+            scene_events = act.act_manager.scene_manager.event_manager.list_events(scene_id=scene.id)
+            events_by_scene[scene.id] = scene_events
+    
+    # Format the data
+    act_data = {
+        "game": {
+            "name": game.name,
+            "description": game.description,
+        },
+        "act": {
+            "sequence": act.sequence,
+            "title": act.title,
+            "description": act.description,
+            "status": act.status.value,
+        },
+        "scenes": [],
+        "additional_context": additional_context,
+    }
+    
+    # Add scene data
+    for scene in scenes:
+        scene_data = {
+            "sequence": scene.sequence,
+            "title": scene.title,
+            "description": scene.description,
+            "events": [],
+        }
+        
+        # Add events for this scene
+        for event in events_by_scene.get(scene.id, []):
+            scene_data["events"].append({
+                "description": event.description,
+                "source": event.source_name if hasattr(event, "source_name") else "Unknown",
+                "created_at": event.created_at.isoformat() if event.created_at else None,
+            })
+        
+        act_data["scenes"].append(scene_data)
+    
+    return act_data
+
+
+def _generate_act_summary(act_data):
+    """Generate a summary for the act using Anthropic API.
+    
+    Args:
+        act_data: Structured data about the act
+        
+    Returns:
+        Dict with generated title and summary
+    """
+    try:
+        # Create Anthropic client
+        client = AnthropicClient()
+        
+        # Build the prompt
+        prompt = _build_summary_prompt(act_data)
+        
+        # Send to Anthropic
+        response = client.send_message(
+            prompt=prompt,
+            max_tokens=1000,
+            temperature=0.7,
+        )
+        
+        # Parse the response
+        return _parse_summary_response(response)
+        
+    except Exception as e:
+        logger.error(f"Error generating act summary: {str(e)}", exc_info=True)
+        raise APIError(f"Failed to generate act summary: {str(e)}")
+
+
+def _build_summary_prompt(act_data):
+    """Build the prompt for the summary generation.
+    
+    Args:
+        act_data: Structured data about the act
+        
+    Returns:
+        String prompt for Anthropic
+    """
+    game = act_data["game"]
+    act = act_data["act"]
+    scenes = act_data["scenes"]
+    additional_context = act_data.get("additional_context")
+    
+    # Build the prompt
+    prompt = f"""You are an expert storyteller and narrative analyst. I need you to create a concise summary and title for an act in a tabletop roleplaying game.
+
+GAME INFORMATION:
+Title: {game['name']}
+Description: {game['description']}
+
+ACT INFORMATION:
+Sequence: Act {act['sequence']}
+Current Title: {act['title'] or 'Untitled'}
+Current Description: {act['description'] or 'No description'}
+Status: {act['status']}
+
+SCENES IN THIS ACT:
+"""
+
+    # Add scenes and their events
+    for scene in scenes:
+        prompt += f"\nSCENE {scene['sequence']}: {scene['title'] or 'Untitled'}\n"
+        prompt += f"Description: {scene['description'] or 'No description'}\n"
+        
+        if scene['events']:
+            prompt += "Events:\n"
+            for event in scene['events']:
+                prompt += f"- {event['description']}\n"
+        else:
+            prompt += "No events recorded for this scene.\n"
+    
+    # Add additional context if provided
+    if additional_context:
+        prompt += f"\nADDITIONAL CONTEXT:\n{additional_context}\n"
+    
+    # Add instructions
+    prompt += """
+TASK:
+1. Create a compelling title for this act (1-7 words)
+2. Write a concise summary of the act (1-3 paragraphs)
+
+The title should capture the essence or theme of the act.
+The summary should highlight key events, character developments, and narrative arcs.
+
+Format your response exactly as follows:
+
+TITLE: [Your suggested title]
+
+SUMMARY:
+[Your 1-3 paragraph summary]
+
+Do not include any other text or explanations outside this format.
+"""
+    
+    return prompt
+
+
+def _parse_summary_response(response):
+    """Parse the response from Anthropic.
+    
+    Args:
+        response: Text response from Anthropic
+        
+    Returns:
+        Dict with title and summary
+    """
+    # Default values
+    title = ""
+    summary = ""
+    
+    # Parse the response
+    lines = response.strip().split('\n')
+    
+    # Extract title
+    for i, line in enumerate(lines):
+        if line.startswith("TITLE:"):
+            title = line[6:].strip()
+            break
+    
+    # Extract summary
+    summary_start = False
+    summary_lines = []
+    
+    for line in lines:
+        if line.startswith("SUMMARY:"):
+            summary_start = True
+            continue
+        
+        if summary_start:
+            summary_lines.append(line)
+    
+    summary = "\n".join(summary_lines).strip()
+    
+    return {
+        "title": title,
+        "summary": summary,
+    }
 
 
 @act_app.command("list")
