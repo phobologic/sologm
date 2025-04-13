@@ -15,7 +15,7 @@ from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
 from sologm.database.session import DatabaseSession
 from sologm.integrations.anthropic import AnthropicClient
-from sologm.models.act import Act, ActStatus
+from sologm.models.act import Act
 from sologm.models.base import Base
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
@@ -124,10 +124,9 @@ def create_test_act(db_session):
     def _create_act(
         game_id,
         title="Test Act",
-        description="A test act",
+        summary="A test act",
         sequence=1,
         is_active=True,
-        status=ActStatus.ACTIVE,
     ):
         # If creating an active act, deactivate all other acts for this game first
         if is_active:
@@ -137,11 +136,10 @@ def create_test_act(db_session):
         act = Act.create(
             game_id=game_id,
             title=title,
-            description=description,
+            summary=summary,
             sequence=sequence,
         )
         act.is_active = is_active
-        act.status = status
         db_session.add(act)
         db_session.commit()
         return act
@@ -214,7 +212,7 @@ def test_act(db_session, test_game):
     act = Act.create(
         game_id=test_game.id,
         title="Test Act",
-        description="A test act",
+        summary="A test act",
         sequence=1,
     )
     act.is_active = True
@@ -465,8 +463,7 @@ def test_game_with_complete_hierarchy(
         act = create_test_act(
             game_id=game.id,
             title=f"Act {i}",
-            description=f"Test act {i}",
-            status=ActStatus.ACTIVE if i == 1 else ActStatus.COMPLETED,
+            summary=f"Test act {i}",
             is_active=(i == 1),
         )
         acts.append(act)
@@ -531,7 +528,7 @@ def test_hybrid_property_game(
         create_test_act(
             game_id=game.id,
             title=f"Act {i}",
-            description=f"Test act {i}",
+            summary=f"Test act {i}",
             is_active=(i == 1),
         )
         for i in range(1, 3)
