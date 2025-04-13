@@ -111,8 +111,8 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         except DiceError:
             self.logger.error(f"Dice notation error: {notation}")
             raise
-        except Exception as e:
-            self._handle_operation_error("roll dice", e, DiceError)
+        except Exception:
+            raise
 
     def roll_for_active_scene(
         self, notation: str, reason: Optional[str] = None
@@ -132,24 +132,18 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         self.logger.debug(
             f"Rolling dice for active scene with notation: {notation}, reason: {reason}"
         )
+        # Get active scene
+        _, active_scene = self.scene_manager.validate_active_context()
+        self.logger.debug(
+            f"Found active scene: {active_scene.id} - {active_scene.title}"
+        )
 
-        try:
-            # Get active scene
-            _, active_scene = self.scene_manager.validate_active_context()
-            self.logger.debug(
-                f"Found active scene: {active_scene.id} - {active_scene.title}"
-            )
-
-            # Roll dice for this scene
-            result = self.roll(notation, reason, active_scene)
-            self.logger.debug(
-                f"Created dice roll with ID: {result.id} for active scene"
-            )
-            return result
-        except Exception as e:
-            if not isinstance(e, DiceError):
-                self._handle_operation_error("roll for active scene", e, DiceError)
-            raise
+        # Roll dice for this scene
+        result = self.roll(notation, reason, active_scene)
+        self.logger.debug(
+            f"Created dice roll with ID: {result.id} for active scene"
+        )
+        return result
 
     def get_recent_rolls(
         self, scene: Optional[Scene] = None, limit: int = 5
@@ -168,23 +162,19 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
         """
         scene_desc = f"{scene.id} - {scene.title}" if scene else "any scene"
         self.logger.debug(f"Getting recent dice rolls for {scene_desc}, limit: {limit}")
+        filters = {}
+        if scene:
+            filters["scene_id"] = scene.id
 
-        try:
-            filters = {}
-            if scene:
-                filters["scene_id"] = scene.id
-
-            result = self.list_entities(
-                DiceRoll,
-                filters=filters,
-                order_by="created_at",
-                order_direction="desc",
-                limit=limit,
-            )
-            self.logger.debug(f"Found {len(result)} recent dice rolls")
-            return result
-        except Exception as e:
-            self._handle_operation_error("get recent dice rolls", e, DiceError)
+        result = self.list_entities(
+            DiceRoll,
+            filters=filters,
+            order_by="created_at",
+            order_direction="desc",
+            limit=limit,
+        )
+        self.logger.debug(f"Found {len(result)} recent dice rolls")
+        return result
 
     def get_rolls_for_scene(
         self, scene: Scene, limit: Optional[int] = None
@@ -205,20 +195,15 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
             f"Getting dice rolls for scene: {scene.id} - {scene.title}, limit: {limit}"
         )
 
-        try:
-            result = self.list_entities(
-                DiceRoll,
-                filters={"scene_id": scene.id},
-                order_by="created_at",
-                order_direction="desc",
-                limit=limit,
-            )
-            self.logger.debug(f"Found {len(result)} dice rolls for scene {scene.id}")
-            return result
-        except Exception as e:
-            self._handle_operation_error(
-                f"get rolls for scene {scene.id}", e, DiceError
-            )
+        result = self.list_entities(
+            DiceRoll,
+            filters={"scene_id": scene.id},
+            order_by="created_at",
+            order_direction="desc",
+            limit=limit,
+        )
+        self.logger.debug(f"Found {len(result)} dice rolls for scene {scene.id}")
+        return result
 
     def get_rolls_for_active_scene(self, limit: Optional[int] = None) -> List[DiceRoll]:
         """Get dice rolls for the currently active scene.
@@ -233,22 +218,16 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
             DiceError: If no active scene or operation fails
         """
         self.logger.debug(f"Getting dice rolls for active scene, limit: {limit}")
+        # Get active scene
+        _, active_scene = self.scene_manager.validate_active_context()
+        self.logger.debug(
+            f"Found active scene: {active_scene.id} - {active_scene.title}"
+        )
 
-        try:
-            # Get active scene
-            _, active_scene = self.scene_manager.validate_active_context()
-            self.logger.debug(
-                f"Found active scene: {active_scene.id} - {active_scene.title}"
-            )
-
-            # Get rolls for this scene
-            result = self.get_rolls_for_scene(active_scene, limit)
-            self.logger.debug(f"Found {len(result)} dice rolls for active scene")
-            return result
-        except Exception as e:
-            if not isinstance(e, DiceError):
-                self._handle_operation_error("get rolls for active scene", e, DiceError)
-            raise
+        # Get rolls for this scene
+        result = self.get_rolls_for_scene(active_scene, limit)
+        self.logger.debug(f"Found {len(result)} dice rolls for active scene")
+        return result
 
     def _parse_notation(self, notation: str) -> tuple[int, int, int]:
         """Parse XdY+Z notation into components.

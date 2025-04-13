@@ -8,6 +8,7 @@ from rich.console import Console
 
 from sologm.cli.utils import display
 from sologm.core.dice import DiceManager
+from sologm.models.scene import Scene
 from sologm.utils.errors import DiceError, SceneError
 
 logger = logging.getLogger(__name__)
@@ -15,30 +16,34 @@ dice_app = typer.Typer(help="Dice rolling commands")
 console = Console()
 
 
-def resolve_scene_id(scene_id: Optional[str]) -> Optional[str]:
+def resolve_scene_id(scene_id: Optional[str]) -> Optional[Scene]:
     """Resolve scene ID from active context if not provided.
 
     Args:
         scene_id: Optional scene ID provided by user
 
     Returns:
-        Resolved scene ID or None if not resolvable
+        Resolved Scene or None if not resolvable. Default to using the current
+        scene if no scene_id is passed in.
     """
+    scene = None
+    # Create a new DiceManager instance
+    dice_manager = DiceManager()
+    # Access scene manager through dice manager
+    scene_manager = dice_manager.scene_manager
+
     if scene_id is None:
         try:
-            # Create a new DiceManager instance
-            dice_manager = DiceManager()
-            # Access scene manager through dice manager
-            scene_manager = dice_manager.scene_manager
+            logger.debug("Attempting to resolve current scene.")
             context = scene_manager.get_active_context()
-            scene_id = context["scene"].id
-            logger.debug(f"Using current scene: {scene_id}")
+            scene = context["scene"]
+            logger.debug(f"Using current scene: {scene.id}")
         except SceneError as e:
             logger.debug(f"Could not determine current scene: {str(e)}")
-            # Return None when scene can't be determined
-            return None
+    else:
+        scene = scene_manager.get_scene(scene_id)
 
-    return scene_id
+    return scene
 
 
 @dice_app.command("roll")
@@ -63,19 +68,22 @@ def roll_dice_command(
         dice_manager = DiceManager()
 
         # If no scene_id is provided, try to get the current scene
-        scene_id = resolve_scene_id(scene_id)
-        if scene_id is None:
-            console.print(f"Warning: {str(e)}", style="yellow")
+        scene = resolve_scene_id(scene_id)
+        if scene is None:
+            if scene_id:
+                console.print(f"Scene {scene_id} not found.", style="yellow")
+            else:
+                console.print("No current active scene found.", style="yellow")
             console.print(
                 "Dice roll will not be associated with any scene.", style="yellow"
             )
 
         logger.debug(
-            f"Rolling dice with notation: {notation}, reason: "
-            f"{reason}, scene_id: {scene_id}"
+            f'Rolling dice with notation: {notation}, reason: '
+            f'{reason}, scene_id: {scene.id if scene else "NA"}'
         )
 
-        result = dice_manager.roll(notation, reason, scene_id)
+        result = dice_manager.roll(notation, reason, scene)
         display.display_dice_roll(console, result)
 
     except DiceError as e:
@@ -96,16 +104,7 @@ def dice_history_command(
         dice_manager = DiceManager()
 
         # If scene_id is not provided, try to get the active scene
-        scene_id = resolve_scene_id(scene_id)
-
-        # Get the scene object if scene_id is provided
-        scene = None
-        if scene_id:
-            scene = dice_manager.scene_manager.get_scene(scene_id)
-            if not scene:
-                console.print(
-                    f"Warning: Scene with ID {scene_id} not found", style="yellow"
-                )
+        scene = resolve_scene_id(scene_id)
 
         # Call get_recent_rolls with the scene object (or None)
         rolls = dice_manager.get_recent_rolls(scene=scene, limit=limit)
