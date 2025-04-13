@@ -353,7 +353,19 @@ class TestActManager:
         )
 
         mock_prepare_data = MagicMock()
-        mock_prepare_data.return_value = {"test": "data"}
+        mock_prepare_data.return_value = {
+            "game": {
+                "name": "Test Game",
+                "description": "Test Description"
+            },
+            "act": {
+                "sequence": 1,
+                "title": "Test Act",
+                "summary": "Test Summary"
+            },
+            "scenes": [],
+            "additional_context": "Additional context"
+        }
 
         # Apply mocks
         monkeypatch.setattr(
