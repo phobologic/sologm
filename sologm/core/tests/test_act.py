@@ -301,16 +301,26 @@ class TestActManager:
         ):
             with pytest.raises(GameError, match="No active game"):
                 act_manager.validate_active_act()
-                
-    def test_prepare_act_data_for_summary(self, db_session, test_game, test_act, test_scene, create_test_event, act_manager):
+
+    def test_prepare_act_data_for_summary(
+        self,
+        db_session,
+        test_game,
+        test_act,
+        test_scene,
+        create_test_event,
+        act_manager,
+    ):
         """Test preparing act data for summary."""
         # Create some events for the scene
         event1 = create_test_event(scene_id=test_scene.id, description="First event")
         event2 = create_test_event(scene_id=test_scene.id, description="Second event")
-        
+
         # Prepare data
-        act_data = act_manager.prepare_act_data_for_summary(test_act.id, "Additional context")
-        
+        act_data = act_manager.prepare_act_data_for_summary(
+            test_act.id, "Additional context"
+        )
+
         # Verify structure
         assert act_data["game"]["name"] == test_game.name
         assert act_data["game"]["description"] == test_game.description
@@ -318,42 +328,48 @@ class TestActManager:
         assert act_data["act"]["title"] == test_act.title
         assert act_data["act"]["summary"] == test_act.summary
         assert act_data["additional_context"] == "Additional context"
-        
+
         # Verify scenes
         assert len(act_data["scenes"]) == 1
         scene_data = act_data["scenes"][0]
         assert scene_data["sequence"] == test_scene.sequence
         assert scene_data["title"] == test_scene.title
         assert scene_data["description"] == test_scene.description
-        
+
         # Verify events
         assert len(scene_data["events"]) == 2
         event_descriptions = [e["description"] for e in scene_data["events"]]
         assert "First event" in event_descriptions
         assert "Second event" in event_descriptions
-        
+
     def test_generate_act_summary(self, db_session, test_act, act_manager, monkeypatch):
         """Test generating act summary."""
         # Mock the AnthropicClient and ActPrompts to avoid actual API calls
         from unittest.mock import MagicMock
-        
+
         mock_client = MagicMock()
-        mock_client.send_message.return_value = "TITLE: Test Title\n\nSUMMARY:\nTest summary paragraph."
-        
+        mock_client.send_message.return_value = (
+            "TITLE: Test Title\n\nSUMMARY:\nTest summary paragraph."
+        )
+
         mock_prepare_data = MagicMock()
         mock_prepare_data.return_value = {"test": "data"}
-        
+
         # Apply mocks
-        monkeypatch.setattr(act_manager, "prepare_act_data_for_summary", mock_prepare_data)
-        monkeypatch.setattr("sologm.integrations.anthropic.AnthropicClient", lambda: mock_client)
-        
+        monkeypatch.setattr(
+            act_manager, "prepare_act_data_for_summary", mock_prepare_data
+        )
+        monkeypatch.setattr(
+            "sologm.integrations.anthropic.AnthropicClient", lambda: mock_client
+        )
+
         # Test the method
         result = act_manager.generate_act_summary(test_act.id, "Additional context")
-        
+
         # Verify results
         assert result["title"] == "Test Title"
         assert result["summary"] == "Test summary paragraph."
-        
+
         # Verify mocks were called correctly
         mock_prepare_data.assert_called_once_with(test_act.id, "Additional context")
         mock_client.send_message.assert_called_once()

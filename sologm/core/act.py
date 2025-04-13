@@ -468,7 +468,7 @@ class ActManager(BaseManager[Act, Act]):
             f"Found active act: {active_act.id} ({active_act.title or 'Untitled'})"
         )
         return active_act
-        
+
     def prepare_act_data_for_summary(
         self, act_id: str, additional_context: Optional[str] = None
     ) -> Dict:
@@ -518,7 +518,9 @@ class ActManager(BaseManager[Act, Act]):
                         scene_id=scene.id
                     )
                     events_by_scene[scene.id] = scene_events
-                    logger.debug(f"Found {len(scene_events)} events for scene {scene.id}")
+                    logger.debug(
+                        f"Found {len(scene_events)} events for scene {scene.id}"
+                    )
 
                 # Format the data
                 act_data = {
