@@ -86,9 +86,7 @@ def create_act(
     if active_act:
         # There's an active act
         title_display = f"'{active_act.title}'" if active_act.title else "untitled"
-        console.print(
-            f"[red]Error:[/] You have an active act ({title_display})."
-        )
+        console.print(f"[red]Error:[/] You have an active act ({title_display}).")
         console.print("You must complete the current act before creating a new one.")
         console.print("Use 'sologm act complete' to complete the current act first.")
         raise typer.Exit(1)
@@ -117,11 +115,15 @@ def create_act(
 
         # Create context information
         context_info = f"Creating a new act in game: {active_game.name}\n\n"
-        context_info += ("Acts represent complete narrative situations or "
-                         "problems that unfold through multiple connected "
-                         "Scenes.\n")
-        context_info += ("You can leave the title and summary empty if "
-                        "you're not sure what to call this act yet.")
+        context_info += (
+            "Acts represent complete narrative situations or "
+            "problems that unfold through multiple connected "
+            "Scenes.\n"
+        )
+        context_info += (
+            "You can leave the title and summary empty if "
+            "you're not sure what to call this act yet."
+        )
 
         # Create initial data
         initial_data = {
