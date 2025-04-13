@@ -1,7 +1,7 @@
 """Act manager for SoloGM."""
 
 import logging
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -468,3 +468,164 @@ class ActManager(BaseManager[Act, Act]):
             f"Found active act: {active_act.id} ({active_act.title or 'Untitled'})"
         )
         return active_act
+        
+    def prepare_act_data_for_summary(
+        self, act_id: str, additional_context: Optional[str] = None
+    ) -> Dict:
+        """Prepare act data for the summary generation prompt.
+
+        Args:
+            act_id: ID of the act to summarize
+            additional_context: Optional additional context from the user
+
+        Returns:
+            Dict containing structured data about the act
+
+        Raises:
+            GameError: If the act doesn't exist
+        """
+        logger.debug(f"Preparing data for act {act_id} summary")
+
+        def _prepare_data(session: Session) -> Dict:
+            try:
+                # Get the act
+                act = self.get_entity_or_error(
+                    session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+                )
+                logger.debug(f"Found act: {act.title or 'Untitled'}")
+
+                # Get the game
+                from sologm.models.game import Game
+
+                game = self.get_entity_or_error(
+                    session,
+                    Game,
+                    act.game_id,
+                    GameError,
+                    f"Game with ID {act.game_id} not found",
+                )
+                logger.debug(f"Found game: {game.name}")
+
+                # Get all scenes in the act
+                scenes = self.scene_manager.list_scenes(act_id)
+                logger.debug(f"Found {len(scenes)} scenes")
+
+                # Collect all events from all scenes
+                events_by_scene = {}
+                for scene in scenes:
+                    # Get events for this scene
+                    scene_events = self.scene_manager.event_manager.list_events(
+                        scene_id=scene.id
+                    )
+                    events_by_scene[scene.id] = scene_events
+                    logger.debug(f"Found {len(scene_events)} events for scene {scene.id}")
+
+                # Format the data
+                act_data = {
+                    "game": {
+                        "name": game.name,
+                        "description": game.description,
+                    },
+                    "act": {
+                        "sequence": act.sequence,
+                        "title": act.title,
+                        "summary": act.summary,
+                    },
+                    "scenes": [],
+                    "additional_context": additional_context,
+                }
+
+                # Add scene data
+                for scene in scenes:
+                    scene_data = {
+                        "sequence": scene.sequence,
+                        "title": scene.title,
+                        "description": scene.description,
+                        "events": [],
+                    }
+
+                    # Add events for this scene
+                    for event in events_by_scene.get(scene.id, []):
+                        scene_data["events"].append(
+                            {
+                                "description": event.description,
+                                "source": event.source_name,
+                                "created_at": event.created_at.isoformat()
+                                if event.created_at
+                                else None,
+                            }
+                        )
+
+                    act_data["scenes"].append(scene_data)
+
+                logger.debug("Successfully prepared act data for summary")
+                return act_data
+            except Exception as e:
+                logger.error(
+                    f"Error preparing act data for summary: {str(e)}", exc_info=True
+                )
+                self._handle_operation_error(
+                    f"prepare act data for summary", e, GameError
+                )
+
+        return self._execute_db_operation("prepare_act_data_for_summary", _prepare_data)
+
+    def generate_act_summary(
+        self, act_id: str, additional_context: Optional[str] = None
+    ) -> Dict[str, str]:
+        """Generate a summary for an act using AI.
+
+        Args:
+            act_id: ID of the act to summarize
+            additional_context: Optional additional context from the user
+
+        Returns:
+            Dict with generated title and summary
+
+        Raises:
+            GameError: If the act doesn't exist
+            APIError: If there's an error with the AI API
+        """
+        logger.debug(f"Generating summary for act {act_id}")
+
+        try:
+            # Prepare the data
+            act_data = self.prepare_act_data_for_summary(act_id, additional_context)
+            logger.debug("Act data prepared successfully")
+
+            # Import here to avoid circular imports
+            from sologm.core.prompts.act import ActPrompts
+            from sologm.integrations.anthropic import AnthropicClient
+
+            # Build the prompt
+            prompt = ActPrompts.build_summary_prompt(act_data)
+            logger.debug("Built summary prompt")
+
+            # Create Anthropic client
+            client = AnthropicClient()
+            logger.debug("Created Anthropic client")
+
+            # Send to Anthropic
+            response = client.send_message(
+                prompt=prompt,
+                max_tokens=1000,
+                temperature=0.7,
+            )
+            logger.debug("Received response from Anthropic")
+
+            # Parse the response
+            summary_data = ActPrompts.parse_summary_response(response)
+            logger.debug(
+                f"Parsed summary response: title='{summary_data['title']}', "
+                f"summary='{summary_data['summary'][:50]}...'"
+            )
+
+            return summary_data
+        except Exception as e:
+            from sologm.utils.errors import APIError
+
+            logger.error(f"Error generating act summary: {str(e)}", exc_info=True)
+            if "anthropic" in str(e).lower() or "api" in str(e).lower():
+                raise APIError(f"Failed to generate act summary: {str(e)}")
+            else:
+                self._handle_operation_error(f"generate act summary", e, GameError)
