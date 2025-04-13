@@ -1,12 +1,12 @@
 """CLI commands for managing acts.
 
-This module provides commands for creating, listing, viewing, editing, and completing
-acts within a game. Acts represent complete narrative situations or problems that
-unfold through multiple connected Scenes.
+This module provides commands for creating, listing, viewing, editing, and
+completing acts within a game. Acts represent complete narrative situations
+or problems that unfold through multiple connected Scenes.
 """
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -24,7 +24,7 @@ from sologm.core.act import ActManager
 from sologm.core.game import GameManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.act import ActStatus
-from sologm.utils.errors import GameError, APIError
+from sologm.utils.errors import APIError, GameError
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,8 @@ def create_act(
 
     Examples:
         Create an act with title and description directly:
-        $ sologm act create --title "The Journey Begins" --description "The heroes set out on their quest"
+        $ sologm act create --title "The Journey Begins" \
+            --description "The heroes set out on their quest"
 
         Create an untitled act:
         $ sologm act create
@@ -86,7 +87,8 @@ def create_act(
         # There's an active act that's not completed
         title_display = f"'{active_act.title}'" if active_act.title else "untitled"
         console.print(
-            f"[red]Error:[/] You have an active act ({title_display}) that is not completed."
+            f"[red]Error:[/] You have an active act ({title_display}) that "
+            "is not completed."
         )
         console.print("You must complete the current act before creating a new one.")
         console.print("Use 'sologm act complete' to complete the current act first.")
@@ -116,8 +118,11 @@ def create_act(
 
         # Create context information
         context_info = f"Creating a new act in game: {active_game.name}\n\n"
-        context_info += "Acts represent complete narrative situations or problems that unfold through multiple connected Scenes.\n"
-        context_info += "You can leave the title and description empty if you're not sure what to call this act yet."
+        context_info += ("Acts represent complete narrative situations or "
+                         "problems that unfold through multiple connected "
+                         "Scenes.\n")
+        context_info += ("You can leave the title and description empty if "
+                        "you're not sure what to call this act yet.")
 
         # Create initial data
         initial_data = {
