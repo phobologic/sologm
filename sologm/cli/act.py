@@ -263,7 +263,6 @@ def generate_act_summary(
         title_display = act.title or "Untitled Act"
         context_info = f"AI-Generated Summary for Act {act.sequence}: {title_display}\n"
         context_info += f"Game: {active_game.name}\n"
-        context_info += f"Status: {act.status.value}\n"
         context_info += f"ID: {act.id}\n\n"
         context_info += "Review and edit the AI-generated title and summary below."
 
