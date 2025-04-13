@@ -1,10 +1,9 @@
 """Act model for SoloGM."""
 
-import enum
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint, func, select
+from sqlalchemy import ForeignKey, Integer, Text, UniqueConstraint, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
@@ -17,12 +16,6 @@ if TYPE_CHECKING:
     from sologm.models.oracle import Interpretation
     from sologm.models.scene import Scene
 
-
-class ActStatus(enum.Enum):
-    """Enumeration of possible act statuses."""
-
-    ACTIVE = "active"
-    COMPLETED = "completed"
 
 
 class Act(Base, TimestampMixin):
@@ -37,10 +30,7 @@ class Act(Base, TimestampMixin):
     title: Mapped[Optional[str]] = mapped_column(
         nullable=True
     )  # Can be null for untitled acts
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    status: Mapped[ActStatus] = mapped_column(
-        Enum(ActStatus), nullable=False, default=ActStatus.ACTIVE
-    )
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=False)
 
@@ -460,7 +450,7 @@ class Act(Base, TimestampMixin):
         cls,
         game_id: str,
         title: Optional[str],
-        description: Optional[str],
+        summary: Optional[str],
         sequence: int,
     ) -> "Act":
         """Create a new act with a unique ID and slug.
@@ -468,7 +458,7 @@ class Act(Base, TimestampMixin):
         Args:
             game_id: ID of the game this act belongs to.
             title: Optional title of the act (can be None for untitled acts).
-            description: Optional description of the act.
+            summary: Optional summary of the act.
             sequence: Sequence number of the act.
         Returns:
             A new Act instance.
@@ -485,7 +475,6 @@ class Act(Base, TimestampMixin):
             slug=act_slug,
             game_id=game_id,
             title=title,
-            description=description,
-            status=ActStatus.ACTIVE,
+            summary=summary,
             sequence=sequence,
         )

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
-from sologm.models.act import Act, ActStatus
+from sologm.models.act import Act
 from sologm.utils.errors import GameError
 
 if TYPE_CHECKING:
@@ -52,7 +52,7 @@ class ActManager(BaseManager[Act, Act]):
         self,
         game_id: Optional[str] = None,
         title: Optional[str] = None,
-        description: Optional[str] = None,
+        summary: Optional[str] = None,
         make_active: bool = True,
     ) -> Act:
         """Create a new act in a game.
@@ -61,7 +61,7 @@ class ActManager(BaseManager[Act, Act]):
             game_id: ID of the game to create the act in
                     If not provided, uses the active game
             title: Optional title of the act (can be None for untitled acts)
-            description: Optional description of the act
+            summary: Optional summary of the act
             make_active: Whether to make this act the active act in its game
 
         Returns:
@@ -73,7 +73,7 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(
             f"Creating act in game_id={game_id or 'active game'}: "
             f"title='{title or 'Untitled'}', "
-            f"description='{description[:20] + '...' if description else 'None'}', "
+            f"summary='{summary[:20] + '...' if summary else 'None'}', "
             f"make_active={make_active}"
         )
 
@@ -119,7 +119,7 @@ class ActManager(BaseManager[Act, Act]):
                 act = Act.create(
                     game_id=game_id,
                     title=title,
-                    description=description,
+                    summary=summary,
                     sequence=next_sequence,
                 )
                 session.add(act)
@@ -255,14 +255,14 @@ class ActManager(BaseManager[Act, Act]):
         self,
         act_id: str,
         title: Optional[str] = None,
-        description: Optional[str] = None,
+        summary: Optional[str] = None,
     ) -> Act:
-        """Edit an act's title and/or description.
+        """Edit an act's title and/or summary.
 
         Args:
             act_id: ID of the act to edit
             title: New title for the act (None to leave unchanged)
-            description: New description for the act (None to leave unchanged)
+            summary: New summary for the act (None to leave unchanged)
 
         Returns:
             The updated act
@@ -273,7 +273,7 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(
             f"Editing act {act_id}: "
             f"title={title or '(unchanged)'}, "
-            f"description={description[:20] + '...' if description else '(unchanged)'}"
+            f"summary={summary[:20] + '...' if summary else '(unchanged)'}"
         )
 
         def _edit_act(session: Session) -> Act:
@@ -301,9 +301,9 @@ class ActManager(BaseManager[Act, Act]):
                         act.slug = f"act-{act.sequence}-untitled"
                     logger.debug(f"Updated slug to '{act.slug}'")
 
-                if description is not None:
-                    act.description = description
-                    logger.debug("Updated description")
+                if summary is not None:
+                    act.summary = summary
+                    logger.debug("Updated summary")
 
                 logger.info(f"Edited act {act_id}: title='{act.title or 'Untitled'}'")
                 return act
@@ -317,14 +317,14 @@ class ActManager(BaseManager[Act, Act]):
         self,
         act_id: str,
         title: Optional[str] = None,
-        description: Optional[str] = None,
+        summary: Optional[str] = None,
     ) -> Act:
-        """Mark an act as complete and optionally update its title/description.
+        """Mark an act as complete and optionally update its title/summary.
 
         Args:
             act_id: ID of the act to complete
             title: Optional new title for the act
-            description: Optional new description for the act
+            summary: Optional new summary for the act
 
         Returns:
             The completed act
@@ -335,7 +335,7 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(
             f"Completing act {act_id}: "
             f"title={title or '(unchanged)'}, "
-            f"description={description[:20] + '...' if description else '(unchanged)'}"
+            f"summary={summary[:20] + '...' if summary else '(unchanged)'}"
         )
 
         def _complete_act(session: Session) -> Act:
@@ -361,14 +361,13 @@ class ActManager(BaseManager[Act, Act]):
                         act.slug = f"act-{act.sequence}-{slugify(title)}"
                         logger.debug(f"Updated slug to '{act.slug}'")
 
-                if description is not None:
-                    act.description = description
-                    logger.debug("Updated description")
+                if summary is not None:
+                    act.summary = summary
+                    logger.debug("Updated summary")
 
-                # Mark as completed
-                old_status = act.status
-                act.status = ActStatus.COMPLETED
-                logger.debug(f"Updated status from {old_status} to {act.status}")
+                # Mark as not active
+                act.is_active = False
+                logger.debug("Set is_active to False")
 
                 logger.info(
                     f"Completed act {act_id}: title='{act.title or 'Untitled'}'"

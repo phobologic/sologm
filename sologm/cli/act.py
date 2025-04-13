@@ -23,7 +23,7 @@ from sologm.cli.utils.structured_editor import (
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
 from sologm.integrations.anthropic import AnthropicClient
-from sologm.models.act import ActStatus
+from sologm.models.act import Act
 from sologm.utils.errors import APIError, GameError
 
 logger = logging.getLogger(__name__)
@@ -47,23 +47,23 @@ def create_act(
         "-t",
         help="Title of the act (can be left empty for untitled acts)",
     ),
-    description: Optional[str] = typer.Option(
-        None, "--description", "-d", help="Description of the act"
+    summary: Optional[str] = typer.Option(
+        None, "--summary", "-s", help="Summary of the act"
     ),
 ) -> None:
     """Create a new act in the current game.
 
-    If title and description are not provided, opens an editor to enter them.
-    Acts can be created without a title or description, allowing you to name them
+    If title and summary are not provided, opens an editor to enter them.
+    Acts can be created without a title or summary, allowing you to name them
     later once their significance becomes clear.
 
     Note: You must complete the current active act (if any) before creating a new one.
     Use 'sologm act complete' to complete the current act first.
 
     Examples:
-        Create an act with title and description directly:
+        Create an act with title and summary directly:
         $ sologm act create --title "The Journey Begins" \
-            --description "The heroes set out on their quest"
+            --summary "The heroes set out on their quest"
 
         Create an untitled act:
         $ sologm act create
@@ -80,22 +80,21 @@ def create_act(
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
 
-    # Check if there's an active act that needs to be completed
+    # Check if there's an active act
     active_act = game_manager.act_manager.get_active_act(active_game.id)
 
-    if active_act and active_act.status != ActStatus.COMPLETED:
-        # There's an active act that's not completed
+    if active_act:
+        # There's an active act
         title_display = f"'{active_act.title}'" if active_act.title else "untitled"
         console.print(
-            f"[red]Error:[/] You have an active act ({title_display}) that "
-            "is not completed."
+            f"[red]Error:[/] You have an active act ({title_display})."
         )
         console.print("You must complete the current act before creating a new one.")
         console.print("Use 'sologm act complete' to complete the current act first.")
         raise typer.Exit(1)
 
-    # If title and description are not provided, open editor
-    if title is None or description is None:
+    # If title and summary are not provided, open editor
+    if title is None or summary is None:
         # Create editor configuration
         editor_config = StructuredEditorConfig(
             fields=[
@@ -106,9 +105,9 @@ def create_act(
                     required=False,
                 ),
                 FieldConfig(
-                    name="description",
-                    display_name="Description",
-                    help_text="Description of the act",
+                    name="summary",
+                    display_name="Summary",
+                    help_text="Summary of the act",
                     multiline=True,
                     required=False,
                 ),
@@ -121,13 +120,13 @@ def create_act(
         context_info += ("Acts represent complete narrative situations or "
                          "problems that unfold through multiple connected "
                          "Scenes.\n")
-        context_info += ("You can leave the title and description empty if "
+        context_info += ("You can leave the title and summary empty if "
                         "you're not sure what to call this act yet.")
 
         # Create initial data
         initial_data = {
             "title": title or "",
-            "description": description or "",
+            "summary": summary or "",
         }
 
         # Open editor
@@ -144,14 +143,14 @@ def create_act(
             raise typer.Exit(0)
 
         title = result.get("title") or None
-        description = result.get("description") or None
+        summary = result.get("summary") or None
 
     # Create the act
     try:
         act = game_manager.act_manager.create_act(
             game_id=active_game.id,
             title=title,
-            description=description,
+            summary=summary,
         )
 
         # Display success message
@@ -163,12 +162,11 @@ def create_act(
         # Display act details
         console.print(f"ID: {act.id}")
         console.print(f"Sequence: Act {act.sequence}")
-        console.print(f"Status: {act.status.value}")
         console.print(f"Active: {act.is_active}")
         if act.title:
             console.print(f"Title: {act.title}")
-        if act.description:
-            console.print(f"Description: {act.description}")
+        if act.summary:
+            console.print(f"Summary: {act.summary}")
 
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")
@@ -285,7 +283,7 @@ def generate_act_summary(
         updated_act = act_manager.edit_act(
             act_id=act.id,
             title=result.get("title"),
-            description=result.get("summary"),
+            summary=result.get("summary"),
         )
 
         # Display success message
@@ -336,8 +334,7 @@ def _prepare_act_data_for_summary(game, act, scenes, additional_context=None):
         "act": {
             "sequence": act.sequence,
             "title": act.title,
-            "description": act.description,
-            "status": act.status.value,
+            "summary": act.summary,
         },
         "scenes": [],
         "additional_context": additional_context,
@@ -637,9 +634,9 @@ def edit_act(
                     required=False,
                 ),
                 FieldConfig(
-                    name="description",
-                    display_name="Description",
-                    help_text="Description of the act",
+                    name="summary",
+                    display_name="Summary",
+                    help_text="Summary of the act",
                     multiline=True,
                     required=False,
                 ),
@@ -651,14 +648,13 @@ def edit_act(
         title_display = active_act.title or "Untitled Act"
         context_info = f"Editing Act {active_act.sequence}: {title_display}\n"
         context_info += f"Game: {active_game.name}\n"
-        context_info += f"Status: {active_act.status.value}\n"
         context_info += f"ID: {active_act.id}\n\n"
         context_info += "You can leave the title empty for an untitled act."
 
         # Create initial data
         initial_data = {
             "title": active_act.title or "",
-            "description": active_act.description or "",
+            "summary": active_act.summary or "",
         }
 
         # Open editor
@@ -674,14 +670,14 @@ def edit_act(
             raise typer.Exit(0)
 
         title = result.get("title") or None
-        description = result.get("description") or None
+        summary = result.get("summary") or None
 
     # Update the act
     try:
         updated_act = game_manager.act_manager.edit_act(
             act_id=active_act.id,
             title=title,
-            description=description,
+            summary=summary,
         )
 
         # Display success message
@@ -693,11 +689,11 @@ def edit_act(
         # Display updated act details
         console.print(f"ID: {updated_act.id}")
         console.print(f"Sequence: Act {updated_act.sequence}")
-        console.print(f"Status: {updated_act.status.value}")
+        console.print(f"Active: {updated_act.is_active}")
         if updated_act.title:
             console.print(f"Title: {updated_act.title}")
-        if updated_act.description:
-            console.print(f"Description: {updated_act.description}")
+        if updated_act.summary:
+            console.print(f"Summary: {updated_act.summary}")
 
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")
@@ -709,8 +705,8 @@ def complete_act(
     title: Optional[str] = typer.Option(
         None, "--title", "-t", help="Title for the completed act"
     ),
-    description: Optional[str] = typer.Option(
-        None, "--description", "-d", help="Description for the completed act"
+    summary: Optional[str] = typer.Option(
+        None, "--summary", "-s", help="Summary for the completed act"
     ),
     ai: bool = typer.Option(
         False, "--ai", help="Use AI to generate title and description if not provided"
@@ -762,23 +758,23 @@ def complete_act(
 
     # Check if we need to generate with AI
     if ai:
-        # Check if we should generate title/description
+        # Check if we should generate title/summary
         should_generate_title = force or not active_act.title
-        should_generate_description = force or not active_act.description
+        should_generate_summary = force or not active_act.summary
 
-        if should_generate_title or should_generate_description:
+        if should_generate_title or should_generate_summary:
             console.print(
-                "[yellow]AI generation of act title/description is not yet implemented.[/yellow]"
+                "[yellow]AI generation of act title/summary is not yet implemented.[/yellow]"
             )
-            console.print("Please provide title and description manually.")
+            console.print("Please provide title and summary manually.")
             # This is where AI generation would be implemented
         elif not force:
             console.print(
                 "[yellow]Act already has title and description. Use --force to override.[/yellow]"
             )
 
-    # If title and description are not provided, open editor
-    if title is None and description is None and not ai:
+    # If title and summary are not provided, open editor
+    if title is None and summary is None and not ai:
         # Create editor configuration
         editor_config = StructuredEditorConfig(
             fields=[
@@ -789,9 +785,9 @@ def complete_act(
                     required=False,
                 ),
                 FieldConfig(
-                    name="description",
-                    display_name="Description",
-                    help_text="Description of the completed act",
+                    name="summary",
+                    display_name="Summary",
+                    help_text="Summary of the completed act",
                     multiline=True,
                     required=False,
                 ),
@@ -811,7 +807,7 @@ def complete_act(
         # Create initial data
         initial_data = {
             "title": active_act.title or "",
-            "description": active_act.description or "",
+            "summary": active_act.summary or "",
         }
 
         # Open editor
@@ -827,14 +823,14 @@ def complete_act(
             raise typer.Exit(0)
 
         title = result.get("title") or None
-        description = result.get("description") or None
+        summary = result.get("summary") or None
 
     # Complete the act
     try:
         completed_act = game_manager.act_manager.complete_act(
             act_id=active_act.id,
             title=title,
-            description=description,
+            summary=summary,
         )
 
         # Display success message
@@ -848,11 +844,11 @@ def complete_act(
         # Display completed act details
         console.print(f"ID: {completed_act.id}")
         console.print(f"Sequence: Act {completed_act.sequence}")
-        console.print(f"Status: {completed_act.status.value}")
+        console.print(f"Active: {completed_act.is_active}")
         if completed_act.title:
             console.print(f"Title: {completed_act.title}")
-        if completed_act.description:
-            console.print(f"Description: {completed_act.description}")
+        if completed_act.summary:
+            console.print(f"Summary: {completed_act.summary}")
 
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")

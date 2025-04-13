@@ -6,7 +6,6 @@ import pytest
 
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
-from sologm.models.act import ActStatus
 from sologm.utils.errors import GameError
 
 
@@ -32,19 +31,18 @@ class TestActManager:
 
     def test_create_act(self, db_session, test_game, act_manager):
         """Test creating an act."""
-        # Create an act with title and description
+        # Create an act with title and summary
         act = act_manager.create_act(
             game_id=test_game.id,
             title="Test Act",
-            description="A test act",
+            summary="A test act",
         )
 
         assert act.id is not None
         assert act.game_id == test_game.id
         assert act.title == "Test Act"
-        assert act.description == "A test act"
+        assert act.summary == "A test act"
         assert act.sequence == 1
-        assert act.status == ActStatus.ACTIVE
         assert act.is_active is True
 
         # Create an untitled act
@@ -55,9 +53,8 @@ class TestActManager:
         assert untitled_act.id is not None
         assert untitled_act.game_id == test_game.id
         assert untitled_act.title is None
-        assert untitled_act.description is None
+        assert untitled_act.summary is None
         assert untitled_act.sequence == 2
-        assert untitled_act.status == ActStatus.ACTIVE
         assert untitled_act.is_active is True
 
         # Refresh the first act to see if it was deactivated
@@ -68,7 +65,7 @@ class TestActManager:
         non_active_act = act_manager.create_act(
             game_id=test_game.id,
             title="Non-active Act",
-            description="This act won't be active",
+            summary="This act won't be active",
             make_active=False,
         )
 
@@ -179,26 +176,26 @@ class TestActManager:
         )
 
         assert updated_act.title == "Updated Title"
-        assert updated_act.description == test_act.description
+        assert updated_act.summary == test_act.summary
 
-        # Edit description only
+        # Edit summary only
         updated_act = act_manager.edit_act(
             act_id=test_act.id,
-            description="Updated description",
+            summary="Updated summary",
         )
 
         assert updated_act.title == "Updated Title"
-        assert updated_act.description == "Updated description"
+        assert updated_act.summary == "Updated summary"
 
-        # Edit both title and description
+        # Edit both title and summary
         updated_act = act_manager.edit_act(
             act_id=test_act.id,
             title="Final Title",
-            description="Final description",
+            summary="Final summary",
         )
 
         assert updated_act.title == "Final Title"
-        assert updated_act.description == "Final description"
+        assert updated_act.summary == "Final summary"
 
         # Edit non-existent act
         with pytest.raises(GameError):
@@ -213,12 +210,12 @@ class TestActManager:
         completed_act = act_manager.complete_act(
             act_id=test_act.id,
             title="Completed Title",
-            description="Completed description",
+            summary="Completed summary",
         )
 
         assert completed_act.title == "Completed Title"
-        assert completed_act.description == "Completed description"
-        assert completed_act.status == ActStatus.COMPLETED
+        assert completed_act.summary == "Completed summary"
+        assert completed_act.is_active is False
 
         # Complete non-existent act
         with pytest.raises(GameError):
