@@ -38,14 +38,16 @@ class ActManager(BaseManager[Act, Act]):
     @property
     def game_manager(self) -> "GameManager":
         """Lazy-initialize game manager if not provided."""
-        return self._lazy_init_manager("_game_manager", "sologm.core.game.GameManager")
+        return self._lazy_init_manager("_game_manager",
+                                       "sologm.core.game.GameManager")
 
     # Child manager access
     @property
     def scene_manager(self) -> "SceneManager":
         """Lazy-initialize scene manager."""
         return self._lazy_init_manager(
-            "_scene_manager", "sologm.core.scene.SceneManager", act_manager=self
+            "_scene_manager", "sologm.core.scene.SceneManager",
+            act_manager=self
         )
 
     def create_act(
@@ -142,11 +144,10 @@ class ActManager(BaseManager[Act, Act]):
                 return act
             except Exception as e:
                 logger.error(
-                    f"Error creating act in game {game_id}: {str(e)}", exc_info=True
+                    f"Error creating act in game {game_id}: {str(e)}",
+                    exc_info=True
                 )
-                self._handle_operation_error(
-                    f"create act in game {game_id}", e, GameError
-                )
+                raise e
 
         return self._execute_db_operation("create_act", _create_act)
 
@@ -168,8 +169,7 @@ class ActManager(BaseManager[Act, Act]):
             return result
         except Exception as e:
             logger.error(f"Error getting act {act_id}: {str(e)}", exc_info=True)
-            self._handle_operation_error(f"get act {act_id}", e, GameError)
-            return None  # This will never be reached as _handle_operation_error raises
+            raise e
 
     def list_acts(self, game_id: Optional[str] = None) -> List[Act]:
         """List all acts in a game.
@@ -205,8 +205,7 @@ class ActManager(BaseManager[Act, Act]):
             logger.error(
                 f"Error listing acts for game {game_id}: {str(e)}", exc_info=True
             )
-            self._handle_operation_error(f"list acts for game {game_id}", e, GameError)
-            return []  # This will never be reached as _handle_operation_error raises
+            raise e
 
     def get_active_act(self, game_id: Optional[str] = None) -> Optional[Act]:
         """Get the active act in a game.
@@ -244,11 +243,7 @@ class ActManager(BaseManager[Act, Act]):
             )
             return result
         except Exception as e:
-            if not isinstance(e, GameError):
-                logger.error(f"Error getting active act: {str(e)}", exc_info=True)
-                self._handle_operation_error(
-                    f"get active act for game {game_id}", e, GameError
-                )
+            logger.error(f"Error getting active act: {str(e)}", exc_info=True)
             raise
 
     def edit_act(
@@ -276,7 +271,7 @@ class ActManager(BaseManager[Act, Act]):
             f"summary={summary[:20] + '...' if summary else '(unchanged)'}"
         )
 
-        def _edit_act(session: Session) -> Act:
+        def _edit_act(session: Session) -> Optional[Act]:
             try:
                 # Use get_entity_or_error instead of manual query and check
                 act = self.get_entity_or_error(
@@ -289,7 +284,8 @@ class ActManager(BaseManager[Act, Act]):
                     old_title = act.title
                     act.title = title
                     logger.debug(
-                        f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'"
+                        f"Updated title from '{old_title or 'Untitled'}' "
+                        f"to '{title or 'Untitled'}'"
                     )
 
                     # Update slug if title changes
@@ -309,7 +305,7 @@ class ActManager(BaseManager[Act, Act]):
                 return act
             except Exception as e:
                 logger.error(f"Error editing act {act_id}: {str(e)}", exc_info=True)
-                self._handle_operation_error(f"edit act {act_id}", e, GameError)
+                raise
 
         return self._execute_db_operation("edit_act", _edit_act)
 
@@ -567,7 +563,7 @@ class ActManager(BaseManager[Act, Act]):
                     f"Error preparing act data for summary: {str(e)}", exc_info=True
                 )
                 self._handle_operation_error(
-                    f"prepare act data for summary", e, GameError
+                    "prepare act data for summary", e, GameError
                 )
 
         return self._execute_db_operation("prepare_act_data_for_summary", _prepare_data)
@@ -630,4 +626,4 @@ class ActManager(BaseManager[Act, Act]):
             if "anthropic" in str(e).lower() or "api" in str(e).lower():
                 raise APIError(f"Failed to generate act summary: {str(e)}")
             else:
-                self._handle_operation_error(f"generate act summary", e, GameError)
+                self._handle_operation_error("generate act summary", e, GameError)
