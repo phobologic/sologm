@@ -334,14 +334,14 @@ def initialize_event_sources(database_session):
     sources = ["manual", "oracle", "dice"]
     for source_name in sources:
         existing = (
-            db_session.query(EventSource)
+            database_session.session.query(EventSource)
             .filter(EventSource.name == source_name)
             .first()
         )
         if not existing:
             source = EventSource.create(name=source_name)
-            db_session.add(source)
-    db_session.commit()
+            database_session.session.add(source)
+    database_session.session.commit()
 
 
 # Helper fixtures for testing model properties
