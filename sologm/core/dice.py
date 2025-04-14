@@ -21,15 +21,13 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
     def __init__(
         self,
         scene_manager: Optional[SceneManager] = None,
-        session: Optional[Session] = None,
     ):
-        """Initialize with optional scene manager and session.
+        """Initialize with optional scene manager.
 
         Args:
             scene_manager: Optional scene manager (primarily for testing)
-            session: Optional database session (primarily for testing)
         """
-        super().__init__(session)
+        super().__init__()
         self._scene_manager = scene_manager
         self.logger.debug("DiceManager initialized")
 

@@ -21,13 +21,9 @@ logger = logging.getLogger(__name__)
 class GameManager(BaseManager[Game, Game]):
     """Manages game operations."""
 
-    def __init__(self, session: Optional[Session] = None):
-        """Initialize the game manager.
-
-        Args:
-            session: Optional database session (primarily for testing).
-        """
-        super().__init__(session)
+    def __init__(self):
+        """Initialize the game manager."""
+        super().__init__()
         self._act_manager: Optional["ActManager"] = None
 
     # Child manager access

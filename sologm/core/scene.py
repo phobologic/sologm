@@ -28,17 +28,14 @@ class SceneManager(BaseManager[Scene, Scene]):
     def __init__(
         self,
         act_manager: Optional[ActManager] = None,
-        session: Optional[Session] = None,
     ):
         """Initialize the scene manager.
 
         Args:
             act_manager: Optional ActManager instance. If not provided,
                 a new one will be lazy-initialized when needed.
-            session: Optional SQLAlchemy session. If not provided,
-                a new one will be created for each operation.
         """
-        super().__init__(session)
+        super().__init__()
         self._act_manager: Optional["ActManager"] = act_manager
         self._dice_manager: Optional["DiceManager"] = None
         self._event_manager: Optional["EventManager"] = None

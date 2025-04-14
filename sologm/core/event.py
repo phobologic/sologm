@@ -22,16 +22,14 @@ class EventManager(BaseManager[Event, Event]):
 
     def __init__(
         self,
-        session: Optional[Session] = None,
         scene_manager: Optional[SceneManager] = None,
     ):
         """Initialize the EventManager.
 
         Args:
-            session: Optional SQLAlchemy session
             scene_manager: Optional SceneManager instance
         """
-        super().__init__(session)
+        super().__init__()
         self._scene_manager = scene_manager
 
     @property

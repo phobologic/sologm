@@ -37,35 +37,23 @@ class BaseManager(Generic[T, M]):
         _session: Optional database session (primarily for testing)
     """
 
-    def __init__(self, session: Optional[Session] = None):
-        """Initialize with optional session for testing.
-
-        Args:
-            session: Optional database session (primarily for testing)
+    def __init__(self):
+        """Initialize the base manager.
         """
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._session = session
 
     def _get_session(self) -> Tuple[Session, bool]:
-        """Get a database session.
-
+        """Get a database session from the singleton.
+        
         Returns:
             Tuple of (session, should_close)
             - session: The database session to use
             - should_close: Whether the caller should close the session
         """
-        if self._session:
-            self.logger.debug("Using existing session")
-        else:
-            self.logger.debug("Getting session from singleton")
-            from sologm.database.session import DatabaseSession
-
-            # Store the session for future use
-            self._session = DatabaseSession.get_instance().get_session()
-        # Always return should_close=False since cleanup is handled at
-        # application exit
-
-        return self._session, False
+        self.logger.debug("Getting session from singleton")
+        from sologm.database.session import get_session
+        
+        return get_session(), False
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
@@ -226,9 +214,6 @@ class BaseManager(Generic[T, M]):
             module_path, class_name = manager_class_path.rsplit(".", 1)
             module = importlib.import_module(module_path)
             manager_class = getattr(module, class_name)
-
-            # Always pass the session
-            kwargs["session"] = self._session
 
             setattr(self, attr_name, manager_class(**kwargs))
 

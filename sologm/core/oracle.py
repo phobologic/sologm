@@ -34,7 +34,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         anthropic_client: Optional[AnthropicClient] = None,
         scene_manager: Optional[SceneManager] = None,
         event_manager: Optional[EventManager] = None,
-        session: Optional[Session] = None,
     ):
         """Initialize the oracle manager.
 
@@ -42,9 +41,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             anthropic_client: Optional Anthropic client instance.
             scene_manager: Optional SceneManager instance.
             event_manager: Optional event manager instance.
-            session: Optional database session (primarily for testing).
         """
-        super().__init__(session)
+        super().__init__()
 
         # Store references to managers
         self._scene_manager = scene_manager
@@ -66,7 +64,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         if self._scene_manager is None:
             from sologm.core.scene import SceneManager
 
-            self._scene_manager = SceneManager(session=self._session)
+            self._scene_manager = SceneManager()
         return self._scene_manager
 
     @property
@@ -83,7 +81,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     def event_manager(self) -> EventManager:
         """Lazy-initialize event manager if not provided."""
         if self._event_manager is None:
-            self._event_manager = EventManager(session=self._session)
+            self._event_manager = EventManager()
         return self._event_manager
 
     def get_active_context(self) -> Tuple[Scene, Act, Game]:
