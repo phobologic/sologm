@@ -101,8 +101,8 @@ def oracle_manager(scene_manager, mock_anthropic_client, db_session):
     """Create an OracleManager with a test session, scene manager and mock client."""
     return OracleManager(
         scene_manager=scene_manager,
-        anthropic_client=mock_anthropic_client, 
-        session=db_session
+        anthropic_client=mock_anthropic_client,
+        session=db_session,
     )
 
 

@@ -415,9 +415,7 @@ class TestSceneManager:
                 title="First Scene",
             )
 
-    def test_get_active_context(
-        self, scene_manager, test_game, ensure_active_act
-    ):
+    def test_get_active_context(self, scene_manager, test_game, ensure_active_act):
         """Test getting active game, act, and scene context."""
         active_act = ensure_active_act
         # Create a scene to be active
@@ -432,9 +430,7 @@ class TestSceneManager:
         assert context["act"].id == active_act.id
         assert context["scene"].id == scene.id
 
-    def test_validate_active_context(
-        self, scene_manager, test_game, ensure_active_act
-    ):
+    def test_validate_active_context(self, scene_manager, test_game, ensure_active_act):
         """Test validating active game and scene context."""
         active_act = ensure_active_act
         # Create a scene to be active
@@ -470,9 +466,7 @@ class TestSceneManager:
         wrong_scene = scene_manager.get_scene_in_act("wrong-act-id", created_scene.id)
         assert wrong_scene is None
 
-    def test_validate_active_context_no_game(
-        self, scene_manager, db_session
-    ):
+    def test_validate_active_context_no_game(self, scene_manager, db_session):
         """Test validation with no active game."""
         # Deactivate all games
         db_session.query(Game).update({Game.is_active: False})
