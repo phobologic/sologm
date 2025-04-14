@@ -67,7 +67,7 @@ def mock_anthropic_client():
 
 # Manager fixtures
 @pytest.fixture
-def game_manager(db_session):
+def game_manager(database_session):
     """Create a GameManager with a test session."""
     return GameManager(session=db_session)
 
@@ -108,7 +108,7 @@ def oracle_manager(scene_manager, mock_anthropic_client, db_session):
 
 # Model factory fixtures
 @pytest.fixture
-def create_test_game(db_session):
+def create_test_game(database_session):
     """Factory fixture to create test games."""
 
     def _create_game(name="Test Game", description="A test game", is_active=True):
@@ -122,7 +122,7 @@ def create_test_game(db_session):
 
 
 @pytest.fixture
-def create_test_act(db_session):
+def create_test_act(database_session):
     """Factory fixture to create test acts."""
 
     def _create_act(
@@ -152,7 +152,7 @@ def create_test_act(db_session):
 
 
 @pytest.fixture
-def create_test_scene(db_session):
+def create_test_scene(database_session):
     """Factory fixture to create test scenes."""
 
     def _create_scene(
@@ -184,7 +184,7 @@ def create_test_scene(db_session):
 
 
 @pytest.fixture
-def create_test_event(db_session):
+def create_test_event(database_session):
     """Factory fixture to create test events."""
 
     def _create_event(
@@ -211,7 +211,7 @@ def test_game(create_test_game):
 
 
 @pytest.fixture
-def test_act(db_session, test_game):
+def test_act(database_session, test_game):
     """Create a test act for the test game."""
     act = Act.create(
         game_id=test_game.id,
@@ -226,7 +226,7 @@ def test_act(db_session, test_game):
 
 
 @pytest.fixture
-def test_scene(db_session, test_act):
+def test_scene(database_session, test_act):
     """Create a test scene for the test act."""
     scene = Scene.create(
         act_id=test_act.id,
@@ -241,7 +241,7 @@ def test_scene(db_session, test_act):
 
 
 @pytest.fixture
-def test_events(db_session, test_scene):
+def test_events(database_session, test_scene):
     """Create test events."""
     # Get the source ID for "manual"
     source_obj = (
@@ -267,7 +267,7 @@ def test_events(db_session, test_scene):
 
 
 @pytest.fixture
-def test_interpretation_set(db_session, test_scene):
+def test_interpretation_set(database_session, test_scene):
     """Create a test interpretation set."""
     interp_set = InterpretationSet.create(
         scene_id=test_scene.id,
@@ -281,7 +281,7 @@ def test_interpretation_set(db_session, test_scene):
 
 
 @pytest.fixture
-def test_interpretations(db_session, test_interpretation_set):
+def test_interpretations(database_session, test_interpretation_set):
     """Create test interpretations."""
     interpretations = [
         Interpretation.create(
@@ -298,7 +298,7 @@ def test_interpretations(db_session, test_interpretation_set):
 
 
 @pytest.fixture
-def test_dice_roll(db_session, test_scene):
+def test_dice_roll(database_session, test_scene):
     """Create a test dice roll."""
     dice_roll = DiceRoll.create(
         notation="2d6+3",
@@ -314,7 +314,7 @@ def test_dice_roll(db_session, test_scene):
 
 
 @pytest.fixture(autouse=True)
-def initialize_event_sources(db_session):
+def initialize_event_sources(database_session):
     """Initialize event sources for testing."""
     sources = ["manual", "oracle", "dice"]
     for source_name in sources:
@@ -368,14 +368,14 @@ def assert_model_properties():
 
 
 @pytest.fixture
-def test_hybrid_expressions(db_session):
+def test_hybrid_expressions(database_session):
     """Test fixture for SQL expressions of hybrid properties.
 
     This fixture provides a function that can be used to verify that hybrid property
     SQL expressions work correctly in queries.
 
     Example:
-        def test_game_has_acts_expression(db_session, test_hybrid_expressions):
+        def test_game_has_acts_expression(database_session, test_hybrid_expressions):
             test_hybrid_expressions(Game, 'has_acts', True, 1)  # Expect 1 game with acts
     """
 
