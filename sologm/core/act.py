@@ -90,64 +90,57 @@ class ActManager(BaseManager[Act, Act]):
             logger.debug(f"Using active game with ID {game_id}")
 
         def _create_act(session: Session) -> Act:
-            try:
-                # Check if game exists
-                from sologm.models.game import Game
+            # Check if game exists
+            from sologm.models.game import Game
 
-                game = self.get_entity_or_error(
-                    session,
-                    Game,
-                    game_id,
-                    GameError,
-                    f"Game with ID {game_id} not found",
-                )
-                logger.debug(f"Found game: {game.name}")
+            game = self.get_entity_or_error(
+                session,
+                Game,
+                game_id,
+                GameError,
+                f"Game with ID {game_id} not found",
+            )
+            logger.debug(f"Found game: {game.name}")
 
-                # Get the next sequence number for this game
-                acts = self.list_entities(
-                    Act,
-                    filters={"game_id": game_id},
-                    order_by="sequence",
-                    order_direction="desc",
-                    limit=1,
-                )
+            # Get the next sequence number for this game
+            acts = self.list_entities(
+                Act,
+                filters={"game_id": game_id},
+                order_by="sequence",
+                order_direction="desc",
+                limit=1,
+            )
 
-                next_sequence = 1
-                if acts:
-                    next_sequence = acts[0].sequence + 1
-                logger.debug(f"Using sequence number {next_sequence}")
+            next_sequence = 1
+            if acts:
+                next_sequence = acts[0].sequence + 1
+            logger.debug(f"Using sequence number {next_sequence}")
 
-                # Create the new act
-                act = Act.create(
-                    game_id=game_id,
-                    title=title,
-                    summary=summary,
-                    sequence=next_sequence,
-                )
-                session.add(act)
-                session.flush()
-                logger.debug(f"Created act with ID {act.id}")
+            # Create the new act
+            act = Act.create(
+                game_id=game_id,
+                title=title,
+                summary=summary,
+                sequence=next_sequence,
+            )
+            session.add(act)
+            session.flush()
+            logger.debug(f"Created act with ID {act.id}")
 
-                if make_active:
-                    # Deactivate all other acts in this game
-                    self._deactivate_all_acts(session, game_id)
-                    logger.debug(f"Deactivated all other acts in game {game_id}")
+            if make_active:
+                # Deactivate all other acts in this game
+                self._deactivate_all_acts(session, game_id)
+                logger.debug(f"Deactivated all other acts in game {game_id}")
 
-                    # Set this act as active
-                    act.is_active = True
-                    logger.debug(f"Set act {act.id} as active")
+                # Set this act as active
+                act.is_active = True
+                logger.debug(f"Set act {act.id} as active")
 
-                logger.info(
-                    f"Created act with ID {act.id} in game {game_id}: "
-                    f"title='{act.title or 'Untitled'}'"
-                )
-                return act
-            except Exception as e:
-                logger.error(
-                    f"Error creating act in game {game_id}: {str(e)}",
-                    exc_info=True
-                )
-                raise e
+            logger.info(
+                f"Created act with ID {act.id} in game {game_id}: "
+                f"title='{act.title or 'Untitled'}'"
+            )
+            return act
 
         return self._execute_db_operation("create_act", _create_act)
 
@@ -162,14 +155,10 @@ class ActManager(BaseManager[Act, Act]):
         """
         logger.debug(f"Getting act with ID {act_id}")
 
-        try:
-            acts = self.list_entities(Act, filters={"id": act_id}, limit=1)
-            result = acts[0] if acts else None
-            logger.debug(f"Found act: {result.id if result else 'None'}")
-            return result
-        except Exception as e:
-            logger.error(f"Error getting act {act_id}: {str(e)}", exc_info=True)
-            raise e
+        acts = self.list_entities(Act, filters={"id": act_id}, limit=1)
+        result = acts[0] if acts else None
+        logger.debug(f"Found act: {result.id if result else 'None'}")
+        return result
 
     def list_acts(self, game_id: Optional[str] = None) -> List[Act]:
         """List all acts in a game.
@@ -195,17 +184,11 @@ class ActManager(BaseManager[Act, Act]):
             game_id = active_game.id
             logger.debug(f"Using active game with ID {game_id}")
 
-        try:
-            acts = self.list_entities(
-                Act, filters={"game_id": game_id}, order_by="sequence"
-            )
-            logger.debug(f"Found {len(acts)} acts in game {game_id}")
-            return acts
-        except Exception as e:
-            logger.error(
-                f"Error listing acts for game {game_id}: {str(e)}", exc_info=True
-            )
-            raise e
+        acts = self.list_entities(
+            Act, filters={"game_id": game_id}, order_by="sequence"
+        )
+        logger.debug(f"Found {len(acts)} acts in game {game_id}")
+        return acts
 
     def get_active_act(self, game_id: Optional[str] = None) -> Optional[Act]:
         """Get the active act in a game.
@@ -222,29 +205,25 @@ class ActManager(BaseManager[Act, Act]):
         """
         logger.debug(f"Getting active act for game_id={game_id or 'active game'}")
 
-        try:
-            if not game_id:
-                active_game = self.game_manager.get_active_game()
-                if not active_game:
-                    msg = "No active game. Use 'sologm game activate' to set one."
-                    logger.warning(msg)
-                    raise GameError(msg)
-                game_id = active_game.id
-                logger.debug(f"Using active game with ID {game_id}")
+        if not game_id:
+            active_game = self.game_manager.get_active_game()
+            if not active_game:
+                msg = "No active game. Use 'sologm game activate' to set one."
+                logger.warning(msg)
+                raise GameError(msg)
+            game_id = active_game.id
+            logger.debug(f"Using active game with ID {game_id}")
 
-            acts = self.list_entities(
-                Act, filters={"game_id": game_id, "is_active": True}, limit=1
-            )
+        acts = self.list_entities(
+            Act, filters={"game_id": game_id, "is_active": True}, limit=1
+        )
 
-            result = acts[0] if acts else None
-            logger.debug(
-                f"Active act for game {game_id}: "
-                f"{result.id + ' (' + (result.title or 'Untitled') + ')' if result else 'None'}"
-            )
-            return result
-        except Exception as e:
-            logger.error(f"Error getting active act: {str(e)}", exc_info=True)
-            raise
+        result = acts[0] if acts else None
+        logger.debug(
+            f"Active act for game {game_id}: "
+            f"{result.id + ' (' + (result.title or 'Untitled') + ')' if result else 'None'}"
+        )
+        return result
 
     def edit_act(
         self,
@@ -264,6 +243,7 @@ class ActManager(BaseManager[Act, Act]):
 
         Raises:
             GameError: If the act doesn't exist
+            ValueError: If neither title nor summary is provided
         """
         logger.debug(
             f"Editing act {act_id}: "
@@ -271,41 +251,41 @@ class ActManager(BaseManager[Act, Act]):
             f"summary={summary[:20] + '...' if summary else '(unchanged)'}"
         )
 
+        # Validate input
+        if title is None and summary is None:
+            raise ValueError("At least one of title or summary must be provided")
+
         def _edit_act(session: Session) -> Optional[Act]:
-            try:
-                # Use get_entity_or_error instead of manual query and check
-                act = self.get_entity_or_error(
-                    session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            # Use get_entity_or_error instead of manual query and check
+            act = self.get_entity_or_error(
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            )
+            logger.debug(f"Found act: {act.title or 'Untitled'}")
+
+            # Update fields if provided
+            if title is not None:
+                old_title = act.title
+                act.title = title
+                logger.debug(
+                    f"Updated title from '{old_title or 'Untitled'}' "
+                    f"to '{title or 'Untitled'}'"
                 )
-                logger.debug(f"Found act: {act.title or 'Untitled'}")
 
-                # Update fields if provided
-                if title is not None:
-                    old_title = act.title
-                    act.title = title
-                    logger.debug(
-                        f"Updated title from '{old_title or 'Untitled'}' "
-                        f"to '{title or 'Untitled'}'"
-                    )
+                # Update slug if title changes
+                if title:
+                    from sologm.models.utils import slugify
 
-                    # Update slug if title changes
-                    if title:
-                        from sologm.models.utils import slugify
+                    act.slug = f"act-{act.sequence}-{slugify(title)}"
+                else:
+                    act.slug = f"act-{act.sequence}-untitled"
+                logger.debug(f"Updated slug to '{act.slug}'")
 
-                        act.slug = f"act-{act.sequence}-{slugify(title)}"
-                    else:
-                        act.slug = f"act-{act.sequence}-untitled"
-                    logger.debug(f"Updated slug to '{act.slug}'")
+            if summary is not None:
+                act.summary = summary
+                logger.debug("Updated summary")
 
-                if summary is not None:
-                    act.summary = summary
-                    logger.debug("Updated summary")
-
-                logger.info(f"Edited act {act_id}: title='{act.title or 'Untitled'}'")
-                return act
-            except Exception as e:
-                logger.error(f"Error editing act {act_id}: {str(e)}", exc_info=True)
-                raise
+            logger.info(f"Edited act {act_id}: title='{act.title or 'Untitled'}'")
+            return act
 
         return self._execute_db_operation("edit_act", _edit_act)
 
@@ -335,43 +315,39 @@ class ActManager(BaseManager[Act, Act]):
         )
 
         def _complete_act(session: Session) -> Act:
-            try:
-                # Use get_entity_or_error instead of manual query and check
-                act = self.get_entity_or_error(
-                    session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            # Use get_entity_or_error instead of manual query and check
+            act = self.get_entity_or_error(
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            )
+            logger.debug(f"Found act: {act.title or 'Untitled'}")
+
+            # Update fields if provided
+            if title is not None:
+                old_title = act.title
+                act.title = title
+                logger.debug(
+                    f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'"
                 )
-                logger.debug(f"Found act: {act.title or 'Untitled'}")
 
-                # Update fields if provided
-                if title is not None:
-                    old_title = act.title
-                    act.title = title
-                    logger.debug(
-                        f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'"
-                    )
+                # Update slug if title changes
+                if title:
+                    from sologm.models.utils import slugify
 
-                    # Update slug if title changes
-                    if title:
-                        from sologm.models.utils import slugify
+                    act.slug = f"act-{act.sequence}-{slugify(title)}"
+                    logger.debug(f"Updated slug to '{act.slug}'")
 
-                        act.slug = f"act-{act.sequence}-{slugify(title)}"
-                        logger.debug(f"Updated slug to '{act.slug}'")
+            if summary is not None:
+                act.summary = summary
+                logger.debug("Updated summary")
 
-                if summary is not None:
-                    act.summary = summary
-                    logger.debug("Updated summary")
+            # Mark as not active
+            act.is_active = False
+            logger.debug("Set is_active to False")
 
-                # Mark as not active
-                act.is_active = False
-                logger.debug("Set is_active to False")
-
-                logger.info(
-                    f"Completed act {act_id}: title='{act.title or 'Untitled'}'"
-                )
-                return act
-            except Exception as e:
-                logger.error(f"Error completing act {act_id}: {str(e)}", exc_info=True)
-                self._handle_operation_error(f"complete act {act_id}", e, GameError)
+            logger.info(
+                f"Completed act {act_id}: title='{act.title or 'Untitled'}'"
+            )
+            return act
 
         return self._execute_db_operation("complete_act", _complete_act)
 
@@ -390,30 +366,22 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(f"Setting act {act_id} as active")
 
         def _set_active(session: Session) -> Act:
-            try:
-                # Use get_entity_or_error instead of manual query and check
-                act = self.get_entity_or_error(
-                    session, Act, act_id, GameError, f"Act with ID {act_id} not found"
-                )
-                logger.debug(
-                    f"Found act: {act.title or 'Untitled'} in game {act.game_id}"
-                )
+            # Use get_entity_or_error instead of manual query and check
+            act = self.get_entity_or_error(
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            )
+            logger.debug(
+                f"Found act: {act.title or 'Untitled'} in game {act.game_id}"
+            )
 
-                # Deactivate all acts in this game
-                self._deactivate_all_acts(session, act.game_id)
-                logger.debug(f"Deactivated all acts in game {act.game_id}")
+            # Deactivate all acts in this game
+            self._deactivate_all_acts(session, act.game_id)
+            logger.debug(f"Deactivated all acts in game {act.game_id}")
 
-                # Set this act as active
-                act.is_active = True
-                logger.info(f"Set act {act_id} as active")
-                return act
-            except Exception as e:
-                logger.error(
-                    f"Error setting act {act_id} as active: {str(e)}", exc_info=True
-                )
-                self._handle_operation_error(
-                    f"set act {act_id} as active", e, GameError
-                )
+            # Set this act as active
+            act.is_active = True
+            logger.info(f"Set act {act_id} as active")
+            return act
 
         return self._execute_db_operation("set_active", _set_active)
 
@@ -479,92 +447,86 @@ class ActManager(BaseManager[Act, Act]):
 
         Raises:
             GameError: If the act doesn't exist
+            SceneError: If there's an issue retrieving scenes
+            EventError: If there's an issue retrieving events
         """
         logger.debug(f"Preparing data for act {act_id} summary")
 
         def _prepare_data(session: Session) -> Dict:
-            try:
-                # Get the act
-                act = self.get_entity_or_error(
-                    session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            # Get the act
+            act = self.get_entity_or_error(
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            )
+            logger.debug(f"Found act: {act.title or 'Untitled'}")
+
+            # Get the game
+            from sologm.models.game import Game
+
+            game = self.get_entity_or_error(
+                session,
+                Game,
+                act.game_id,
+                GameError,
+                f"Game with ID {act.game_id} not found",
+            )
+            logger.debug(f"Found game: {game.name}")
+
+            # Get all scenes in the act
+            scenes = self.scene_manager.list_scenes(act_id)
+            logger.debug(f"Found {len(scenes)} scenes")
+
+            # Collect all events from all scenes
+            events_by_scene = {}
+            for scene in scenes:
+                # Get events for this scene
+                scene_events = self.scene_manager.event_manager.list_events(
+                    scene_id=scene.id
                 )
-                logger.debug(f"Found act: {act.title or 'Untitled'}")
-
-                # Get the game
-                from sologm.models.game import Game
-
-                game = self.get_entity_or_error(
-                    session,
-                    Game,
-                    act.game_id,
-                    GameError,
-                    f"Game with ID {act.game_id} not found",
+                events_by_scene[scene.id] = scene_events
+                logger.debug(
+                    f"Found {len(scene_events)} events for scene {scene.id}"
                 )
-                logger.debug(f"Found game: {game.name}")
 
-                # Get all scenes in the act
-                scenes = self.scene_manager.list_scenes(act_id)
-                logger.debug(f"Found {len(scenes)} scenes")
+            # Format the data
+            act_data = {
+                "game": {
+                    "name": game.name,
+                    "description": game.description,
+                },
+                "act": {
+                    "sequence": act.sequence,
+                    "title": act.title,
+                    "summary": act.summary,
+                },
+                "scenes": [],
+                "additional_context": additional_context,
+            }
 
-                # Collect all events from all scenes
-                events_by_scene = {}
-                for scene in scenes:
-                    # Get events for this scene
-                    scene_events = self.scene_manager.event_manager.list_events(
-                        scene_id=scene.id
-                    )
-                    events_by_scene[scene.id] = scene_events
-                    logger.debug(
-                        f"Found {len(scene_events)} events for scene {scene.id}"
-                    )
-
-                # Format the data
-                act_data = {
-                    "game": {
-                        "name": game.name,
-                        "description": game.description,
-                    },
-                    "act": {
-                        "sequence": act.sequence,
-                        "title": act.title,
-                        "summary": act.summary,
-                    },
-                    "scenes": [],
-                    "additional_context": additional_context,
+            # Add scene data
+            for scene in scenes:
+                scene_data = {
+                    "sequence": scene.sequence,
+                    "title": scene.title,
+                    "description": scene.description,
+                    "events": [],
                 }
 
-                # Add scene data
-                for scene in scenes:
-                    scene_data = {
-                        "sequence": scene.sequence,
-                        "title": scene.title,
-                        "description": scene.description,
-                        "events": [],
-                    }
+                # Add events for this scene
+                for event in events_by_scene.get(scene.id, []):
+                    scene_data["events"].append(
+                        {
+                            "description": event.description,
+                            "source": event.source_name,
+                            "created_at": event.created_at.isoformat()
+                            if event.created_at
+                            else None,
+                        }
+                    )
 
-                    # Add events for this scene
-                    for event in events_by_scene.get(scene.id, []):
-                        scene_data["events"].append(
-                            {
-                                "description": event.description,
-                                "source": event.source_name,
-                                "created_at": event.created_at.isoformat()
-                                if event.created_at
-                                else None,
-                            }
-                        )
+                act_data["scenes"].append(scene_data)
 
-                    act_data["scenes"].append(scene_data)
-
-                logger.debug("Successfully prepared act data for summary")
-                return act_data
-            except Exception as e:
-                logger.error(
-                    f"Error preparing act data for summary: {str(e)}", exc_info=True
-                )
-                self._handle_operation_error(
-                    "prepare act data for summary", e, GameError
-                )
+            logger.debug("Successfully prepared act data for summary")
+            return act_data
 
         return self._execute_db_operation("prepare_act_data_for_summary", _prepare_data)
 
@@ -583,26 +545,29 @@ class ActManager(BaseManager[Act, Act]):
         Raises:
             GameError: If the act doesn't exist
             APIError: If there's an error with the AI API
+            SceneError: If there's an issue retrieving scenes
+            EventError: If there's an issue retrieving events
         """
         logger.debug(f"Generating summary for act {act_id}")
 
+        # Prepare the data
+        act_data = self.prepare_act_data_for_summary(act_id, additional_context)
+        logger.debug("Act data prepared successfully")
+
+        # Import here to avoid circular imports
+        from sologm.core.prompts.act import ActPrompts
+        from sologm.integrations.anthropic import AnthropicClient
+        from sologm.utils.errors import APIError
+
+        # Build the prompt
+        prompt = ActPrompts.build_summary_prompt(act_data)
+        logger.debug("Built summary prompt")
+
+        # Create Anthropic client
+        client = AnthropicClient()
+        logger.debug("Created Anthropic client")
+
         try:
-            # Prepare the data
-            act_data = self.prepare_act_data_for_summary(act_id, additional_context)
-            logger.debug("Act data prepared successfully")
-
-            # Import here to avoid circular imports
-            from sologm.core.prompts.act import ActPrompts
-            from sologm.integrations.anthropic import AnthropicClient
-
-            # Build the prompt
-            prompt = ActPrompts.build_summary_prompt(act_data)
-            logger.debug("Built summary prompt")
-
-            # Create Anthropic client
-            client = AnthropicClient()
-            logger.debug("Created Anthropic client")
-
             # Send to Anthropic
             response = client.send_message(
                 prompt=prompt,
@@ -620,10 +585,7 @@ class ActManager(BaseManager[Act, Act]):
 
             return summary_data
         except Exception as e:
-            from sologm.utils.errors import APIError
-
             logger.error(f"Error generating act summary: {str(e)}", exc_info=True)
             if "anthropic" in str(e).lower() or "api" in str(e).lower():
-                raise APIError(f"Failed to generate act summary: {str(e)}")
-            else:
-                self._handle_operation_error("generate act summary", e, GameError)
+                raise APIError(f"Failed to generate act summary: {str(e)}") from e
+            raise

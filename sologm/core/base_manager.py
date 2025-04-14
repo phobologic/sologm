@@ -234,18 +234,3 @@ class BaseManager(Generic[T, M]):
 
         return getattr(self, attr_name)
 
-    def _handle_operation_error(
-        self, operation: str, error: Exception, error_class: Type[Exception]
-    ) -> None:
-        """Handle operation errors consistently.
-
-        Args:
-            operation: Name of the operation that failed
-            error: Original exception
-            error_class: Exception class to raise
-
-        Raises:
-            error_class: With context about the failed operation
-        """
-        self.logger.error(f"Failed to {operation}: {str(error)}")
-        raise error_class(f"Failed to {operation}: {str(error)}") from error

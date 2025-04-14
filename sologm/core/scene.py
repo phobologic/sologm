@@ -144,41 +144,37 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         Raises:
             SceneError: If no active game, act, or scene is found.
+            GameError: If there's an issue retrieving the active game
+            ActError: If there's an issue retrieving the active act
         """
         logger.debug("Getting active context")
-        try:
-            # Get the active game
-            active_game = self.game_manager.get_active_game()
-            if not active_game:
-                msg = "No active game. Use 'sologm game activate' to set one."
-                logger.warning(msg)
-                raise SceneError(msg)
-            logger.debug(f"Active game: {active_game.id} ({active_game.name})")
+        
+        # Get the active game
+        active_game = self.game_manager.get_active_game()
+        if not active_game:
+            msg = "No active game. Use 'sologm game activate' to set one."
+            logger.warning(msg)
+            raise SceneError(msg)
+        logger.debug(f"Active game: {active_game.id} ({active_game.name})")
 
-            # Get the active act for this game
-            active_act = self.act_manager.get_active_act(active_game.id)
-            if not active_act:
-                msg = "No active act. Create one with 'sologm act create'."
-                logger.warning(msg)
-                raise SceneError(msg)
-            logger.debug(f"Active act: {active_act.id} ({active_act.title})")
+        # Get the active act for this game
+        active_act = self.act_manager.get_active_act(active_game.id)
+        if not active_act:
+            msg = "No active act. Create one with 'sologm act create'."
+            logger.warning(msg)
+            raise SceneError(msg)
+        logger.debug(f"Active act: {active_act.id} ({active_act.title})")
 
-            # Get the active scene for this act
-            active_scene = self.get_active_scene(active_act.id)
-            if not active_scene:
-                msg = "No active scene. Add one with 'sologm scene add'."
-                logger.warning(msg)
-                raise SceneError(msg)
-            logger.debug(f"Active scene: {active_scene.id} ({active_scene.title})")
+        # Get the active scene for this act
+        active_scene = self.get_active_scene(active_act.id)
+        if not active_scene:
+            msg = "No active scene. Add one with 'sologm scene add'."
+            logger.warning(msg)
+            raise SceneError(msg)
+        logger.debug(f"Active scene: {active_scene.id} ({active_scene.title})")
 
-            logger.debug("Active context retrieved successfully")
-            return {"game": active_game, "act": active_act, "scene": active_scene}
-        except Exception as e:
-            if not isinstance(e, SceneError):
-                logger.error(f"Error getting active context: {str(e)}", exc_info=True)
-                self._handle_operation_error("get active context", e, SceneError)
-            logger.warning(f"Failed to get active context: {str(e)}")
-            raise
+        logger.debug("Active context retrieved successfully")
+        return {"game": active_game, "act": active_act, "scene": active_scene}
 
     def get_scene(self, scene_id: str) -> Optional[Scene]:
         """Get a specific scene by ID.
@@ -191,15 +187,10 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting scene with ID {scene_id}")
 
-        try:
-            scenes = self.list_entities(Scene, filters={"id": scene_id}, limit=1)
-            result = scenes[0] if scenes else None
-            logger.debug(f"Found scene: {result.id if result else 'None'}")
-            return result
-        except Exception as e:
-            logger.error(f"Error getting scene {scene_id}: {str(e)}", exc_info=True)
-            self._handle_operation_error(f"get scene {scene_id}", e, SceneError)
-            return None  # This will never be reached as _handle_operation_error raises
+        scenes = self.list_entities(Scene, filters={"id": scene_id}, limit=1)
+        result = scenes[0] if scenes else None
+        logger.debug(f"Found scene: {result.id if result else 'None'}")
+        return result
 
     def get_scene_in_act(self, act_id: str, scene_id: str) -> Optional[Scene]:
         """Get a specific scene by ID within a specific act.
@@ -213,24 +204,14 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting scene {scene_id} in act {act_id}")
 
-        try:
-            scenes = self.list_entities(
-                Scene, filters={"act_id": act_id, "id": scene_id}, limit=1
-            )
-            result = scenes[0] if scenes else None
-            logger.debug(
-                f"Found scene in act {act_id}: {result.id if result else 'None'}"
-            )
-            return result
-        except Exception as e:
-            logger.error(
-                f"Error getting scene {scene_id} in act {act_id}: {str(e)}",
-                exc_info=True,
-            )
-            self._handle_operation_error(
-                f"get scene {scene_id} in act {act_id}", e, SceneError
-            )
-            return None
+        scenes = self.list_entities(
+            Scene, filters={"act_id": act_id, "id": scene_id}, limit=1
+        )
+        result = scenes[0] if scenes else None
+        logger.debug(
+            f"Found scene in act {act_id}: {result.id if result else 'None'}"
+        )
+        return result
 
     def get_active_scene(self, act_id: Optional[str] = None) -> Optional[Scene]:
         """Get the active scene for the specified act.
@@ -249,25 +230,17 @@ class SceneManager(BaseManager[Scene, Scene]):
             f"Getting active scene for act_id={act_id or 'from active context'}"
         )
 
-        try:
-            act_id = self._get_act_id_or_active(act_id)
+        act_id = self._get_act_id_or_active(act_id)
 
-            scenes = self.list_entities(
-                Scene, filters={"act_id": act_id, "is_active": True}, limit=1
-            )
+        scenes = self.list_entities(
+            Scene, filters={"act_id": act_id, "is_active": True}, limit=1
+        )
 
-            result = scenes[0] if scenes else None
-            logger.debug(
-                f"Active scene for act {act_id}: {result.id if result else 'None'}"
-            )
-            return result
-        except Exception as e:
-            if not isinstance(e, SceneError):
-                logger.error(f"Error getting active scene: {str(e)}", exc_info=True)
-                self._handle_operation_error(
-                    f"get active scene for act {act_id or 'unknown'}", e, SceneError
-                )
-            raise
+        result = scenes[0] if scenes else None
+        logger.debug(
+            f"Active scene for act {act_id}: {result.id if result else 'None'}"
+        )
+        return result
 
     def create_scene(
         self,
@@ -291,6 +264,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         Raises:
             SceneError: If there's an error creating the scene or if title is
                         not unique.
+            ActError: If the act doesn't exist or no active act is found
         """
         logger.debug(
             f"Creating new scene: title='{title}', "
@@ -299,73 +273,65 @@ class SceneManager(BaseManager[Scene, Scene]):
             f"make_active={make_active}"
         )
 
-        try:
-            # Get act_id from active context if not provided
-            act_id = self._get_act_id_or_active(act_id)
+        # Get act_id from active context if not provided
+        act_id = self._get_act_id_or_active(act_id)
 
-            def _create_scene(session: Session) -> Scene:
-                # Check if act exists
-                act = self.get_entity_or_error(
-                    session,
-                    Act,
-                    act_id,
-                    SceneError,
-                    f"Act with ID '{act_id}' does not exist",
-                )
-                logger.debug(f"Found act: {act.title}")
-
-                # Check for duplicate titles
-                self._check_title_uniqueness(session, act_id, title)
-                logger.debug(f"Title '{title}' is unique in act {act_id}")
-
-                # Get the next sequence number
-                scenes = self.list_entities(
-                    Scene,
-                    filters={"act_id": act_id},
-                    order_by="sequence",
-                    order_direction="desc",
-                    limit=1,
-                )
-
-                sequence = 1
-                if scenes:
-                    sequence = scenes[0].sequence + 1
-                logger.debug(f"Using sequence number {sequence}")
-
-                # Create new scene
-                scene = Scene.create(
-                    act_id=act_id,
-                    title=title,
-                    description=description,
-                    sequence=sequence,
-                )
-                logger.debug(f"Created scene with ID {scene.id}")
-
-                if make_active:
-                    # Deactivate all other scenes
-                    session.query(Scene).filter(
-                        and_(Scene.act_id == act_id, Scene.is_active)
-                    ).update({"is_active": False})
-                    logger.debug(f"Deactivated all other scenes in act {act_id}")
-
-                    # Set this scene as active
-                    scene.is_active = True
-                    logger.debug(f"Set scene {scene.id} as active")
-
-                session.add(scene)
-                logger.info(
-                    f"Created scene '{title}' with ID {scene.id} in act {act_id}"
-                )
-                return scene
-
-            return self._execute_db_operation("create scene", _create_scene)
-        except Exception as e:
-            logger.error(
-                f"Error creating scene '{title}': {str(e)}",
-                exc_info=True,
+        def _create_scene(session: Session) -> Scene:
+            # Check if act exists
+            act = self.get_entity_or_error(
+                session,
+                Act,
+                act_id,
+                SceneError,
+                f"Act with ID '{act_id}' does not exist",
             )
-            self._handle_operation_error(f"create scene '{title}'", e, SceneError)
-            raise  # This will never be reached as _handle_operation_error raises
+            logger.debug(f"Found act: {act.title}")
+
+            # Check for duplicate titles
+            self._check_title_uniqueness(session, act_id, title)
+            logger.debug(f"Title '{title}' is unique in act {act_id}")
+
+            # Get the next sequence number
+            scenes = self.list_entities(
+                Scene,
+                filters={"act_id": act_id},
+                order_by="sequence",
+                order_direction="desc",
+                limit=1,
+            )
+
+            sequence = 1
+            if scenes:
+                sequence = scenes[0].sequence + 1
+            logger.debug(f"Using sequence number {sequence}")
+
+            # Create new scene
+            scene = Scene.create(
+                act_id=act_id,
+                title=title,
+                description=description,
+                sequence=sequence,
+            )
+            logger.debug(f"Created scene with ID {scene.id}")
+
+            if make_active:
+                # Deactivate all other scenes
+                session.query(Scene).filter(
+                    and_(Scene.act_id == act_id, Scene.is_active)
+                ).update({"is_active": False})
+                logger.debug(f"Deactivated all other scenes in act {act_id}")
+
+                # Set this scene as active
+                scene.is_active = True
+                logger.debug(f"Set scene {scene.id} as active")
+
+            session.add(scene)
+            logger.info(
+                f"Created scene '{title}' with ID {scene.id} in act {act_id}"
+            )
+            return scene
+
+        return self._execute_db_operation("create scene", _create_scene)
 
     def list_scenes(self, act_id: Optional[str] = None) -> List[Scene]:
         """List all scenes for an act.
@@ -379,26 +345,17 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         Raises:
             SceneError: If act_id is not provided and no active act is found.
+            ActError: If the specified act doesn't exist
         """
         logger.debug(f"Listing scenes for act_id={act_id or 'from active context'}")
 
-        try:
-            act_id = self._get_act_id_or_active(act_id)
+        act_id = self._get_act_id_or_active(act_id)
 
-            scenes = self.list_entities(
-                Scene, filters={"act_id": act_id}, order_by="sequence"
-            )
-            logger.debug(f"Found {len(scenes)} scenes in act {act_id}")
-            return scenes
-        except Exception as e:
-            logger.error(
-                f"Error listing scenes for act {act_id or 'unknown'}: {str(e)}",
-                exc_info=True
-            )
-            self._handle_operation_error(
-                f"list scenes for act {act_id or 'unknown'}", e, SceneError
-            )
-            return []  # This will never be reached as _handle_operation_error raises
+        scenes = self.list_entities(
+            Scene, filters={"act_id": act_id}, order_by="sequence"
+        )
+        logger.debug(f"Found {len(scenes)} scenes in act {act_id}")
+        return scenes
 
     def complete_scene(self, scene_id: str) -> Scene:
         """Mark a scene as complete without changing which scene is current.
@@ -410,7 +367,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             Updated Scene object.
 
         Raises:
-            SceneError: If there's an error completing the scene.
+            SceneError: If the scene doesn't exist or is already completed
         """
         logger.debug(f"Completing scene {scene_id}")
 
@@ -429,12 +386,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             logger.info(f"Marked scene {scene_id} as completed")
             return scene
 
-        try:
-            return self._execute_db_operation("complete scene", _complete_scene)
-        except Exception as e:
-            logger.error(f"Error completing scene {scene_id}: {str(e)}", exc_info=True)
-            self._handle_operation_error(f"complete scene {scene_id}", e, SceneError)
-            raise  # This will never be reached as _handle_operation_error raises
+        return self._execute_db_operation("complete scene", _complete_scene)
 
     def set_current_scene(self, scene_id: str) -> Scene:
         """Set which scene is currently being played without changing its status.
@@ -446,7 +398,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             The Scene object that was made current.
 
         Raises:
-            SceneError: If there's an error setting the current scene.
+            SceneError: If the scene doesn't exist
         """
         logger.debug(f"Setting scene {scene_id} as current")
 
@@ -468,12 +420,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             logger.info(f"Set scene {scene_id} as current")
             return scene
 
-        try:
-            return self._execute_db_operation("set current scene", _set_current_scene)
-        except Exception as e:
-            logger.error(f"Error setting current scene {scene_id}: {str(e)}", exc_info=True)
-            self._handle_operation_error(f"set current scene {scene_id}", e, SceneError)
-            raise  # This will never be reached as _handle_operation_error raises
+        return self._execute_db_operation("set current scene", _set_current_scene)
 
     def update_scene(
         self,
@@ -494,13 +441,18 @@ class SceneManager(BaseManager[Scene, Scene]):
             The updated Scene object
 
         Raises:
-            SceneError: If there's an error updating the scene
+            SceneError: If the scene doesn't exist or title isn't unique
+            ValueError: If neither title nor description is provided
         """
         logger.debug(
             f"Updating scene {scene_id}: "
             f"title={title or '(unchanged)'}, "
             f"description={description[:20] + '...' if description else '(unchanged)'}"
         )
+
+        # Validate input
+        if title is None and description is None:
+            raise ValueError("At least one of title or description must be provided")
 
         def _update_scene(session: Session) -> Scene:
             # Get the scene and raise error if not found
@@ -526,12 +478,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             logger.info(f"Updated scene {scene_id}")
             return scene
 
-        try:
-            return self._execute_db_operation("update scene", _update_scene)
-        except Exception as e:
-            logger.error(f"Error updating scene {scene_id}: {str(e)}", exc_info=True)
-            self._handle_operation_error(f"update scene {scene_id}", e, SceneError)
-            raise  # This will never be reached as _handle_operation_error raises
+        return self._execute_db_operation("update scene", _update_scene)
 
     def get_previous_scene(self, scene_id: str) -> Optional[Scene]:
         """Get the scene that comes before the specified scene in sequence.
@@ -547,31 +494,26 @@ class SceneManager(BaseManager[Scene, Scene]):
         """
         logger.debug(f"Getting previous scene for scene_id={scene_id}")
 
-        try:
-            scene = self.get_scene(scene_id)
-            if not scene:
-                logger.warning(f"Scene with ID {scene_id} not found")
-                return None
-
-            logger.debug(f"Found scene {scene_id}, sequence={scene.sequence}")
-
-            if scene.sequence <= 1:
-                logger.debug(f"Scene {scene_id} is the first scene (sequence {scene.sequence})")
-                return None
-
-            scenes = self.list_entities(
-                Scene,
-                filters={"act_id": scene.act_id, "sequence": scene.sequence - 1},
-                limit=1,
-            )
-
-            result = scenes[0] if scenes else None
-            logger.debug(f"Previous scene for {scene_id}: {result.id if result else 'None'}")
-            return result
-        except Exception as e:
-            logger.error(f"Error getting previous scene: {str(e)}", exc_info=True)
-            self._handle_operation_error(f"get previous scene for {scene_id}", e, SceneError)
+        scene = self.get_scene(scene_id)
+        if not scene:
+            logger.warning(f"Scene with ID {scene_id} not found")
             return None
+
+        logger.debug(f"Found scene {scene_id}, sequence={scene.sequence}")
+
+        if scene.sequence <= 1:
+            logger.debug(f"Scene {scene_id} is the first scene (sequence {scene.sequence})")
+            return None
+
+        scenes = self.list_entities(
+            Scene,
+            filters={"act_id": scene.act_id, "sequence": scene.sequence - 1},
+            limit=1,
+        )
+
+        result = scenes[0] if scenes else None
+        logger.debug(f"Previous scene for {scene_id}: {result.id if result else 'None'}")
+        return result
 
     def validate_active_context(self) -> Tuple[str, Scene]:
         """Validate active game, act, and scene context.
@@ -581,20 +523,13 @@ class SceneManager(BaseManager[Scene, Scene]):
 
         Raises:
             SceneError: If no active game, act, or scene
+            GameError: If there's an issue retrieving the active game
+            ActError: If there's an issue retrieving the active act
         """
         logger.debug("Validating active context")
-        try:
-            context = self.get_active_context()
-            logger.debug(
-                f"Active context validated: game={context['game'].id}, "
-                f"act={context['act'].id}, scene={context['scene'].id}"
-            )
-            return context["act"].id, context["scene"]
-        except Exception as e:
-            if not isinstance(e, SceneError):
-                logger.error(
-                    f"Error validating active context: {str(e)}", exc_info=True
-                )
-                self._handle_operation_error("validate active context", e, SceneError)
-            logger.warning(f"Active context validation failed: {str(e)}")
-            raise
+        context = self.get_active_context()
+        logger.debug(
+            f"Active context validated: game={context['game'].id}, "
+            f"act={context['act'].id}, scene={context['scene'].id}"
+        )
+        return context["act"].id, context["scene"]
