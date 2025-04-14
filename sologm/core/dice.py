@@ -138,9 +138,7 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
 
         # Roll dice for this scene
         result = self.roll(notation, reason, active_scene)
-        self.logger.debug(
-            f"Created dice roll with ID: {result.id} for active scene"
-        )
+        self.logger.debug(f"Created dice roll with ID: {result.id} for active scene")
         return result
 
     def get_recent_rolls(

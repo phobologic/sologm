@@ -38,13 +38,12 @@ class BaseManager(Generic[T, M]):
     """
 
     def __init__(self):
-        """Initialize the base manager.
-        """
+        """Initialize the base manager."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     def _get_session(self) -> Tuple[Session, bool]:
         """Get a database session from the singleton.
-        
+
         Returns:
             Tuple of (session, should_close)
             - session: The database session to use
@@ -52,7 +51,7 @@ class BaseManager(Generic[T, M]):
         """
         self.logger.debug("Getting session from singleton")
         from sologm.database.session import get_session
-        
+
         return get_session(), False
 
     def _convert_to_domain(self, db_model: M) -> T:

@@ -71,13 +71,13 @@ def setup_database_session(db_engine):
     """Configure DatabaseSession singleton for testing."""
     # Create a new DatabaseSession with the test engine
     test_db_session = DatabaseSession(engine=db_engine)
-    
+
     # Save and replace the singleton instance
     old_instance = DatabaseSession._instance
     DatabaseSession._instance = test_db_session
-    
+
     yield
-    
+
     # Restore the original singleton
     DatabaseSession._instance = old_instance
 
