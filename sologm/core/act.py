@@ -38,16 +38,14 @@ class ActManager(BaseManager[Act, Act]):
     @property
     def game_manager(self) -> "GameManager":
         """Lazy-initialize game manager if not provided."""
-        return self._lazy_init_manager("_game_manager",
-                                       "sologm.core.game.GameManager")
+        return self._lazy_init_manager("_game_manager", "sologm.core.game.GameManager")
 
     # Child manager access
     @property
     def scene_manager(self) -> "SceneManager":
         """Lazy-initialize scene manager."""
         return self._lazy_init_manager(
-            "_scene_manager", "sologm.core.scene.SceneManager",
-            act_manager=self
+            "_scene_manager", "sologm.core.scene.SceneManager", act_manager=self
         )
 
     def create_act(
@@ -344,9 +342,7 @@ class ActManager(BaseManager[Act, Act]):
             act.is_active = False
             logger.debug("Set is_active to False")
 
-            logger.info(
-                f"Completed act {act_id}: title='{act.title or 'Untitled'}'"
-            )
+            logger.info(f"Completed act {act_id}: title='{act.title or 'Untitled'}'")
             return act
 
         return self._execute_db_operation("complete_act", _complete_act)
@@ -370,9 +366,7 @@ class ActManager(BaseManager[Act, Act]):
             act = self.get_entity_or_error(
                 session, Act, act_id, GameError, f"Act with ID {act_id} not found"
             )
-            logger.debug(
-                f"Found act: {act.title or 'Untitled'} in game {act.game_id}"
-            )
+            logger.debug(f"Found act: {act.title or 'Untitled'} in game {act.game_id}")
 
             # Deactivate all acts in this game
             self._deactivate_all_acts(session, act.game_id)
@@ -483,9 +477,7 @@ class ActManager(BaseManager[Act, Act]):
                     scene_id=scene.id
                 )
                 events_by_scene[scene.id] = scene_events
-                logger.debug(
-                    f"Found {len(scene_events)} events for scene {scene.id}"
-                )
+                logger.debug(f"Found {len(scene_events)} events for scene {scene.id}")
 
             # Format the data
             act_data = {

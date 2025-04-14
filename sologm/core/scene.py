@@ -76,13 +76,13 @@ class SceneManager(BaseManager[Scene, Scene]):
 
     def _get_act_id_or_active(self, act_id: Optional[str] = None) -> str:
         """Get the provided act_id or retrieve the active act's ID.
-        
+
         Args:
             act_id: Optional act ID to use
-            
+
         Returns:
             The act ID to use
-            
+
         Raises:
             SceneError: If no act_id provided and no active act found
         """
@@ -148,7 +148,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             ActError: If there's an issue retrieving the active act
         """
         logger.debug("Getting active context")
-        
+
         # Get the active game
         active_game = self.game_manager.get_active_game()
         if not active_game:
@@ -208,9 +208,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             Scene, filters={"act_id": act_id, "id": scene_id}, limit=1
         )
         result = scenes[0] if scenes else None
-        logger.debug(
-            f"Found scene in act {act_id}: {result.id if result else 'None'}"
-        )
+        logger.debug(f"Found scene in act {act_id}: {result.id if result else 'None'}")
         return result
 
     def get_active_scene(self, act_id: Optional[str] = None) -> Optional[Scene]:
@@ -326,9 +324,7 @@ class SceneManager(BaseManager[Scene, Scene]):
                 logger.debug(f"Set scene {scene.id} as active")
 
             session.add(scene)
-            logger.info(
-                f"Created scene '{title}' with ID {scene.id} in act {act_id}"
-            )
+            logger.info(f"Created scene '{title}' with ID {scene.id} in act {act_id}")
             return scene
 
         return self._execute_db_operation("create scene", _create_scene)
@@ -465,9 +461,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             if title is not None:
                 if scene.title != title:
                     logger.debug(f"Checking uniqueness for new title: {title}")
-                    self._check_title_uniqueness(
-                        session, scene.act_id, title, scene_id
-                    )
+                    self._check_title_uniqueness(session, scene.act_id, title, scene_id)
                     logger.debug(f"Title '{title}' is unique in act {scene.act_id}")
                     scene.title = title
 
@@ -502,7 +496,9 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug(f"Found scene {scene_id}, sequence={scene.sequence}")
 
         if scene.sequence <= 1:
-            logger.debug(f"Scene {scene_id} is the first scene (sequence {scene.sequence})")
+            logger.debug(
+                f"Scene {scene_id} is the first scene (sequence {scene.sequence})"
+            )
             return None
 
         scenes = self.list_entities(
@@ -512,7 +508,9 @@ class SceneManager(BaseManager[Scene, Scene]):
         )
 
         result = scenes[0] if scenes else None
-        logger.debug(f"Previous scene for {scene_id}: {result.id if result else 'None'}")
+        logger.debug(
+            f"Previous scene for {scene_id}: {result.id if result else 'None'}"
+        )
         return result
 
     def validate_active_context(self) -> Tuple[str, Scene]:

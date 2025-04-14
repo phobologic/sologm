@@ -233,4 +233,3 @@ class BaseManager(Generic[T, M]):
             setattr(self, attr_name, manager_class(**kwargs))
 
         return getattr(self, attr_name)
-

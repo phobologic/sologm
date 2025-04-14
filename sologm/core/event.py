@@ -62,7 +62,7 @@ class EventManager(BaseManager[Event, Event]):
             GameError: If there's an issue retrieving the active game
         """
         self.logger.debug("Getting active scene ID")
-        
+
         # Get the active game first
         game = self.game_manager.get_active_game()
         if not game:
@@ -90,7 +90,7 @@ class EventManager(BaseManager[Event, Event]):
             ActError: If there's an issue with the act
         """
         self.logger.debug("Validating active context from EventManager")
-        
+
         # Use the scene_manager to validate the active context
         act_id, scene = self.scene_manager.validate_active_context()
 
@@ -99,8 +99,7 @@ class EventManager(BaseManager[Event, Event]):
         game_id = act.game_id
 
         self.logger.debug(
-            f"Active context validated: game={game_id}, "
-            f"act={act_id}, scene={scene.id}"
+            f"Active context validated: game={game_id}, act={act_id}, scene={scene.id}"
         )
         return game_id, scene.id
 
