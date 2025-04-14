@@ -416,7 +416,7 @@ class TestSceneManager:
             )
 
     def test_get_active_context(
-        self, scene_manager, game_manager, test_game, ensure_active_act, monkeypatch
+        self, scene_manager, test_game, ensure_active_act
     ):
         """Test getting active game, act, and scene context."""
         active_act = ensure_active_act
@@ -427,19 +427,13 @@ class TestSceneManager:
             description="Currently active",
         )
 
-        # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(scene_manager, "game_manager", game_manager)
-        monkeypatch.setattr(
-            scene_manager, "act_manager", ActManager(session=scene_manager._session)
-        )
-
         context = scene_manager.get_active_context()
         assert context["game"].id == test_game.id
         assert context["act"].id == active_act.id
         assert context["scene"].id == scene.id
 
     def test_validate_active_context(
-        self, scene_manager, game_manager, test_game, ensure_active_act, monkeypatch
+        self, scene_manager, test_game, ensure_active_act
     ):
         """Test validating active game and scene context."""
         active_act = ensure_active_act
@@ -448,12 +442,6 @@ class TestSceneManager:
             act_id=active_act.id,
             title="Active Scene",
             description="Currently active",
-        )
-
-        # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(scene_manager, "game_manager", game_manager)
-        monkeypatch.setattr(
-            scene_manager, "act_manager", ActManager(session=scene_manager._session)
         )
 
         act_id, active_scene = scene_manager.validate_active_context()
@@ -483,33 +471,22 @@ class TestSceneManager:
         assert wrong_scene is None
 
     def test_validate_active_context_no_game(
-        self, scene_manager, game_manager, db_session, monkeypatch
+        self, scene_manager, db_session
     ):
         """Test validation with no active game."""
         # Deactivate all games
         db_session.query(Game).update({Game.is_active: False})
         db_session.commit()
 
-        # Monkeypatch the game_manager property
-        monkeypatch.setattr(scene_manager, "game_manager", game_manager)
-
         with pytest.raises(SceneError) as exc:
             scene_manager.validate_active_context()
         assert "No active game" in str(exc.value)
 
     def test_create_scene_with_active_act(
-        self, scene_manager, test_game, db_session, ensure_active_act, monkeypatch
+        self, scene_manager, test_game, ensure_active_act
     ) -> None:
         """Test creating a scene using the active act."""
         active_act = ensure_active_act
-
-        # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(
-            scene_manager, "game_manager", GameManager(session=db_session)
-        )
-        monkeypatch.setattr(
-            scene_manager, "act_manager", ActManager(session=db_session)
-        )
 
         scene = scene_manager.create_scene(
             title="Active Act Scene",
@@ -523,18 +500,10 @@ class TestSceneManager:
         assert scene.is_active
 
     def test_list_scenes_with_active_act(
-        self, scene_manager, test_game, db_session, ensure_active_act, monkeypatch
+        self, scene_manager, test_game, ensure_active_act
     ) -> None:
         """Test listing scenes using the active act."""
         active_act = ensure_active_act
-
-        # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(
-            scene_manager, "game_manager", GameManager(session=db_session)
-        )
-        monkeypatch.setattr(
-            scene_manager, "act_manager", ActManager(session=db_session)
-        )
 
         # Create some test scenes
         scene1 = scene_manager.create_scene(
@@ -555,18 +524,10 @@ class TestSceneManager:
         assert scenes[0].sequence < scenes[1].sequence
 
     def test_get_active_scene_without_act_id(
-        self, scene_manager, test_game, db_session, ensure_active_act, monkeypatch
+        self, scene_manager, test_game, ensure_active_act
     ) -> None:
         """Test getting the active scene without providing an act_id."""
         active_act = ensure_active_act
-
-        # Monkeypatch the game_manager and act_manager properties
-        monkeypatch.setattr(
-            scene_manager, "game_manager", GameManager(session=db_session)
-        )
-        monkeypatch.setattr(
-            scene_manager, "act_manager", ActManager(session=db_session)
-        )
 
         # Create a scene to be active
         scene = scene_manager.create_scene(
@@ -610,18 +571,10 @@ def test_create_scene_with_make_active_false(
 
 
 def test_get_act_id_or_active(
-    self, scene_manager, test_game, ensure_active_act, monkeypatch
+    self, scene_manager, test_game, ensure_active_act
 ) -> None:
     """Test the _get_act_id_or_active helper method."""
     active_act = ensure_active_act
-
-    # Monkeypatch the game_manager and act_manager properties
-    monkeypatch.setattr(
-        scene_manager, "game_manager", GameManager(session=scene_manager._session)
-    )
-    monkeypatch.setattr(
-        scene_manager, "act_manager", ActManager(session=scene_manager._session)
-    )
 
     # Test with provided act_id
     act_id = scene_manager._get_act_id_or_active("test-act-id")

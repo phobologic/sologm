@@ -73,33 +73,37 @@ def game_manager(db_session):
 
 
 @pytest.fixture
-def act_manager(db_session):
-    """Create an ActManager with a test session."""
-    return ActManager(session=db_session)
+def act_manager(game_manager, db_session):
+    """Create an ActManager with a test session and game manager."""
+    return ActManager(game_manager=game_manager, session=db_session)
 
 
 @pytest.fixture
-def scene_manager(db_session):
-    """Create a SceneManager with a test session."""
-    return SceneManager(session=db_session)
+def scene_manager(act_manager, db_session):
+    """Create a SceneManager with a test session and act manager."""
+    return SceneManager(act_manager=act_manager, session=db_session)
 
 
 @pytest.fixture
-def event_manager(db_session):
-    """Create an EventManager with a test session."""
-    return EventManager(session=db_session)
+def event_manager(scene_manager, db_session):
+    """Create an EventManager with a test session and scene manager."""
+    return EventManager(scene_manager=scene_manager, session=db_session)
 
 
 @pytest.fixture
-def dice_manager(db_session):
-    """Create a DiceManager with a test session."""
-    return DiceManager(session=db_session)
+def dice_manager(scene_manager, db_session):
+    """Create a DiceManager with a test session and scene manager."""
+    return DiceManager(scene_manager=scene_manager, session=db_session)
 
 
 @pytest.fixture
-def oracle_manager(mock_anthropic_client, db_session):
-    """Create an OracleManager with a test session."""
-    return OracleManager(anthropic_client=mock_anthropic_client, session=db_session)
+def oracle_manager(scene_manager, mock_anthropic_client, db_session):
+    """Create an OracleManager with a test session, scene manager and mock client."""
+    return OracleManager(
+        scene_manager=scene_manager,
+        anthropic_client=mock_anthropic_client, 
+        session=db_session
+    )
 
 
 # Model factory fixtures
