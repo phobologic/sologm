@@ -78,7 +78,6 @@ class SceneManager(BaseManager[Scene, Scene]):
 - `get_entity_or_error()`: Retrieve an entity by ID or raise a specific error
 - `list_entities()`: List entities with filtering, ordering, and pagination
 - `_lazy_init_manager()`: Consistently initialize related managers
-- `_handle_operation_error()`: Standardize error handling across operations
 
 ## Database Operations
 
