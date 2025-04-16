@@ -60,8 +60,10 @@ class SceneManager(BaseManager[Scene, Scene]):
     def oracle_manager(self) -> "OracleManager":
         """Lazy-initialize oracle manager."""
         return self._lazy_init_manager(
-            "_oracle_manager", "sologm.core.oracle.OracleManager", 
-            scene_manager=self, session=self._session
+            "_oracle_manager",
+            "sologm.core.oracle.OracleManager",
+            scene_manager=self,
+            session=self._session,
         )
 
     @property

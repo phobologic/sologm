@@ -34,7 +34,7 @@ def add_scene(
 ) -> None:
     """Add a new scene to the active act."""
     from sologm.database.session import get_db_context
-    
+
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
@@ -54,7 +54,9 @@ def add_scene(
 
                 active_act = scene_manager.act_manager.get_active_act(active_game.id)
                 if not active_act:
-                    raise ActError("No active act. Create one with 'sologm act create'.")
+                    raise ActError(
+                        "No active act. Create one with 'sologm act create'."
+                    )
 
                 act_id = active_act.id
 
@@ -77,7 +79,7 @@ def list_scenes() -> None:
     """List all scenes in the active act."""
     from sologm.database.session import get_db_context
     from sologm.cli.utils.display import display_scenes_table
-    
+
     with get_db_context() as session:
         scene_manager = SceneManager(session=session)
 
@@ -89,7 +91,9 @@ def list_scenes() -> None:
             # If there's no active scene, we still need the active act
             active_game = scene_manager.game_manager.get_active_game()
             if not active_game:
-                raise GameError("No active game. Use 'sologm game activate' to set one.")
+                raise GameError(
+                    "No active game. Use 'sologm game activate' to set one."
+                )
 
             active_act = scene_manager.act_manager.get_active_act(active_game.id)
             if not active_act:
@@ -113,11 +117,11 @@ def scene_info(
 ) -> None:
     """Show information about the active scene and its events."""
     from sologm.database.session import get_db_context
-    
+
     try:
         with get_db_context() as session:
             scene_manager = SceneManager(session=session)
-            
+
             _, active_scene = scene_manager.validate_active_context()
 
             # Display scene information
@@ -132,7 +136,9 @@ def scene_info(
                 events = event_manager.list_events(scene_id=active_scene.id)
 
                 # Display events table - decide whether to truncate based on number of events
-                truncate_descriptions = len(events) > 3  # Truncate if more than 3 events
+                truncate_descriptions = (
+                    len(events) > 3
+                )  # Truncate if more than 3 events
                 console.print()  # Add a blank line for separation
                 display_events_table(
                     console,
@@ -149,7 +155,7 @@ def scene_info(
 def complete_scene() -> None:
     """Complete the active scene."""
     from sologm.database.session import get_db_context
-    
+
     try:
         with get_db_context() as session:
             scene_manager = SceneManager(session=session)
@@ -177,7 +183,7 @@ def edit_scene(
         StructuredEditorConfig,
         edit_structured_data,
     )
-    
+
     try:
         with get_db_context() as session:
             # Initialize the scene_manager with the session
@@ -259,7 +265,7 @@ def set_current_scene(
 ) -> None:
     """Set which scene is currently being played."""
     from sologm.database.session import get_db_context
-    
+
     try:
         with get_db_context() as session:
             scene_manager = SceneManager(session=session)
@@ -276,7 +282,9 @@ def set_current_scene(
 
                 active_act = scene_manager.act_manager.get_active_act(active_game.id)
                 if not active_act:
-                    raise ActError("No active act. Create one with 'sologm act create'.")
+                    raise ActError(
+                        "No active act. Create one with 'sologm act create'."
+                    )
 
                 act_id = active_act.id
 
