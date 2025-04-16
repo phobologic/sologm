@@ -64,8 +64,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     def scene_manager(self) -> SceneManager:
         """Lazy-initialize scene manager if not provided."""
         return self._lazy_init_manager(
-            "_scene_manager", 
-            "sologm.core.scene.SceneManager"
+            "_scene_manager", "sologm.core.scene.SceneManager"
         )
 
     @property
@@ -82,9 +81,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     def event_manager(self) -> EventManager:
         """Lazy-initialize event manager if not provided."""
         return self._lazy_init_manager(
-            "_event_manager", 
+            "_event_manager",
             "sologm.core.event.EventManager",
-            scene_manager=self.scene_manager
+            scene_manager=self.scene_manager,
         )
 
     def get_active_context(self) -> Tuple[Scene, Act, Game]:

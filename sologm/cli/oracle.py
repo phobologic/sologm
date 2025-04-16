@@ -33,7 +33,7 @@ def interpret_oracle(
 ) -> None:
     """Get interpretations for oracle results."""
     from sologm.database.session import get_db_context
-    
+
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
@@ -82,7 +82,7 @@ def retry_interpretation(
 ) -> None:
     """Request new interpretations using current context and results."""
     from sologm.database.session import get_db_context
-    
+
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
@@ -179,7 +179,7 @@ def retry_interpretation(
 def show_interpretation_status() -> None:
     """Show current interpretation set status."""
     from sologm.database.session import get_db_context
-    
+
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
@@ -236,7 +236,7 @@ def select_interpretation(
     - The full UUID
     """
     from sologm.database.session import get_db_context
-    
+
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
