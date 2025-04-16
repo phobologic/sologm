@@ -72,10 +72,14 @@ def create_act(
         $ sologm act create -t "The Journey Begins"
     """
     logger.debug("Creating new act")
-
-    # Get the active game
-    game_manager = GameManager()
-    active_game = game_manager.get_active_game()
+    
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        game_manager = GameManager(session=session)
+        active_game = game_manager.get_active_game()
     if not active_game:
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
@@ -208,15 +212,19 @@ def generate_act_summary(
     """
     logger.debug("Generating act summary")
 
-    # Get the active game
-    game_manager = GameManager()
-    active_game = game_manager.get_active_game()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize managers with the session
+        game_manager = GameManager(session=session)
+        active_game = game_manager.get_active_game()
     if not active_game:
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
 
     # Get the act to summarize
-    act_manager = ActManager()
+    act_manager = ActManager(session=session)
     if act_id:
         act = act_manager.get_act(act_id)
         if not act:
@@ -307,9 +315,13 @@ def list_acts() -> None:
     """
     logger.debug("Listing acts")
 
-    # Get the active game
-    game_manager = GameManager()
-    active_game = game_manager.get_active_game()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        game_manager = GameManager(session=session)
+        active_game = game_manager.get_active_game()
     if not active_game:
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
@@ -343,9 +355,13 @@ def act_info() -> None:
     """
     logger.debug("Showing act info")
 
-    # Get the active game
-    game_manager = GameManager()
-    active_game = game_manager.get_active_game()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        game_manager = GameManager(session=session)
+        active_game = game_manager.get_active_game()
     if not active_game:
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
@@ -393,15 +409,19 @@ def edit_act(
     """
     logger.debug("Editing act")
 
-    # Get the active game
-    game_manager = GameManager()
-    active_game = game_manager.get_active_game()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        game_manager = GameManager(session=session)
+        active_game = game_manager.get_active_game()
     if not active_game:
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
 
     # Get the active act
-    act_manager = ActManager()
+    act_manager = ActManager(session=session)
     active_act = act_manager.get_active_act(active_game.id)
     if not active_act:
         console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
@@ -527,15 +547,19 @@ def complete_act(
     """
     logger.debug("Completing act")
 
-    # Get the active game
-    game_manager = GameManager()
-    active_game = game_manager.get_active_game()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        game_manager = GameManager(session=session)
+        active_game = game_manager.get_active_game()
     if not active_game:
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
 
     # Get the active act
-    act_manager = ActManager()
+    act_manager = ActManager(session=session)
     active_act = act_manager.get_active_act(active_game.id)
     if not active_act:
         console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")

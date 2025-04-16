@@ -23,13 +23,15 @@ class ActManager(BaseManager[Act, Act]):
     def __init__(
         self,
         game_manager: Optional["GameManager"] = None,
+        session: Optional[Session] = None,
     ):
         """Initialize the act manager.
 
         Args:
             game_manager: Optional GameManager instance.
+            session: Optional database session for testing or CLI command injection.
         """
-        super().__init__()
+        super().__init__(session=session)
         self._game_manager = game_manager
 
     # Parent manager access
