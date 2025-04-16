@@ -34,8 +34,12 @@ def add_event(
 
     If no description is provided, opens an editor to create the event.
     """
-    # Initialize only the EventManager
-    event_manager = EventManager()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        event_manager = EventManager(session=session)
 
     try:
         # Validate active context - no need to pass other managers
@@ -157,8 +161,12 @@ def edit_event(
 
     If no event ID is provided, edits the most recent event in the current scene.
     """
-    # Initialize only the EventManager
-    event_manager = EventManager()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        event_manager = EventManager(session=session)
 
     try:
         # Validate active context
@@ -297,8 +305,12 @@ def edit_event(
 @event_app.command("sources")
 def list_event_sources() -> None:
     """List all available event sources."""
-    # Initialize only the EventManager
-    event_manager = EventManager()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        event_manager = EventManager(session=session)
 
     try:
         sources = event_manager.get_event_sources()
@@ -323,8 +335,12 @@ def list_events(
     ),
 ) -> None:
     """List events in the current scene or a specified scene."""
-    # Initialize only the EventManager
-    event_manager = EventManager()
+    from sologm.database.session import get_db_context
+    
+    # Use a single session for the entire command
+    with get_db_context() as session:
+        # Initialize manager with the session
+        event_manager = EventManager(session=session)
 
     try:
         game_id, current_scene_id = event_manager.validate_active_context()

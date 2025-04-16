@@ -22,21 +22,23 @@ class EventManager(BaseManager[Event, Event]):
 
     def __init__(
         self,
+        session: Optional[Session] = None,
         scene_manager: Optional[SceneManager] = None,
     ):
         """Initialize the EventManager.
 
         Args:
+            session: Optional database session for testing or CLI command injection
             scene_manager: Optional SceneManager instance
         """
-        super().__init__()
+        super().__init__(session=session)
         self._scene_manager = scene_manager
 
     @property
     def scene_manager(self) -> SceneManager:
         """Lazy-initialize scene manager."""
         return self._lazy_init_manager(
-            "_scene_manager", "sologm.core.scene.SceneManager"
+            "_scene_manager", "sologm.core.scene.SceneManager", session=self._session
         )
 
     @property
