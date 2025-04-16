@@ -60,20 +60,23 @@ class SceneManager(BaseManager[Scene, Scene]):
     def oracle_manager(self) -> "OracleManager":
         """Lazy-initialize oracle manager."""
         return self._lazy_init_manager(
-            "_oracle_manager", "sologm.core.oracle.OracleManager", scene_manager=self
+            "_oracle_manager", "sologm.core.oracle.OracleManager", 
+            scene_manager=self, session=self._session
         )
 
     @property
     def event_manager(self) -> "EventManager":
         """Lazy-initialize event manager."""
         return self._lazy_init_manager(
-            "_event_manager", "sologm.core.event.EventManager"
+            "_event_manager", "sologm.core.event.EventManager", session=self._session
         )
 
     @property
     def dice_manager(self) -> "DiceManager":
         """Lazy-initialize dice manager."""
-        return self._lazy_init_manager("_dice_manager", "sologm.core.dice.DiceManager")
+        return self._lazy_init_manager(
+            "_dice_manager", "sologm.core.dice.DiceManager", session=self._session
+        )
 
     def _get_act_id_or_active(self, act_id: Optional[str] = None) -> str:
         """Get the provided act_id or retrieve the active act's ID.
