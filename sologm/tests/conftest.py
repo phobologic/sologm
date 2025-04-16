@@ -40,7 +40,7 @@ def db_engine():
 @pytest.fixture
 def db_session(database_manager):
     """Get a SQLAlchemy session from the test DatabaseManager.
-    
+
     This mimics how sessions are obtained in production code.
     """
     logger.debug("Initializing db_session")
@@ -55,21 +55,21 @@ def db_session(database_manager):
 @pytest.fixture(scope="function")
 def database_manager(db_engine):
     """Create a DatabaseManager instance for testing.
-    
+
     This replaces the singleton with a test-specific instance that
     uses an in-memory SQLite database, ensuring test isolation.
     """
     from sologm.database.session import DatabaseManager
-    
+
     # Save original instance
     old_instance = DatabaseManager._instance
-    
+
     # Create new instance with test engine
     db_manager = DatabaseManager(engine=db_engine)
     DatabaseManager._instance = db_manager
-    
+
     yield db_manager
-    
+
     # Restore original instance
     DatabaseManager._instance = old_instance
 
@@ -85,11 +85,11 @@ def mock_anthropic_client():
 @pytest.fixture
 def db_context(database_manager):
     """Create a SessionContext for testing.
-    
+
     This uses the actual SessionContext with our test DatabaseManager.
     """
     from sologm.database.session import SessionContext
-    
+
     # Create a SessionContext using our test DatabaseManager
     return SessionContext(db_manager=database_manager)
 
@@ -99,7 +99,7 @@ def db_context(database_manager):
 def setup_database_manager(db_engine):
     """Configure DatabaseManager singleton for testing."""
     from sologm.database.session import DatabaseManager
-    
+
     # Create a new DatabaseManager with the test engine
     test_db_manager = DatabaseManager(engine=db_engine)
 
