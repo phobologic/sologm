@@ -84,8 +84,8 @@ def roll_dice_command(
             )
 
         logger.debug(
-            f'Rolling dice with notation: {notation}, reason: '
-            f'{reason}, scene_id: {scene.id if scene else "NA"}'
+            f"Rolling dice with notation: {notation}, reason: "
+            f"{reason}, scene_id: {scene.id if scene else 'NA'}"
         )
 
         result = dice_manager.roll(notation, reason, scene)
