@@ -13,30 +13,63 @@ from sologm.models.base import Base
 # Set up logger
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T", bound="DatabaseSession")
+T = TypeVar("T", bound="DatabaseManager")
 
 
-class DatabaseSession:
-    """Manages database connections and sessions."""
+class DatabaseManager:
+    """Manages database connections, engine configuration, and session creation.
+    
+    This class follows the singleton pattern to ensure a single database connection
+    pool is used throughout the application. It's responsible for:
+    
+    1. Creating and configuring the SQLAlchemy engine with connection pooling
+    2. Providing a session factory for creating database sessions
+    3. Managing database-wide operations like table creation
+    4. Disposing of connections when the application shuts down
+    
+    The singleton instance should be initialized once at application startup using
+    the `initialize_database()` function or `get_instance()` class method.
+    
+    Attributes:
+        engine: SQLAlchemy engine instance managing the connection pool
+        session: SQLAlchemy scoped_session factory for creating sessions
+        
+    Example:
+        # At application startup
+        db_manager = initialize_database("postgresql://user:pass@localhost/dbname")
+        
+        # Getting a session directly (not recommended for application code)
+        session = db_manager.get_session()
+        try:
+            # Use session
+            session.commit()
+        finally:
+            session.close()
+            
+        # Preferred approach is to use SessionContext
+        with get_db_context() as session:
+            # Use session
+            # Auto-commits on exit if no exceptions
+    """
 
-    _instance: Optional["DatabaseSession"] = None
+    _instance: Optional["DatabaseManager"] = None
     engine: Engine
     session: scoped_session
 
     @classmethod
     def get_instance(
         cls: Type[T], db_url: Optional[str] = None, engine: Optional[Engine] = None
-    ) -> "DatabaseSession":
-        """Get or create the singleton instance of DatabaseSession.
+    ) -> "DatabaseManager":
+        """Get or create the singleton instance of DatabaseManager.
 
         Args:
             db_url: Database URL (e.g., 'postgresql://user:pass@localhost/dbname')
             engine: Pre-configured SQLAlchemy engine instance
         Returns:
-            The DatabaseSession instance.
+            The DatabaseManager instance.
         """
         if cls._instance is None:
-            cls._instance = DatabaseSession(db_url=db_url, engine=engine)
+            cls._instance = DatabaseManager(db_url=db_url, engine=engine)
         return cls._instance
 
     def __init__(
@@ -111,17 +144,42 @@ class DatabaseSession:
 
 # Context manager for session handling
 class SessionContext:
-    """Context manager for database sessions."""
+    """Context manager for database sessions and transaction management.
+    
+    This class provides a clean, Pythonic way to handle database sessions with
+    proper transaction boundaries and resource cleanup. It ensures that:
+    
+    1. A new session is created when entering the context
+    2. The transaction is committed automatically if no exceptions occur
+    3. The transaction is rolled back if an exception occurs
+    4. The session is properly closed in all cases
+    
+    This is the recommended way to use database sessions in application code,
+    as it handles all the transaction management and cleanup automatically.
+    
+    Attributes:
+        session: The SQLAlchemy session (available after entering the context)
+        
+    Example:
+        # In application code
+        from sologm.database.session import get_db_context
+        
+        with get_db_context() as session:
+            user = session.query(User).filter(User.id == user_id).first()
+            user.name = "New Name"
+            # No need to call commit - happens automatically on exit
+            # If an exception occurs, transaction is rolled back
+    """
 
     session: Optional[Session] = None
 
-    def __init__(self, db_session: Optional[DatabaseSession] = None) -> None:
-        """Initialize with optional database session.
+    def __init__(self, db_manager: Optional[DatabaseManager] = None) -> None:
+        """Initialize with optional database manager.
 
         Args:
-            db_session: Database session to use (uses singleton if None)
+            db_manager: Database manager to use (uses singleton if None)
         """
-        self._db = db_session or DatabaseSession.get_instance()
+        self._db = db_manager or DatabaseManager.get_instance()
         self.session = None
 
     def __enter__(self) -> Session:
@@ -155,7 +213,7 @@ class SessionContext:
 # Convenience functions
 def initialize_database(
     db_url: Optional[str] = None, engine: Optional[Engine] = None
-) -> DatabaseSession:
+) -> DatabaseManager:
     """Initialize the database and create tables if they don't exist.
 
     Args:
@@ -163,7 +221,7 @@ def initialize_database(
         engine: Pre-configured SQLAlchemy engine instance
                 (required if db_url is not provided)
     Returns:
-        The DatabaseSession instance.
+        The DatabaseManager instance.
 
     Raises:
         ValueError: If neither db_url nor engine is provided
@@ -173,7 +231,7 @@ def initialize_database(
         logger.error("No db_url or engine provided to initialize_database")
         raise ValueError("Either db_url or engine must be provided")
 
-    db = DatabaseSession.get_instance(db_url=db_url, engine=engine)
+    db = DatabaseManager.get_instance(db_url=db_url, engine=engine)
     db.create_tables()
     logger.info("Database initialized successfully")
     return db
@@ -185,17 +243,25 @@ def get_session() -> Session:
         A new SQLAlchemy session.
     """
     logger.debug("Getting new session from singleton")
-    return DatabaseSession.get_instance().get_session()
+    return DatabaseManager.get_instance().get_session()
 
 
 def get_db_context() -> SessionContext:
-    """Get a database session context manager.
-
+    """Get a database session context manager for safe transaction handling.
+    
+    This is the recommended way to obtain and use database sessions in application
+    code. It returns a context manager that handles session creation, transaction
+    boundaries, and resource cleanup automatically.
+    
     Returns:
-        A session context manager.
-
+        A session context manager that yields a SQLAlchemy session when entered
+        
     Example:
         with get_db_context() as session:
-            user = session.query(User).first()
+            # Perform database operations
+            user = session.query(User).filter(User.id == user_id).first()
+            user.name = "New Name"
+            # Changes are committed automatically when the context exits
+            # If an exception occurs, changes are rolled back
     """
     return SessionContext()

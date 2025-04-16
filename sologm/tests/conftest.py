@@ -38,24 +38,40 @@ def db_engine():
 
 
 @pytest.fixture
-def db_session(db_engine):
-    """Create a new database session for a test."""
+def db_session(database_manager):
+    """Get a SQLAlchemy session from the test DatabaseManager.
+    
+    This mimics how sessions are obtained in production code.
+    """
     logger.debug("Initializing db_session")
-    session = Session(bind=db_engine)
+    session = database_manager.get_session()
     logger.debug("Yielding db session.")
     yield session
     logger.debug("Closing db session.")
     session.close()
+    database_manager.close_session()
 
 
-@pytest.fixture
-def database_session(db_engine):
-    """Create a DatabaseSession instance for testing."""
-    db_session = DatabaseSession(engine=db_engine)
-    old_instance = DatabaseSession._instance
-    DatabaseSession._instance = db_session
-    yield db_session
-    DatabaseSession._instance = old_instance
+@pytest.fixture(scope="function")
+def database_manager(db_engine):
+    """Create a DatabaseManager instance for testing.
+    
+    This replaces the singleton with a test-specific instance that
+    uses an in-memory SQLite database, ensuring test isolation.
+    """
+    from sologm.database.session import DatabaseManager
+    
+    # Save original instance
+    old_instance = DatabaseManager._instance
+    
+    # Create new instance with test engine
+    db_manager = DatabaseManager(engine=db_engine)
+    DatabaseManager._instance = db_manager
+    
+    yield db_manager
+    
+    # Restore original instance
+    DatabaseManager._instance = old_instance
 
 
 # Mock fixtures
@@ -67,19 +83,21 @@ def mock_anthropic_client():
 
 # Manager fixtures
 @pytest.fixture(autouse=True)
-def setup_database_session(db_engine):
-    """Configure DatabaseSession singleton for testing."""
-    # Create a new DatabaseSession with the test engine
-    test_db_session = DatabaseSession(engine=db_engine)
+def setup_database_manager(db_engine):
+    """Configure DatabaseManager singleton for testing."""
+    from sologm.database.session import DatabaseManager
+    
+    # Create a new DatabaseManager with the test engine
+    test_db_manager = DatabaseManager(engine=db_engine)
 
     # Save and replace the singleton instance
-    old_instance = DatabaseSession._instance
-    DatabaseSession._instance = test_db_session
+    old_instance = DatabaseManager._instance
+    DatabaseManager._instance = test_db_manager
 
     yield
 
     # Restore the original singleton
-    DatabaseSession._instance = old_instance
+    DatabaseManager._instance = old_instance
 
 
 @pytest.fixture
