@@ -28,7 +28,7 @@ class TestActManager:
             game_manager=mock_game_manager, session=db_session
         )
         assert act_manager_with_parent.game_manager is mock_game_manager
-        
+
         # Test session is passed correctly
         assert act_manager_with_parent._session is db_session
 

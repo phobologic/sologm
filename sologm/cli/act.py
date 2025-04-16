@@ -72,9 +72,9 @@ def create_act(
         $ sologm act create -t "The Journey Begins"
     """
     logger.debug("Creating new act")
-    
+
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
@@ -213,7 +213,7 @@ def generate_act_summary(
     logger.debug("Generating act summary")
 
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize managers with the session
@@ -316,7 +316,7 @@ def list_acts() -> None:
     logger.debug("Listing acts")
 
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
@@ -356,7 +356,7 @@ def act_info() -> None:
     logger.debug("Showing act info")
 
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
@@ -410,7 +410,7 @@ def edit_act(
     logger.debug("Editing act")
 
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
@@ -548,7 +548,7 @@ def complete_act(
     logger.debug("Completing act")
 
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
