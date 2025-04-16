@@ -36,7 +36,7 @@ def create_game(
 ) -> None:
     """Create a new game."""
     from sologm.database.session import get_db_context
-    
+
     try:
         logger.debug(f"Creating game with name='{name}', description='{description}'")
         with get_db_context() as session:
@@ -54,7 +54,7 @@ def create_game(
 def list_games() -> None:
     """List all games."""
     from sologm.database.session import get_db_context
-    
+
     try:
         logger.debug("Listing all games")
         with get_db_context() as session:
@@ -72,7 +72,7 @@ def activate_game(
 ) -> None:
     """Activate a game."""
     from sologm.database.session import get_db_context
-    
+
     try:
         logger.debug(f"Activating game with id='{game_id}'")
         with get_db_context() as session:
@@ -90,7 +90,7 @@ def activate_game(
 def game_info() -> None:
     """Show basic information about the active game."""
     from sologm.database.session import get_db_context
-    
+
     try:
         logger.debug("Getting active game info")
         with get_db_context() as session:
@@ -114,7 +114,7 @@ def game_info() -> None:
 def game_status() -> None:
     """Show detailed status of the active game including recent events and dice rolls."""
     from sologm.database.session import get_db_context
-    
+
     try:
         logger.debug("Getting active game status")
         with get_db_context() as session:
@@ -180,7 +180,7 @@ def edit_game(
 ) -> None:
     """Edit the name and description of a game."""
     from sologm.database.session import get_db_context
-    
+
     try:
         with get_db_context() as session:
             game_manager = GameManager(session=session)
@@ -277,7 +277,7 @@ def dump_game(
 ) -> None:
     """Export a game with all scenes and events as a markdown document to stdout."""
     from sologm.database.session import get_db_context
-    
+
     try:
         with get_db_context() as session:
             game_manager = GameManager(session=session)

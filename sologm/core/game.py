@@ -23,7 +23,7 @@ class GameManager(BaseManager[Game, Game]):
 
     def __init__(self, session: Optional[Session] = None):
         """Initialize the game manager.
-        
+
         Args:
             session: Optional session for testing or CLI command injection
         """
