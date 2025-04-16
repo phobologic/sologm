@@ -81,6 +81,19 @@ def mock_anthropic_client():
     return MagicMock(spec=AnthropicClient)
 
 
+# Add a new fixture for SessionContext
+@pytest.fixture
+def db_context(database_manager):
+    """Create a SessionContext for testing.
+    
+    This uses the actual SessionContext with our test DatabaseManager.
+    """
+    from sologm.database.session import SessionContext
+    
+    # Create a SessionContext using our test DatabaseManager
+    return SessionContext(db_manager=database_manager)
+
+
 # Manager fixtures
 @pytest.fixture(autouse=True)
 def setup_database_manager(db_engine):
