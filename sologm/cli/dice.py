@@ -5,9 +5,11 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from sqlalchemy.orm import Session
 
 from sologm.cli.utils import display
 from sologm.core.dice import DiceManager
+from sologm.database.session import get_db_context
 from sologm.models.scene import Scene
 from sologm.utils.errors import DiceError, SceneError
 
@@ -16,10 +18,11 @@ dice_app = typer.Typer(help="Dice rolling commands")
 console = Console()
 
 
-def resolve_scene_id(scene_id: Optional[str]) -> Optional[Scene]:
+def resolve_scene_id(session: Session, scene_id: Optional[str]) -> Optional[Scene]:
     """Resolve scene ID from active context if not provided.
 
     Args:
+        session: Database session
         scene_id: Optional scene ID provided by user
 
     Returns:
@@ -27,8 +30,8 @@ def resolve_scene_id(scene_id: Optional[str]) -> Optional[Scene]:
         scene if no scene_id is passed in.
     """
     scene = None
-    # Create a new DiceManager instance
-    dice_manager = DiceManager()
+    # Create a new DiceManager instance with the session
+    dice_manager = DiceManager(session=session)
     # Access scene manager through dice manager
     scene_manager = dice_manager.scene_manager
 
@@ -64,11 +67,13 @@ def roll_dice_command(
         3d8-1   Roll three 8-sided dice and subtract 1
     """
     try:
-        # Start with DiceManager as our entry point
-        dice_manager = DiceManager()
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            # Initialize manager with the session
+            dice_manager = DiceManager(session=session)
 
-        # If no scene_id is provided, try to get the current scene
-        scene = resolve_scene_id(scene_id)
+            # If no scene_id is provided, try to get the current scene
+            scene = resolve_scene_id(session, scene_id)
         if scene is None:
             if scene_id:
                 console.print(f"Scene {scene_id} not found.", style="yellow")
@@ -100,11 +105,13 @@ def dice_history_command(
 ) -> None:
     """Show recent dice roll history."""
     try:
-        # Start with DiceManager as our entry point
-        dice_manager = DiceManager()
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            # Initialize manager with the session
+            dice_manager = DiceManager(session=session)
 
-        # If scene_id is not provided, try to get the active scene
-        scene = resolve_scene_id(scene_id)
+            # If scene_id is not provided, try to get the active scene
+            scene = resolve_scene_id(session, scene_id)
 
         # Call get_recent_rolls with the scene object (or None)
         rolls = dice_manager.get_recent_rolls(scene=scene, limit=limit)

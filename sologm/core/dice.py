@@ -20,20 +20,22 @@ class DiceManager(BaseManager[DiceRoll, DiceRoll]):
 
     def __init__(
         self,
+        session: Optional[Session] = None,
         scene_manager: Optional[SceneManager] = None,
     ):
-        """Initialize with optional scene manager.
+        """Initialize with optional session and scene manager.
 
         Args:
+            session: Optional database session (for testing or CLI command)
             scene_manager: Optional scene manager (primarily for testing)
         """
-        super().__init__()
+        super().__init__(session=session)
         self._scene_manager = scene_manager
         self.logger.debug("DiceManager initialized")
 
     @property
     def scene_manager(self) -> SceneManager:
-        """Lazy-initialize scene manager."""
+        """Lazy-initialize scene manager with the same session."""
         return self._lazy_init_manager(
             "_scene_manager", "sologm.core.scene.SceneManager"
         )
