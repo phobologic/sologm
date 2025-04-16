@@ -40,7 +40,7 @@ class TestSceneManager:
     def ensure_active_act(self, test_game, db_session):
         """Ensure there's an active act for each test and return it."""
 
-        act_manager = ActManager(db_session)
+        act_manager = ActManager(session=db_session)
 
         # Check if there's already an active act
         active_act = act_manager.get_active_act(test_game.id)

@@ -27,15 +27,17 @@ class SceneManager(BaseManager[Scene, Scene]):
 
     def __init__(
         self,
+        session: Optional[Session] = None,
         act_manager: Optional[ActManager] = None,
     ):
         """Initialize the scene manager.
 
         Args:
+            session: Optional session for testing or CLI command injection
             act_manager: Optional ActManager instance. If not provided,
                 a new one will be lazy-initialized when needed.
         """
-        super().__init__()
+        super().__init__(session=session)
         self._act_manager: Optional["ActManager"] = act_manager
         self._dice_manager: Optional["DiceManager"] = None
         self._event_manager: Optional["EventManager"] = None
@@ -45,7 +47,9 @@ class SceneManager(BaseManager[Scene, Scene]):
     @property
     def act_manager(self) -> ActManager:
         """Lazy-initialize act manager if not provided."""
-        return self._lazy_init_manager("_act_manager", "sologm.core.act.ActManager")
+        if self._act_manager is None:
+            self._act_manager = ActManager(session=self._session)
+        return self._act_manager
 
     @property
     def game_manager(self) -> GameManager:

@@ -83,33 +83,33 @@ def setup_database_session(db_engine):
 
 
 @pytest.fixture
-def game_manager():
-    """Create a GameManager for testing."""
-    return GameManager()
+def game_manager(db_session):
+    """Create a GameManager with test session."""
+    return GameManager(session=db_session)
 
 
 @pytest.fixture
-def act_manager(game_manager):
-    """Create an ActManager with a game manager."""
-    return ActManager(game_manager=game_manager)
+def act_manager(db_session, game_manager):
+    """Create an ActManager with test session."""
+    return ActManager(session=db_session, game_manager=game_manager)
 
 
 @pytest.fixture
-def scene_manager(act_manager):
-    """Create a SceneManager with an act manager."""
-    return SceneManager(act_manager=act_manager)
+def scene_manager(db_session, act_manager):
+    """Create a SceneManager with test session."""
+    return SceneManager(session=db_session, act_manager=act_manager)
 
 
 @pytest.fixture
-def event_manager(scene_manager):
-    """Create an EventManager with a scene manager."""
-    return EventManager(scene_manager=scene_manager)
+def event_manager(db_session, scene_manager):
+    """Create an EventManager with test session."""
+    return EventManager(session=db_session, scene_manager=scene_manager)
 
 
 @pytest.fixture
-def dice_manager(scene_manager):
-    """Create a DiceManager with a scene manager."""
-    return DiceManager(scene_manager=scene_manager)
+def dice_manager(db_session, scene_manager):
+    """Create a DiceManager with test session."""
+    return DiceManager(session=db_session, scene_manager=scene_manager)
 
 
 @pytest.fixture

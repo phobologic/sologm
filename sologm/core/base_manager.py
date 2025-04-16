@@ -37,22 +37,30 @@ class BaseManager(Generic[T, M]):
         _session: Optional database session (primarily for testing)
     """
 
-    def __init__(self):
-        """Initialize the base manager."""
+    def __init__(self, session: Optional[Session] = None):
+        """Initialize the base manager.
+        
+        Args:
+            session: Optional session for testing or CLI command injection
+        """
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self._session = session
 
     def _get_session(self) -> Tuple[Session, bool]:
-        """Get a database session from the singleton.
-
+        """Get a database session.
+        
         Returns:
             Tuple of (session, should_close)
-            - session: The database session to use
-            - should_close: Whether the caller should close the session
         """
-        self.logger.debug("Getting session from singleton")
-        from sologm.database.session import get_session
-
-        return get_session(), False
+        if self._session is not None:
+            # Use provided session (for testing or CLI command)
+            self.logger.debug("Using provided session")
+            return self._session, False
+        else:
+            # Get a new session from the singleton
+            self.logger.debug("Getting session from singleton")
+            from sologm.database.session import get_session
+            return get_session(), False  # Don't close here
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
@@ -199,7 +207,7 @@ class BaseManager(Generic[T, M]):
     def _lazy_init_manager(
         self, attr_name: str, manager_class_path: str, **kwargs
     ) -> Any:
-        """Lazily initialize a manager.
+        """Lazily initialize a manager with the same session.
 
         Args:
             attr_name: Attribute name to store the manager instance
@@ -213,7 +221,10 @@ class BaseManager(Generic[T, M]):
             module_path, class_name = manager_class_path.rsplit(".", 1)
             module = importlib.import_module(module_path)
             manager_class = getattr(module, class_name)
-
+            
+            # Pass our session to the new manager
+            kwargs['session'] = self._session
+            
             setattr(self, attr_name, manager_class(**kwargs))
 
         return getattr(self, attr_name)
