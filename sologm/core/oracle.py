@@ -31,6 +31,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
 
     def __init__(
         self,
+        session: Optional[Session] = None,
         anthropic_client: Optional[AnthropicClient] = None,
         scene_manager: Optional[SceneManager] = None,
         event_manager: Optional[EventManager] = None,
@@ -38,11 +39,12 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         """Initialize the oracle manager.
 
         Args:
+            session: Optional database session.
             anthropic_client: Optional Anthropic client instance.
             scene_manager: Optional SceneManager instance.
             event_manager: Optional event manager instance.
         """
-        super().__init__()
+        super().__init__(session=session)
 
         # Store references to managers
         self._scene_manager = scene_manager
@@ -61,11 +63,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     @property
     def scene_manager(self) -> SceneManager:
         """Lazy-initialize scene manager if not provided."""
-        if self._scene_manager is None:
-            from sologm.core.scene import SceneManager
-
-            self._scene_manager = SceneManager()
-        return self._scene_manager
+        return self._lazy_init_manager(
+            "_scene_manager", 
+            "sologm.core.scene.SceneManager"
+        )
 
     @property
     def act_manager(self) -> "ActManager":
@@ -80,9 +81,11 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
     @property
     def event_manager(self) -> EventManager:
         """Lazy-initialize event manager if not provided."""
-        if self._event_manager is None:
-            self._event_manager = EventManager()
-        return self._event_manager
+        return self._lazy_init_manager(
+            "_event_manager", 
+            "sologm.core.event.EventManager",
+            scene_manager=self.scene_manager
+        )
 
     def get_active_context(self) -> Tuple[Scene, Act, Game]:
         """Get active scene, act, and game objects.

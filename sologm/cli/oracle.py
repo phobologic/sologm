@@ -32,8 +32,12 @@ def interpret_oracle(
     ),
 ) -> None:
     """Get interpretations for oracle results."""
+    from sologm.database.session import get_db_context
+    
     try:
-        oracle_manager = OracleManager()
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            oracle_manager = OracleManager(session=session)
 
         # Use the provided count or default to the config value
         if count is None:
@@ -77,8 +81,12 @@ def retry_interpretation(
     ),
 ) -> None:
     """Request new interpretations using current context and results."""
+    from sologm.database.session import get_db_context
+    
     try:
-        oracle_manager = OracleManager()
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            oracle_manager = OracleManager(session=session)
 
         # Get the active context
         scene, act, game = oracle_manager.get_active_context()
@@ -170,8 +178,12 @@ def retry_interpretation(
 @oracle_app.command("status")
 def show_interpretation_status() -> None:
     """Show current interpretation set status."""
+    from sologm.database.session import get_db_context
+    
     try:
-        oracle_manager = OracleManager()
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            oracle_manager = OracleManager(session=session)
 
         # Get the active context
         scene, act, game = oracle_manager.get_active_context()
@@ -223,8 +235,12 @@ def select_interpretation(
     - The slug (derived from the title)
     - The full UUID
     """
+    from sologm.database.session import get_db_context
+    
     try:
-        oracle_manager = OracleManager()
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            oracle_manager = OracleManager(session=session)
 
         # Get the active context
         scene, act, game = oracle_manager.get_active_context()

@@ -160,7 +160,7 @@ Test Description 2"""
         assert parsed[1]["description"] == "Test Description 2"
 
     def test_get_interpretations(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ) -> None:
         """Test getting interpretations."""
         # Configure mock to return string response
