@@ -35,7 +35,7 @@ def add_event(
     If no description is provided, opens an editor to create the event.
     """
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
@@ -162,7 +162,7 @@ def edit_event(
     If no event ID is provided, edits the most recent event in the current scene.
     """
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
@@ -306,7 +306,7 @@ def edit_event(
 def list_event_sources() -> None:
     """List all available event sources."""
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
@@ -336,7 +336,7 @@ def list_events(
 ) -> None:
     """List events in the current scene or a specified scene."""
     from sologm.database.session import get_db_context
-    
+
     # Use a single session for the entire command
     with get_db_context() as session:
         # Initialize manager with the session
