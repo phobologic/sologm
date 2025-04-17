@@ -1,7 +1,7 @@
 """Act manager for SoloGM."""
 
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
