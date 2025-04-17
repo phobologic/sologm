@@ -6,16 +6,16 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from sologm.core.act import ActManager
 from sologm.core.base_manager import BaseManager
-from sologm.core.game import GameManager
 from sologm.models.act import Act
 from sologm.models.scene import Scene, SceneStatus
 from sologm.utils.errors import SceneError
 
 if TYPE_CHECKING:
+    from sologm.core.act import ActManager
     from sologm.core.dice import DiceManager
     from sologm.core.event import EventManager
+    from sologm.core.game import GameManager
     from sologm.core.oracle import OracleManager
 
 
@@ -45,14 +45,15 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug("Initialized SceneManager")
 
     @property
-    def act_manager(self) -> ActManager:
+    def act_manager(self) -> "ActManager":
         """Lazy-initialize act manager if not provided."""
         if self._act_manager is None:
+            from sologm.core.act import ActManager
             self._act_manager = ActManager(session=self._session)
         return self._act_manager
 
     @property
-    def game_manager(self) -> GameManager:
+    def game_manager(self) -> "GameManager":
         """Access game manager through act manager."""
         return self.act_manager.game_manager
 

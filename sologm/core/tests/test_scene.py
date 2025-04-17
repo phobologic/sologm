@@ -474,6 +474,19 @@ class TestSceneManager:
         with pytest.raises(SceneError) as exc:
             scene_manager.validate_active_context()
         assert "No active game" in str(exc.value)
+        
+    def test_session_propagation(self, scene_manager, db_session):
+        """Test that the session is properly propagated to lazy-initialized managers."""
+        # Access lazy-initialized managers
+        event_manager = scene_manager.event_manager
+        dice_manager = scene_manager.dice_manager
+        oracle_manager = scene_manager.oracle_manager
+        
+        # Verify they all have the same session
+        assert id(scene_manager._session) == id(db_session)
+        assert id(event_manager._session) == id(db_session)
+        assert id(dice_manager._session) == id(db_session)
+        assert id(oracle_manager._session) == id(db_session)
 
     def test_create_scene_with_active_act(
         self, scene_manager, test_game, ensure_active_act
@@ -561,6 +574,32 @@ class TestSceneManager:
 
         # Verify scene2 is not active
         assert not scene2.is_active
+        
+    def test_scene_relationships(self, scene_manager, test_scene, session_context):
+        """Test that scene relationships are properly loaded."""
+        # Create a scene with events
+        scene = scene_manager.create_scene(
+            title="Scene with Events",
+            description="A scene that will have events",
+        )
+        
+        # Add events to the scene
+        event_manager = scene_manager.event_manager
+        event = event_manager.add_event(
+            description="Test event",
+            scene_id=scene.id,
+            source="manual",
+        )
+        
+        # Use session_context to ensure relationships are loaded
+        with session_context as session:
+            # Refresh the scene to load relationships
+            session.refresh(scene)
+            
+            # Verify relationships
+            assert hasattr(scene, "events")
+            assert len(scene.events) > 0
+            assert scene.events[0].id == event.id
 
 
     def test_get_act_id_or_active(
