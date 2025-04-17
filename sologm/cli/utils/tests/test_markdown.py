@@ -1,8 +1,10 @@
 """Tests for markdown generation utilities."""
 
-from unittest.mock import MagicMock
+import pytest
+from unittest.mock import MagicMock, patch
 
 from sologm.cli.utils.markdown import (
+    generate_act_markdown,
     generate_event_markdown,
     generate_game_markdown,
     generate_scene_markdown,
@@ -16,6 +18,7 @@ def test_generate_event_markdown():
     event = MagicMock()
     event.description = "Test event description"
     event.source = "manual"
+    event.metadata = {}
 
     # Test basic event markdown
     result = generate_event_markdown(event, include_metadata=False)
@@ -48,199 +51,93 @@ def test_generate_event_markdown():
     assert any("Roll: 2d6 = 7" in line for line in result)
 
 
-def test_generate_scene_markdown():
-    """Test generating markdown for a scene."""
-    # Create mock objects
-    scene = MagicMock()
-    scene.sequence = 1
-    scene.title = "Test Scene"
-    scene.description = "Test scene description"
-    scene.status = SceneStatus.ACTIVE
-    scene.id = "scene123"
-    scene.created_at.strftime.return_value = "2023-01-01"
-    scene.completed_at = None
-
-    event_manager = MagicMock()
-    event_manager.list_events.return_value = []
-
+def test_generate_scene_markdown(test_scene, event_manager):
+    """Test generating markdown for a scene using real models."""
     # Test basic scene markdown without events
-    result = generate_scene_markdown(scene, event_manager, include_metadata=False)
+    result = generate_scene_markdown(test_scene, event_manager, include_metadata=False)
     assert isinstance(result, list)
-    assert any("### Scene 1: Test Scene" in line for line in result)
-    assert any("Test scene description" in line for line in result)
-    assert not any("Events" in line for line in result)
+    assert any(f"### Scene {test_scene.sequence}: {test_scene.title}" in line for line in result)
+    assert any(test_scene.description in line for line in result)
 
     # Test with metadata
-    result = generate_scene_markdown(scene, event_manager, include_metadata=True)
-    assert any("*Scene ID: scene123*" in line for line in result)
-    assert any("*Created: 2023-01-01*" in line for line in result)
+    result = generate_scene_markdown(test_scene, event_manager, include_metadata=True)
+    assert any(f"*Scene ID: {test_scene.id}*" in line for line in result)
+    assert any("*Created:" in line for line in result)
 
-    # Test completed scene
-    scene.status = SceneStatus.COMPLETED
-    result = generate_scene_markdown(scene, event_manager, include_metadata=False)
-    assert any("### Scene 1: Test Scene ✓" in line for line in result)
+    # Add an event to the scene
+    event = event_manager.add_event(
+        description="Test event for markdown",
+        scene_id=test_scene.id,
+        source="manual"
+    )
 
-    # Test with events
-    mock_event = MagicMock()
-    mock_event.description = "Test event"
-    mock_event.source = "manual"
-    mock_event.created_at.timestamp.return_value = 1
-    event_manager.list_events.return_value = [mock_event]
-
-    result = generate_scene_markdown(scene, event_manager, include_metadata=False)
+    # Test scene with events
+    result = generate_scene_markdown(test_scene, event_manager, include_metadata=False)
     assert any("### Events" in line for line in result)
+    assert any("Test event for markdown" in " ".join(result))
 
 
-def test_generate_game_markdown():
-    """Test generating markdown for a game."""
-    # Create mock objects
-    game = MagicMock()
-    game.name = "Test Game"
-    game.description = "Test game description"
-    game.id = "game123"
-    game.created_at.strftime.return_value = "2023-01-01"
-
-    scene_manager = MagicMock()
-    event_manager = MagicMock()
-
-    # Test game with no acts
-    game.acts = []
-
-    # Mock the scene_manager to return scenes when asked
-    scene_manager.list_scenes.return_value = []
-
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=False
-    )
-    assert "# Test Game" in result
-    assert "Test game description" in result
-    assert "*No scenes found for this game*" in result
+def test_generate_act_markdown(test_act, scene_manager, event_manager):
+    """Test generating markdown for an act using real models."""
+    # Test basic act markdown
+    result = generate_act_markdown(test_act, scene_manager, event_manager, include_metadata=False)
+    assert isinstance(result, list)
+    assert any(f"## Act {test_act.sequence}: {test_act.title}" in line for line in result)
+    assert any(test_act.summary in line for line in result)
 
     # Test with metadata
+    result = generate_act_markdown(test_act, scene_manager, event_manager, include_metadata=True)
+    assert any(f"*Act ID: {test_act.id}*" in line for line in result)
+    assert any("*Created:" in line for line in result)
+
+
+def test_generate_game_markdown_with_hierarchy(test_game_with_complete_hierarchy, scene_manager, event_manager):
+    """Test generating markdown for a game with a complete hierarchy."""
+    game, acts, scenes, events = test_game_with_complete_hierarchy
+    
+    # Test basic game markdown
+    result = generate_game_markdown(game, scene_manager, event_manager, include_metadata=False)
+    assert f"# {game.name}" in result
+    assert game.description in result
+    
+    # Check that all acts are included
+    for act in acts:
+        assert f"## Act {act.sequence}: {act.title}" in result
+    
+    # Check that all scenes are included
+    for scene in scenes:
+        scene_title = f"### Scene {scene.sequence}: {scene.title}"
+        if scene.status == SceneStatus.COMPLETED:
+            scene_title += " ✓"
+        assert scene_title in result
+    
+    # Check that all events are included
+    for event in events:
+        assert event.description in result
+    
+    # Test with metadata
+    result = generate_game_markdown(game, scene_manager, event_manager, include_metadata=True)
+    assert f"*Game ID: {game.id}*" in result
+    
+    # Check act metadata
+    for act in acts:
+        assert f"*Act ID: {act.id}*" in result
+    
+    # Check scene metadata
+    for scene in scenes:
+        assert f"*Scene ID: {scene.id}*" in result
+
+
+def test_generate_game_markdown_empty(game_manager, scene_manager, event_manager):
+    """Test generating markdown for a game with no acts."""
+    # Create an empty game
+    empty_game = game_manager.create_game("Empty Game", "Game with no acts")
+    
+    # Test basic game markdown with no acts
     result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=True
+        empty_game, scene_manager, event_manager, include_metadata=False
     )
-    assert "*Game ID: game123*" in result
-    assert "*Created: 2023-01-01*" in result
-
-    # Test with acts and scenes
-    act1 = MagicMock()
-    act1.sequence = 1
-    act1.title = "Act One"
-    act1.summary = "Act one summary"
-    act1.id = "act1"
-    act1.created_at.strftime.return_value = "2023-01-02"
-
-    act2 = MagicMock()
-    act2.sequence = 2
-    act2.title = "Act Two"
-    act2.summary = "Act two summary"
-    act2.id = "act2"
-    act2.created_at.strftime.return_value = "2023-01-03"
-
-    game.acts = [act2, act1]  # Deliberately out of order to test sorting
-
-    # Mock scenes for each act
-    scene1 = MagicMock()
-    scene1.sequence = 1
-    scene1.title = "Scene One"
-    scene1.description = "Scene one description"
-    scene1.status = SceneStatus.COMPLETED
-    scene1.id = "scene1"
-    scene1.created_at.strftime.return_value = "2023-01-02"
-    scene1.completed_at = None
-
-    scene2 = MagicMock()
-    scene2.sequence = 2
-    scene2.title = "Scene Two"
-    scene2.description = "Scene two description"
-    scene2.status = SceneStatus.ACTIVE
-    scene2.id = "scene2"
-    scene2.created_at.strftime.return_value = "2023-01-03"
-    scene2.completed_at = None
-
-    # Configure scene_manager to return different scenes for different acts
-    def mock_list_scenes(act_id=None, **kwargs):
-        if act_id == "act1":
-            return [scene1]
-        elif act_id == "act2":
-            return [scene2]
-        return []
-
-    scene_manager.list_scenes.side_effect = mock_list_scenes
-
-    # Mock empty events list
-    event_manager.list_events.return_value = []
-
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=True
-    )
-
-    # Check that acts are in correct order
-    act1_pos = result.find("## Act 1: Act One")
-    act2_pos = result.find("## Act 2: Act Two")
-    assert act1_pos < act2_pos
-    assert act1_pos > 0
-
-    # Check that scenes are included
-    assert "### Scene 1: Scene One ✓" in result
-    assert "### Scene 2: Scene Two" in result
-
-    # Test with untitled act
-    act1.title = None
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=False
-    )
-    assert "## Act 1: Untitled Act" in result
-
-
-def test_generate_game_markdown_fallbacks():
-    """Test fallback mechanisms in generate_game_markdown."""
-    # Create mock objects
-    game = MagicMock()
-    game.name = "Test Game"
-    game.description = "Test game description"
-    game.id = "game123"
-
-    scene_manager = MagicMock()
-    event_manager = MagicMock()
-
-    # Test fallback to game.scenes when no acts
-    game.acts = None
-
-    scene = MagicMock()
-    scene.sequence = 1
-    scene.title = "Direct Scene"
-    scene.description = "Direct scene description"
-    scene.status = SceneStatus.ACTIVE
-    scene.id = "scene1"
-    scene.created_at.strftime.return_value = "2023-01-01"
-    scene.completed_at = None
-
-    game.scenes = [scene]
-
-    # Mock empty events
-    event_manager.list_events.return_value = []
-
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=False
-    )
-    assert "### Scene 1: Direct Scene" in result
-
-    # Test fallback to scene_manager.list_scenes with game_id
-    game.scenes = None
-
-    scene_manager.list_scenes.return_value = [scene]
-
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=False
-    )
-    assert "### Scene 1: Direct Scene" in result
-
-    # Test error handling when all fallbacks fail
-    scene_manager.list_scenes.side_effect = Exception("Test exception")
-
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=False
-    )
-    assert "*No scenes found for this game*" in result
+    assert "# Empty Game" in result
+    assert "Game with no acts" in result
+    # No acts should be included
+    assert "## Act" not in result

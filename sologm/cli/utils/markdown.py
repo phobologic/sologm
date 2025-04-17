@@ -190,7 +190,7 @@ def generate_event_markdown(
 
     # First line with the bullet and source indicator
     if description_lines:
-        content.append(f"- {source_indicator} {description_lines[0]}")
+        content.append(f"-{source_indicator} {description_lines[0]}")
 
         # Additional lines need proper indentation to align with the first line content
         indent = "  " + " " * len(source_indicator)
