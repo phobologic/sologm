@@ -222,7 +222,7 @@ class TestDiceManager:
         """Test rolling dice for the active scene."""
         # The test_scene fixture is already set up as the active scene
         # through the fixture chain: test_scene -> test_act -> test_game
-        
+
         # Roll dice for active scene
         roll = dice_manager.roll_for_active_scene("1d20", "Test roll")
 
@@ -254,7 +254,7 @@ class TestDiceManager:
         """Test getting rolls for the active scene."""
         # The test_scene fixture is already set up as the active scene
         # through the fixture chain: test_scene -> test_act -> test_game
-        
+
         # Create some rolls for the test scene
         dice_manager.roll("1d6", "Roll 1", test_scene)
         dice_manager.roll("2d8", "Roll 2", test_scene)
