@@ -674,7 +674,7 @@ def complete_act(
 
             # Complete the act
             try:
-                completed_act = game_manager.act_manager.complete_act(
+                completed_act = act_manager.complete_act(
                     act_id=active_act.id,
                     title=title,
                     summary=summary,
@@ -700,3 +700,6 @@ def complete_act(
             except GameError as e:
                 console.print(f"[red]Error:[/] {str(e)}")
                 raise typer.Exit(1)
+        except GameError as e:
+            console.print(f"[red]Error:[/] {str(e)}")
+            raise typer.Exit(1)
