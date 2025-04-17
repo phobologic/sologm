@@ -183,6 +183,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         )
 
         try:
+
             def _get_scene_with_current_set(
                 session: Session,
             ) -> Optional[InterpretationSet]:
@@ -872,7 +873,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 Interpretation,
                 interpretation_id,
                 OracleError,
-                f"Interpretation {interpretation_id} not found"
+                f"Interpretation {interpretation_id} not found",
             )
             self.logger.debug(
                 f"Found interpretation: '{interpretation.title}' (ID: {interpretation.id})"
