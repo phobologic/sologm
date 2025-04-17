@@ -56,7 +56,10 @@ def test_generate_scene_markdown(test_scene, event_manager):
     # Test basic scene markdown without events
     result = generate_scene_markdown(test_scene, event_manager, include_metadata=False)
     assert isinstance(result, list)
-    assert any(f"### Scene {test_scene.sequence}: {test_scene.title}" in line for line in result)
+    assert any(
+        f"### Scene {test_scene.sequence}: {test_scene.title}" in line
+        for line in result
+    )
     assert any(test_scene.description in line for line in result)
 
     # Test with metadata
@@ -66,9 +69,7 @@ def test_generate_scene_markdown(test_scene, event_manager):
 
     # Add an event to the scene
     event = event_manager.add_event(
-        description="Test event for markdown",
-        scene_id=test_scene.id,
-        source="manual"
+        description="Test event for markdown", scene_id=test_scene.id, source="manual"
     )
 
     # Test scene with events
@@ -80,49 +81,61 @@ def test_generate_scene_markdown(test_scene, event_manager):
 def test_generate_act_markdown(test_act, scene_manager, event_manager):
     """Test generating markdown for an act using real models."""
     # Test basic act markdown
-    result = generate_act_markdown(test_act, scene_manager, event_manager, include_metadata=False)
+    result = generate_act_markdown(
+        test_act, scene_manager, event_manager, include_metadata=False
+    )
     assert isinstance(result, list)
-    assert any(f"## Act {test_act.sequence}: {test_act.title}" in line for line in result)
+    assert any(
+        f"## Act {test_act.sequence}: {test_act.title}" in line for line in result
+    )
     assert any(test_act.summary in line for line in result)
 
     # Test with metadata
-    result = generate_act_markdown(test_act, scene_manager, event_manager, include_metadata=True)
+    result = generate_act_markdown(
+        test_act, scene_manager, event_manager, include_metadata=True
+    )
     assert any(f"*Act ID: {test_act.id}*" in line for line in result)
     assert any("*Created:" in line for line in result)
 
 
-def test_generate_game_markdown_with_hierarchy(test_game_with_complete_hierarchy, scene_manager, event_manager):
+def test_generate_game_markdown_with_hierarchy(
+    test_game_with_complete_hierarchy, scene_manager, event_manager
+):
     """Test generating markdown for a game with a complete hierarchy."""
     game, acts, scenes, events = test_game_with_complete_hierarchy
-    
+
     # Test basic game markdown
-    result = generate_game_markdown(game, scene_manager, event_manager, include_metadata=False)
+    result = generate_game_markdown(
+        game, scene_manager, event_manager, include_metadata=False
+    )
     assert f"# {game.name}" in result
     assert game.description in result
-    
+
     # Check that all acts are included
     for act in acts:
         assert f"## Act {act.sequence}: {act.title}" in result
-    
+
     # Check that all scenes are included
     for scene in scenes:
         scene_title = f"### Scene {scene.sequence}: {scene.title}"
         if scene.status == SceneStatus.COMPLETED:
             scene_title += " ✓"
         assert scene_title in result
-    
+
     # Check that all events are included
     for event in events:
         assert event.description in result
-    
+
     # Test with metadata
-    result = generate_game_markdown(game, scene_manager, event_manager, include_metadata=True)
+    result = generate_game_markdown(
+        game, scene_manager, event_manager, include_metadata=True
+    )
     assert f"*Game ID: {game.id}*" in result
-    
+
     # Check act metadata
     for act in acts:
         assert f"*Act ID: {act.id}*" in result
-    
+
     # Check scene metadata
     for scene in scenes:
         assert f"*Scene ID: {scene.id}*" in result
@@ -132,7 +145,7 @@ def test_generate_game_markdown_empty(game_manager, scene_manager, event_manager
     """Test generating markdown for a game with no acts."""
     # Create an empty game
     empty_game = game_manager.create_game("Empty Game", "Game with no acts")
-    
+
     # Test basic game markdown with no acts
     result = generate_game_markdown(
         empty_game, scene_manager, event_manager, include_metadata=False
