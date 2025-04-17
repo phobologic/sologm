@@ -270,6 +270,9 @@ def dump_game(
     include_metadata: bool = typer.Option(
         False, "--metadata", "-m", help="Include technical metadata in the output"
     ),
+    include_concepts: bool = typer.Option(
+        False, "--include-concepts", "-c", help="Include a header explaining game concepts"
+    ),
 ) -> None:
     """Export a game with all scenes and events as a markdown document to stdout."""
     from sologm.database.session import get_db_context
@@ -304,7 +307,7 @@ def dump_game(
 
             # Generate the markdown content
             markdown_content = generate_game_markdown(
-                game, scene_manager, event_manager, include_metadata
+                game, scene_manager, event_manager, include_metadata, include_concepts
             )
 
             # Print to stdout (without rich formatting)

@@ -1,7 +1,7 @@
 """Markdown generation utilities."""
 
 import logging
-from typing import List
+from typing import List, Optional
 
 from sologm.core.event import EventManager
 from sologm.core.scene import SceneManager
@@ -14,11 +14,52 @@ from sologm.utils.datetime_utils import format_datetime
 logger = logging.getLogger(__name__)
 
 
+def generate_concepts_header() -> List[str]:
+    """Generate a header explaining the game structure concepts.
+
+    Returns:
+        List of markdown lines explaining the game structure
+    """
+    return [
+        "# Game Structure Guide",
+        "",
+        "This document follows a specific structure to organize your solo roleplaying game:",
+        "",
+        "## Game",
+        "The overall container for your adventure, with a name and description.",
+        "",
+        "## Acts",
+        "Major divisions of your game, similar to acts in a play or chapters in a book. Each act has:",
+        "- A sequence number (Act 1, Act 2, etc.)",
+        "- A title",
+        "- An optional summary describing the overall events or themes",
+        "",
+        "## Scenes",
+        "Specific moments or locations within an act. Each scene has:",
+        "- A sequence number within its act",
+        "- A title",
+        "- A description",
+        "- A status (✓ indicates completed scenes)",
+        "",
+        "## Events",
+        "Individual moments, actions, or occurrences within a scene. Events can come from:",
+        "- 🔮 Oracle interpretations (AI-assisted random events)",
+        "- 🎲 Dice rolls (random outcomes)",
+        "- Manual entries (player-created events)",
+        "",
+        "Events form the core narrative of your game, showing what happened in each scene.",
+        "",
+        "---",
+        "",
+    ]
+
+
 def generate_game_markdown(
     game: Game,
     scene_manager: SceneManager,
     event_manager: EventManager,
     include_metadata: bool = False,
+    include_concepts: bool = False,
 ) -> str:
     """Generate a markdown document for a game with all scenes and events.
 
@@ -32,6 +73,10 @@ def generate_game_markdown(
         Markdown content as a string
     """
     content = []
+
+    # Add concepts header if requested
+    if include_concepts:
+        content.extend(generate_concepts_header())
 
     # Game header
     content.append(f"# {game.name}")
