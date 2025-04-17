@@ -13,7 +13,7 @@ from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
-from sologm.database.session import DatabaseSession
+from sologm.database.session import SessionContext
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.act import Act
 from sologm.models.base import Base
