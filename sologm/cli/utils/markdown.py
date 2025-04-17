@@ -1,4 +1,8 @@
-"""Markdown generation utilities."""
+"""Markdown generation utilities for exporting game content.
+
+This module provides functions to convert game data into formatted markdown text,
+allowing users to export their game content for documentation or sharing purposes.
+"""
 
 import logging
 from typing import List, Optional
@@ -16,9 +20,12 @@ logger = logging.getLogger(__name__)
 
 def generate_concepts_header() -> List[str]:
     """Generate a header explaining the game structure concepts.
+    
+    Creates a markdown section that explains the key concepts of the game structure
+    (Game, Acts, Scenes, Events) to help readers understand the document organization.
 
     Returns:
-        List of markdown lines explaining the game structure
+        List[str]: Markdown lines explaining the game structure concepts
     """
     return [
         "# Game Structure Guide",
@@ -63,14 +70,19 @@ def generate_game_markdown(
 ) -> str:
     """Generate a markdown document for a game with all scenes and events.
 
+    Creates a complete markdown document representing the entire game, including
+    all acts, scenes, and events in a hierarchical structure. The document follows
+    a consistent format with proper headers and indentation.
+
     Args:
         game: The game to export
-        scene_manager: SceneManager instance
-        event_manager: EventManager instance
-        include_metadata: Whether to include technical metadata
+        scene_manager: SceneManager instance for retrieving scene data
+        event_manager: EventManager instance for retrieving event data
+        include_metadata: Whether to include technical metadata (IDs, timestamps)
+        include_concepts: Whether to include a header explaining game concepts
 
     Returns:
-        Markdown content as a string
+        str: Complete markdown content as a single string with line breaks
     """
     content = []
 
@@ -116,14 +128,17 @@ def generate_act_markdown(
 ) -> List[str]:
     """Generate markdown content for an act with its scenes.
 
+    Creates a markdown section for a single act, including its title, summary,
+    and all scenes contained within it. Scenes are sorted by sequence number.
+
     Args:
         act: The act to export
-        scene_manager: SceneManager instance
-        event_manager: EventManager instance
-        include_metadata: Whether to include technical metadata
+        scene_manager: SceneManager instance for retrieving scenes in this act
+        event_manager: EventManager instance for retrieving events in scenes
+        include_metadata: Whether to include technical metadata (IDs, timestamps)
 
     Returns:
-        List of markdown lines
+        List[str]: List of markdown lines representing the act and its scenes
     """
     content = []
 
@@ -163,13 +178,17 @@ def generate_scene_markdown(
 ) -> List[str]:
     """Generate markdown content for a scene with its events.
 
+    Creates a markdown section for a single scene, including its title, description,
+    completion status, and all events that occurred within it. Events are sorted
+    chronologically by creation date.
+
     Args:
         scene: The scene to export
-        event_manager: EventManager instance
-        include_metadata: Whether to include technical metadata
+        event_manager: EventManager instance for retrieving events in this scene
+        include_metadata: Whether to include technical metadata (IDs, timestamps)
 
     Returns:
-        List of markdown lines
+        List[str]: List of markdown lines representing the scene and its events
     """
     content = []
 
@@ -213,12 +232,16 @@ def generate_event_markdown(
 ) -> List[str]:
     """Generate markdown content for an event.
 
+    Creates markdown content for a single event, formatting it as a list item with
+    appropriate source indicators (🔮 for oracle events, 🎲 for dice events).
+    Multi-line event descriptions are properly indented to maintain list formatting.
+
     Args:
         event: The event to export
-        include_metadata: Whether to include technical metadata
+        include_metadata: Whether to include technical metadata (source information)
 
     Returns:
-        List of markdown lines
+        List[str]: List of markdown lines representing the event
     """
     content = []
 
