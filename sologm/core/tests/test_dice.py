@@ -109,18 +109,19 @@ class TestDiceManager:
         assert 1 <= roll.individual_results[0] <= 20
         assert roll.reason == "Attack roll"
 
-    def test_roll_with_scene(self, dice_manager, db_session, test_scene) -> None:
+    def test_roll_with_scene(self, dice_manager, session_context, test_scene) -> None:
         """Test rolling with a scene object."""
         roll = dice_manager.roll("1d20", scene=test_scene)
 
         assert roll.scene_id == test_scene.id
 
         # Verify it's in the database with the scene ID
-        db_roll = (
-            db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
-        )
-        assert db_roll is not None
-        assert db_roll.scene_id == test_scene.id
+        with session_context as session:
+            db_roll = (
+                session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
+            )
+            assert db_roll is not None
+            assert db_roll.scene_id == test_scene.id
 
     def test_get_recent_rolls(self, dice_manager) -> None:
         """Test getting recent rolls."""
@@ -139,7 +140,8 @@ class TestDiceManager:
 
     def test_get_recent_rolls_by_scene(self, dice_manager, test_scene) -> None:
         """Test getting recent rolls filtered by scene."""
-        # Create a mock scene for "other-scene"
+        # Create a scene for "other-scene" using the Scene model directly
+        # This is just for testing - in real code we'd use SceneManager
         other_scene = Scene(id="other-scene", title="Other Scene")
 
         # Create some rolls with different scene objects
