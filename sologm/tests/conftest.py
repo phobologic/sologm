@@ -214,17 +214,14 @@ def create_test_act(act_manager):
         game_id,
         title="Test Act",
         summary="A test act",
-        sequence=1,
         is_active=True,
     ):
         act = act_manager.create_act(
             game_id=game_id,
             title=title,
             summary=summary,
-            sequence=sequence,
+            make_active=is_active,
         )
-        if is_active:
-            act_manager.set_active(act.id)
         return act
 
     return _create_act
@@ -297,8 +294,7 @@ def test_act(act_manager, test_game):
         game_id=test_game.id,
         title="Test Act",
         summary="A test act",
-        sequence=1,
-        is_active=True,
+        make_active=True,
     )
 
 
