@@ -55,7 +55,7 @@ class OraclePrompts:
         return f"""You are interpreting oracle results for a solo RPG player.
 
 Game: {game.description or ""}
-Act: {act.description or ""}
+Act: {act.summary or ""}
 Current Scene: {scene.description or ""}
 Recent Events:
 {events_text}
