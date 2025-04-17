@@ -722,10 +722,10 @@ def _create_act_panel(game: Game, active_act: Optional[Act] = None) -> Panel:
 
     panel_content.append(title_text)
 
-    # Add act description if available
-    if active_act.description:
+    # Add act summary if available
+    if active_act.summary:
         panel_content.append("\n")
-        panel_content.append(active_act.description)
+        panel_content.append(active_act.summary)
 
     # Add metadata
     metadata = {
