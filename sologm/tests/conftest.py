@@ -239,7 +239,6 @@ def create_test_scene(scene_manager):
         act_id,
         title="Test Scene",
         description="A test scene",
-        sequence=1,
         is_active=True,
         status=SceneStatus.ACTIVE,
     ):
@@ -247,10 +246,8 @@ def create_test_scene(scene_manager):
             act_id=act_id,
             title=title,
             description=description,
-            sequence=sequence,
+            make_active=is_active,
         )
-        if is_active:
-            scene_manager.set_active(scene.id)
         if status != SceneStatus.ACTIVE:
             scene_manager.update_status(scene.id, status)
         return scene
@@ -305,8 +302,7 @@ def test_scene(scene_manager, test_act):
         act_id=test_act.id,
         title="Test Scene",
         description="A test scene",
-        sequence=1,
-        is_active=True,
+        make_active=True,
     )
 
 
@@ -480,7 +476,6 @@ def test_game_with_scenes(
             act_id=act.id,
             title=f"Scene {i}",
             description=f"Test scene {i}",
-            sequence=i,
             is_active=(i == 2),  # Make the middle scene active
         )
         scenes.append(scene)
@@ -540,7 +535,6 @@ def test_game_with_complete_hierarchy(
                 act_id=act.id,
                 title=f"Scene {j} in Act {i + 1}",
                 description=f"Test scene {j} in act {i + 1}",
-                sequence=j,
                 status=SceneStatus.ACTIVE if j == 1 else SceneStatus.COMPLETED,
                 is_active=(j == 1),
             )
@@ -551,7 +545,7 @@ def test_game_with_complete_hierarchy(
                 event = create_test_event(
                     scene_id=scene.id,
                     description=f"Event {k} in Scene {j} of Act {i + 1}",
-                    source_id=1,  # Manual source
+                    source="manual",  # Use source name instead of ID
                 )
                 events.append(event)
 
@@ -603,7 +597,6 @@ def test_hybrid_property_game(
             act_id=acts[0].id,
             title=f"Scene {i}",
             description=f"Test scene {i}",
-            sequence=i,
             is_active=(i == 1),
         )
         for i in range(1, 4)
