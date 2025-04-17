@@ -340,6 +340,13 @@ def test_interpretation_set(session_context, test_scene):
             is_current=True,
         )
         session.add(interp_set)
+        session.flush()
+        
+        # Force loading of the interpretations relationship before session closes
+        session.refresh(interp_set)
+        # Explicitly load the relationship
+        _ = list(interp_set.interpretations)
+        
         return interp_set
 
 
@@ -357,6 +364,13 @@ def test_interpretations(session_context, test_interpretation_set):
             for i in range(1, 3)
         ]
         session.add_all(interpretations)
+        session.flush()
+        
+        # Refresh the interpretation set to ensure it has the new interpretations
+        session.refresh(test_interpretation_set)
+        # Force loading of the relationship
+        _ = list(test_interpretation_set.interpretations)
+        
         return interpretations
 
 
