@@ -511,9 +511,7 @@ def complete_act(
     summary: Optional[str] = typer.Option(
         None, "--summary", "-s", help="Summary for the completed act"
     ),
-    ai: bool = typer.Option(
-        False, "--ai", help="Use AI to generate title and summary"
-    ),
+    ai: bool = typer.Option(False, "--ai", help="Use AI to generate title and summary"),
     context: Optional[str] = typer.Option(
         None,
         "--context",
@@ -554,7 +552,9 @@ def complete_act(
     logger.debug("Completing act")
 
     # Helper methods for AI generation flow
-    def _handle_ai_generation(act_id: str, user_context: Optional[str]) -> Dict[str, str]:
+    def _handle_ai_generation(
+        act_id: str, user_context: Optional[str]
+    ) -> Dict[str, str]:
         """Handle the AI generation process for act summary and title."""
         # Will be implemented in later phases
         return {"title": "", "summary": ""}
@@ -569,12 +569,16 @@ def complete_act(
         # Will be implemented in later phases
         pass
 
-    def _handle_user_feedback(results: Dict[str, str], act: Act, game_name: str) -> Optional[Dict[str, str]]:
+    def _handle_user_feedback(
+        results: Dict[str, str], act: Act, game_name: str
+    ) -> Optional[Dict[str, str]]:
         """Handle user feedback on AI-generated content."""
         # Will be implemented in later phases
         return None
 
-    def _complete_act_with_data(act_id: str, title: Optional[str], summary: Optional[str]) -> Act:
+    def _complete_act_with_data(
+        act_id: str, title: Optional[str], summary: Optional[str]
+    ) -> Act:
         """Complete the act with the provided data."""
         # Will be implemented in later phases
         return act_manager.complete_act(act_id=act_id, title=title, summary=summary)
@@ -586,7 +590,7 @@ def complete_act(
         # Initialize manager with the session
         game_manager = GameManager(session=session)
         act_manager = ActManager(session=session)
-        
+
         try:
             # Validate active game and act
             active_game = game_manager.get_active_game()
@@ -596,17 +600,19 @@ def complete_act(
 
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
-                console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+                console.print(
+                    f"[red]Error:[/] No active act in game '{active_game.name}'."
+                )
                 console.print("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
-            
+
             # Handle AI generation if requested
             if ai:
                 # This will be implemented in later phases
                 # Placeholder for future implementation
                 if context:
                     logger.debug(f"Context provided for AI generation: {context}")
-                
+
                 # Check if we should generate title/summary
                 should_generate_title = force or not active_act.title
                 should_generate_summary = force or not active_act.summary
@@ -626,23 +632,23 @@ def complete_act(
             if title is None and summary is None and not ai:
                 # Create editor configuration
                 editor_config = StructuredEditorConfig(
-                fields=[
-                    FieldConfig(
-                        name="title",
-                        display_name="Title",
-                        help_text="Title of the completed act",
-                        required=False,
-                    ),
-                    FieldConfig(
-                        name="summary",
-                        display_name="Summary",
-                        help_text="Summary of the completed act",
-                        multiline=True,
-                        required=False,
-                    ),
-                ],
-                wrap_width=70,
-            )
+                    fields=[
+                        FieldConfig(
+                            name="title",
+                            display_name="Title",
+                            help_text="Title of the completed act",
+                            required=False,
+                        ),
+                        FieldConfig(
+                            name="summary",
+                            display_name="Summary",
+                            help_text="Summary of the completed act",
+                            multiline=True,
+                            required=False,
+                        ),
+                    ],
+                    wrap_width=70,
+                )
 
             # Create context information
             title_display = active_act.title or "Untitled Act"
