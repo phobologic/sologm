@@ -603,7 +603,6 @@ class ActManager(BaseManager[Act, Act]):
                 raise APIError(f"Failed to generate act summary: {str(e)}") from e
             raise
 
-
     def generate_and_update_act_summary(
         self, act_id: str, additional_context: Optional[str] = None
     ) -> Dict[str, Any]:
