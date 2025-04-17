@@ -1,12 +1,11 @@
 """Tests for markdown generation utilities."""
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from sologm.cli.utils.markdown import (
+    generate_event_markdown,
     generate_game_markdown,
     generate_scene_markdown,
-    generate_event_markdown,
 )
 from sologm.models.scene import SceneStatus
 
