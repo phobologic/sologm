@@ -190,10 +190,12 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 scene = self.get_entity_or_error(
                     session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
                 )
-                
+
                 # Explicitly refresh the scene with its interpretation_sets relationship
-                self.logger.debug(f"Refreshing scene relationships for scene ID: {scene_id}")
-                session.refresh(scene, ['interpretation_sets'])
+                self.logger.debug(
+                    f"Refreshing scene relationships for scene ID: {scene_id}"
+                )
+                session.refresh(scene, ["interpretation_sets"])
 
                 # Log scene details
                 self.logger.debug(f"Found scene: {scene.title} (ID: {scene.id})")
