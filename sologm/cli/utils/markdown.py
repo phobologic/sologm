@@ -5,6 +5,7 @@ from typing import List
 
 from sologm.core.event import EventManager
 from sologm.core.scene import SceneManager
+from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.scene import Scene, SceneStatus
@@ -52,62 +53,62 @@ def generate_game_markdown(
         acts = sorted(game.acts, key=lambda a: a.sequence)
 
         for act in acts:
-            # Add act header
-            act_title = act.title or "Untitled Act"
-            content.append(f"## Act {act.sequence}: {act_title}")
-            content.append("")
-
-            # Add act description if available
-            if act.summary:
-                for line in act.summary.split("\n"):
-                    content.append(line)
-                content.append("")
-
-            if include_metadata:
-                content.append(f"*Act ID: {act.id}*")
-                content.append(f"*Created: {format_datetime(act.created_at)}*")
-                content.append("")
-
-            # Get all scenes for this act in sequence order
-            scenes = scene_manager.list_scenes(act_id=act.id)
-            scenes.sort(key=lambda s: s.sequence)
-
-            # Process each scene in this act
-            for scene in scenes:
-                content.extend(
-                    generate_scene_markdown(scene, event_manager, include_metadata)
-                )
-                content.append("")  # Add extra line break between scenes
-    else:
-        # Fallback for games without acts structure
-        logger.warning(f"Game {game.id} has no acts, attempting to get scenes directly")
-
-        # Try to get scenes directly from the game
-        if hasattr(game, "scenes") and game.scenes:
-            scenes = sorted(game.scenes, key=lambda s: s.sequence)
-            for scene in scenes:
-                content.extend(
-                    generate_scene_markdown(scene, event_manager, include_metadata)
-                )
-                content.append("")
-        else:
-            # Last resort: try to get all scenes for the game through scene_manager
-            try:
-                # This assumes scene_manager can list scenes by game_id
-                scenes = scene_manager.list_scenes(game_id=game.id)
-                scenes.sort(key=lambda s: s.sequence)
-
-                for scene in scenes:
-                    content.extend(
-                        generate_scene_markdown(scene, event_manager, include_metadata)
-                    )
-                    content.append("")
-            except Exception as e:
-                logger.error(f"Failed to get scenes for game {game.id}: {e}")
-                content.append("*No scenes found for this game*")
-                content.append("")
+            # Generate markdown for this act
+            act_content = generate_act_markdown(
+                act, scene_manager, event_manager, include_metadata
+            )
+            content.extend(act_content)
+            content.append("")  # Add extra line break between acts
 
     return "\n".join(content)
+
+
+def generate_act_markdown(
+    act: Act,
+    scene_manager: SceneManager,
+    event_manager: EventManager,
+    include_metadata: bool = False,
+) -> List[str]:
+    """Generate markdown content for an act with its scenes.
+
+    Args:
+        act: The act to export
+        scene_manager: SceneManager instance
+        event_manager: EventManager instance
+        include_metadata: Whether to include technical metadata
+
+    Returns:
+        List of markdown lines
+    """
+    content = []
+
+    # Add act header
+    act_title = act.title or "Untitled Act"
+    content.append(f"## Act {act.sequence}: {act_title}")
+    content.append("")
+
+    # Add act description if available
+    if act.summary:
+        for line in act.summary.split("\n"):
+            content.append(line)
+        content.append("")
+
+    if include_metadata:
+        content.append(f"*Act ID: {act.id}*")
+        content.append(f"*Created: {format_datetime(act.created_at)}*")
+        content.append("")
+
+    # Get all scenes for this act in sequence order
+    scenes = scene_manager.list_scenes(act_id=act.id)
+    scenes.sort(key=lambda s: s.sequence)
+
+    # Process each scene in this act
+    for scene in scenes:
+        scene_content = generate_scene_markdown(scene, event_manager, include_metadata)
+        content.extend(scene_content)
+        content.append("")  # Add extra line break between scenes
+
+    return content
 
 
 def generate_scene_markdown(
@@ -145,7 +146,7 @@ def generate_scene_markdown(
         content.append("")
 
     # Get all events for this scene
-    events = event_manager.list_events(scene.game_id, scene.id)
+    events = event_manager.list_events(scene_id=scene.id)
 
     # Sort events chronologically
     events.sort(key=lambda e: e.created_at)
