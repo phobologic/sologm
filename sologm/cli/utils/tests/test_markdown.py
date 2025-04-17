@@ -108,7 +108,7 @@ def test_generate_game_markdown_with_hierarchy(
     with session_context as session:
         # Merge the game into the current session
         game = session.merge(game)
-        
+
         # Test basic game markdown
         result = generate_game_markdown(
             game, scene_manager, event_manager, include_metadata=False
