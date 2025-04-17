@@ -61,9 +61,10 @@ Break down the implementation into smaller, focused methods:
 
 1. `_handle_ai_generation`: Manages the AI generation process
 2. `_collect_context`: Handles collecting context from the user
-3. `_process_ai_results`: Processes and displays AI-generated content
-4. `_handle_user_feedback`: Manages the accept/edit/regenerate flow
-5. `_complete_act_with_data`: Finalizes the act completion
+3. `_collect_regeneration_context`: Specialized context collection for regeneration
+4. `_process_ai_results`: Processes and displays AI-generated content
+5. `_handle_user_feedback`: Manages the accept/edit/regenerate flow
+6. `_complete_act_with_data`: Finalizes the act completion
 
 This approach improves readability, maintainability, and testability.
 
@@ -101,6 +102,7 @@ This approach improves readability, maintainability, and testability.
 **AI Generation**:
 1. Display "Generating summary with AI..." message using `StyledText.title()`
 2. Call `act_manager.generate_act_summary()` with act ID and context
+   - For regeneration, include previous AI output and request for differentiation
 3. Handle potential API errors with user-friendly messages following error handling conventions
 
 **User Feedback Loop**:
@@ -118,9 +120,12 @@ This approach improves readability, maintainability, and testability.
    - If user saves, proceed with modified content
 6. For "Regenerate":
    - Open structured editor with current context
+   - Add guidance in the comments explaining that they should provide feedback on how they want the new generation to differ from the previous one
+   - Include the previously generated title and summary in the comments for reference
    - Allow user to modify context
    - If user cancels, return to prompt
-   - If user saves, regenerate with new context
+   - If user saves, regenerate with new context that includes information about the previous generation
+   - When calling the AI, include the previously generated content and instructions to generate something different
    - Display new content and repeat feedback loop
 
 **Act Completion**:
@@ -193,3 +198,6 @@ Delete the `generate_act_summary` function from `sologm/cli/act.py`.
 7. Include proper type annotations for all new methods following conventions in `type_annotations.md`
 8. Use `StyledText` methods consistently for all styled output
 9. Use panels with appropriate border styles from `BORDER_STYLES` for different content types
+10. Enhance the ActManager's `generate_act_summary` method to accept previous generation results
+11. Create clear guidance for users when regenerating content
+12. Use a different prompt template for regeneration vs. initial generation
