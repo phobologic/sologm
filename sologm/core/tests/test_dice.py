@@ -218,20 +218,11 @@ class TestDiceManager:
         assert "Final result:" in caplog.text
         assert "Created dice roll with ID:" in caplog.text
 
-    def test_roll_for_active_scene(
-        self, dice_manager, scene_manager, test_scene, monkeypatch
-    ):
+    def test_roll_for_active_scene(self, dice_manager, test_scene):
         """Test rolling dice for the active scene."""
-
-        # Mock validate_active_context to return our test scene
-        def mock_validate_active_context():
-            return "test_act_id", test_scene
-
-        monkeypatch.setattr(
-            scene_manager, "validate_active_context", mock_validate_active_context
-        )
-        monkeypatch.setattr(dice_manager, "scene_manager", scene_manager)
-
+        # The test_scene fixture is already set up as the active scene
+        # through the fixture chain: test_scene -> test_act -> test_game
+        
         # Roll dice for active scene
         roll = dice_manager.roll_for_active_scene("1d20", "Test roll")
 
@@ -259,20 +250,11 @@ class TestDiceManager:
         assert rolls[0].reason == "Roll 2"  # Most recent first
         assert rolls[1].reason == "Roll 1"
 
-    def test_get_rolls_for_active_scene(
-        self, dice_manager, scene_manager, test_scene, monkeypatch
-    ):
+    def test_get_rolls_for_active_scene(self, dice_manager, test_scene):
         """Test getting rolls for the active scene."""
-
-        # Mock validate_active_context to return our test scene
-        def mock_validate_active_context():
-            return "test_act_id", test_scene
-
-        monkeypatch.setattr(
-            scene_manager, "validate_active_context", mock_validate_active_context
-        )
-        monkeypatch.setattr(dice_manager, "scene_manager", scene_manager)
-
+        # The test_scene fixture is already set up as the active scene
+        # through the fixture chain: test_scene -> test_act -> test_game
+        
         # Create some rolls for the test scene
         dice_manager.roll("1d6", "Roll 1", test_scene)
         dice_manager.roll("2d8", "Roll 2", test_scene)
