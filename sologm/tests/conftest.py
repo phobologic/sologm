@@ -458,7 +458,7 @@ def test_hybrid_expressions():
             expected_count: The expected count of results
         """
         from sologm.database.session import get_db_context
-        
+
         with get_db_context() as session:
             property_expr = getattr(model_class, property_name)
             query = session.query(model_class).filter(property_expr == filter_condition)
