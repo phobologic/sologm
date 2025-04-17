@@ -23,9 +23,16 @@ class TestOracle:
         game_manager,
         scene_manager,
         act_manager,
+        db_session,
         monkeypatch,
     ) -> None:
         """Test getting active game, act, and scene."""
+        # Ensure all managers use the same session
+        monkeypatch.setattr(oracle_manager, "_session", db_session)
+        monkeypatch.setattr(game_manager, "_session", db_session)
+        monkeypatch.setattr(act_manager, "_session", db_session)
+        monkeypatch.setattr(scene_manager, "_session", db_session)
+        
         # Monkeypatch the manager properties to use our test managers
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
@@ -54,6 +61,12 @@ class TestOracle:
         monkeypatch,
     ) -> None:
         """Test validation with no active game."""
+        # Ensure all managers use the same session
+        monkeypatch.setattr(oracle_manager, "_session", db_session)
+        monkeypatch.setattr(game_manager, "_session", db_session)
+        monkeypatch.setattr(act_manager, "_session", db_session)
+        monkeypatch.setattr(scene_manager, "_session", db_session)
+        
         # Monkeypatch the manager properties to use our test managers
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
@@ -78,6 +91,12 @@ class TestOracle:
         monkeypatch,
     ) -> None:
         """Test validation with no active act."""
+        # Ensure all managers use the same session
+        monkeypatch.setattr(oracle_manager, "_session", db_session)
+        monkeypatch.setattr(game_manager, "_session", db_session)
+        monkeypatch.setattr(act_manager, "_session", db_session)
+        monkeypatch.setattr(scene_manager, "_session", db_session)
+        
         # Monkeypatch the manager properties to use our test managers
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
@@ -105,6 +124,12 @@ class TestOracle:
         monkeypatch,
     ) -> None:
         """Test validation with no active scene."""
+        # Ensure all managers use the same session
+        monkeypatch.setattr(oracle_manager, "_session", db_session)
+        monkeypatch.setattr(game_manager, "_session", db_session)
+        monkeypatch.setattr(act_manager, "_session", db_session)
+        monkeypatch.setattr(scene_manager, "_session", db_session)
+        
         # Monkeypatch the manager properties to use our test managers
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
@@ -163,6 +188,9 @@ Test Description 2"""
         self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ) -> None:
         """Test getting interpretations."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Configure mock to return string response
         response_text = """## Test Title
 Test Description"""
@@ -207,6 +235,9 @@ Test Description"""
         db_session,
     ) -> None:
         """Test selecting an interpretation."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Configure mock to return string response
         response_text = """## Test Title
 Test Description"""
@@ -283,9 +314,12 @@ Test Description"""
         assert "No interpretations found" in str(exc.value)
 
     def test_find_interpretation_by_different_identifiers(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ) -> None:
         """Test finding interpretations by different identifier types."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Configure mock to return string response with multiple interpretations
         response_text = """## First Option
 Description of first option
@@ -327,9 +361,12 @@ Description of second option"""
         assert "not found" in str(exc.value)
 
     def test_get_interpretations_with_retry(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ) -> None:
         """Test getting interpretations with retry attempt."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Configure mock to return string response
         response_text = """## Test Title
 Test Description"""
@@ -367,9 +404,12 @@ Test Description"""
         assert "different" in retry_call[0][0].lower()
 
     def test_automatic_retry_on_parse_failure(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ):
         """Test automatic retry when parsing fails."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # First response has no interpretations (bad format)
         # Second response has valid interpretations
         mock_anthropic_client.send_message.side_effect = [
@@ -393,9 +433,12 @@ Retry Description""",  # Second call - good format
         assert result.interpretations[0].title == "Retry Title"
 
     def test_automatic_retry_max_attempts(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ):
         """Test that we don't exceed max retry attempts."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # All responses have bad format
         mock_anthropic_client.send_message.side_effect = [
             "Bad format 1",  # First call
@@ -417,9 +460,12 @@ Retry Description""",  # Second call - good format
         assert "after 3 attempts" in str(exc.value)
 
     def test_automatic_retry_with_custom_max(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ):
         """Test custom max_retries parameter."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # First two responses have bad format, third is good
         mock_anthropic_client.send_message.side_effect = [
             "Bad format 1",  # First call
@@ -443,9 +489,12 @@ Custom Description""",  # Third call
         assert "after 2 attempts" in str(exc.value)
 
     def test_oracle_manager_get_interpretations_detailed(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ):
         """Test detailed interpretation generation and parsing."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Configure mock with a more complex response
         response_text = """## First Interpretation
 This is the first interpretation with multiple lines
@@ -473,16 +522,17 @@ It also has multiple lines."""
     # This test is removed as _create_interpretation_set method no longer exists
 
     def test_get_most_recent_interpretation(
-        self, oracle_manager, mock_anthropic_client, test_game, test_act, test_scene
+        self, oracle_manager, mock_anthropic_client, test_game, test_act, test_scene, db_session
     ):
         """Test getting most recent interpretation."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Create an interpretation set
         response_text = """## Test Title\nTest Description"""
         mock_anthropic_client.send_message.return_value = response_text
 
         interp_set = oracle_manager.get_interpretations(
-            test_game.id,
-            test_act.id,
             test_scene.id,
             "What happens?",
             "Mystery",
@@ -520,13 +570,14 @@ It also has multiple lines."""
         db_session,
     ):
         """Test adding interpretation as event directly."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Create an interpretation set
         response_text = """## Test Title\nTest Description"""
         mock_anthropic_client.send_message.return_value = response_text
 
         interp_set = oracle_manager.get_interpretations(
-            test_game.id,
-            test_act.id,
             test_scene.id,
             "What happens?",
             "Mystery",
@@ -586,6 +637,9 @@ It also has multiple lines."""
         db_session,
     ):
         """Test managing multiple interpretation sets."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Create multiple interpretation sets
         mock_anthropic_client.send_message.side_effect = [
             "## First Set\nDescription 1",
@@ -618,9 +672,12 @@ It also has multiple lines."""
         assert current.id == set3.id
 
     def test_get_current_interpretation_set(
-        self, oracle_manager, mock_anthropic_client, test_scene
+        self, oracle_manager, mock_anthropic_client, test_scene, db_session
     ):
         """Test getting current interpretation set."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Create an interpretation set
         response_text = """## Test Title\nTest Description"""
         mock_anthropic_client.send_message.return_value = response_text
@@ -654,10 +711,12 @@ It also has multiple lines."""
         db_session.refresh(created_set)
         assert created_set.is_current is False
 
-    def test_get_current_interpretation_set_none(self, oracle_manager, test_scene):
+    def test_get_current_interpretation_set_none(self, oracle_manager, test_scene, db_session):
         """Test getting current interpretation set when none exists."""
+        # Ensure oracle_manager uses the test session
+        oracle_manager._session = db_session
+        
         # Ensure no current interpretation sets exist
-        db_session = oracle_manager._session
         db_session.query(InterpretationSet).filter(
             InterpretationSet.scene_id == test_scene.id
         ).update({InterpretationSet.is_current: False})
@@ -676,9 +735,16 @@ It also has multiple lines."""
         test_game,
         test_act,
         test_scene,
+        db_session,
         monkeypatch,
     ):
         """Test building interpretation prompt for active context with acts."""
+        # Ensure all managers use the same session
+        monkeypatch.setattr(oracle_manager, "_session", db_session)
+        monkeypatch.setattr(game_manager, "_session", db_session)
+        monkeypatch.setattr(act_manager, "_session", db_session)
+        monkeypatch.setattr(scene_manager, "_session", db_session)
+        
         # Monkeypatch the manager properties to use our test managers
         monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
         monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
