@@ -1316,7 +1316,6 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
     # Create metadata with consistent formatting
     metadata = {
         "Game": game_name,
-        "Status": act.status.value,
         "Sequence": f"Act {act.sequence}",
         "Created": act.created_at.strftime("%Y-%m-%d"),
         "Modified": act.modified_at.strftime("%Y-%m-%d"),
@@ -1326,8 +1325,6 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
     border_style = (
         BORDER_STYLES["current"] if act.is_active else BORDER_STYLES["game_info"]
     )
-    if act.status.value == "COMPLETED":
-        border_style = BORDER_STYLES["success"]
 
     # Create panel content
     panel_content = Text()
