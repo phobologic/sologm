@@ -6,7 +6,7 @@ or problems that unfold through multiple connected Scenes.
 """
 
 import logging
-from typing import Optional
+from typing import Dict, Optional
 
 import typer
 from rich.console import Console
@@ -512,37 +512,72 @@ def complete_act(
         None, "--summary", "-s", help="Summary for the completed act"
     ),
     ai: bool = typer.Option(
-        False, "--ai", help="Use AI to generate title and description if not provided"
+        False, "--ai", help="Use AI to generate title and summary"
+    ),
+    context: Optional[str] = typer.Option(
+        None,
+        "--context",
+        "-c",
+        help="Additional context to include in the summary generation",
     ),
     force: bool = typer.Option(
         False,
         "--force",
-        help="Force AI generation even if title/description already exist",
+        help="Force completion even if title/summary already exist",
     ),
 ) -> None:
-    """Complete the current active act and optionally set its title and description.
+    """Complete the current active act and optionally set its title and summary.
 
-    If title and description are not provided, opens an editor to enter them.
+    If title and summary are not provided, opens an editor to enter them.
     Completing an act marks it as finished and allows you to provide a retrospective
-    title and description that summarize the narrative events that occurred.
+    title and summary that summarize the narrative events that occurred.
 
-    The --ai flag can be used to generate a title and description based on the
-    act's content (when implemented).
+    The --ai flag can be used to generate a title and summary based on the
+    act's content using AI. You can provide additional context with --context.
 
     Examples:
         Complete act with an interactive editor:
         $ sologm act complete
 
-        Complete act with specific title and description:
-        $ sologm act complete -t "The Fall of the Kingdom" -d "The heroes failed to save the kingdom"
+        Complete act with specific title and summary:
+        $ sologm act complete -t "The Fall of the Kingdom" -s "The heroes failed to save the kingdom"
 
-        Complete act with AI-generated title and description (when implemented):
+        Complete act with AI-generated title and summary:
         $ sologm act complete --ai
 
-        Force AI regeneration of title/description (when implemented):
+        Complete act with AI-generated content and additional context:
+        $ sologm act complete --ai --context "Focus on the themes of betrayal and redemption"
+
+        Force AI regeneration of title/summary:
         $ sologm act complete --ai --force
     """
     logger.debug("Completing act")
+
+    # Helper methods for AI generation flow
+    def _handle_ai_generation(act_id: str, user_context: Optional[str]) -> Dict[str, str]:
+        """Handle the AI generation process for act summary and title."""
+        # Will be implemented in later phases
+        return {"title": "", "summary": ""}
+
+    def _collect_context(act: Act, game_name: str) -> Optional[str]:
+        """Collect context from the user for AI generation."""
+        # Will be implemented in later phases
+        return None
+
+    def _process_ai_results(results: Dict[str, str], act: Act) -> None:
+        """Process and display AI-generated content."""
+        # Will be implemented in later phases
+        pass
+
+    def _handle_user_feedback(results: Dict[str, str], act: Act, game_name: str) -> Optional[Dict[str, str]]:
+        """Handle user feedback on AI-generated content."""
+        # Will be implemented in later phases
+        return None
+
+    def _complete_act_with_data(act_id: str, title: Optional[str], summary: Optional[str]) -> Act:
+        """Complete the act with the provided data."""
+        # Will be implemented in later phases
+        return act_manager.complete_act(act_id=act_id, title=title, summary=summary)
 
     from sologm.database.session import get_db_context
 
@@ -550,38 +585,45 @@ def complete_act(
     with get_db_context() as session:
         # Initialize manager with the session
         game_manager = GameManager(session=session)
-        active_game = game_manager.get_active_game()
-        if not active_game:
-            console.print("[red]Error:[/] No active game. Activate a game first.")
-            raise typer.Exit(1)
-
-        # Get the active act
         act_manager = ActManager(session=session)
-        active_act = act_manager.get_active_act(active_game.id)
-        if not active_act:
-            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
-            console.print("Create one with 'sologm act create'.")
-            raise typer.Exit(1)
+        
+        try:
+            # Validate active game and act
+            active_game = game_manager.get_active_game()
+            if not active_game:
+                console.print("[red]Error:[/] No active game. Activate a game first.")
+                raise typer.Exit(1)
 
-        # Check if we need to generate with AI
-        if ai:
-            # Check if we should generate title/summary
-            should_generate_title = force or not active_act.title
-            should_generate_summary = force or not active_act.summary
+            active_act = act_manager.get_active_act(active_game.id)
+            if not active_act:
+                console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+                console.print("Create one with 'sologm act create'.")
+                raise typer.Exit(1)
+            
+            # Handle AI generation if requested
+            if ai:
+                # This will be implemented in later phases
+                # Placeholder for future implementation
+                if context:
+                    logger.debug(f"Context provided for AI generation: {context}")
+                
+                # Check if we should generate title/summary
+                should_generate_title = force or not active_act.title
+                should_generate_summary = force or not active_act.summary
 
-            if should_generate_title or should_generate_summary:
-                console.print(
-                    "[yellow]AI generation of act title/summary is not yet implemented.[/yellow]"
-                )
-                console.print("Please provide title and summary manually.")
-                # This is where AI generation would be implemented
-            elif not force:
-                console.print(
-                    "[yellow]Act already has title and description. Use --force to override.[/yellow]"
-                )
+                if should_generate_title or should_generate_summary:
+                    console.print(
+                        "[yellow]AI generation of act title/summary is not yet implemented.[/yellow]"
+                    )
+                    console.print("Please provide title and summary manually.")
+                    # This is where AI generation would be implemented
+                elif not force:
+                    console.print(
+                        "[yellow]Act already has title and summary. Use --force to override.[/yellow]"
+                    )
 
-        # If title and summary are not provided, open editor
-        if title is None and summary is None and not ai:
+            # If title and summary are not provided, open editor
+            if title is None and summary is None and not ai:
             # Create editor configuration
             editor_config = StructuredEditorConfig(
                 fields=[
