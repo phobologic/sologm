@@ -215,6 +215,7 @@ def create_test_act(act_manager):
         title="Test Act",
         summary="A test act",
         is_active=True,
+        sequence=None,  # Add sequence parameter
     ):
         act = act_manager.create_act(
             game_id=game_id,
@@ -222,6 +223,14 @@ def create_test_act(act_manager):
             summary=summary,
             make_active=is_active,
         )
+        
+        # If sequence was specified, update it directly
+        if sequence is not None:
+            session = act_manager._session
+            act.sequence = sequence
+            session.add(act)
+            session.flush()
+        
         return act
 
     return _create_act
