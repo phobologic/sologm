@@ -364,6 +364,7 @@ def empty_interpretation_set(session_context, test_scene):
         session.add(interp_set)
         return interp_set
 
+
 @pytest.fixture
 def test_dice_roll(session_context, test_scene):
     """Create a test dice roll."""
