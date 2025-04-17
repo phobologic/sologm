@@ -50,41 +50,45 @@ def generate_game_markdown(
     if hasattr(game, "acts") and game.acts:
         # Sort acts by sequence
         acts = sorted(game.acts, key=lambda a: a.sequence)
-        
+
         for act in acts:
             # Add act header
             act_title = act.title or "Untitled Act"
             content.append(f"## Act {act.sequence}: {act_title}")
             content.append("")
-            
+
             # Add act description if available
             if act.summary:
                 for line in act.summary.split("\n"):
                     content.append(line)
                 content.append("")
-            
+
             if include_metadata:
                 content.append(f"*Act ID: {act.id}*")
                 content.append(f"*Created: {format_datetime(act.created_at)}*")
                 content.append("")
-            
+
             # Get all scenes for this act in sequence order
             scenes = scene_manager.list_scenes(act_id=act.id)
             scenes.sort(key=lambda s: s.sequence)
-            
+
             # Process each scene in this act
             for scene in scenes:
-                content.extend(generate_scene_markdown(scene, event_manager, include_metadata))
+                content.extend(
+                    generate_scene_markdown(scene, event_manager, include_metadata)
+                )
                 content.append("")  # Add extra line break between scenes
     else:
         # Fallback for games without acts structure
         logger.warning(f"Game {game.id} has no acts, attempting to get scenes directly")
-        
+
         # Try to get scenes directly from the game
         if hasattr(game, "scenes") and game.scenes:
             scenes = sorted(game.scenes, key=lambda s: s.sequence)
             for scene in scenes:
-                content.extend(generate_scene_markdown(scene, event_manager, include_metadata))
+                content.extend(
+                    generate_scene_markdown(scene, event_manager, include_metadata)
+                )
                 content.append("")
         else:
             # Last resort: try to get all scenes for the game through scene_manager
@@ -92,9 +96,11 @@ def generate_game_markdown(
                 # This assumes scene_manager can list scenes by game_id
                 scenes = scene_manager.list_scenes(game_id=game.id)
                 scenes.sort(key=lambda s: s.sequence)
-                
+
                 for scene in scenes:
-                    content.extend(generate_scene_markdown(scene, event_manager, include_metadata))
+                    content.extend(
+                        generate_scene_markdown(scene, event_manager, include_metadata)
+                    )
                     content.append("")
             except Exception as e:
                 logger.error(f"Failed to get scenes for game {game.id}: {e}")

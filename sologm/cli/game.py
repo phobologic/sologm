@@ -301,7 +301,7 @@ def dump_game(
 
             # Make sure the game has its acts loaded
             session.refresh(game)
-            
+
             # Generate the markdown content
             markdown_content = generate_game_markdown(
                 game, scene_manager, event_manager, include_metadata
