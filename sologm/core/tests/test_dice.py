@@ -57,7 +57,7 @@ class TestDiceManager:
         with pytest.raises(DiceError):
             dice_manager._parse_notation("1d0")
 
-    def test_roll_basic(self, dice_manager, db_session) -> None:
+    def test_roll_basic(self, dice_manager, session_context) -> None:
         """Test basic dice roll."""
         roll = dice_manager.roll("1d6")
 
@@ -68,14 +68,15 @@ class TestDiceManager:
         assert roll.total == roll.individual_results[0]
         assert roll.reason is None
 
-        # Verify it's in the database
-        db_roll = (
-            db_session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
-        )
-        assert db_roll is not None
-        assert db_roll.notation == "1d6"
-        assert len(db_roll.individual_results) == 1
-        assert db_roll.total == roll.total
+        # Verify it's in the database using session_context
+        with session_context as session:
+            db_roll = (
+                session.query(DiceRollModel).filter(DiceRollModel.id == roll.id).first()
+            )
+            assert db_roll is not None
+            assert db_roll.notation == "1d6"
+            assert len(db_roll.individual_results) == 1
+            assert db_roll.total == roll.total
 
     def test_roll_multiple_dice(self, dice_manager) -> None:
         """Test rolling multiple dice."""
@@ -281,3 +282,26 @@ class TestDiceManager:
         assert all(roll.scene_id == test_scene.id for roll in rolls)
         assert rolls[0].reason == "Roll 2"  # Most recent first
         assert rolls[1].reason == "Roll 1"
+        
+    def test_cli_pattern_example(self, cli_test, test_scene):
+        """Test dice rolling using the CLI pattern with session context."""
+        
+        def test_func(session):
+            # This mimics what would happen in a CLI command
+            from sologm.core.dice import DiceManager
+            
+            # Create manager with the session
+            dice_manager = DiceManager(session=session)
+            
+            # Perform operations
+            roll = dice_manager.roll("3d6", reason="CLI test roll", scene=test_scene)
+            return roll
+            
+        # Run with real context manager
+        roll = cli_test(test_func)
+        
+        # Assertions
+        assert roll.notation == "3d6"
+        assert len(roll.individual_results) == 3
+        assert roll.reason == "CLI test roll"
+        assert roll.scene_id == test_scene.id

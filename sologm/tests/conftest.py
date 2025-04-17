@@ -39,9 +39,10 @@ def db_engine():
 
 @pytest.fixture
 def db_session(database_manager):
-    """Get a SQLAlchemy session from the test DatabaseManager.
-
-    This mimics how sessions are obtained in production code.
+    """Get a SQLAlchemy session for testing.
+    
+    This is primarily used for initializing managers in tests.
+    For most test operations, prefer using session_context.
     """
     logger.debug("Initializing db_session")
     session = database_manager.get_session()
@@ -52,25 +53,40 @@ def db_session(database_manager):
     database_manager.close_session()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def database_manager(db_engine):
     """Create a DatabaseManager instance for testing.
-
-    This replaces the singleton with a test-specific instance that
-    uses an in-memory SQLite database, ensuring test isolation.
+    
+    This fixture replaces the singleton DatabaseManager instance with a test-specific
+    instance that uses an in-memory SQLite database. This approach ensures:
+    
+    1. Test isolation: Each test gets its own clean database
+    2. No side effects: Tests don't affect the real application database
+    3. Singleton pattern preservation: The pattern is maintained during testing
+    
+    The original singleton instance is saved before the test and restored afterward,
+    ensuring that tests don't permanently modify the application's database connection.
+    This is critical for test isolation and preventing test order dependencies.
+    
+    Args:
+        db_engine: SQLite in-memory engine for testing
+        
+    Yields:
+        A test-specific DatabaseManager instance
     """
     from sologm.database.session import DatabaseManager
-
-    # Save original instance
+    
+    # Save original instance to restore it after the test
+    # This prevents tests from affecting each other or the real application
     old_instance = DatabaseManager._instance
-
+    
     # Create new instance with test engine
     db_manager = DatabaseManager(engine=db_engine)
     DatabaseManager._instance = db_manager
-
+    
     yield db_manager
-
-    # Restore original instance
+    
+    # Restore original instance to prevent test pollution
     DatabaseManager._instance = old_instance
 
 
@@ -81,36 +97,50 @@ def mock_anthropic_client():
     return MagicMock(spec=AnthropicClient)
 
 
-# Add a new fixture for SessionContext
 @pytest.fixture
-def db_context(database_manager):
-    """Create a SessionContext for testing.
-
-    This uses the actual SessionContext with our test DatabaseManager.
+def cli_test():
+    """Helper for testing CLI command patterns.
+    
+    This fixture provides a function that executes test code within a session context,
+    mimicking how CLI commands work in production.
+    
+    Example:
+        def test_cli_pattern(cli_test):
+            def test_func(session):
+                game_manager = GameManager(session=session)
+                return game_manager.create_game("Test Game", "Description")
+                
+            game = cli_test(test_func)
+            assert game.name == "Test Game"
     """
-    from sologm.database.session import SessionContext
+    def run_with_context(test_func):
+        from sologm.database.session import get_db_context
+        with get_db_context() as session:
+            return test_func(session)
+    return run_with_context
 
-    # Create a SessionContext using our test DatabaseManager
-    return SessionContext(db_manager=database_manager)
+
+# Session context fixture
+@pytest.fixture
+def session_context():
+    """Create a SessionContext for testing.
+    
+    This fixture provides the same session context that application code uses,
+    ensuring tests mirror real usage patterns. Use this as the primary way to
+    access the database in tests.
+    
+    Example:
+        def test_something(session_context):
+            with session_context as session:
+                # Test code using session
+    """
+    from sologm.database.session import get_db_context
+    return get_db_context()
 
 
 # Manager fixtures
-@pytest.fixture(autouse=True)
-def setup_database_manager(db_engine):
-    """Configure DatabaseManager singleton for testing."""
-    from sologm.database.session import DatabaseManager
-
-    # Create a new DatabaseManager with the test engine
-    test_db_manager = DatabaseManager(engine=db_engine)
-
-    # Save and replace the singleton instance
-    old_instance = DatabaseManager._instance
-    DatabaseManager._instance = test_db_manager
-
-    yield
-
-    # Restore the original singleton
-    DatabaseManager._instance = old_instance
+# Removed redundant setup_database_manager fixture
+# The database_manager fixture now has autouse=True
 
 
 @pytest.fixture
@@ -154,23 +184,26 @@ def oracle_manager(scene_manager, mock_anthropic_client):
 
 # Model factory fixtures
 @pytest.fixture
-def create_test_game(database_session):
-    """Factory fixture to create test games."""
-
+def create_test_game(game_manager):
+    """Factory fixture to create test games using the GameManager.
+    
+    This uses the GameManager to create games, which better reflects
+    how the application code would create games.
+    """
     def _create_game(name="Test Game", description="A test game", is_active=True):
-        game = Game.create(name=name, description=description)
-        game.is_active = is_active
-        db_session.add(game)
-        db_session.commit()
+        game = game_manager.create_game(name, description, is_active=is_active)
         return game
 
     return _create_game
 
 
 @pytest.fixture
-def create_test_act(database_session):
-    """Factory fixture to create test acts."""
-
+def create_test_act(act_manager):
+    """Factory fixture to create test acts using the ActManager.
+    
+    This uses the ActManager to create acts, which better reflects
+    how the application code would create acts.
+    """
     def _create_act(
         game_id,
         title="Test Act",
@@ -178,29 +211,26 @@ def create_test_act(database_session):
         sequence=1,
         is_active=True,
     ):
-        # If creating an active act, deactivate all other acts for this game first
-        if is_active:
-            db_session.query(Act).filter(Act.game_id == game_id).update(
-                {Act.is_active: False}
-            )
-        act = Act.create(
+        act = act_manager.create_act(
             game_id=game_id,
             title=title,
             summary=summary,
             sequence=sequence,
         )
-        act.is_active = is_active
-        db_session.add(act)
-        db_session.commit()
+        if is_active:
+            act_manager.set_active(act.id)
         return act
 
     return _create_act
 
 
 @pytest.fixture
-def create_test_scene(database_session):
-    """Factory fixture to create test scenes."""
-
+def create_test_scene(scene_manager):
+    """Factory fixture to create test scenes using the SceneManager.
+    
+    This uses the SceneManager to create scenes, which better reflects
+    how the application code would create scenes.
+    """
     def _create_scene(
         act_id,
         title="Test Scene",
@@ -209,41 +239,37 @@ def create_test_scene(database_session):
         is_active=True,
         status=SceneStatus.ACTIVE,
     ):
-        # If creating an active scene, deactivate all other scenes for this act first
-        if is_active:
-            db_session.query(Scene).filter(Scene.act_id == act_id).update(
-                {Scene.is_active: False}
-            )
-        scene = Scene.create(
+        scene = scene_manager.create_scene(
             act_id=act_id,
             title=title,
             description=description,
             sequence=sequence,
         )
-        scene.is_active = is_active
-        scene.status = status
-        db_session.add(scene)
-        db_session.commit()
+        if is_active:
+            scene_manager.set_active(scene.id)
+        if status != SceneStatus.ACTIVE:
+            scene_manager.update_status(scene.id, status)
         return scene
 
     return _create_scene
 
 
 @pytest.fixture
-def create_test_event(database_session):
-    """Factory fixture to create test events."""
-
+def create_test_event(event_manager):
+    """Factory fixture to create test events using the EventManager.
+    
+    This uses the EventManager to create events, which better reflects
+    how the application code would create events.
+    """
     def _create_event(
-        scene_id, description="Test event", source_id=1, interpretation_id=None
+        scene_id, description="Test event", source="manual", interpretation_id=None
     ):
-        event = Event.create(
-            scene_id=scene_id,
+        event = event_manager.add_event(
             description=description,
-            source_id=source_id,
+            scene_id=scene_id,
+            source=source,
             interpretation_id=interpretation_id,
         )
-        db_session.add(event)
-        db_session.commit()
         return event
 
     return _create_event
@@ -251,64 +277,46 @@ def create_test_event(database_session):
 
 # Common test objects
 @pytest.fixture
-def test_game(create_test_game):
-    """Create a test game."""
-    return create_test_game()
+def test_game(game_manager):
+    """Create a test game using the GameManager."""
+    return game_manager.create_game("Test Game", "A test game", is_active=True)
 
 
 @pytest.fixture
-def test_act(database_session, test_game):
-    """Create a test act for the test game."""
-    act = Act.create(
+def test_act(act_manager, test_game):
+    """Create a test act for the test game using the ActManager."""
+    return act_manager.create_act(
         game_id=test_game.id,
         title="Test Act",
         summary="A test act",
         sequence=1,
+        is_active=True
     )
-    act.is_active = True
-    db_session.add(act)
-    db_session.commit()
-    return act
 
 
 @pytest.fixture
-def test_scene(database_session, test_act):
-    """Create a test scene for the test act."""
-    scene = Scene.create(
+def test_scene(scene_manager, test_act):
+    """Create a test scene for the test act using the SceneManager."""
+    return scene_manager.create_scene(
         act_id=test_act.id,
         title="Test Scene",
         description="A test scene",
         sequence=1,
+        is_active=True
     )
-    scene.is_active = True
-    db_session.add(scene)
-    db_session.commit()
-    return scene
 
 
 @pytest.fixture
-def test_events(database_session, test_scene):
-    """Create test events."""
-    # Get the source ID for "manual"
-    source_obj = (
-        db_session.query(EventSource).filter(EventSource.name == "manual").first()
-    )
-    if not source_obj:
-        # Create it if it doesn't exist
-        source_obj = EventSource.create(name="manual")
-        db_session.add(source_obj)
-        db_session.commit()
-
+def test_events(event_manager, test_scene):
+    """Create test events using the EventManager."""
     events = [
-        Event.create(
-            scene_id=test_scene.id,
+        event_manager.add_event(
             description=f"Test event {i}",
-            source_id=source_obj.id,
+            scene_id=test_scene.id,
+            source="manual",
         )
         for i in range(1, 3)
     ]
-    db_session.add_all(events)
-    db_session.commit()
     return events
 
 
@@ -360,19 +368,20 @@ def test_dice_roll(database_session, test_scene):
 
 
 @pytest.fixture(autouse=True)
-def initialize_event_sources(database_session):
+def initialize_event_sources(session_context):
     """Initialize event sources for testing."""
     sources = ["manual", "oracle", "dice"]
-    for source_name in sources:
-        existing = (
-            database_session.session.query(EventSource)
-            .filter(EventSource.name == source_name)
-            .first()
-        )
-        if not existing:
-            source = EventSource.create(name=source_name)
-            database_session.session.add(source)
-    database_session.session.commit()
+    with session_context as session:
+        for source_name in sources:
+            existing = (
+                session.query(EventSource)
+                .filter(EventSource.name == source_name)
+                .first()
+            )
+            if not existing:
+                source = EventSource.create(name=source_name)
+                session.add(source)
+        # Session is committed automatically when context exits
 
 
 # Helper fixtures for testing model properties
