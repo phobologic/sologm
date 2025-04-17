@@ -729,7 +729,6 @@ def _create_act_panel(game: Game, active_act: Optional[Act] = None) -> Panel:
 
     # Add metadata
     metadata = {
-        "Status": active_act.status.value,
         "Scenes": len(active_act.scenes) if hasattr(active_act, "scenes") else 0,
         "Created": active_act.created_at.strftime("%Y-%m-%d"),
     }
