@@ -176,6 +176,7 @@ Test Description"""
         oracle_manager,
         mock_anthropic_client,
         test_scene,
+        test_game,
         db_session,
     ) -> None:
         """Test selecting an interpretation."""
