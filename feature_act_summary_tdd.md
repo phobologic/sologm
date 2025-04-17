@@ -97,19 +97,19 @@ This approach improves readability, maintainability, and testability.
 
 **Context Collection**:
 1. If `--ai` is specified but no `--context` is provided:
-   - Open structured editor for context input
-   - Display relevant information about the act being completed
+   - Open structured editor for context input following the Command Parameter Pattern
+   - Display relevant information about the act being completed using `get_event_context_header()`
    - Allow user to enter additional context
    - If user cancels, proceed with empty context
 
 **AI Generation**:
 1. Determine what needs to be generated based on flags and existing content
-2. Display "Generating summary with AI..." message
+2. Display "Generating summary with AI..." message using `StyledText.title()`
 3. Call `act_manager.generate_act_summary()` with act ID and context
-4. Handle potential API errors with user-friendly messages
+4. Handle potential API errors with user-friendly messages following error handling conventions
 
 **User Feedback Loop**:
-1. Display generated title and summary
+1. Display generated title and summary in panels with appropriate border styles from `BORDER_STYLES`
 2. Prompt user with "(A)ccept, (E)dit, or (R)egenerate" (default: Edit)
 3. For "Accept":
    - Use generated content as-is
@@ -128,14 +128,18 @@ This approach improves readability, maintainability, and testability.
 
 **Act Completion**:
 1. Call `act_manager.complete_act()` with final title and summary
-2. Display success message and act details
+2. Display success message using `StyledText.success()` and act details with metadata formatted using `StyledText.format_metadata()`
 
 ### 4. Error Handling
 
-1. Handle API errors during generation
-2. Handle user cancellation at various points
-3. Validate required inputs before proceeding
-4. Provide clear error messages for all failure cases
+1. Let original exceptions propagate rather than wrapping unnecessarily
+2. Catch exceptions only when adding context or handling meaningfully
+3. Use specific exception types in `except` clauses
+4. Format error messages as `[red]Error:[/] {error_message}`
+5. Handle API errors during generation
+6. Handle user cancellation at various points
+7. Validate required inputs before proceeding
+8. Provide clear error messages for all failure cases
 
 ### 5. Remove Summary Command
 
@@ -168,15 +172,17 @@ Delete the `generate_act_summary` function from `sologm/cli/act.py`.
    - Consistent styling with other commands
 
 2. **Visual Feedback**:
-   - Show generated content with clear formatting
-   - Indicate when AI is generating content
-   - Provide clear success/error messages
-   - Use consistent color scheme for different message types
+   - Show generated content with clear formatting using appropriate `StyledText` methods
+   - Indicate when AI is generating content with `StyledText.title()`
+   - Provide clear success messages with `StyledText.success()`
+   - Use error messages with format `[red]Error:[/] {error_message}`
+   - Use consistent border styles from `BORDER_STYLES` based on content type
 
 3. **Editor Experience**:
    - Pre-populate editors with existing content
-   - Provide clear context and instructions
+   - Provide clear context and instructions using `get_event_context_header()`
    - Consistent editor behavior with other commands
+   - Fall back to structured editor when required parameters are missing
 
 ## Implementation Notes
 
@@ -185,4 +191,7 @@ Delete the `generate_act_summary` function from `sologm/cli/act.py`.
 3. Ensure proper error handling for API failures
 4. Maintain backward compatibility with non-AI completion
 5. Follow project coding style and documentation standards
-6. Add comprehensive docstrings to all new methods
+6. Add comprehensive Google-style docstrings to all new methods
+7. Include proper type annotations for all new methods following conventions in `type_annotations.md`
+8. Use `StyledText` methods consistently for all styled output
+9. Use panels with appropriate border styles from `BORDER_STYLES` for different content types
