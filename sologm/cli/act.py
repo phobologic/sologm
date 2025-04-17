@@ -672,31 +672,31 @@ def complete_act(
             title = result.get("title") or None
             summary = result.get("summary") or None
 
-        # Complete the act
-        try:
-            completed_act = game_manager.act_manager.complete_act(
-                act_id=active_act.id,
-                title=title,
-                summary=summary,
-            )
+            # Complete the act
+            try:
+                completed_act = game_manager.act_manager.complete_act(
+                    act_id=active_act.id,
+                    title=title,
+                    summary=summary,
+                )
 
-            # Display success message
-            title_display = (
-                f"'{completed_act.title}'" if completed_act.title else "untitled"
-            )
-            console.print(
-                f"[bold green]Act {title_display} completed successfully![/bold green]"
-            )
+                # Display success message
+                title_display = (
+                    f"'{completed_act.title}'" if completed_act.title else "untitled"
+                )
+                console.print(
+                    f"[bold green]Act {title_display} completed successfully![/bold green]"
+                )
 
-            # Display completed act details
-            console.print(f"ID: {completed_act.id}")
-            console.print(f"Sequence: Act {completed_act.sequence}")
-            console.print(f"Active: {completed_act.is_active}")
-            if completed_act.title:
-                console.print(f"Title: {completed_act.title}")
-            if completed_act.summary:
-                console.print(f"Summary: {completed_act.summary}")
+                # Display completed act details
+                console.print(f"ID: {completed_act.id}")
+                console.print(f"Sequence: Act {completed_act.sequence}")
+                console.print(f"Active: {completed_act.is_active}")
+                if completed_act.title:
+                    console.print(f"Title: {completed_act.title}")
+                if completed_act.summary:
+                    console.print(f"Summary: {completed_act.summary}")
 
-        except GameError as e:
-            console.print(f"[red]Error:[/] {str(e)}")
-            raise typer.Exit(1)
+            except GameError as e:
+                console.print(f"[red]Error:[/] {str(e)}")
+                raise typer.Exit(1)
