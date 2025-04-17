@@ -28,7 +28,7 @@ class SceneManager(BaseManager[Scene, Scene]):
     def __init__(
         self,
         session: Optional[Session] = None,
-        act_manager: Optional[ActManager] = None,
+        act_manager: Optional["ActManager"] = None,
     ):
         """Initialize the scene manager.
 
