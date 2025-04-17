@@ -40,7 +40,7 @@ def db_engine():
 @pytest.fixture
 def db_session(database_manager):
     """Get a SQLAlchemy session for testing.
-    
+
     This is primarily used for initializing managers in tests.
     For most test operations, prefer using session_context.
     """
@@ -56,36 +56,36 @@ def db_session(database_manager):
 @pytest.fixture(scope="function", autouse=True)
 def database_manager(db_engine):
     """Create a DatabaseManager instance for testing.
-    
+
     This fixture replaces the singleton DatabaseManager instance with a test-specific
     instance that uses an in-memory SQLite database. This approach ensures:
-    
+
     1. Test isolation: Each test gets its own clean database
     2. No side effects: Tests don't affect the real application database
     3. Singleton pattern preservation: The pattern is maintained during testing
-    
+
     The original singleton instance is saved before the test and restored afterward,
     ensuring that tests don't permanently modify the application's database connection.
     This is critical for test isolation and preventing test order dependencies.
-    
+
     Args:
         db_engine: SQLite in-memory engine for testing
-        
+
     Yields:
         A test-specific DatabaseManager instance
     """
     from sologm.database.session import DatabaseManager
-    
+
     # Save original instance to restore it after the test
     # This prevents tests from affecting each other or the real application
     old_instance = DatabaseManager._instance
-    
+
     # Create new instance with test engine
     db_manager = DatabaseManager(engine=db_engine)
     DatabaseManager._instance = db_manager
-    
+
     yield db_manager
-    
+
     # Restore original instance to prevent test pollution
     DatabaseManager._instance = old_instance
 
@@ -100,23 +100,26 @@ def mock_anthropic_client():
 @pytest.fixture
 def cli_test():
     """Helper for testing CLI command patterns.
-    
+
     This fixture provides a function that executes test code within a session context,
     mimicking how CLI commands work in production.
-    
+
     Example:
         def test_cli_pattern(cli_test):
             def test_func(session):
                 game_manager = GameManager(session=session)
                 return game_manager.create_game("Test Game", "Description")
-                
+
             game = cli_test(test_func)
             assert game.name == "Test Game"
     """
+
     def run_with_context(test_func):
         from sologm.database.session import get_db_context
+
         with get_db_context() as session:
             return test_func(session)
+
     return run_with_context
 
 
@@ -124,17 +127,18 @@ def cli_test():
 @pytest.fixture
 def session_context():
     """Create a SessionContext for testing.
-    
+
     This fixture provides the same session context that application code uses,
     ensuring tests mirror real usage patterns. Use this as the primary way to
     access the database in tests.
-    
+
     Example:
         def test_something(session_context):
             with session_context as session:
                 # Test code using session
     """
     from sologm.database.session import get_db_context
+
     return get_db_context()
 
 
@@ -186,10 +190,11 @@ def oracle_manager(scene_manager, mock_anthropic_client):
 @pytest.fixture
 def create_test_game(game_manager):
     """Factory fixture to create test games using the GameManager.
-    
+
     This uses the GameManager to create games, which better reflects
     how the application code would create games.
     """
+
     def _create_game(name="Test Game", description="A test game", is_active=True):
         game = game_manager.create_game(name, description, is_active=is_active)
         return game
@@ -200,10 +205,11 @@ def create_test_game(game_manager):
 @pytest.fixture
 def create_test_act(act_manager):
     """Factory fixture to create test acts using the ActManager.
-    
+
     This uses the ActManager to create acts, which better reflects
     how the application code would create acts.
     """
+
     def _create_act(
         game_id,
         title="Test Act",
@@ -227,10 +233,11 @@ def create_test_act(act_manager):
 @pytest.fixture
 def create_test_scene(scene_manager):
     """Factory fixture to create test scenes using the SceneManager.
-    
+
     This uses the SceneManager to create scenes, which better reflects
     how the application code would create scenes.
     """
+
     def _create_scene(
         act_id,
         title="Test Scene",
@@ -257,10 +264,11 @@ def create_test_scene(scene_manager):
 @pytest.fixture
 def create_test_event(event_manager):
     """Factory fixture to create test events using the EventManager.
-    
+
     This uses the EventManager to create events, which better reflects
     how the application code would create events.
     """
+
     def _create_event(
         scene_id, description="Test event", source="manual", interpretation_id=None
     ):
@@ -290,7 +298,7 @@ def test_act(act_manager, test_game):
         title="Test Act",
         summary="A test act",
         sequence=1,
-        is_active=True
+        is_active=True,
     )
 
 
@@ -302,7 +310,7 @@ def test_scene(scene_manager, test_act):
         title="Test Scene",
         description="A test scene",
         sequence=1,
-        is_active=True
+        is_active=True,
     )
 
 
