@@ -856,12 +856,22 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             f"Adding interpretation as event: interpretation_id={interpretation.id}, "
             f"custom_description={custom_description is not None}"
         )
+        
+        # Debug session information
+        self.logger.debug(f"OracleManager session ID: {id(self._session)}")
+        self.logger.debug(f"EventManager session ID: {id(self.event_manager._session)}")
+        self.logger.debug(f"SceneManager session ID: {id(self.scene_manager._session)}")
+        self.logger.debug(f"ActManager session ID: {id(self.act_manager._session)}")
+        self.logger.debug(f"GameManager session ID: {id(self.game_manager._session)}")
 
         def _add_interpretation_event(
             session: Session,
             interpretation_id: str,
             custom_description: Optional[str],
         ) -> Event:
+            # Debug session information inside operation
+            self.logger.debug(f"Operation session ID: {id(session)}")
+            
             # Get the interpretation
             interpretation = self.get_entity_or_error(
                 session,
@@ -886,6 +896,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             )
             self.logger.debug(f"Using description: '{description[:50]}...'")
 
+            # Debug event manager session before add_event
+            self.logger.debug(f"EventManager session ID before add_event: {id(self.event_manager._session)}")
+            
             # Add event using event_manager
             event = self.event_manager.add_event(
                 scene_id=scene_id,
@@ -893,8 +906,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 description=description,
                 interpretation_id=interpretation.id,
             )
+            self.logger.debug(f"Event created with ID: {event.id if event else 'None'}")
             self.logger.info(
-                f"Added interpretation as event: event_id={event.id}, "
+                f"Added interpretation as event: event_id={event.id if event else 'None'}, "
                 f"interpretation_id={interpretation.id}"
             )
             return event

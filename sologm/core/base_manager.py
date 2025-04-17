@@ -54,13 +54,15 @@ class BaseManager(Generic[T, M]):
         """
         if self._session is not None:
             # Use provided session (for testing or CLI command)
-            self.logger.debug("Using provided session")
+            self.logger.debug(f"Using provided session ID: {id(self._session)} for {self.__class__.__name__}")
             return self._session, False
         else:
             # Get a new session from the singleton
-            self.logger.debug("Getting session from singleton")
+            self.logger.debug(f"Getting new session from singleton for {self.__class__.__name__}")
             from sologm.database.session import get_session
-            return get_session(), False  # Don't close here
+            session = get_session()
+            self.logger.debug(f"Got new session ID: {id(session)} from singleton")
+            return session, False  # Don't close here
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
@@ -109,15 +111,19 @@ class BaseManager(Generic[T, M]):
             Result of the operation
         """
         self.logger.debug(f"Executing database operation: {operation_name}")
-        session, _ = self._get_session()
+        session, should_close = self._get_session()
+        self.logger.debug(f"Got session ID: {id(session)} for operation {operation_name}, should_close={should_close}")
+        
         try:
+            self.logger.debug(f"Calling operation {operation_name} with session ID: {id(session)}")
             result = operation(session, *args, **kwargs)
-            self.logger.debug(f"Committing transaction for {operation_name}")
+            self.logger.debug(f"Operation {operation_name} completed, committing transaction with session ID: {id(session)}")
             session.commit()
+            self.logger.debug(f"Commit successful for operation {operation_name}")
             return result
         except Exception as e:
             # Only handle the transaction rollback, but re-raise the original exception
-            self.logger.debug(f"Rolling back transaction for {operation_name}")
+            self.logger.debug(f"Rolling back transaction for {operation_name} with session ID: {id(session)}")
             session.rollback()
             self.logger.error(f"Error in {operation_name}: {str(e)}")
             raise  # Re-raise the original exception
@@ -224,7 +230,12 @@ class BaseManager(Generic[T, M]):
             
             # Pass our session to the new manager
             kwargs['session'] = self._session
+            self.logger.debug(f"Lazy initializing {class_name} with session ID: {id(self._session)}")
             
             setattr(self, attr_name, manager_class(**kwargs))
+            
+            # Log the session of the newly created manager
+            new_manager = getattr(self, attr_name)
+            self.logger.debug(f"Newly created {class_name} has session ID: {id(new_manager._session)}")
 
         return getattr(self, attr_name)
