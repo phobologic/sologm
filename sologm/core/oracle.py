@@ -856,7 +856,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             f"Adding interpretation as event: interpretation_id={interpretation.id}, "
             f"custom_description={custom_description is not None}"
         )
-        
+
         # Debug session information
         self.logger.debug(f"OracleManager session ID: {id(self._session)}")
         self.logger.debug(f"EventManager session ID: {id(self.event_manager._session)}")
@@ -871,7 +871,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         ) -> Event:
             # Debug session information inside operation
             self.logger.debug(f"Operation session ID: {id(session)}")
-            
+
             # Get the interpretation
             interpretation = self.get_entity_or_error(
                 session,
@@ -897,8 +897,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             self.logger.debug(f"Using description: '{description[:50]}...'")
 
             # Debug event manager session before add_event
-            self.logger.debug(f"EventManager session ID before add_event: {id(self.event_manager._session)}")
-            
+            self.logger.debug(
+                f"EventManager session ID before add_event: {id(self.event_manager._session)}"
+            )
+
             # Add event using event_manager
             event = self.event_manager.add_event(
                 scene_id=scene_id,
