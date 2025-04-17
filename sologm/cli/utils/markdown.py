@@ -196,21 +196,11 @@ def generate_event_markdown(
         for line in description_lines[1:]:
             content.append(f"  {indent} {line}")
 
-    if include_metadata and event.metadata:
+    if include_metadata:
         # Format any metadata as indented content
         metadata_lines = []
-        for key, value in event.metadata.items():
-            if key == "dice_results" and isinstance(value, dict):
-                notation = value.get("notation", "")
-                total = value.get("total", "")
-                results = value.get("results", [])
-                metadata_lines.append(f"  - Roll: {notation} = {total} {results}")
-            elif key == "interpretation" and isinstance(value, dict):
-                title = value.get("title", "")
-                if title:
-                    metadata_lines.append(f"  - Interpretation: {title}")
-            else:
-                metadata_lines.append(f"  - {key}: {value}")
+
+        metadata_lines.append(f"  - Source: {event.source_name}")
 
         if metadata_lines:
             content.append("")
