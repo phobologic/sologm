@@ -437,14 +437,14 @@ def assert_model_properties():
 
 
 @pytest.fixture
-def test_hybrid_expressions(database_session):
+def test_hybrid_expressions():
     """Test fixture for SQL expressions of hybrid properties.
 
     This fixture provides a function that can be used to verify that hybrid property
     SQL expressions work correctly in queries.
 
     Example:
-        def test_game_has_acts_expression(database_session, test_hybrid_expressions):
+        def test_game_has_acts_expression(test_hybrid_expressions):
             test_hybrid_expressions(Game, 'has_acts', True, 1)  # Expect 1 game with acts
     """
 
@@ -457,13 +457,16 @@ def test_hybrid_expressions(database_session):
             filter_condition: The condition to filter by (True/False)
             expected_count: The expected count of results
         """
-        property_expr = getattr(model_class, property_name)
-        query = db_session.query(model_class).filter(property_expr == filter_condition)
-        result_count = query.count()
-        assert result_count == expected_count, (
-            f"Expected {expected_count} results for {model_class.__name__}.{property_name} == {filter_condition}, "
-            f"got {result_count}"
-        )
+        from sologm.database.session import get_db_context
+        
+        with get_db_context() as session:
+            property_expr = getattr(model_class, property_name)
+            query = session.query(model_class).filter(property_expr == filter_condition)
+            result_count = query.count()
+            assert result_count == expected_count, (
+                f"Expected {expected_count} results for {model_class.__name__}.{property_name} == {filter_condition}, "
+                f"got {result_count}"
+            )
 
     return _test_expression
 
@@ -471,7 +474,7 @@ def test_hybrid_expressions(database_session):
 # Complex test fixtures
 @pytest.fixture
 def test_game_with_scenes(
-    db_session, create_test_game, create_test_act, create_test_scene
+    session_context, create_test_game, create_test_act, create_test_scene
 ):
     """Create a test game with multiple scenes."""
     game = create_test_game(
@@ -495,15 +498,16 @@ def test_game_with_scenes(
         scenes.append(scene)
 
     # Refresh objects to ensure relationships are loaded
-    db_session.refresh(game)
-    db_session.refresh(act)
+    with session_context as session:
+        session.refresh(game)
+        session.refresh(act)
 
     return game, scenes
 
 
 @pytest.fixture
 def test_game_with_complete_hierarchy(
-    db_session,
+    session_context,
     create_test_game,
     create_test_act,
     create_test_scene,
@@ -564,18 +568,19 @@ def test_game_with_complete_hierarchy(
                 events.append(event)
 
     # Refresh objects to ensure relationships are loaded
-    db_session.refresh(game)
-    for act in acts:
-        db_session.refresh(act)
-    for scene in scenes:
-        db_session.refresh(scene)
+    with session_context as session:
+        session.refresh(game)
+        for act in acts:
+            session.refresh(act)
+        for scene in scenes:
+            session.refresh(scene)
 
     return game, acts, scenes, events
 
 
 @pytest.fixture
 def test_hybrid_property_game(
-    db_session, create_test_game, create_test_act, create_test_scene
+    session_context, create_test_game, create_test_act, create_test_scene
 ):
     """Create a game with specific properties for testing hybrid properties.
 
@@ -617,9 +622,10 @@ def test_hybrid_property_game(
     ]
 
     # Refresh the objects to ensure relationships are loaded
-    db_session.refresh(game)
-    for act in acts:
-        db_session.refresh(act)
+    with session_context as session:
+        session.refresh(game)
+        for act in acts:
+            session.refresh(act)
 
     return {
         "game": game,
