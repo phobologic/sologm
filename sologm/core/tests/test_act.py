@@ -423,6 +423,31 @@ class TestActManager:
         assert act.summary == "Created via CLI pattern"
         assert act.is_active is True
 
+    def test_generate_and_update_act_summary(
+        self, db_session, test_act, act_manager, monkeypatch
+    ):
+        """Test generating and updating act summary."""
+        # Mock the generate_act_summary method
+        mock_summary = {"title": "Generated Title", "summary": "Generated summary"}
+        monkeypatch.setattr(
+            act_manager, "generate_act_summary", lambda *args, **kwargs: mock_summary
+        )
+
+        # Test the method
+        result = act_manager.generate_and_update_act_summary(
+            test_act.id, "Additional context"
+        )
+
+        # Verify results
+        assert result["title"] == "Generated Title"
+        assert result["summary"] == "Generated summary"
+        assert result["act"].id == test_act.id
+
+        # Verify act was updated
+        db_session.refresh(test_act)
+        assert test_act.title == "Generated Title"
+        assert test_act.summary == "Generated summary"
+
     def test_validate_can_create_act(
         self, db_session, test_game, test_act, act_manager
     ):
