@@ -49,6 +49,7 @@ class SceneManager(BaseManager[Scene, Scene]):
         """Lazy-initialize act manager if not provided."""
         if self._act_manager is None:
             from sologm.core.act import ActManager
+
             self._act_manager = ActManager(session=self._session)
         return self._act_manager
 
