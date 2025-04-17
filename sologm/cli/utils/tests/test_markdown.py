@@ -1,7 +1,6 @@
 """Tests for markdown generation utilities."""
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from sologm.cli.utils.markdown import (
     generate_act_markdown,
@@ -75,7 +74,7 @@ def test_generate_scene_markdown(test_scene, event_manager):
     # Test scene with events
     result = generate_scene_markdown(test_scene, event_manager, include_metadata=False)
     assert any("### Events" in line for line in result)
-    assert any("Test event for markdown" in " ".join(result))
+    assert "Test event for markdown" in " ".join(result)
 
 
 def test_generate_act_markdown(test_act, scene_manager, event_manager):
