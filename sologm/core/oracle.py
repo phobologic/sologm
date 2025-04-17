@@ -183,7 +183,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         )
 
         try:
-            # First try to get the scene to use its property
             def _get_scene_with_current_set(
                 session: Session,
             ) -> Optional[InterpretationSet]:
@@ -192,35 +191,18 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 )
 
                 # Explicitly refresh the scene with its interpretation_sets relationship
-                self.logger.debug(
-                    f"Refreshing scene relationships for scene ID: {scene_id}"
-                )
                 session.refresh(scene, ["interpretation_sets"])
-
-                # Log scene details
-                self.logger.debug(f"Found scene: {scene.title} (ID: {scene.id})")
-                self.logger.debug(
-                    f"Scene has {len(scene.interpretation_sets)} interpretation sets after refresh"
-                )
-
-                # Log details of each interpretation set
-                for i, interp_set in enumerate(scene.interpretation_sets):
-                    self.logger.debug(
-                        f"Set {i + 1}: ID={interp_set.id}, is_current={interp_set.is_current}"
-                    )
 
                 # Use the scene's current_interpretation_set property
                 current_set = scene.current_interpretation_set
 
-                # Log the result
                 if current_set:
                     self.logger.debug(
-                        f"Found current interpretation set ID: {current_set.id} "
-                        f"for scene: {scene.title}"
+                        f"Found current interpretation set ID: {current_set.id}"
                     )
                 else:
                     self.logger.debug(
-                        f"No current interpretation set found for scene: {scene.title} after refresh"
+                        f"No current interpretation set found for scene: {scene.title}"
                     )
 
                 return current_set
@@ -456,26 +438,10 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
         )
 
-        # Log before state
-        self.logger.debug(
-            f"Scene has {len(scene.interpretation_sets)} interpretation sets before refresh"
-        )
+        # Refresh the scene with specific relationship
+        session.refresh(scene, ["interpretation_sets"])
 
-        # Refresh the scene to ensure we have the latest relationships
-        session.refresh(scene)
-
-        # Log after refresh
-        self.logger.debug(
-            f"Scene has {len(scene.interpretation_sets)} interpretation sets after refresh"
-        )
-
-        # Log details of each interpretation set
-        for i, interp_set in enumerate(scene.interpretation_sets):
-            self.logger.debug(
-                f"Set {i + 1}: ID={interp_set.id}, is_current={interp_set.is_current}"
-            )
-
-        # Get current interpretation sets using the scene relationship
+        # Get current interpretation set using the scene relationship
         current_set = scene.current_interpretation_set
 
         if current_set:
@@ -483,28 +449,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 f"Clearing current flag on interpretation set ID: {current_set.id}"
             )
             current_set.is_current = False
-
-            # Verify the change took effect
-            self.logger.debug(f"After change, is_current={current_set.is_current}")
         else:
             self.logger.debug("No current interpretation sets found")
-
-            # Try a direct query to double-check
-            direct_set = (
-                session.query(InterpretationSet)
-                .filter(
-                    InterpretationSet.scene_id == scene_id,
-                    InterpretationSet.is_current == True,
-                )
-                .first()
-            )
-
-            if direct_set:
-                self.logger.debug(f"Direct query found current set ID: {direct_set.id}")
-                direct_set.is_current = False
-                self.logger.debug(f"Cleared current flag on set ID: {direct_set.id}")
-            else:
-                self.logger.debug("Direct query found no current sets")
 
     def _parse_interpretations(self, response_text: str) -> List[dict]:
         """Parse interpretations from Claude's response using Markdown format.
@@ -915,28 +861,18 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             f"custom_description={custom_description is not None}"
         )
 
-        # Debug session information
-        self.logger.debug(f"OracleManager session ID: {id(self._session)}")
-        self.logger.debug(f"EventManager session ID: {id(self.event_manager._session)}")
-        self.logger.debug(f"SceneManager session ID: {id(self.scene_manager._session)}")
-        self.logger.debug(f"ActManager session ID: {id(self.act_manager._session)}")
-        self.logger.debug(f"GameManager session ID: {id(self.game_manager._session)}")
-
         def _add_interpretation_event(
             session: Session,
             interpretation_id: str,
             custom_description: Optional[str],
         ) -> Event:
-            # Debug session information inside operation
-            self.logger.debug(f"Operation session ID: {id(session)}")
-
             # Get the interpretation
             interpretation = self.get_entity_or_error(
                 session,
                 Interpretation,
                 interpretation_id,
                 OracleError,
-                f"Interpretation {interpretation_id} not found",
+                f"Interpretation {interpretation_id} not found"
             )
             self.logger.debug(
                 f"Found interpretation: '{interpretation.title}' (ID: {interpretation.id})"
@@ -954,11 +890,6 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             )
             self.logger.debug(f"Using description: '{description[:50]}...'")
 
-            # Debug event manager session before add_event
-            self.logger.debug(
-                f"EventManager session ID before add_event: {id(self.event_manager._session)}"
-            )
-
             # Add event using event_manager
             event = self.event_manager.add_event(
                 scene_id=scene_id,
@@ -966,9 +897,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 description=description,
                 interpretation_id=interpretation.id,
             )
-            self.logger.debug(f"Event created with ID: {event.id if event else 'None'}")
+            self.logger.debug(f"Event created with ID: {event.id}")
             self.logger.info(
-                f"Added interpretation as event: event_id={event.id if event else 'None'}, "
+                f"Added interpretation as event: event_id={event.id}, "
                 f"interpretation_id={interpretation.id}"
             )
             return event

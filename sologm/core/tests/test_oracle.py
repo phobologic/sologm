@@ -633,12 +633,6 @@ It also has multiple lines."""
         # Ensure oracle_manager uses the test session
         oracle_manager._session = db_session
 
-        # Log the initial state
-        logger.debug(f"Initial scene ID: {test_scene.id}")
-        logger.debug(
-            f"Initial interpretation_sets count: {len(test_scene.interpretation_sets)}"
-        )
-
         # Create an interpretation set
         response_text = """## Test Title\nTest Description"""
         mock_anthropic_client.send_message.return_value = response_text
@@ -650,49 +644,8 @@ It also has multiple lines."""
             1,
         )
 
-        # Log the created set details
-        logger.debug(f"Created set ID: {created_set.id}")
-        logger.debug(f"Created set is_current: {created_set.is_current}")
-
-        # Refresh the scene and check its interpretation_sets
-        db_session.refresh(test_scene)
-        logger.debug(
-            f"After refresh interpretation_sets count: {len(test_scene.interpretation_sets)}"
-        )
-
-        # Check if the created set is in the scene's interpretation_sets
-        set_ids = [s.id for s in test_scene.interpretation_sets]
-        logger.debug(f"Interpretation set IDs in scene: {set_ids}")
-        logger.debug(f"Created set ID in scene's sets: {created_set.id in set_ids}")
-
-        # Check for current sets in the scene's interpretation_sets
-        current_sets = [s for s in test_scene.interpretation_sets if s.is_current]
-        logger.debug(f"Current sets count: {len(current_sets)}")
-        logger.debug(f"Current set IDs: {[s.id for s in current_sets]}")
-
         # Get current set and verify it matches
         current_set = oracle_manager.get_current_interpretation_set(test_scene.id)
-
-        # Log the result
-        logger.debug(f"Retrieved current set: {current_set}")
-        if current_set:
-            logger.debug(f"Retrieved set ID: {current_set.id}")
-            logger.debug(f"Retrieved set is_current: {current_set.is_current}")
-
-        # Now let's also directly query the database to check
-        direct_query_set = (
-            db_session.query(InterpretationSet)
-            .filter(
-                InterpretationSet.scene_id == test_scene.id,
-                InterpretationSet.is_current == True,
-            )
-            .first()
-        )
-
-        logger.debug(f"Direct query result: {direct_query_set}")
-        if direct_query_set:
-            logger.debug(f"Direct query set ID: {direct_query_set.id}")
-            logger.debug(f"Direct query set is_current: {direct_query_set.is_current}")
 
         assert current_set is not None
         assert current_set.id == created_set.id
