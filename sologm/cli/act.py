@@ -217,88 +217,88 @@ def generate_act_summary(
         # Initialize managers with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
-    if not active_game:
-        console.print("[red]Error:[/] No active game. Activate a game first.")
-        raise typer.Exit(1)
-
-    # Get the act to summarize
-    act_manager = ActManager(session=session)
-    if act_id:
-        act = act_manager.get_act(act_id)
-        if not act:
-            console.print(f"[red]Error:[/] Act with ID '{act_id}' not found.")
-            raise typer.Exit(1)
-    else:
-        act = act_manager.get_active_act(active_game.id)
-        if not act:
-            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
-            console.print("Create one with 'sologm act create'.")
+        if not active_game:
+            console.print("[red]Error:[/] No active game. Activate a game first.")
             raise typer.Exit(1)
 
-    # Generate the summary
-    try:
-        # Generate the summary using AI
-        console.print("[yellow]Generating summary with AI...[/yellow]")
-        summary_data = act_manager.generate_act_summary(act.id, context)
+        # Get the act to summarize
+        act_manager = ActManager(session=session)
+        if act_id:
+            act = act_manager.get_act(act_id)
+            if not act:
+                console.print(f"[red]Error:[/] Act with ID '{act_id}' not found.")
+                raise typer.Exit(1)
+        else:
+            act = act_manager.get_active_act(active_game.id)
+            if not act:
+                console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+                console.print("Create one with 'sologm act create'.")
+                raise typer.Exit(1)
 
-        # Create editor configuration
-        editor_config = StructuredEditorConfig(
-            fields=[
-                FieldConfig(
-                    name="title",
-                    display_name="Title",
-                    help_text="AI-generated title for the act",
-                    required=True,
-                ),
-                FieldConfig(
-                    name="summary",
-                    display_name="Summary",
-                    help_text="AI-generated summary of the act",
-                    multiline=True,
-                    required=True,
-                ),
-            ],
-            wrap_width=70,
-        )
+        # Generate the summary
+        try:
+            # Generate the summary using AI
+            console.print("[yellow]Generating summary with AI...[/yellow]")
+            summary_data = act_manager.generate_act_summary(act.id, context)
 
-        # Create context information
-        title_display = act.title or "Untitled Act"
-        context_info = f"AI-Generated Summary for Act {act.sequence}: {title_display}\n"
-        context_info += f"Game: {active_game.name}\n"
-        context_info += f"ID: {act.id}\n\n"
-        context_info += "Review and edit the AI-generated title and summary below."
+            # Create editor configuration
+            editor_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="title",
+                        display_name="Title",
+                        help_text="AI-generated title for the act",
+                        required=True,
+                    ),
+                    FieldConfig(
+                        name="summary",
+                        display_name="Summary",
+                        help_text="AI-generated summary of the act",
+                        multiline=True,
+                        required=True,
+                    ),
+                ],
+                wrap_width=70,
+            )
 
-        # Open editor with the generated content
-        result, modified = edit_structured_data(
-            summary_data,
-            console,
-            editor_config,
-            context_info=context_info,
-        )
+            # Create context information
+            title_display = act.title or "Untitled Act"
+            context_info = f"AI-Generated Summary for Act {act.sequence}: {title_display}\n"
+            context_info += f"Game: {active_game.name}\n"
+            context_info += f"ID: {act.id}\n\n"
+            context_info += "Review and edit the AI-generated title and summary below."
 
-        if not modified:
-            console.print("[yellow]Summary generation canceled.[/yellow]")
-            raise typer.Exit(0)
+            # Open editor with the generated content
+            result, modified = edit_structured_data(
+                summary_data,
+                console,
+                editor_config,
+                context_info=context_info,
+            )
 
-        # Update the act with the edited summary and title
-        updated_act = act_manager.edit_act(
-            act_id=act.id,
-            title=result.get("title"),
-            summary=result.get("summary"),
-        )
+            if not modified:
+                console.print("[yellow]Summary generation canceled.[/yellow]")
+                raise typer.Exit(0)
 
-        # Display success message
-        title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
-        console.print(
-            f"[bold green]Act {title_display} updated with AI-generated summary![/bold green]"
-        )
+            # Update the act with the edited summary and title
+            updated_act = act_manager.edit_act(
+                act_id=act.id,
+                title=result.get("title"),
+                summary=result.get("summary"),
+            )
 
-    except APIError as e:
-        console.print(f"[red]AI Error:[/] {str(e)}")
-        raise typer.Exit(1)
-    except GameError as e:
-        console.print(f"[red]Error:[/] {str(e)}")
-        raise typer.Exit(1)
+            # Display success message
+            title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
+            console.print(
+                f"[bold green]Act {title_display} updated with AI-generated summary![/bold green]"
+            )
+
+        except APIError as e:
+            console.print(f"[red]AI Error:[/] {str(e)}")
+            raise typer.Exit(1)
+        except GameError as e:
+            console.print(f"[red]Error:[/] {str(e)}")
+            raise typer.Exit(1)
 
 
 @act_app.command("list")
@@ -320,25 +320,25 @@ def list_acts() -> None:
         # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
-    if not active_game:
-        console.print("[red]Error:[/] No active game. Activate a game first.")
-        raise typer.Exit(1)
+        if not active_game:
+            console.print("[red]Error:[/] No active game. Activate a game first.")
+            raise typer.Exit(1)
 
-    # Get all acts for the game
-    acts = game_manager.act_manager.list_acts(active_game.id)
+        # Get all acts for the game
+        acts = game_manager.act_manager.list_acts(active_game.id)
 
-    # Get active act ID
-    active_act = game_manager.act_manager.get_active_act(active_game.id)
-    active_act_id = active_act.id if active_act else None
+        # Get active act ID
+        active_act = game_manager.act_manager.get_active_act(active_game.id)
+        active_act_id = active_act.id if active_act else None
 
-    # Display compact game header instead of full game info
-    from sologm.cli.utils.display import _create_game_header_panel
+        # Display compact game header instead of full game info
+        from sologm.cli.utils.display import _create_game_header_panel
 
-    console.print(_create_game_header_panel(active_game, console))
-    console.print()
+        console.print(_create_game_header_panel(active_game, console))
+        console.print()
 
-    # Display acts table
-    display_acts_table(console, acts, active_act_id)
+        # Display acts table
+        display_acts_table(console, acts, active_act_id)
 
 
 @act_app.command("info")
@@ -360,24 +360,24 @@ def act_info() -> None:
         # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
-    if not active_game:
-        console.print("[red]Error:[/] No active game. Activate a game first.")
-        raise typer.Exit(1)
+        if not active_game:
+            console.print("[red]Error:[/] No active game. Activate a game first.")
+            raise typer.Exit(1)
 
-    # Get the active act
-    active_act = game_manager.act_manager.get_active_act(active_game.id)
-    if not active_act:
-        console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
-        console.print("Create one with 'sologm act create'.")
-        raise typer.Exit(1)
+        # Get the active act
+        active_act = game_manager.act_manager.get_active_act(active_game.id)
+        if not active_act:
+            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+            console.print("Create one with 'sologm act create'.")
+            raise typer.Exit(1)
 
-    # Display compact game header first
-    from sologm.cli.utils.display import _create_game_header_panel
+        # Display compact game header first
+        from sologm.cli.utils.display import _create_game_header_panel
 
-    console.print(_create_game_header_panel(active_game, console))
+        console.print(_create_game_header_panel(active_game, console))
 
-    # Display act info
-    display_act_info(console, active_act, active_game.name)
+        # Display act info
+        display_act_info(console, active_act, active_game.name)
 
 
 @act_app.command("edit")
@@ -414,94 +414,94 @@ def edit_act(
         # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
-    if not active_game:
-        console.print("[red]Error:[/] No active game. Activate a game first.")
-        raise typer.Exit(1)
+        if not active_game:
+            console.print("[red]Error:[/] No active game. Activate a game first.")
+            raise typer.Exit(1)
 
-    # Get the active act
-    act_manager = ActManager(session=session)
-    active_act = act_manager.get_active_act(active_game.id)
-    if not active_act:
-        console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
-        console.print("Create one with 'sologm act create'.")
-        raise typer.Exit(1)
+        # Get the active act
+        act_manager = ActManager(session=session)
+        active_act = act_manager.get_active_act(active_game.id)
+        if not active_act:
+            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+            console.print("Create one with 'sologm act create'.")
+            raise typer.Exit(1)
 
-    # If title and description are not provided, open editor
-    if title is None and description is None:
-        # Create editor configuration
-        editor_config = StructuredEditorConfig(
-            fields=[
-                FieldConfig(
-                    name="title",
-                    display_name="Title",
-                    help_text="Title of the act (can be left empty for untitled acts)",
-                    required=False,
-                ),
-                FieldConfig(
-                    name="summary",
-                    display_name="Summary",
-                    help_text="Summary of the act",
-                    multiline=True,
-                    required=False,
-                ),
-            ],
-            wrap_width=70,
-        )
+        # If title and description are not provided, open editor
+        if title is None and description is None:
+            # Create editor configuration
+            editor_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="title",
+                        display_name="Title",
+                        help_text="Title of the act (can be left empty for untitled acts)",
+                        required=False,
+                    ),
+                    FieldConfig(
+                        name="summary",
+                        display_name="Summary",
+                        help_text="Summary of the act",
+                        multiline=True,
+                        required=False,
+                    ),
+                ],
+                wrap_width=70,
+            )
 
-        # Create context information
-        title_display = active_act.title or "Untitled Act"
-        context_info = f"Editing Act {active_act.sequence}: {title_display}\n"
-        context_info += f"Game: {active_game.name}\n"
-        context_info += f"ID: {active_act.id}\n\n"
-        context_info += "You can leave the title empty for an untitled act."
+            # Create context information
+            title_display = active_act.title or "Untitled Act"
+            context_info = f"Editing Act {active_act.sequence}: {title_display}\n"
+            context_info += f"Game: {active_game.name}\n"
+            context_info += f"ID: {active_act.id}\n\n"
+            context_info += "You can leave the title empty for an untitled act."
 
-        # Create initial data
-        initial_data = {
-            "title": active_act.title or "",
-            "summary": active_act.summary or "",
-        }
+            # Create initial data
+            initial_data = {
+                "title": active_act.title or "",
+                "summary": active_act.summary or "",
+            }
 
-        # Open editor
-        result, modified = edit_structured_data(
-            initial_data,
-            console,
-            editor_config,
-            context_info=context_info,
-        )
+            # Open editor
+            result, modified = edit_structured_data(
+                initial_data,
+                console,
+                editor_config,
+                context_info=context_info,
+            )
 
-        if not modified:
-            console.print("[yellow]Act edit canceled.[/yellow]")
-            raise typer.Exit(0)
+            if not modified:
+                console.print("[yellow]Act edit canceled.[/yellow]")
+                raise typer.Exit(0)
 
-        title = result.get("title") or None
-        summary = result.get("summary") or None
+            title = result.get("title") or None
+            summary = result.get("summary") or None
 
-    # Update the act
-    try:
-        updated_act = game_manager.act_manager.edit_act(
-            act_id=active_act.id,
-            title=title,
-            summary=summary,
-        )
+        # Update the act
+        try:
+            updated_act = game_manager.act_manager.edit_act(
+                act_id=active_act.id,
+                title=title,
+                summary=summary,
+            )
 
-        # Display success message
-        title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
-        console.print(
-            f"[bold green]Act {title_display} updated successfully![/bold green]"
-        )
+            # Display success message
+            title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
+            console.print(
+                f"[bold green]Act {title_display} updated successfully![/bold green]"
+            )
 
-        # Display updated act details
-        console.print(f"ID: {updated_act.id}")
-        console.print(f"Sequence: Act {updated_act.sequence}")
-        console.print(f"Active: {updated_act.is_active}")
-        if updated_act.title:
-            console.print(f"Title: {updated_act.title}")
-        if updated_act.summary:
-            console.print(f"Summary: {updated_act.summary}")
+            # Display updated act details
+            console.print(f"ID: {updated_act.id}")
+            console.print(f"Sequence: Act {updated_act.sequence}")
+            console.print(f"Active: {updated_act.is_active}")
+            if updated_act.title:
+                console.print(f"Title: {updated_act.title}")
+            if updated_act.summary:
+                console.print(f"Summary: {updated_act.summary}")
 
-    except GameError as e:
-        console.print(f"[red]Error:[/] {str(e)}")
-        raise typer.Exit(1)
+        except GameError as e:
+            console.print(f"[red]Error:[/] {str(e)}")
+            raise typer.Exit(1)
 
 
 @act_app.command("complete")
@@ -552,112 +552,112 @@ def complete_act(
         # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
-    if not active_game:
-        console.print("[red]Error:[/] No active game. Activate a game first.")
-        raise typer.Exit(1)
+        if not active_game:
+            console.print("[red]Error:[/] No active game. Activate a game first.")
+            raise typer.Exit(1)
 
-    # Get the active act
-    act_manager = ActManager(session=session)
-    active_act = act_manager.get_active_act(active_game.id)
-    if not active_act:
-        console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
-        console.print("Create one with 'sologm act create'.")
-        raise typer.Exit(1)
+        # Get the active act
+        act_manager = ActManager(session=session)
+        active_act = act_manager.get_active_act(active_game.id)
+        if not active_act:
+            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+            console.print("Create one with 'sologm act create'.")
+            raise typer.Exit(1)
 
-    # Check if we need to generate with AI
-    if ai:
-        # Check if we should generate title/summary
-        should_generate_title = force or not active_act.title
-        should_generate_summary = force or not active_act.summary
+        # Check if we need to generate with AI
+        if ai:
+            # Check if we should generate title/summary
+            should_generate_title = force or not active_act.title
+            should_generate_summary = force or not active_act.summary
 
-        if should_generate_title or should_generate_summary:
-            console.print(
-                "[yellow]AI generation of act title/summary is not yet implemented.[/yellow]"
+            if should_generate_title or should_generate_summary:
+                console.print(
+                    "[yellow]AI generation of act title/summary is not yet implemented.[/yellow]"
+                )
+                console.print("Please provide title and summary manually.")
+                # This is where AI generation would be implemented
+            elif not force:
+                console.print(
+                    "[yellow]Act already has title and description. Use --force to override.[/yellow]"
+                )
+
+        # If title and summary are not provided, open editor
+        if title is None and summary is None and not ai:
+            # Create editor configuration
+            editor_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="title",
+                        display_name="Title",
+                        help_text="Title of the completed act",
+                        required=False,
+                    ),
+                    FieldConfig(
+                        name="summary",
+                        display_name="Summary",
+                        help_text="Summary of the completed act",
+                        multiline=True,
+                        required=False,
+                    ),
+                ],
+                wrap_width=70,
             )
-            console.print("Please provide title and summary manually.")
-            # This is where AI generation would be implemented
-        elif not force:
-            console.print(
-                "[yellow]Act already has title and description. Use --force to override.[/yellow]"
+
+            # Create context information
+            title_display = active_act.title or "Untitled Act"
+            context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
+            context_info += f"Game: {active_game.name}\n"
+            context_info += f"ID: {active_act.id}\n\n"
+            context_info += (
+                "You can provide a title and description to summarize this act's events."
             )
 
-    # If title and summary are not provided, open editor
-    if title is None and summary is None and not ai:
-        # Create editor configuration
-        editor_config = StructuredEditorConfig(
-            fields=[
-                FieldConfig(
-                    name="title",
-                    display_name="Title",
-                    help_text="Title of the completed act",
-                    required=False,
-                ),
-                FieldConfig(
-                    name="summary",
-                    display_name="Summary",
-                    help_text="Summary of the completed act",
-                    multiline=True,
-                    required=False,
-                ),
-            ],
-            wrap_width=70,
-        )
+            # Create initial data
+            initial_data = {
+                "title": active_act.title or "",
+                "summary": active_act.summary or "",
+            }
 
-        # Create context information
-        title_display = active_act.title or "Untitled Act"
-        context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
-        context_info += f"Game: {active_game.name}\n"
-        context_info += f"ID: {active_act.id}\n\n"
-        context_info += (
-            "You can provide a title and description to summarize this act's events."
-        )
+            # Open editor
+            result, modified = edit_structured_data(
+                initial_data,
+                console,
+                editor_config,
+                context_info=context_info,
+            )
 
-        # Create initial data
-        initial_data = {
-            "title": active_act.title or "",
-            "summary": active_act.summary or "",
-        }
+            if not modified:
+                console.print("[yellow]Act completion canceled.[/yellow]")
+                raise typer.Exit(0)
 
-        # Open editor
-        result, modified = edit_structured_data(
-            initial_data,
-            console,
-            editor_config,
-            context_info=context_info,
-        )
+            title = result.get("title") or None
+            summary = result.get("summary") or None
 
-        if not modified:
-            console.print("[yellow]Act completion canceled.[/yellow]")
-            raise typer.Exit(0)
+        # Complete the act
+        try:
+            completed_act = game_manager.act_manager.complete_act(
+                act_id=active_act.id,
+                title=title,
+                summary=summary,
+            )
 
-        title = result.get("title") or None
-        summary = result.get("summary") or None
+            # Display success message
+            title_display = (
+                f"'{completed_act.title}'" if completed_act.title else "untitled"
+            )
+            console.print(
+                f"[bold green]Act {title_display} completed successfully![/bold green]"
+            )
 
-    # Complete the act
-    try:
-        completed_act = game_manager.act_manager.complete_act(
-            act_id=active_act.id,
-            title=title,
-            summary=summary,
-        )
+            # Display completed act details
+            console.print(f"ID: {completed_act.id}")
+            console.print(f"Sequence: Act {completed_act.sequence}")
+            console.print(f"Active: {completed_act.is_active}")
+            if completed_act.title:
+                console.print(f"Title: {completed_act.title}")
+            if completed_act.summary:
+                console.print(f"Summary: {completed_act.summary}")
 
-        # Display success message
-        title_display = (
-            f"'{completed_act.title}'" if completed_act.title else "untitled"
-        )
-        console.print(
-            f"[bold green]Act {title_display} completed successfully![/bold green]"
-        )
-
-        # Display completed act details
-        console.print(f"ID: {completed_act.id}")
-        console.print(f"Sequence: Act {completed_act.sequence}")
-        console.print(f"Active: {completed_act.is_active}")
-        if completed_act.title:
-            console.print(f"Title: {completed_act.title}")
-        if completed_act.summary:
-            console.print(f"Summary: {completed_act.summary}")
-
-    except GameError as e:
-        console.print(f"[red]Error:[/] {str(e)}")
-        raise typer.Exit(1)
+        except GameError as e:
+            console.print(f"[red]Error:[/] {str(e)}")
+            raise typer.Exit(1)
