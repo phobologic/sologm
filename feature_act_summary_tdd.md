@@ -27,7 +27,7 @@ Following the architecture guidelines in `conventions/architecture.md`:
 2. Allow users to provide additional context for AI generation
 3. Implement an interactive flow for accepting, editing, or regenerating AI content
 4. Remove the separate `summary` command
-5. Replace `--force` with more specific flags for title and summary regeneration
+5. Add confirmation prompt when replacing existing title/summary
 
 ## Implementation Plan
 
@@ -50,16 +50,6 @@ def complete_act(
         "--context",
         "-c",
         help="Additional context to include in the summary generation",
-    ),
-    regenerate_title: bool = typer.Option(
-        False,
-        "--regenerate-title",
-        help="Regenerate the title with AI even if one exists",
-    ),
-    regenerate_summary: bool = typer.Option(
-        False,
-        "--regenerate-summary",
-        help="Regenerate the summary with AI even if one exists",
     ),
 ):
     # Implementation
@@ -102,24 +92,31 @@ This approach improves readability, maintainability, and testability.
    - Allow user to enter additional context
    - If user cancels, proceed with empty context
 
+**Confirmation for Existing Content**:
+1. If `--ai` is specified and the act already has a title or summary:
+   - Display a confirmation prompt: "This will replace your existing title/summary. Continue? (y/N)"
+   - If user selects "No" (default), exit the command
+   - If user selects "Yes", proceed with AI generation
+
 **AI Generation**:
-1. Determine what needs to be generated based on flags and existing content
-2. Display "Generating summary with AI..." message using `StyledText.title()`
-3. Call `act_manager.generate_act_summary()` with act ID and context
-4. Handle potential API errors with user-friendly messages following error handling conventions
+1. Display "Generating summary with AI..." message using `StyledText.title()`
+2. Call `act_manager.generate_act_summary()` with act ID and context
+3. Handle potential API errors with user-friendly messages following error handling conventions
 
 **User Feedback Loop**:
 1. Display generated title and summary in panels with appropriate border styles from `BORDER_STYLES`
-2. Prompt user with "(A)ccept, (E)dit, or (R)egenerate" (default: Edit)
-3. For "Accept":
+2. If the act had existing title/summary, display them for comparison
+3. Prompt user with "(A)ccept, (E)dit, or (R)egenerate" (default: Edit)
+4. For "Accept":
    - Use generated content as-is
    - Proceed to act completion
-4. For "Edit":
+5. For "Edit":
    - Open structured editor with generated content
+   - Include original title/summary as comments for reference (similar to other edit commands)
    - Allow user to modify title and summary
    - If user cancels, return to prompt
    - If user saves, proceed with modified content
-5. For "Regenerate":
+6. For "Regenerate":
    - Open structured editor with current context
    - Allow user to modify context
    - If user cancels, return to prompt
@@ -179,7 +176,8 @@ Delete the `generate_act_summary` function from `sologm/cli/act.py`.
    - Use consistent border styles from `BORDER_STYLES` based on content type
 
 3. **Editor Experience**:
-   - Pre-populate editors with existing content
+   - Pre-populate editors with AI-generated content
+   - Show original content in comments for reference (consistent with other edit commands)
    - Provide clear context and instructions using `get_event_context_header()`
    - Consistent editor behavior with other commands
    - Fall back to structured editor when required parameters are missing
