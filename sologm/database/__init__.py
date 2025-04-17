@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy.engine import Engine
 
 from sologm.database.session import (
-    DatabaseSession,
+    DatabaseManager,
     get_db_context,
     get_session,
     initialize_database,
@@ -17,14 +17,14 @@ from sologm.utils.config import Config
 logger = logging.getLogger(__name__)
 
 
-def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
+def init_db(engine: Optional[Engine] = None) -> DatabaseManager:
     """Initialize the database and create tables if they don't exist.
 
     Args:
         engine: Pre-configured SQLAlchemy engine instance (optional)
 
     Returns:
-        The DatabaseSession instance.
+        The DatabaseManager instance.
 
     Raises:
         ValueError: If database URL cannot be determined
@@ -46,10 +46,10 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
             )
 
         # Get or create the singleton instance
-        db_session = DatabaseSession.get_instance(db_url=db_url)
+        db_session = DatabaseManager.get_instance(db_url=db_url)
     else:
         # Use provided engine
-        db_session = DatabaseSession.get_instance(engine=engine)
+        db_session = DatabaseManager.get_instance(engine=engine)
 
     # Create tables
     db_session.create_tables()
@@ -59,7 +59,7 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseSession:
 
 
 __all__ = [
-    "DatabaseSession",
+    "DatabaseManager",
     "get_session",
     "initialize_database",
     "get_db_context",
