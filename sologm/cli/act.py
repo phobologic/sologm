@@ -624,8 +624,8 @@ def complete_act(
 
             # If title and summary are not provided, open editor
             if title is None and summary is None and not ai:
-            # Create editor configuration
-            editor_config = StructuredEditorConfig(
+                # Create editor configuration
+                editor_config = StructuredEditorConfig(
                 fields=[
                     FieldConfig(
                         name="title",
