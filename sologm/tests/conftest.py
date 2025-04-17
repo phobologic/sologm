@@ -223,14 +223,14 @@ def create_test_act(act_manager):
             summary=summary,
             make_active=is_active,
         )
-        
+
         # If sequence was specified, update it directly
         if sequence is not None:
             session = act_manager._session
             act.sequence = sequence
             session.add(act)
             session.flush()
-        
+
         return act
 
     return _create_act
