@@ -20,33 +20,19 @@ class TestOracle:
         test_game,
         test_act,
         test_scene,
-        game_manager,
-        scene_manager,
-        act_manager,
         db_session,
-        monkeypatch,
     ) -> None:
         """Test getting active game, act, and scene."""
-        # Ensure all managers use the same session
-        monkeypatch.setattr(oracle_manager, "_session", db_session)
-        monkeypatch.setattr(game_manager, "_session", db_session)
-        monkeypatch.setattr(act_manager, "_session", db_session)
-        monkeypatch.setattr(scene_manager, "_session", db_session)
-
-        # Monkeypatch the manager properties to use our test managers
-        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
-        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
-        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
-
-        # Mock the validate_active_context method to return our test scene
-        def mock_validate_active_context():
-            return "test_act_id", test_scene
-
-        monkeypatch.setattr(
-            scene_manager, "validate_active_context", mock_validate_active_context
-        )
-
+        # Make sure the test objects are active
+        with db_session.begin_nested():
+            test_game.is_active = True
+            test_act.is_active = True
+            test_scene.is_active = True
+        
+        # Get the active context
         scene, act, game = oracle_manager.get_active_context()
+        
+        # Verify we got the expected objects
         assert scene.id == test_scene.id
         assert act.id == test_act.id
         assert game.id == test_game.id
@@ -54,24 +40,9 @@ class TestOracle:
     def test_get_active_context_no_game(
         self,
         oracle_manager,
-        game_manager,
-        scene_manager,
-        act_manager,
         db_session,
-        monkeypatch,
     ) -> None:
         """Test validation with no active game."""
-        # Ensure all managers use the same session
-        monkeypatch.setattr(oracle_manager, "_session", db_session)
-        monkeypatch.setattr(game_manager, "_session", db_session)
-        monkeypatch.setattr(act_manager, "_session", db_session)
-        monkeypatch.setattr(scene_manager, "_session", db_session)
-
-        # Monkeypatch the manager properties to use our test managers
-        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
-        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
-        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
-
         # Make sure no game is active
         db_session.query(Game).update({Game.is_active: False})
         db_session.commit()
@@ -84,29 +55,15 @@ class TestOracle:
         self,
         oracle_manager,
         test_game,
-        game_manager,
-        scene_manager,
-        act_manager,
         db_session,
-        monkeypatch,
     ) -> None:
         """Test validation with no active act."""
-        # Ensure all managers use the same session
-        monkeypatch.setattr(oracle_manager, "_session", db_session)
-        monkeypatch.setattr(game_manager, "_session", db_session)
-        monkeypatch.setattr(act_manager, "_session", db_session)
-        monkeypatch.setattr(scene_manager, "_session", db_session)
-
-        # Monkeypatch the manager properties to use our test managers
-        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
-        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
-        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
-
-        # Make sure no act is active
-        db_session.query(Act).filter(Act.game_id == test_game.id).update(
-            {Act.is_active: False}
-        )
-        db_session.commit()
+        # Make sure the game is active but no act is active
+        with db_session.begin_nested():
+            test_game.is_active = True
+            db_session.query(Act).filter(Act.game_id == test_game.id).update(
+                {Act.is_active: False}
+            )
 
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_active_context()
@@ -117,29 +74,16 @@ class TestOracle:
         oracle_manager,
         test_game,
         test_act,
-        game_manager,
-        scene_manager,
-        act_manager,
         db_session,
-        monkeypatch,
     ) -> None:
         """Test validation with no active scene."""
-        # Ensure all managers use the same session
-        monkeypatch.setattr(oracle_manager, "_session", db_session)
-        monkeypatch.setattr(game_manager, "_session", db_session)
-        monkeypatch.setattr(act_manager, "_session", db_session)
-        monkeypatch.setattr(scene_manager, "_session", db_session)
-
-        # Monkeypatch the manager properties to use our test managers
-        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
-        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
-        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
-
-        # Make sure no scene is active in the active act
-        db_session.query(Scene).filter(Scene.act_id == test_act.id).update(
-            {Scene.is_active: False}
-        )
-        db_session.commit()
+        # Make sure the game and act are active but no scene is active
+        with db_session.begin_nested():
+            test_game.is_active = True
+            test_act.is_active = True
+            db_session.query(Scene).filter(Scene.act_id == test_act.id).update(
+                {Scene.is_active: False}
+            )
 
         with pytest.raises(OracleError) as exc:
             oracle_manager.get_active_context()
@@ -737,9 +681,6 @@ It also has multiple lines."""
     def test_build_interpretation_prompt_for_active_context(
         self,
         oracle_manager,
-        game_manager,
-        scene_manager,
-        act_manager,
         test_game,
         test_act,
         test_scene,
@@ -747,25 +688,12 @@ It also has multiple lines."""
         monkeypatch,
     ):
         """Test building interpretation prompt for active context with acts."""
-        # Ensure all managers use the same session
-        monkeypatch.setattr(oracle_manager, "_session", db_session)
-        monkeypatch.setattr(game_manager, "_session", db_session)
-        monkeypatch.setattr(act_manager, "_session", db_session)
-        monkeypatch.setattr(scene_manager, "_session", db_session)
-
-        # Monkeypatch the manager properties to use our test managers
-        monkeypatch.setattr(oracle_manager, "game_manager", game_manager)
-        monkeypatch.setattr(oracle_manager, "act_manager", act_manager)
-        monkeypatch.setattr(oracle_manager, "scene_manager", scene_manager)
-
-        # Mock get_active_context to return our test objects
-        def mock_get_active_context():
-            return test_scene, test_act, test_game
-
-        monkeypatch.setattr(
-            oracle_manager, "get_active_context", mock_get_active_context
-        )
-
+        # Make sure the test objects are active
+        with db_session.begin_nested():
+            test_game.is_active = True
+            test_act.is_active = True
+            test_scene.is_active = True
+        
         # Mock the _build_prompt method to avoid actual prompt generation
         original_build_prompt = oracle_manager._build_prompt
 
@@ -778,22 +706,17 @@ It also has multiple lines."""
                 "count": args[3],
             }
 
-        oracle_manager._build_prompt = mock_build_prompt
+        monkeypatch.setattr(oracle_manager, "_build_prompt", mock_build_prompt)
 
-        try:
-            # Call the method
-            result = oracle_manager.build_interpretation_prompt_for_active_context(
-                "Test context",
-                "Test results",
-                3,
-            )
+        # Call the method
+        result = oracle_manager.build_interpretation_prompt_for_active_context(
+            "Test context",
+            "Test results",
+            3,
+        )
 
-            # Verify the correct data was passed to _build_prompt
-            assert result["scene"] == test_scene
-            assert result["context"] == "Test context"
-            assert result["oracle_results"] == "Test results"
-            assert result["count"] == 3
-
-        finally:
-            # Restore the original method
-            oracle_manager._build_prompt = original_build_prompt
+        # Verify the correct data was passed to _build_prompt
+        assert result["scene"].id == test_scene.id
+        assert result["context"] == "Test context"
+        assert result["oracle_results"] == "Test results"
+        assert result["count"] == 3
