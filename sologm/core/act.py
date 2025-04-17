@@ -86,7 +86,7 @@ class ActManager(BaseManager[Act, Act]):
                 raise GameError(msg)
             game_id = active_game.id
             logger.debug(f"Using active game with ID {game_id}")
-        
+
         # Validate that we can create a new act
         if make_active:
             self.validate_can_create_act(game_id)
@@ -395,10 +395,10 @@ class ActManager(BaseManager[Act, Act]):
 
     def validate_can_create_act(self, game_id: str) -> None:
         """Validate that a new act can be created in the game.
-        
+
         Args:
             game_id: ID of the game to validate
-            
+
         Raises:
             GameError: If there is already an active act
         """
@@ -409,7 +409,7 @@ class ActManager(BaseManager[Act, Act]):
                 f"Cannot create a new act: Active act ({title_display}) exists. "
                 "Complete the current act first with 'sologm act complete'."
             )
-    
+
     def validate_active_act(self, game_id: Optional[str] = None) -> Act:
         """Validate that there is an active act for the game.
 
@@ -602,56 +602,60 @@ class ActManager(BaseManager[Act, Act]):
             if "anthropic" in str(e).lower() or "api" in str(e).lower():
                 raise APIError(f"Failed to generate act summary: {str(e)}") from e
             raise
-    
-    def test_generate_and_update_act_summary(self, db_session, test_act, act_manager, monkeypatch):
+
+    def test_generate_and_update_act_summary(
+        self, db_session, test_act, act_manager, monkeypatch
+    ):
         """Test generating and updating act summary."""
         # Mock the generate_act_summary method
         mock_summary = {"title": "Generated Title", "summary": "Generated summary"}
-        monkeypatch.setattr(act_manager, "generate_act_summary", lambda *args, **kwargs: mock_summary)
-        
+        monkeypatch.setattr(
+            act_manager, "generate_act_summary", lambda *args, **kwargs: mock_summary
+        )
+
         # Test the method
-        result = act_manager.generate_and_update_act_summary(test_act.id, "Additional context")
-        
+        result = act_manager.generate_and_update_act_summary(
+            test_act.id, "Additional context"
+        )
+
         # Verify results
         assert result["title"] == "Generated Title"
         assert result["summary"] == "Generated summary"
         assert result["act"].id == test_act.id
-        
+
         # Verify act was updated
         db_session.refresh(test_act)
         assert test_act.title == "Generated Title"
         assert test_act.summary == "Generated summary"
-            
+
     def generate_and_update_act_summary(
-        self, 
-        act_id: str, 
-        additional_context: Optional[str] = None
+        self, act_id: str, additional_context: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a summary for an act and update the act with it.
-        
+
         Args:
             act_id: ID of the act to summarize
             additional_context: Optional additional context
-            
+
         Returns:
             Dict with generated and updated title and summary and the act
-            
+
         Raises:
             GameError: If the act doesn't exist
             APIError: If there's an error with the AI API
         """
         # Generate summary
         summary_data = self.generate_act_summary(act_id, additional_context)
-        
+
         # Update the act
         updated_act = self.edit_act(
             act_id=act_id,
             title=summary_data.get("title"),
             summary=summary_data.get("summary"),
         )
-        
+
         return {
             "title": updated_act.title,
             "summary": updated_act.summary,
-            "act": updated_act
+            "act": updated_act,
         }

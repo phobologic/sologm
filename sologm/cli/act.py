@@ -222,7 +222,9 @@ def generate_act_summary(
         else:
             act = act_manager.get_active_act(active_game.id)
             if not act:
-                console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+                console.print(
+                    f"[red]Error:[/] No active act in game '{active_game.name}'."
+                )
                 console.print("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
 
@@ -254,7 +256,9 @@ def generate_act_summary(
 
             # Create context information
             title_display = act.title or "Untitled Act"
-            context_info = f"AI-Generated Summary for Act {act.sequence}: {title_display}\n"
+            context_info = (
+                f"AI-Generated Summary for Act {act.sequence}: {title_display}\n"
+            )
             context_info += f"Game: {active_game.name}\n"
             context_info += f"ID: {act.id}\n\n"
             context_info += "Review and edit the AI-generated title and summary below."
@@ -279,7 +283,9 @@ def generate_act_summary(
             )
 
             # Display success message
-            title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
+            title_display = (
+                f"'{updated_act.title}'" if updated_act.title else "untitled"
+            )
             console.print(
                 f"[bold green]Act {title_display} updated with AI-generated summary![/bold green]"
             )
@@ -476,7 +482,9 @@ def edit_act(
             )
 
             # Display success message
-            title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
+            title_display = (
+                f"'{updated_act.title}'" if updated_act.title else "untitled"
+            )
             console.print(
                 f"[bold green]Act {title_display} updated successfully![/bold green]"
             )
@@ -599,9 +607,7 @@ def complete_act(
             context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
             context_info += f"Game: {active_game.name}\n"
             context_info += f"ID: {active_act.id}\n\n"
-            context_info += (
-                "You can provide a title and description to summarize this act's events."
-            )
+            context_info += "You can provide a title and description to summarize this act's events."
 
             # Create initial data
             initial_data = {
