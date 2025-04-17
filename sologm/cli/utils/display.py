@@ -1261,8 +1261,7 @@ def display_acts_table(
     table.add_column("ID", style=st.STYLES["timestamp"])
     table.add_column("Sequence", justify="right")
     table.add_column("Title", style=st.STYLES["category"])
-    table.add_column("Description")
-    table.add_column("Status", style=st.STYLES["success"])
+    table.add_column("Summary")
     table.add_column("Current", style=st.STYLES["success"], justify="center")
 
     # Add rows with consistent formatting
@@ -1278,8 +1277,7 @@ def display_acts_table(
             act.id,
             str(act.sequence),
             act_title_styled,
-            act.description or "",
-            act.status.value,
+            act.summary or "",
             active_marker,
         )
 
@@ -1304,7 +1302,7 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
         act: Act to display
         game_name: Name of the game this act belongs to
     """
-    logger.debug(f"Displaying act info for {act.id} (status: {act.status.value})")
+    logger.debug(f"Displaying act info for {act.id}")
     logger.debug(
         f"Act details: title='{act.title}', sequence={act.sequence}, "
         f"game_id={act.game_id}"
@@ -1329,8 +1327,8 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
     panel_content = Text()
 
     # Add description if available
-    if act.description:
-        panel_content.append(st.subtitle(act.description))
+    if act.summary:
+        panel_content.append(st.subtitle(act.summary))
         panel_content.append("\n\n")
 
     # Add metadata
@@ -1370,8 +1368,7 @@ def display_act_info(console: Console, act: Act, game_name: str) -> None:
         scenes_table.add_column("ID", style=st.STYLES["timestamp"])
         scenes_table.add_column("Sequence", justify="right")
         scenes_table.add_column("Title", style=st.STYLES["category"])
-        scenes_table.add_column("Description")
-        scenes_table.add_column("Status", style=st.STYLES["success"])
+        scenes_table.add_column("Summary")
         scenes_table.add_column("Current", style=st.STYLES["success"], justify="center")
 
         # Add rows for each scene
