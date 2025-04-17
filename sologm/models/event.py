@@ -45,7 +45,7 @@ class Event(Base, TimestampMixin):
     @hybrid_property
     def game_id(self) -> str:
         """Get the game ID this event belongs to.
-        
+
         Works in both Python and SQL contexts:
         - Python: Returns the game ID through relationships
         - SQL: Performs a subquery to get the game ID
@@ -57,7 +57,7 @@ class Event(Base, TimestampMixin):
         """SQL expression for game_id."""
         from sologm.models.scene import Scene
         from sologm.models.act import Act
-        
+
         return (
             select(Act.game_id)
             .join(Scene, Scene.act_id == Act.id)
@@ -73,7 +73,7 @@ class Event(Base, TimestampMixin):
     @hybrid_property
     def act_id(self) -> str:
         """Get the act ID this event belongs to.
-        
+
         Works in both Python and SQL contexts:
         - Python: Returns the act ID through relationships
         - SQL: Performs a subquery to get the act ID
@@ -84,11 +84,9 @@ class Event(Base, TimestampMixin):
     def act_id(cls):  # noqa: N805
         """SQL expression for act_id."""
         from sologm.models.scene import Scene
-        
+
         return (
-            select(Scene.act_id)
-            .where(Scene.id == cls.scene_id)
-            .scalar_subquery()
+            select(Scene.act_id).where(Scene.id == cls.scene_id).scalar_subquery()
         ).label("act_id")
 
     @hybrid_property
