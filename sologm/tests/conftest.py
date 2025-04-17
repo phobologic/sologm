@@ -354,9 +354,13 @@ def test_interpretation_set(session_context, test_scene):
 def test_interpretations(session_context, test_interpretation_set):
     """Create test interpretations."""
     with session_context as session:
+        # First, merge the interpretation set into the current session
+        # This makes the object part of the current session
+        merged_set = session.merge(test_interpretation_set)
+        
         interpretations = [
             Interpretation.create(
-                set_id=test_interpretation_set.id,
+                set_id=merged_set.id,  # Use the ID from the merged object
                 title=f"Test Interpretation {i}",
                 description=f"Test description {i}",
                 is_selected=(i == 1),  # First one is selected
@@ -366,10 +370,11 @@ def test_interpretations(session_context, test_interpretation_set):
         session.add_all(interpretations)
         session.flush()
 
-        # Refresh the interpretation set to ensure it has the new interpretations
-        session.refresh(test_interpretation_set)
+        # Refresh the merged object, not the original
+        session.refresh(merged_set)
+        
         # Force loading of the relationship
-        _ = list(test_interpretation_set.interpretations)
+        _ = list(merged_set.interpretations)
 
         return interpretations
 
