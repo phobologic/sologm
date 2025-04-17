@@ -190,11 +190,15 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 scene = self.get_entity_or_error(
                     session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
                 )
+                
+                # Explicitly refresh the scene with its interpretation_sets relationship
+                self.logger.debug(f"Refreshing scene relationships for scene ID: {scene_id}")
+                session.refresh(scene, ['interpretation_sets'])
 
                 # Log scene details
                 self.logger.debug(f"Found scene: {scene.title} (ID: {scene.id})")
                 self.logger.debug(
-                    f"Scene has {len(scene.interpretation_sets)} interpretation sets"
+                    f"Scene has {len(scene.interpretation_sets)} interpretation sets after refresh"
                 )
 
                 # Log details of each interpretation set
@@ -214,25 +218,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                     )
                 else:
                     self.logger.debug(
-                        f"No current interpretation set for scene: {scene.title}"
+                        f"No current interpretation set found for scene: {scene.title} after refresh"
                     )
-
-                    # Try a direct query as a comparison
-                    direct_set = (
-                        session.query(InterpretationSet)
-                        .filter(
-                            InterpretationSet.scene_id == scene_id,
-                            InterpretationSet.is_current == True,
-                        )
-                        .first()
-                    )
-
-                    if direct_set:
-                        self.logger.debug(
-                            f"Direct query found set ID: {direct_set.id}, is_current={direct_set.is_current}"
-                        )
-                    else:
-                        self.logger.debug("Direct query found no current set")
 
                 return current_set
 
