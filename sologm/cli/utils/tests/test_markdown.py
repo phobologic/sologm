@@ -43,11 +43,9 @@ def test_generate_event_markdown():
     assert "🎲" in result[0]
 
     # Test with metadata
-    event.metadata = {
-        "dice_results": {"notation": "2d6", "total": 7, "results": [3, 4]}
-    }
+    event.source_name = "dice"  # Add source_name attribute
     result = generate_event_markdown(event, include_metadata=True)
-    assert any("Roll: 2d6 = 7" in line for line in result)
+    assert any("Source: dice" in line for line in result)
 
 
 def test_generate_scene_markdown(test_scene, event_manager):
