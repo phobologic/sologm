@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from sologm.core.act import ActManager
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.utils.errors import GameError
@@ -78,6 +79,35 @@ class TestActManager:
         # Verify the previous act is still active
         db_session.refresh(untitled_act)
         assert untitled_act.is_active is True
+        
+    def test_create_act_with_context(self, session_context, test_game, act_manager):
+        """Test creating an act using session context."""
+        with session_context as session:
+            # Create an act with title and summary
+            act = act_manager.create_act(
+                game_id=test_game.id,
+                title="Context Test Act",
+                summary="Created with session context",
+            )
+
+            # Verify the act was created correctly
+            assert act.id is not None
+            assert act.game_id == test_game.id
+            assert act.title == "Context Test Act"
+            assert act.summary == "Created with session context"
+            assert act.sequence == 1
+            assert act.is_active is True
+            
+            # Create another act to test deactivation
+            second_act = act_manager.create_act(
+                game_id=test_game.id,
+                title="Second Context Act",
+            )
+            
+            # Refresh first act to verify it was deactivated
+            session.refresh(act)
+            assert act.is_active is False
+            assert second_act.is_active is True
 
     def test_create_act_invalid_game(self, db_session, act_manager):
         """Test creating an act with an invalid game ID."""
@@ -274,6 +304,35 @@ class TestActManager:
         other_activated_act = act_manager.set_active(other_act.id)
         assert other_activated_act.id == other_act.id
         assert other_activated_act.is_active is True
+        
+    def test_set_active_with_context(self, session_context, test_game, test_act, create_test_act):
+        """Test setting an act as active using session context."""
+        with session_context as session:
+            # Create a second act
+            second_act = create_test_act(
+                game_id=test_game.id,
+                title="Second Context Act",
+                sequence=2,
+                is_active=True,
+            )
+            
+            # Refresh first act to see if it was deactivated
+            session.refresh(test_act)
+            assert test_act.is_active is False
+            assert second_act.is_active is True
+            
+            # Create act manager with session
+            act_manager = ActManager(session=session)
+            
+            # Set first act as active
+            activated_act = act_manager.set_active(test_act.id)
+            
+            assert activated_act.id == test_act.id
+            assert activated_act.is_active is True
+            
+            # Verify second act is inactive
+            session.refresh(second_act)
+            assert second_act.is_active is False
 
     def test_validate_active_act(self, db_session, test_game, test_act, act_manager):
         """Test validating active act."""
@@ -344,6 +403,22 @@ class TestActManager:
         event_descriptions = [e["description"] for e in scene_data["events"]]
         assert "First event" in event_descriptions
         assert "Second event" in event_descriptions
+        
+    def test_cli_command_pattern(self, cli_test, test_game):
+        """Test the CLI command pattern for creating an act."""
+        def test_func(session):
+            act_manager = ActManager(session=session)
+            return act_manager.create_act(
+                game_id=test_game.id,
+                title="CLI Test Act",
+                summary="Created via CLI pattern",
+            )
+
+        act = cli_test(test_func)
+        assert act.id is not None
+        assert act.title == "CLI Test Act"
+        assert act.summary == "Created via CLI pattern"
+        assert act.is_active is True
 
     def test_generate_act_summary(self, db_session, test_act, act_manager, monkeypatch):
         """Test generating act summary."""
