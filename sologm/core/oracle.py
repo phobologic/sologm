@@ -433,7 +433,7 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         scene = self.get_entity_or_error(
             session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
         )
-        
+
         # Refresh the scene to ensure we have the latest relationships
         session.refresh(scene)
 
