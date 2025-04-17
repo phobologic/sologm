@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from sologm.models.scene import Scene
 
 
-
 class Act(Base, TimestampMixin):
     """SQLAlchemy model representing an act in a game."""
 

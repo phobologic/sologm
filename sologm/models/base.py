@@ -17,8 +17,5 @@ class TimestampMixin:
 
     created_at = mapped_column(DateTime, default=get_current_time, nullable=False)
     modified_at = mapped_column(
-        DateTime,
-        default=get_current_time,
-        onupdate=get_current_time,
-        nullable=False
+        DateTime, default=get_current_time, onupdate=get_current_time, nullable=False
     )

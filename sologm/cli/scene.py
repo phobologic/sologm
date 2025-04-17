@@ -11,8 +11,6 @@ if TYPE_CHECKING:
 
     app: Typer
 from sologm.cli.utils.display import display_scene_info
-from sologm.core.act import ActManager
-from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.database.session import get_db_context
 from sologm.utils.errors import ActError, GameError, SceneError
@@ -33,7 +31,6 @@ def add_scene(
     ),
 ) -> None:
     """Add a new scene to the active act."""
-    from sologm.database.session import get_db_context
 
     try:
         # Use a single session for the entire command
@@ -77,7 +74,6 @@ def add_scene(
 @scene_app.command("list")
 def list_scenes() -> None:
     """List all scenes in the active act."""
-    from sologm.database.session import get_db_context
     from sologm.cli.utils.display import display_scenes_table
 
     with get_db_context() as session:
@@ -116,7 +112,6 @@ def scene_info(
     ),
 ) -> None:
     """Show information about the active scene and its events."""
-    from sologm.database.session import get_db_context
 
     try:
         with get_db_context() as session:
@@ -154,7 +149,6 @@ def scene_info(
 @scene_app.command("complete")
 def complete_scene() -> None:
     """Complete the active scene."""
-    from sologm.database.session import get_db_context
 
     try:
         with get_db_context() as session:
@@ -176,7 +170,6 @@ def edit_scene(
     ),
 ) -> None:
     """Edit the title and description of a scene."""
-    from sologm.database.session import get_db_context
     from sologm.cli.utils.structured_editor import (
         EditorConfig,
         FieldConfig,
@@ -264,7 +257,6 @@ def set_current_scene(
     scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current"),
 ) -> None:
     """Set which scene is currently being played."""
-    from sologm.database.session import get_db_context
 
     try:
         with get_db_context() as session:

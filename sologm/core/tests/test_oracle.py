@@ -1,6 +1,7 @@
 """Tests for oracle interpretation system."""
 
 import logging
+
 import pytest
 
 # Create a dedicated logger for the test module

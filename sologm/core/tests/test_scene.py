@@ -2,8 +2,6 @@
 
 import pytest
 
-from sologm.core.act import ActManager
-from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.models.scene import Scene, SceneStatus
 from sologm.utils.errors import SceneError

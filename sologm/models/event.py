@@ -55,8 +55,8 @@ class Event(Base, TimestampMixin):
     @game_id.expression
     def game_id(cls):  # noqa: N805
         """SQL expression for game_id."""
-        from sologm.models.scene import Scene
         from sologm.models.act import Act
+        from sologm.models.scene import Scene
 
         return (
             select(Act.game_id)

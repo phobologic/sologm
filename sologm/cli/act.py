@@ -22,8 +22,6 @@ from sologm.cli.utils.structured_editor import (
 )
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
-from sologm.integrations.anthropic import AnthropicClient
-from sologm.models.act import Act
 from sologm.utils.errors import APIError, GameError
 
 logger = logging.getLogger(__name__)

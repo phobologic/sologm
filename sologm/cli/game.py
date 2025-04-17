@@ -11,11 +11,7 @@ from sologm.cli.utils.display import (
     display_games_table,
 )
 from sologm.cli.utils.markdown import generate_game_markdown
-from sologm.core.dice import DiceManager
-from sologm.core.event import EventManager
 from sologm.core.game import GameManager
-from sologm.core.oracle import OracleManager
-from sologm.core.scene import SceneManager
 from sologm.utils.errors import GameError
 
 logger = logging.getLogger(__name__)

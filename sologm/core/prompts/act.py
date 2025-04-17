@@ -1,6 +1,6 @@
 """Prompt templates for act-related AI interactions."""
 
-from typing import Dict, List, Optional
+from typing import Dict
 
 
 class ActPrompts:

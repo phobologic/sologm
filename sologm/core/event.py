@@ -265,7 +265,7 @@ class EventManager(BaseManager[Event, Event]):
             # Update source if provided
             if source is not None:
                 event_source = self._get_source_by_name(session, source)
-                event.source= event_source
+                event.source = event_source
                 self.logger.debug(
                     f"Updated source from ID {original_source_id} to "
                     f"{event_source.id} ({event_source.name})"
