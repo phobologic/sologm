@@ -357,7 +357,7 @@ def test_interpretations(session_context, test_interpretation_set):
         # First, merge the interpretation set into the current session
         # This makes the object part of the current session
         merged_set = session.merge(test_interpretation_set)
-        
+
         interpretations = [
             Interpretation.create(
                 set_id=merged_set.id,  # Use the ID from the merged object
@@ -372,7 +372,7 @@ def test_interpretations(session_context, test_interpretation_set):
 
         # Refresh the merged object, not the original
         session.refresh(merged_set)
-        
+
         # Force loading of the relationship
         _ = list(merged_set.interpretations)
 
