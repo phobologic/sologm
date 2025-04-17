@@ -82,16 +82,7 @@ def create_act(
         console.print("[red]Error:[/] No active game. Activate a game first.")
         raise typer.Exit(1)
 
-    # Check if there's an active act
-    active_act = game_manager.act_manager.get_active_act(active_game.id)
-
-    if active_act:
-        # There's an active act
-        title_display = f"'{active_act.title}'" if active_act.title else "untitled"
-        console.print(f"[red]Error:[/] You have an active act ({title_display}).")
-        console.print("You must complete the current act before creating a new one.")
-        console.print("Use 'sologm act complete' to complete the current act first.")
-        raise typer.Exit(1)
+    # ActManager will validate if we can create a new act
 
     # If title and summary are not provided, open editor
     if title is None or summary is None:

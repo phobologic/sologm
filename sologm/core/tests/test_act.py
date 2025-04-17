@@ -423,6 +423,19 @@ class TestActManager:
         assert act.summary == "Created via CLI pattern"
         assert act.is_active is True
 
+    def test_validate_can_create_act(self, db_session, test_game, test_act, act_manager):
+        """Test validating if a new act can be created."""
+        # Should raise error when there's an active act
+        with pytest.raises(GameError, match="Cannot create a new act"):
+            act_manager.validate_can_create_act(test_game.id)
+        
+        # Deactivate the act
+        test_act.is_active = False
+        db_session.commit()
+        
+        # Should not raise error when there's no active act
+        act_manager.validate_can_create_act(test_game.id)
+    
     def test_generate_act_summary(self, db_session, test_act, act_manager, monkeypatch):
         """Test generating act summary."""
         # Mock the AnthropicClient and ActPrompts to avoid actual API calls
