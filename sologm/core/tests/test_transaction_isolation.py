@@ -2,33 +2,31 @@
 
 
 
-def test_cascade_delete_game(db_session, test_game_with_scenes, create_test_event):
-    """Test that deleting a game cascades to scenes."""
-    game, scenes = test_game_with_scenes
+def test_cascade_delete_game(db_session, test_game_with_complete_hierarchy):
+    """Test that deleting a game cascades to all related objects."""
+    game, acts, scenes, events = test_game_with_complete_hierarchy
 
-    # Add some events to the scenes
-    from sologm.models.event import Event
+    # Store IDs for verification after deletion
+    game_id = game.id
+    act_ids = [act.id for act in acts]
+    scene_ids = [scene.id for scene in scenes]
+    event_ids = [event.id for event in events]
 
-    for scene in scenes:
-        create_test_event(
-            game_id=game.id,
-            scene_id=scene.id,
-            description="Test event",
-            source="manual",
-        )
-
-    db_session.commit()
-
-    # Now delete the game
+    # Delete the game
     db_session.delete(game)
     db_session.commit()
 
+    # Verify acts are deleted
+    from sologm.models.act import Act
+    act_count = db_session.query(Act).filter(Act.id.in_(act_ids)).count()
+    assert act_count == 0
+
     # Verify scenes are deleted
     from sologm.models.scene import Scene
-
-    scene_count = db_session.query(Scene).filter(Scene.game_id == game.id).count()
+    scene_count = db_session.query(Scene).filter(Scene.id.in_(scene_ids)).count()
     assert scene_count == 0
 
     # Verify events are deleted
-    event_count = db_session.query(Event).filter(Event.game_id == game.id).count()
+    from sologm.models.event import Event
+    event_count = db_session.query(Event).filter(Event.id.in_(event_ids)).count()
     assert event_count == 0
