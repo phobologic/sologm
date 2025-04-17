@@ -141,8 +141,7 @@ def generate_scene_markdown(
     if include_metadata:
         content.append(f"*Scene ID: {scene.id}*")
         content.append(f"*Created: {format_datetime(scene.created_at)}*")
-        if scene.completed_at:
-            content.append(f"*Completed: {format_datetime(scene.completed_at)}*")
+        content.append(f"*Modified: {format_datetime(scene.modified_at)}*")
         content.append("")
 
     # Get all events for this scene

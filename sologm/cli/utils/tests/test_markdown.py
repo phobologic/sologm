@@ -99,15 +99,20 @@ def test_generate_act_markdown(test_act, scene_manager, event_manager):
 
 
 def test_generate_game_markdown_with_hierarchy(
-    test_game_with_complete_hierarchy, scene_manager, event_manager
+    test_game_with_complete_hierarchy, scene_manager, event_manager, session_context
 ):
     """Test generating markdown for a game with a complete hierarchy."""
     game, acts, scenes, events = test_game_with_complete_hierarchy
 
-    # Test basic game markdown
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=False
-    )
+    # Use session_context to ensure the game is attached to a session
+    with session_context as session:
+        # Merge the game into the current session
+        game = session.merge(game)
+        
+        # Test basic game markdown
+        result = generate_game_markdown(
+            game, scene_manager, event_manager, include_metadata=False
+        )
     assert f"# {game.name}" in result
     assert game.description in result
 
@@ -122,23 +127,23 @@ def test_generate_game_markdown_with_hierarchy(
             scene_title += " ✓"
         assert scene_title in result
 
-    # Check that all events are included
-    for event in events:
-        assert event.description in result
+        # Check that all events are included
+        for event in events:
+            assert event.description in result
 
-    # Test with metadata
-    result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=True
-    )
-    assert f"*Game ID: {game.id}*" in result
+        # Test with metadata
+        result = generate_game_markdown(
+            game, scene_manager, event_manager, include_metadata=True
+        )
+        assert f"*Game ID: {game.id}*" in result
 
-    # Check act metadata
-    for act in acts:
-        assert f"*Act ID: {act.id}*" in result
+        # Check act metadata
+        for act in acts:
+            assert f"*Act ID: {act.id}*" in result
 
-    # Check scene metadata
-    for scene in scenes:
-        assert f"*Scene ID: {scene.id}*" in result
+        # Check scene metadata
+        for scene in scenes:
+            assert f"*Scene ID: {scene.id}*" in result
 
 
 def test_generate_game_markdown_empty(game_manager, scene_manager, event_manager):
