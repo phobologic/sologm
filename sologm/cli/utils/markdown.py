@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def generate_concepts_header() -> List[str]:
     """Generate a header explaining the game structure concepts.
-    
+
     Creates a markdown section that explains the key concepts of the game structure
     (Game, Acts, Scenes, Events) to help readers understand the document organization.
 
