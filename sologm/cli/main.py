@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 
 from sologm import __version__
+from sologm.cli.act import act_app
 from sologm.cli.dice import dice_app
 from sologm.cli.event import event_app
 from sologm.cli.game import game_app
@@ -19,40 +20,13 @@ logger = logging.getLogger(__name__)
 # Create console for rich output
 console = Console()
 
-
-def cleanup_database(*args: Optional[list], **kwargs: Optional[dict]) -> None:
-    """Clean up database resources when the application exits.
-
-    This function is used as a Typer result callback and receives the same arguments
-    as the main() function in main.py, but doesn't use them.
-
-    Args:
-        *args: Variable positional arguments from Typer (discarded).
-        **kwargs: Variable keyword arguments from Typer (discarded).
-    """
-    from sologm.database.session import DatabaseSession
-
-    _ = [args, kwargs]
-
-    logger.debug("Cleaning up database resources")
-    try:
-        db_session = DatabaseSession.get_instance()
-        db_session.close_session()
-        db_session.dispose()
-        logger.debug("Database resources cleaned up successfully")
-    except Exception as e:
-        logger.error(f"Error cleaning up database resources: {e}")
-
-
 # Create Typer app with cleanup callback
 app = typer.Typer(
     name="sologm",
     help="Solo RPG Helper command-line application",
     add_completion=True,
     no_args_is_help=True,
-    result_callback=cleanup_database,
 )
-
 
 def version_callback(value: bool) -> None:
     """Print version information and exit.
@@ -71,8 +45,6 @@ app.add_typer(scene_app, name="scene", no_args_is_help=True)
 app.add_typer(event_app, name="event", no_args_is_help=True)
 app.add_typer(dice_app, name="dice", no_args_is_help=True)
 app.add_typer(oracle_app, name="oracle", no_args_is_help=True)
-from sologm.cli.act import act_app
-
 app.add_typer(act_app, name="act", no_args_is_help=True)
 
 
