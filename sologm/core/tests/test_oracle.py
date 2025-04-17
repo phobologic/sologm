@@ -253,12 +253,12 @@ Test Description"""
         assert selected.title in events[0].description
 
     def test_select_interpretation_not_found(
-        self, oracle_manager, test_game, test_act, test_scene
+        self, oracle_manager, empty_interpretation_set
     ) -> None:
-        """Test selecting a non-existent interpretation."""
+        """Test selecting a non-existent interpretation from an existing empty set."""
         with pytest.raises(OracleError) as exc:
             oracle_manager.select_interpretation(
-                "nonexistent-set", "nonexistent-interp"
+                empty_interpretation_set.id, "nonexistent-interp"
             )
         assert "No interpretations found" in str(exc.value)
 

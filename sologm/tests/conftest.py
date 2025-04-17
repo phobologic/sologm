@@ -321,50 +321,63 @@ def test_events(event_manager, test_scene):
 
 
 @pytest.fixture
-def test_interpretation_set(database_session, test_scene):
+def test_interpretation_set(session_context, test_scene):
     """Create a test interpretation set."""
-    interp_set = InterpretationSet.create(
-        scene_id=test_scene.id,
-        context="Test context",
-        oracle_results="Test results",
-        is_current=True,
-    )
-    db_session.add(interp_set)
-    db_session.commit()
-    return interp_set
-
-
-@pytest.fixture
-def test_interpretations(database_session, test_interpretation_set):
-    """Create test interpretations."""
-    interpretations = [
-        Interpretation.create(
-            set_id=test_interpretation_set.id,
-            title=f"Test Interpretation {i}",
-            description=f"Test description {i}",
-            is_selected=(i == 1),  # First one is selected
+    with session_context as session:
+        interp_set = InterpretationSet.create(
+            scene_id=test_scene.id,
+            context="Test context",
+            oracle_results="Test results",
+            is_current=True,
         )
-        for i in range(1, 3)
-    ]
-    db_session.add_all(interpretations)
-    db_session.commit()
-    return interpretations
+        session.add(interp_set)
+        return interp_set
 
 
 @pytest.fixture
-def test_dice_roll(database_session, test_scene):
+def test_interpretations(session_context, test_interpretation_set):
+    """Create test interpretations."""
+    with session_context as session:
+        interpretations = [
+            Interpretation.create(
+                set_id=test_interpretation_set.id,
+                title=f"Test Interpretation {i}",
+                description=f"Test description {i}",
+                is_selected=(i == 1),  # First one is selected
+            )
+            for i in range(1, 3)
+        ]
+        session.add_all(interpretations)
+        return interpretations
+
+
+@pytest.fixture
+def empty_interpretation_set(session_context, test_scene):
+    """Create an empty interpretation set for testing."""
+    with session_context as session:
+        interp_set = InterpretationSet.create(
+            scene_id=test_scene.id,
+            context="Empty set context",
+            oracle_results="Empty set results",
+            is_current=True,
+        )
+        session.add(interp_set)
+        return interp_set
+
+@pytest.fixture
+def test_dice_roll(session_context, test_scene):
     """Create a test dice roll."""
-    dice_roll = DiceRoll.create(
-        notation="2d6+3",
-        individual_results=[4, 5],
-        modifier=3,
-        total=12,
-        reason="Test roll",
-        scene_id=test_scene.id,
-    )
-    db_session.add(dice_roll)
-    db_session.commit()
-    return dice_roll
+    with session_context as session:
+        dice_roll = DiceRoll.create(
+            notation="2d6+3",
+            individual_results=[4, 5],
+            modifier=3,
+            total=12,
+            reason="Test roll",
+            scene_id=test_scene.id,
+        )
+        session.add(dice_roll)
+        return dice_roll
 
 
 @pytest.fixture(autouse=True)
