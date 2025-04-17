@@ -1,6 +1,5 @@
 """Tests for oracle prompt templates."""
 
-import pytest
 
 from sologm.core.prompts.oracle import OraclePrompts
 
@@ -75,7 +74,7 @@ class TestOraclePrompts:
         # Check that all components are included
         assert "You are interpreting oracle results for a solo RPG player" in result
         assert f"Game: {test_scene.act.game.description}" in result
-        assert f"Act: {test_scene.act.description}" in result
+        assert f"Act: {test_scene.act.summary}" in result
         assert f"Current Scene: {test_scene.description}" in result
         # Check for events if they exist in the fixture
         if test_scene.events:

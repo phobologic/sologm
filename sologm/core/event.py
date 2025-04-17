@@ -258,15 +258,17 @@ class EventManager(BaseManager[Event, Event]):
             # Update description
             event.description = description
             self.logger.debug(
-                f"Updated description from '{original_description[:30]}...' to '{description[:30]}...'"
+                f"Updated description from '{original_description[:30]}...'"
+                f"to '{description[:30]}...'"
             )
 
             # Update source if provided
             if source is not None:
                 event_source = self._get_source_by_name(session, source)
-                event.source_id = event_source.id
+                event.source= event_source
                 self.logger.debug(
-                    f"Updated source from ID {original_source_id} to {event_source.id} ({event_source.name})"
+                    f"Updated source from ID {original_source_id} to "
+                    f"{event_source.id} ({event_source.name})"
                 )
 
             return event

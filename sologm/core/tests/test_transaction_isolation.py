@@ -6,7 +6,6 @@ def test_cascade_delete_game(db_session, test_game_with_complete_hierarchy):
     game, acts, scenes, events = test_game_with_complete_hierarchy
 
     # Store IDs for verification after deletion
-    game_id = game.id
     act_ids = [act.id for act in acts]
     scene_ids = [scene.id for scene in scenes]
     event_ids = [event.id for event in events]

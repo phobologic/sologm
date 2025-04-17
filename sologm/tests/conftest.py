@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
 from sologm.core.act import ActManager
 from sologm.core.dice import DiceManager
@@ -13,16 +12,12 @@ from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
-from sologm.database.session import SessionContext
 from sologm.integrations.anthropic import AnthropicClient
-from sologm.models.act import Act
 from sologm.models.base import Base
 from sologm.models.dice import DiceRoll
-from sologm.models.event import Event
 from sologm.models.event_source import EventSource
-from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus
+from sologm.models.scene import SceneStatus
 
 logger = logging.getLogger(__name__)
 
@@ -257,8 +252,8 @@ def create_test_scene(scene_manager):
             description=description,
             make_active=is_active,
         )
-        if status != SceneStatus.ACTIVE:
-            scene_manager.update_status(scene.id, status)
+        if status == SceneStatus.COMPLETED:
+            scene_manager.complete_scene(scene.id)
         return scene
 
     return _create_scene
@@ -555,7 +550,7 @@ def test_game_with_complete_hierarchy(
         - events: List of created events
     """
     # Initialize event sources if needed
-    initialize_event_sources()
+    # initialize_event_sources()
 
     game = create_test_game(
         name="Complete Game", description="A test game with complete hierarchy"
