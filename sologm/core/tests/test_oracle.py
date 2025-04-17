@@ -28,10 +28,10 @@ class TestOracle:
             test_game.is_active = True
             test_act.is_active = True
             test_scene.is_active = True
-        
+
         # Get the active context
         scene, act, game = oracle_manager.get_active_context()
-        
+
         # Verify we got the expected objects
         assert scene.id == test_scene.id
         assert act.id == test_act.id
@@ -693,7 +693,7 @@ It also has multiple lines."""
             test_game.is_active = True
             test_act.is_active = True
             test_scene.is_active = True
-        
+
         # Mock the _build_prompt method to avoid actual prompt generation
         original_build_prompt = oracle_manager._build_prompt
 
