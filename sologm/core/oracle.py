@@ -190,10 +190,19 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 scene = self.get_entity_or_error(
                     session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
                 )
-
+                
+                # Log scene details
+                self.logger.debug(f"Found scene: {scene.title} (ID: {scene.id})")
+                self.logger.debug(f"Scene has {len(scene.interpretation_sets)} interpretation sets")
+                
+                # Log details of each interpretation set
+                for i, interp_set in enumerate(scene.interpretation_sets):
+                    self.logger.debug(f"Set {i+1}: ID={interp_set.id}, is_current={interp_set.is_current}")
+                
                 # Use the scene's current_interpretation_set property
                 current_set = scene.current_interpretation_set
-
+                
+                # Log the result
                 if current_set:
                     self.logger.debug(
                         f"Found current interpretation set ID: {current_set.id} "
@@ -203,6 +212,21 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                     self.logger.debug(
                         f"No current interpretation set for scene: {scene.title}"
                     )
+                    
+                    # Try a direct query as a comparison
+                    direct_set = (
+                        session.query(InterpretationSet)
+                        .filter(
+                            InterpretationSet.scene_id == scene_id,
+                            InterpretationSet.is_current == True
+                        )
+                        .first()
+                    )
+                    
+                    if direct_set:
+                        self.logger.debug(f"Direct query found set ID: {direct_set.id}, is_current={direct_set.is_current}")
+                    else:
+                        self.logger.debug("Direct query found no current set")
 
                 return current_set
 
@@ -434,8 +458,18 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             session, Scene, scene_id, OracleError, f"Scene {scene_id} not found"
         )
 
+        # Log before state
+        self.logger.debug(f"Scene has {len(scene.interpretation_sets)} interpretation sets before refresh")
+        
         # Refresh the scene to ensure we have the latest relationships
         session.refresh(scene)
+        
+        # Log after refresh
+        self.logger.debug(f"Scene has {len(scene.interpretation_sets)} interpretation sets after refresh")
+        
+        # Log details of each interpretation set
+        for i, interp_set in enumerate(scene.interpretation_sets):
+            self.logger.debug(f"Set {i+1}: ID={interp_set.id}, is_current={interp_set.is_current}")
 
         # Get current interpretation sets using the scene relationship
         current_set = scene.current_interpretation_set
@@ -445,8 +479,28 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 f"Clearing current flag on interpretation set ID: {current_set.id}"
             )
             current_set.is_current = False
+            
+            # Verify the change took effect
+            self.logger.debug(f"After change, is_current={current_set.is_current}")
         else:
             self.logger.debug("No current interpretation sets found")
+            
+            # Try a direct query to double-check
+            direct_set = (
+                session.query(InterpretationSet)
+                .filter(
+                    InterpretationSet.scene_id == scene_id,
+                    InterpretationSet.is_current == True
+                )
+                .first()
+            )
+            
+            if direct_set:
+                self.logger.debug(f"Direct query found current set ID: {direct_set.id}")
+                direct_set.is_current = False
+                self.logger.debug(f"Cleared current flag on set ID: {direct_set.id}")
+            else:
+                self.logger.debug("Direct query found no current sets")
 
     def _parse_interpretations(self, response_text: str) -> List[dict]:
         """Parse interpretations from Claude's response using Markdown format.
