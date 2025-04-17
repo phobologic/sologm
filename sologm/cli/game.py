@@ -271,7 +271,10 @@ def dump_game(
         False, "--metadata", "-m", help="Include technical metadata in the output"
     ),
     include_concepts: bool = typer.Option(
-        False, "--include-concepts", "-c", help="Include a header explaining game concepts"
+        False,
+        "--include-concepts",
+        "-c",
+        help="Include a header explaining game concepts",
     ),
 ) -> None:
     """Export a game with all scenes and events as a markdown document to stdout."""

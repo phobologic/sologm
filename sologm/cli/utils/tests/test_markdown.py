@@ -162,18 +162,18 @@ def test_generate_game_markdown_empty(game_manager, scene_manager, event_manager
 def test_generate_concepts_header():
     """Test generating the concepts header."""
     header = generate_concepts_header()
-    
+
     # Check that it's a list of strings
     assert isinstance(header, list)
     assert all(isinstance(line, str) for line in header)
-    
+
     # Check for key sections
     assert "# Game Structure Guide" in header
     assert any("## Game" in line for line in header)
     assert any("## Acts" in line for line in header)
     assert any("## Scenes" in line for line in header)
     assert any("## Events" in line for line in header)
-    
+
     # Check for specific content
     assert any("🔮 Oracle interpretations" in line for line in header)
     assert any("🎲 Dice rolls" in line for line in header)
@@ -184,19 +184,23 @@ def test_game_markdown_with_concepts(game_manager, scene_manager, event_manager)
     """Test generating markdown for a game with concepts header."""
     # Create a game
     game = game_manager.create_game("Test Game", "Game with concepts header")
-    
+
     # Generate markdown with concepts header
     result = generate_game_markdown(
-        game, scene_manager, event_manager, include_metadata=False, include_concepts=True
+        game,
+        scene_manager,
+        event_manager,
+        include_metadata=False,
+        include_concepts=True,
     )
-    
+
     # Check that concepts header is included
     assert "# Game Structure Guide" in result
     assert "## Game" in result
     assert "## Acts" in result
     assert "## Scenes" in result
     assert "## Events" in result
-    
+
     # Check that game content follows the concepts header
     assert "# Test Game" in result
     assert "Game with concepts header" in result
