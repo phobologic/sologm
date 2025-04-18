@@ -14,6 +14,8 @@ from rich.console import Console
 from sologm.cli.utils.display import (
     display_act_info,
     display_acts_table,
+    display_act_completion_success,
+    display_act_ai_generation_results,
 )
 from sologm.cli.utils.structured_editor import (
     EditorConfig,
@@ -506,7 +508,7 @@ def complete_act(
     from sologm.cli.utils.display import display_act_ai_generation_results
 
     def _collect_regeneration_feedback(
-        results: Dict[str, str], act: Act, game_name: str
+        results: Dict[str, str], act: Act, game_name: str, original_context: Optional[str] = None
     ) -> Optional[Dict[str, str]]:
         """Collect feedback for regenerating AI content.
 
@@ -514,6 +516,7 @@ def complete_act(
             results: Dictionary containing previously generated title and summary
             act: The act being completed
             game_name: Name of the game the act belongs to
+            original_context: The original context provided for the first generation
 
         Returns:
             Dictionary with feedback and elements to keep, or None if user cancels
@@ -529,6 +532,16 @@ def complete_act(
                     help_text=(
                         "Provide feedback on how you want the new generation to differ "
                         "(leave empty for a completely new attempt)"
+                    ),
+                    multiline=True,
+                    required=False,
+                ),
+                FieldConfig(
+                    name="context",
+                    display_name="Original Context",
+                    help_text=(
+                        "Original context provided for generation. You can modify this "
+                        "to include additional information."
                     ),
                     multiline=True,
                     required=False,
@@ -588,6 +601,7 @@ def complete_act(
         # Create initial data
         initial_data = {
             "feedback": "",
+            "context": original_context or "",
         }
 
         # Open editor
@@ -610,6 +624,7 @@ def complete_act(
 
         return {
             "feedback": result.get("feedback", "").strip(),
+            "context": result.get("context", "").strip(),
         }
 
     def _edit_ai_content(
@@ -722,7 +737,8 @@ def complete_act(
             return None
 
     def _handle_user_feedback_loop(
-        results: Dict[str, str], act: Act, game_name: str, act_manager: ActManager
+        results: Dict[str, str], act: Act, game_name: str, act_manager: ActManager,
+        original_context: Optional[str] = None
     ) -> Optional[Dict[str, str]]:
         """Handle the accept/edit/regenerate feedback loop.
 
@@ -764,7 +780,7 @@ def complete_act(
                 logger.debug("User chose to regenerate content")
 
                 # Collect regeneration feedback
-                feedback_data = _collect_regeneration_feedback(results, act, game_name)
+                feedback_data = _collect_regeneration_feedback(results, act, game_name, original_context)
 
                 if not feedback_data:
                     console.print(
@@ -776,15 +792,16 @@ def complete_act(
                     console.print("[yellow]Regenerating summary with AI...[/yellow]")
 
                     # Generate new content with feedback
-                    if feedback_data["feedback"]:
-                        # If user provided feedback, use it
+                    if feedback_data["feedback"] or feedback_data["context"]:
+                        # If user provided feedback or updated context, use it
                         new_results = act_manager.generate_act_summary_with_feedback(
                             act.id,
                             feedback_data["feedback"],
                             previous_generation=results,
+                            context=feedback_data["context"],
                         )
                     else:
-                        # If user didn't provide feedback, just generate a new summary
+                        # If user didn't provide feedback or context, just generate a new summary
                         # without referencing the previous one
                         console.print(
                             "[yellow]Generating completely new attempt...[/yellow]"
@@ -883,7 +900,7 @@ def complete_act(
 
                     # Handle user feedback
                     final_data = _handle_user_feedback_loop(
-                        summary_data, active_act, active_game.name, act_manager
+                        summary_data, active_act, active_game.name, act_manager, context
                     )
 
                     if final_data is None:

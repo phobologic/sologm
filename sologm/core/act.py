@@ -608,8 +608,9 @@ class ActManager(BaseManager[Act, Act]):
     def generate_act_summary_with_feedback(
         self,
         act_id: str,
-        context: Optional[str] = None,
+        feedback: Optional[str] = None,
         previous_generation: Optional[Dict[str, str]] = None,
+        context: Optional[str] = None,
     ) -> Dict[str, str]:
         """Generate a summary with optional feedback from previous generation.
 
@@ -618,9 +619,10 @@ class ActManager(BaseManager[Act, Act]):
 
         Args:
             act_id: ID of the act to summarize
-            context: Optional additional context or feedback from the user
+            feedback: Optional feedback on the previous generation
             previous_generation: Optional dictionary containing previous title and
                 summary
+            context: Optional additional context from the user
 
         Returns:
             Dict with generated title and summary
@@ -631,13 +633,21 @@ class ActManager(BaseManager[Act, Act]):
         """
         logger.debug(f"Generating summary with feedback for act {act_id}")
 
-        if previous_generation:
-            # Format context with previous generation
-            full_context = self.prepare_regeneration_context(
-                previous_generation, context or ""
+        if previous_generation and feedback:
+            # Format feedback with previous generation
+            regeneration_context = self.prepare_regeneration_context(
+                previous_generation, feedback or ""
             )
-            logger.debug("Using regeneration context with previous generation")
+            
+            # Combine with original context if provided
+            if context:
+                full_context = f"{regeneration_context}\n\nADDITIONAL CONTEXT:\n{context}"
+            else:
+                full_context = regeneration_context
+                
+            logger.debug("Using regeneration context with previous generation and feedback")
         else:
+            # Just use the provided context
             full_context = context
             logger.debug("Using standard context without previous generation")
 
