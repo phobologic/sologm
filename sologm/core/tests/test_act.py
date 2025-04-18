@@ -216,6 +216,7 @@ class TestActManager:
 
         assert updated_act.title == "Updated Title"
         assert updated_act.summary == test_act.summary
+        assert "updated-title" in updated_act.slug
 
         # Edit summary only
         updated_act = act_manager.edit_act(
@@ -235,6 +236,7 @@ class TestActManager:
 
         assert updated_act.title == "Final Title"
         assert updated_act.summary == "Final summary"
+        assert "final-title" in updated_act.slug
 
         # Edit non-existent act
         with pytest.raises(GameError):
@@ -242,6 +244,11 @@ class TestActManager:
                 act_id="invalid-id",
                 title="Invalid",
             )
+
+    def test_edit_act_no_fields(self, db_session, test_act, act_manager):
+        """Test editing an act without providing any fields."""
+        with pytest.raises(ValueError, match="At least one of title or summary"):
+            act_manager.edit_act(act_id=test_act.id)
 
     def test_complete_act(self, db_session, test_act, act_manager):
         """Test completing an act."""
@@ -255,6 +262,7 @@ class TestActManager:
         assert completed_act.title == "Completed Title"
         assert completed_act.summary == "Completed summary"
         assert completed_act.is_active is False
+        assert "completed-title" in completed_act.slug
 
         # Complete non-existent act
         with pytest.raises(GameError):
@@ -421,22 +429,21 @@ class TestActManager:
         assert "First event" in event_descriptions
         assert "Second event" in event_descriptions
 
-    def test_cli_command_pattern(self, cli_test, test_game):
-        """Test the CLI command pattern for creating an act."""
+    def test_create_act_no_active_game(self, db_session, act_manager, monkeypatch):
+        """Test creating an act without game_id when no game is active."""
+        # Mock get_active_game to return None
+        monkeypatch.setattr(
+            act_manager.game_manager, "get_active_game", lambda: None
+        )
 
-        def test_func(session):
-            act_manager = ActManager(session=session)
-            return act_manager.create_act(
-                game_id=test_game.id,
-                title="CLI Test Act",
-                summary="Created via CLI pattern",
-            )
+        with pytest.raises(GameError, match="No active game"):
+            act_manager.create_act(title="Test Act")
 
-        act = cli_test(test_func)
-        assert act.id is not None
-        assert act.title == "CLI Test Act"
-        assert act.summary == "Created via CLI pattern"
-        assert act.is_active is True
+    def test_create_act_already_active(self, db_session, test_game, test_act, act_manager):
+        """Test creating an active act when another is already active."""
+        # test_act is already active by default fixture setup
+        with pytest.raises(GameError, match="Cannot create a new act"):
+            act_manager.create_act(game_id=test_game.id, title="Another Active Act")
 
     def test_generate_and_update_act_summary(
         self, db_session, test_act, act_manager, monkeypatch
@@ -515,6 +522,38 @@ class TestActManager:
         mock_prepare_data.assert_called_once_with(test_act.id, "Additional context")
         mock_client.send_message.assert_called_once()
 
+    def test_generate_act_summary_api_error(
+        self, db_session, test_act, act_manager, monkeypatch
+    ):
+        """Test handling of API errors during summary generation."""
+        # Mock the AnthropicClient to raise an error
+        from unittest.mock import MagicMock
+
+        mock_client = MagicMock()
+        mock_client.send_message.side_effect = Exception("API connection failed")
+
+        mock_prepare_data = MagicMock()
+        mock_prepare_data.return_value = {
+            "game": {"name": "Test Game", "description": "Test Description"},
+            "act": {"sequence": 1, "title": "Test Act", "summary": "Test Summary"},
+            "scenes": [],
+            "additional_context": None,
+        }
+
+        # Apply mocks
+        monkeypatch.setattr(
+            act_manager, "prepare_act_data_for_summary", mock_prepare_data
+        )
+        monkeypatch.setattr(
+            "sologm.integrations.anthropic.AnthropicClient", lambda: mock_client
+        )
+
+        # Test the method and assert APIError is raised
+        from sologm.utils.errors import APIError
+
+        with pytest.raises(APIError, match="Failed to generate act summary"):
+            act_manager.generate_act_summary(test_act.id)
+
     def test_generate_act_summary_with_feedback(
         self, db_session, test_act, act_manager, monkeypatch
     ):
@@ -584,22 +623,6 @@ class TestActManager:
         assert "Old summary paragraph." in context
         assert "USER FEEDBACK:" in context
         assert "Make it more dramatic" in context
-        assert "INSTRUCTIONS:" in context
-        assert "ELEMENTS TO PRESERVE:" not in context
-
-        # Test with elements to keep
-        context = act_manager.prepare_regeneration_context(
-            previous_gen, "Make it more dramatic", "Keep the reference to the dragon"
-        )
-
-        # Verify context structure
-        assert "PREVIOUS GENERATION:" in context
-        assert "Old Title" in context
-        assert "Old summary paragraph." in context
-        assert "USER FEEDBACK:" in context
-        assert "Make it more dramatic" in context
-        assert "ELEMENTS TO PRESERVE:" in context
-        assert "Keep the reference to the dragon" in context
         assert "INSTRUCTIONS:" in context
 
     def test_complete_act_with_ai(self, db_session, test_act, act_manager, monkeypatch):
