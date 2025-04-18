@@ -8,7 +8,7 @@ from anthropic._types import NOT_GIVEN
 # Import Config for type hinting if needed elsewhere, but not strictly required for this change
 # from sologm.utils.config import Config
 from sologm.integrations.anthropic import AnthropicClient
-import logging # Make sure logger is available if not already imported/configured
+import logging  # Make sure logger is available if not already imported/configured
 from sologm.utils.errors import APIError
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,9 @@ def test_init_with_env_var(mock_anthropic, monkeypatch):
 
 
 # Use the new fixture name and apply patch within the test
-def test_init_no_api_key(mock_anthropic, monkeypatch, mock_config_no_api_key): # Use new fixture
+def test_init_no_api_key(
+    mock_anthropic, monkeypatch, mock_config_no_api_key
+):  # Use new fixture
     """Test initialization fails without API key from env or config."""
     logger.debug("--- Starting test_init_no_api_key ---")
     # Ensure environment variables are clear
@@ -60,17 +62,27 @@ def test_init_no_api_key(mock_anthropic, monkeypatch, mock_config_no_api_key): #
 
     # Define the target to patch
     patch_target = "sologm.integrations.anthropic.get_config"
-    logger.debug(f"Attempting to patch '{patch_target}' to return mock config: {mock_config_no_api_key}")
+    logger.debug(
+        f"Attempting to patch '{patch_target}' to return mock config: {mock_config_no_api_key}"
+    )
 
     # Apply the patch using a context manager JUST around the code that needs it
-    with patch(patch_target, return_value=mock_config_no_api_key, autospec=True) as mock_get_config:
-        logger.debug(f"Patch active for '{patch_target}'. Mock object: {mock_get_config}")
-        logger.debug("Expecting APIError during AnthropicClient initialization inside patch block...")
+    with patch(
+        patch_target, return_value=mock_config_no_api_key, autospec=True
+    ) as mock_get_config:
+        logger.debug(
+            f"Patch active for '{patch_target}'. Mock object: {mock_get_config}"
+        )
+        logger.debug(
+            "Expecting APIError during AnthropicClient initialization inside patch block..."
+        )
         with pytest.raises(APIError) as exc:
             # Instantiation happens HERE, while the patch is active
             client = AnthropicClient()
             # This should not be reached
-            logger.error("AnthropicClient initialized unexpectedly without raising APIError!")
+            logger.error(
+                "AnthropicClient initialized unexpectedly without raising APIError!"
+            )
 
     # Log the caught exception after the 'with' blocks
     logger.debug(f"Patch for '{patch_target}' finished.")
