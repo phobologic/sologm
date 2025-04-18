@@ -373,7 +373,9 @@ def edit_act(
             # If parameters were provided directly, use them
             # Otherwise, use the results from the editor
             final_title = title if title is not None else result.get("title") or None
-            final_summary = summary if summary is not None else result.get("summary") or None
+            final_summary = (
+                summary if summary is not None else result.get("summary") or None
+            )
 
         else:
             # If parameters were provided directly, use them
