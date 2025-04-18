@@ -602,7 +602,7 @@ def complete_act(
             editor_config,
             context_info=context_info,
             editor_config=EditorConfig(
-                message="Edit your regeneration feedback below:",
+                edit_message="Edit your regeneration feedback below:",
                 success_message="Feedback collected successfully.",
                 cancel_message="Regeneration cancelled.",
                 error_message="Could not open editor. Please try again.",
@@ -686,7 +686,7 @@ def complete_act(
             context_info=context_info,
             original_data=original_data if original_data else None,
             editor_config=EditorConfig(
-                message="Edit the AI-generated content below:",
+                edit_message="Edit the AI-generated content below:",
                 success_message="AI-generated content updated successfully.",
                 cancel_message="Edit cancelled.",
                 error_message="Could not open editor. Please try again.",
