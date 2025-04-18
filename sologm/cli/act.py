@@ -815,33 +815,35 @@ def complete_act(
         elif choice == "E":  # Edit
             logger.debug("User chose to edit the generated content")
 
-            # Create editor configuration
+            # Create editor configuration with improved help text
             editor_config = StructuredEditorConfig(
                 fields=[
                     FieldConfig(
                         name="title",
                         display_name="Title",
-                        help_text="Edit the AI-generated title",
+                        help_text="Edit the AI-generated title (1-7 words recommended)",
                         required=True,
                     ),
                     FieldConfig(
                         name="summary",
                         display_name="Summary",
-                        help_text="Edit the AI-generated summary",
+                        help_text="Edit the AI-generated summary (1-3 paragraphs recommended)",
                         multiline=True,
                         required=True,
                     ),
                 ],
                 wrap_width=70,
             )
-
-            # Create context information
+            
+            # Create enhanced context information with more guidance
             title_display = act.title or "Untitled Act"
             context_info = f"Editing AI-Generated Content for Act {act.sequence}: {title_display}\n"
             context_info += f"Game: {game_name}\n"
             context_info += f"ID: {act.id}\n\n"
-            context_info += "Edit the AI-generated title and summary below."
-
+            context_info += "Edit the AI-generated title and summary below.\n"
+            context_info += "- The title should capture the essence or theme of the act (1-7 words)\n"
+            context_info += "- The summary should highlight key events and narrative arcs (1-3 paragraphs)\n"
+            
             # Add original content as comments if it exists
             original_data = {}
             if act.title:
@@ -849,13 +851,19 @@ def complete_act(
             if act.summary:
                 original_data["summary"] = act.summary
 
-            # Open editor with the generated content
+            # Open editor with the generated content and improved configuration
             edited_results, modified = edit_structured_data(
                 results,
                 console,
                 editor_config,
                 context_info=context_info,
                 original_data=original_data if original_data else None,
+                editor_config=EditorConfig(
+                    message="Edit the AI-generated content below:",
+                    success_message="AI-generated content updated successfully.",
+                    cancel_message="Edit cancelled. Returning to previous options.",
+                    error_message="Could not open editor. Please try again.",
+                ),
             )
 
             if not modified:
@@ -863,9 +871,52 @@ def complete_act(
                 console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
                 # Recursive call to handle user feedback again
                 return _handle_user_feedback(results, act, game_name)
-
+                
+            # Validate the edited content
+            if not edited_results.get("title") or not edited_results.get("title").strip():
+                console.print("[red]Error:[/] Title cannot be empty. Please try again.")
+                return _handle_user_feedback(results, act, game_name)
+                
+            if not edited_results.get("summary") or not edited_results.get("summary").strip():
+                console.print("[red]Error:[/] Summary cannot be empty. Please try again.")
+                return _handle_user_feedback(results, act, game_name)
+                
             logger.debug("User edited the content")
-            return edited_results
+            
+            # Show a preview of the edited content
+            from rich.panel import Panel
+            
+            console.print("\n[bold]Preview of your edited content:[/bold]")
+            
+            title_panel = Panel(
+                edited_results["title"],
+                title="[bold]Edited Title[/bold]",
+                border_style="green",
+                expand=False,
+            )
+            console.print(title_panel)
+            
+            summary_panel = Panel(
+                edited_results["summary"],
+                title="[bold]Edited Summary[/bold]",
+                border_style="green",
+                expand=False,
+            )
+            console.print(summary_panel)
+            
+            # Ask for confirmation
+            from rich.prompt import Confirm
+            
+            if Confirm.ask(
+                "[yellow]Use this edited content?[/yellow]",
+                default=True,
+            ):
+                logger.debug("User confirmed edited content")
+                return edited_results
+            else:
+                logger.debug("User rejected edited content")
+                console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
+                return _handle_user_feedback(results, act, game_name)
 
         elif choice == "R":  # Regenerate
             logger.debug("User chose to regenerate content")
