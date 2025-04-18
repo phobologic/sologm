@@ -723,7 +723,7 @@ def complete_act(
         """
         logger.debug("Collecting regeneration context")
 
-        # Create editor configuration
+        # Create editor configuration with improved guidance
         editor_config = StructuredEditorConfig(
             fields=[
                 FieldConfig(
@@ -733,11 +733,18 @@ def complete_act(
                     multiline=True,
                     required=True,
                 ),
+                FieldConfig(
+                    name="keep_elements",
+                    display_name="Elements to Keep",
+                    help_text="Specify any elements from the previous generation you want to preserve",
+                    multiline=True,
+                    required=False,
+                ),
             ],
             wrap_width=70,
         )
 
-        # Create context information header
+        # Create enhanced context information header with more guidance
         title_display = act.title or "Untitled Act"
         context_info = (
             f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
@@ -745,26 +752,41 @@ def complete_act(
         context_info += f"Game: {game_name}\n"
         context_info += f"ID: {act.id}\n\n"
         context_info += "Please provide feedback on how you want the new generation to differ from the previous one.\n"
-        context_info += "For example:\n"
-        context_info += "- Make the title more dramatic/concise/specific\n"
-        context_info += "- Focus more on certain events or themes\n"
-        context_info += "- Change the tone or style of the summary\n"
-        context_info += "- Add or remove specific details\n\n"
+        context_info += "Be specific about what you liked and didn't like about the previous generation.\n\n"
+        context_info += "Examples of effective feedback:\n"
+        context_info += "- \"Make the title more dramatic and focus on the conflict with the dragon\"\n"
+        context_info += "- \"The summary is too focused on side characters. Center it on the protagonist's journey\"\n"
+        context_info += "- \"Change the tone to be more somber and reflective of the losses in this act\"\n"
+        context_info += "- \"I like the theme of betrayal in the summary but want it to be more subtle\"\n\n"
         context_info += "PREVIOUS GENERATION:\n"
         context_info += f"Title: {results.get('title', '')}\n"
-        context_info += f"Summary: {results.get('summary', '')}\n"
+        context_info += f"Summary: {results.get('summary', '')}\n\n"
+        
+        if act.title or act.summary:
+            context_info += "CURRENT ACT CONTENT:\n"
+            if act.title:
+                context_info += f"Title: {act.title}\n"
+            if act.summary:
+                context_info += f"Summary: {act.summary}\n"
 
-        # Create initial data
+        # Create initial data with suggested structure
         initial_data = {
-            "feedback": "",
+            "feedback": "I'd like the new generation to...",
+            "keep_elements": "",
         }
 
-        # Open editor
+        # Open editor with improved configuration
         result, modified = edit_structured_data(
             initial_data,
             console,
             editor_config,
             context_info=context_info,
+            editor_config=EditorConfig(
+                message="Edit your regeneration feedback below:",
+                success_message="Feedback collected successfully.",
+                cancel_message="Regeneration cancelled.",
+                error_message="Could not open editor. Please try again.",
+            ),
         )
 
         if not modified:
@@ -772,10 +794,17 @@ def complete_act(
             return None
 
         feedback = result.get("feedback", "").strip()
+        keep_elements = result.get("keep_elements", "").strip()
+        
+        # Combine feedback and keep_elements into a structured format
+        combined_feedback = feedback
+        if keep_elements:
+            combined_feedback += f"\n\nELEMENTS TO PRESERVE:\n{keep_elements}"
+            
         logger.debug(
-            f"Collected regeneration feedback: {feedback[:50]}{'...' if len(feedback) > 50 else ''}"
+            f"Collected regeneration feedback: {combined_feedback[:50]}{'...' if len(combined_feedback) > 50 else ''}"
         )
-        return feedback if feedback else None
+        return combined_feedback if combined_feedback else None
 
     def _handle_user_feedback(
         results: Dict[str, str], act: Act, game_name: str
@@ -946,8 +975,17 @@ def complete_act(
             try:
                 console.print("[yellow]Regenerating summary with AI...[/yellow]")
 
-                # Include previous generation in context
-                full_context = f"PREVIOUS GENERATION:\nTitle: {results.get('title', '')}\nSummary: {results.get('summary', '')}\n\nFEEDBACK: {regeneration_context}"
+                # Include previous generation in context with structured format
+                full_context = (
+                    f"PREVIOUS GENERATION:\n"
+                    f"Title: {results.get('title', '')}\n"
+                    f"Summary: {results.get('summary', '')}\n\n"
+                    f"USER FEEDBACK:\n{regeneration_context}\n\n"
+                    f"INSTRUCTIONS:\n"
+                    f"Generate a new title and summary that addresses the user's feedback. "
+                    f"Make sure your new generation is noticeably different from the previous one "
+                    f"while incorporating any elements the user wants to preserve."
+                )
 
                 # Generate new summary
                 new_results = _handle_ai_generation(act.id, full_context)

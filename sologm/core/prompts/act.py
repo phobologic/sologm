@@ -48,9 +48,13 @@ SCENES IN THIS ACT:
             else:
                 prompt += "No events recorded for this scene.\n"
 
-        # Add additional context if provided
+        # Add additional context if provided, with special handling for regeneration requests
         if additional_context:
-            prompt += f"\nADDITIONAL CONTEXT:\n{additional_context}\n"
+            # Check if this is a regeneration request (contains PREVIOUS GENERATION)
+            if "PREVIOUS GENERATION:" in additional_context:
+                prompt += f"\nREGENERATION REQUEST:\n{additional_context}\n"
+            else:
+                prompt += f"\nADDITIONAL CONTEXT:\n{additional_context}\n"
 
         # Add instructions
         prompt += """
