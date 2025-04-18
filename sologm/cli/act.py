@@ -399,8 +399,10 @@ def complete_act(
     """Complete the current active act and optionally set its title and summary.
 
     If title and summary are not provided, opens an editor to enter them.
-    Completing an act marks it as finished and allows you to provide a retrospective
-    title and summary that summarize the narrative events that occurred.
+
+    Completing an act marks it as finished and allows you to provide a
+    retrospective title and summary that summarize the narrative events that
+    occurred.
 
     The --ai flag can be used to generate a title and summary based on the
     act's content using AI. You can provide additional context with --context.
@@ -410,13 +412,15 @@ def complete_act(
         $ sologm act complete
 
         Complete act with specific title and summary:
-        $ sologm act complete -t "The Fall of the Kingdom" -s "The heroes failed to save the kingdom"
+        $ sologm act complete -t "The Fall of the Kingdom" -s \
+          "The heroes failed to save the kingdom"
 
         Complete act with AI-generated title and summary:
         $ sologm act complete --ai
 
         Complete act with AI-generated content and additional context:
-        $ sologm act complete --ai --context "Focus on the themes of betrayal and redemption"
+        $ sologm act complete --ai \
+          --context "Focus on the themes of betrayal and redemption"
 
         Force AI regeneration of title/summary:
         $ sologm act complete --ai --force
@@ -739,7 +743,6 @@ def complete_act(
         logger.debug("Starting user feedback loop")
 
         while True:
-            from rich.prompt import Prompt
 
             # Get user choice using the display helper
             from sologm.cli.utils.display import display_act_ai_feedback_prompt
@@ -794,7 +797,6 @@ def complete_act(
                     console.print("[yellow]Returning to previous content.[/yellow]")
                     continue
 
-        from sologm.cli.utils.display import display_act_completion_success
 
     def _check_existing_content(act: Act, force: bool) -> bool:
         """Check if act has existing content and confirm replacement if needed.
@@ -829,7 +831,6 @@ def complete_act(
         )
 
     # Main command flow
-    from sologm.cli.utils.styled_text import StyledText
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
