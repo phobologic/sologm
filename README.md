@@ -164,13 +164,14 @@ sologm game edit --id cyberpunk-noir
 # Export the active game to markdown (stdout)
 sologm game dump
 
-# (on mac) Export the active game to markdown to your clipboard, share this
-# with your favorite AI to have it turn this into rich text, etc. I plan
-# to make this a native AI feature eventually.
-sologm game dump | pbcopy
+    # (on mac) Export the active game to markdown to your clipboard.
+    # This output can be easily used with external AI tools for narrative generation,
+    # summarization, etc. See the "Using Game Data with External AI" section below
+    # for a detailed example.
+    sologm game dump | pbcopy
 
-# Export a specific game including metadata
-sologm game dump --id cyberpunk-noir --metadata
+    # Export a specific game including metadata
+    sologm game dump --id cyberpunk-noir --metadata
 ```
 
 ### Act Management
