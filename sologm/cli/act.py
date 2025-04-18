@@ -645,9 +645,64 @@ def complete_act(
         return user_context if user_context else None
 
     def _process_ai_results(results: Dict[str, str], act: Act) -> None:
-        """Process and display AI-generated content."""
-        # Will be implemented in later phases
-        pass
+        """Process and display AI-generated content.
+        
+        Formats and displays the AI-generated title and summary with appropriate styling.
+        If the act already has a title or summary, displays them for comparison.
+        
+        Args:
+            results: Dictionary containing generated title and summary
+            act: The act being completed
+        """
+        logger.debug("Processing AI results for display")
+        
+        from rich.panel import Panel
+        
+        # Define border styles for different content types
+        BORDER_STYLES = {
+            "generated": "green",
+            "existing": "blue",
+        }
+        
+        # Display generated title
+        if "title" in results and results["title"]:
+            title_panel = Panel(
+                results["title"],
+                title="[bold]AI-Generated Title[/bold]",
+                border_style=BORDER_STYLES["generated"],
+                expand=False,
+            )
+            console.print(title_panel)
+            
+            # Display existing title for comparison if it exists
+            if act.title:
+                existing_title_panel = Panel(
+                    act.title,
+                    title="[bold]Current Title[/bold]",
+                    border_style=BORDER_STYLES["existing"],
+                    expand=False,
+                )
+                console.print(existing_title_panel)
+        
+        # Display generated summary
+        if "summary" in results and results["summary"]:
+            summary_panel = Panel(
+                results["summary"],
+                title="[bold]AI-Generated Summary[/bold]",
+                border_style=BORDER_STYLES["generated"],
+                expand=False,
+            )
+            console.print(summary_panel)
+            
+            # Display existing summary for comparison if it exists
+            if act.summary:
+                existing_summary_panel = Panel(
+                    act.summary,
+                    title="[bold]Current Summary[/bold]",
+                    border_style=BORDER_STYLES["existing"],
+                    expand=False,
+                )
+                console.print(existing_summary_panel)
 
     def _handle_user_feedback(
         results: Dict[str, str], act: Act, game_name: str
@@ -793,6 +848,9 @@ def complete_act(
 
                             # Generate summary using AI
                             summary_data = _handle_ai_generation(active_act.id, context)
+                            
+                            # Display the generated content
+                            _process_ai_results(summary_data, active_act)
 
                             # Use the generated data
                             title = summary_data.get("title")
@@ -817,10 +875,6 @@ def complete_act(
                             console.print(f"ID: {completed_act.id}")
                             console.print(f"Sequence: Act {completed_act.sequence}")
                             console.print(f"Active: {completed_act.is_active}")
-                            if completed_act.title:
-                                console.print(f"Title: {completed_act.title}")
-                            if completed_act.summary:
-                                console.print(f"Summary: {completed_act.summary}")
 
                             # Exit early since we've completed the act
                             return
