@@ -1,12 +1,12 @@
 """Anthropic API client for Solo RPG Helper."""
 
 import logging
-import os
 from typing import Optional
 
 from anthropic import Anthropic
 from anthropic._types import NOT_GIVEN
 
+from sologm.utils.config import get_config
 from sologm.utils.errors import APIError
 
 logger = logging.getLogger(__name__)
@@ -28,45 +28,63 @@ class AnthropicClient:
         logger.debug("[AnthropicClient.__init__] Initializing...")
         try:
             if api_key is None:
-                logger.debug("[AnthropicClient.__init__] API key not provided, attempting to load from config.")
-                # Import moved inside to ensure patching works if module loaded early
-                from sologm.utils.config import get_config
-                from unittest.mock import MagicMock # Import MagicMock for type checking
+                logger.debug(
+                    "[AnthropicClient.__init__] API key not provided, "
+                    "attempting to load from config."
+                )
 
                 logger.debug("[AnthropicClient.__init__] Calling get_config()")
                 config = get_config()
                 # Log details about the config object received
-                logger.debug(f"[AnthropicClient.__init__] get_config() returned object: {config} (type: {type(config)})")
+                logger.debug(
+                    "[AnthropicClient.__init__] get_config() returned "
+                    f"object: {config} (type: {type(config)})"
+                )
                 # Check if it's the mock object we expect in tests
-                if isinstance(config, MagicMock):
-                    logger.debug("[AnthropicClient.__init__] Received mock config object.")
-                else:
-                    logger.warning("[AnthropicClient.__init__] Received NON-MOCK config object!")
 
-                logger.debug("[AnthropicClient.__init__] Calling config.get('anthropic_api_key')")
+                logger.debug(
+                    "[AnthropicClient.__init__] Calling config.get('anthropic_api_key')"
+                )
                 api_key = config.get("anthropic_api_key")
                 # Log the exact value returned by config.get
-                logger.debug(f"[AnthropicClient.__init__] config.get('anthropic_api_key') returned: {api_key!r}")
+                logger.debug(
+                    f"[AnthropicClient.__init__] "
+                    f"config.get('anthropic_api_key') returned: {api_key!r}"
+                )
 
                 if not api_key:
-                    logger.error("[AnthropicClient.__init__] API key is missing or empty after config lookup.")
+                    logger.error(
+                        "[AnthropicClient.__init__] API key is missing or "
+                        "empty after config lookup."
+                    )
                     raise APIError(
                         "Anthropic API key not found. Please set the "
-                        "ANTHROPIC_API_KEY environment variable or add 'anthropic_api_key' "
+                        "ANTHROPIC_API_KEY environment variable or add "
+                        "'anthropic_api_key' "
                         "to your configuration file."
                     )
                 else:
                     logger.debug("[AnthropicClient.__init__] API key found via config.")
             else:
-                 logger.debug("[AnthropicClient.__init__] API key was provided directly.")
-
+                logger.debug(
+                    "[AnthropicClient.__init__] API key was provided directly."
+                )
 
             self.api_key = api_key
-            logger.debug("[AnthropicClient.__init__] Initializing actual Anthropic library client")
+            logger.debug(
+                "[AnthropicClient.__init__] Initializing actual Anthropic "
+                "library client"
+            )
             self.client = Anthropic(api_key=self.api_key)
-            logger.debug("[AnthropicClient.__init__] Anthropic library client initialized successfully.")
+            logger.debug(
+                "[AnthropicClient.__init__] Anthropic library client "
+                "initialized successfully."
+            )
         except Exception as e:
-            logger.error(f"[AnthropicClient.__init__] Failed during initialization: {e}", exc_info=True) # Add exc_info for traceback
+            logger.error(
+                f"[AnthropicClient.__init__] Failed during initialization: {e}",
+                exc_info=True,
+            )  # Add exc_info for traceback
             # Avoid shadowing the original error type if it's already APIError
             if isinstance(e, APIError):
                 raise
