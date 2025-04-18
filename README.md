@@ -11,6 +11,20 @@ A command-line application designed to assist players of solo or GM-less rolepla
 - **Dice Rolling**: Roll dice using standard notation (e.g., 2d6+1) with optional reasons and scene association. View roll history.
 - **Oracle Interpretation**: Use AI (e.g., Claude) to interpret oracle results in the context of your game. Manage interpretation sets, retry interpretations, and select interpretations to become events.
 
+## Core Concepts
+
+SoloGM organizes your solo roleplaying sessions using a hierarchical structure:
+
+*   **Game:** The top-level container representing a single campaign or long-running adventure. You typically have one *active* game at a time.
+    *   **Act:** A major narrative division within a Game, similar to an act in a play or a chapter in a book. A Game can have multiple Acts. You usually have one *active* act within the active game.
+        *   **Scene:** A specific situation, location, or encounter within an Act. An Act can have multiple Scenes. Most actions (like recording events or rolling dice) happen within the context of the *current* scene.
+            *   **Event:** A record of something significant that happened during a Scene (e.g., "Found a clue," "NPC interaction," "Combat outcome"). Scenes can have many Events.
+            *   **Dice Roll:** A record of a dice roll made during a Scene, including the notation, result, and optional reason. Scenes can have many Dice Rolls.
+            *   **Interpretation Set:** A collection of AI-generated interpretations based on an oracle query (context + results) made during a Scene. Scenes can have multiple Interpretation Sets.
+                *   **Interpretation:** A single AI-generated suggestion within an Interpretation Set. You can *select* an Interpretation to automatically create a new Event in the Scene.
+
+Understanding this hierarchy helps clarify why certain commands require an active game, act, or scene. For example, `sologm event add` needs to know the *current scene* to associate the event correctly. Commands like `sologm game activate`, `sologm act create` (which activates the new act), and `sologm scene set-current` are used to manage this context.
+
 ## Installation
 
 ### From PyPI (Coming Soon)
