@@ -990,12 +990,8 @@ def _handle_manual_completion(
 
 @act_app.command("complete")
 def complete_act(
-    title: Optional[str] = typer.Option(
-        None, "--title", "-t", help="Title for the completed act"
-    ),
-    summary: Optional[str] = typer.Option(
-        None, "--summary", "-s", help="Summary for the completed act"
-    ),
+    # REMOVED: title parameter and Option
+    # REMOVED: summary parameter and Option
     ai: bool = typer.Option(False, "--ai", help="Use AI to generate title and summary"),
     context: Optional[str] = typer.Option(
         None,
@@ -1006,27 +1002,26 @@ def complete_act(
     force: bool = typer.Option(
         False,
         "--force",
-        help="Force completion even if title/summary already exist",
+        # UPDATED help text for --force
+        help="Force AI generation even if title/summary already exist (overwrites existing)",
     ),
 ) -> None:
-    """[bold]Complete the current active act and optionally set its title and summary.[/bold]
+    """[bold]Complete the current active act.[/bold]
 
-    If title and summary are not provided, opens an editor to enter them.
+    # UPDATED docstring
+    Completing an act marks it as finished. This command will either use AI
+    (if [cyan]--ai[/cyan] is specified) to generate a title and summary, or
+    it will open a structured editor for you to provide them manually based
+    on the act's events.
 
-    Completing an act marks it as finished and allows you to provide a
-    retrospective title and summary that summarize the narrative events that
-    occurred.
-
-    The [cyan]--ai[/cyan] flag can be used to generate a title and summary based on the
-    act's content using AI. You can provide additional context with [cyan]--context[/cyan].
+    The [cyan]--ai[/cyan] flag generates a title and summary using AI based on the
+    act's content. You can provide additional guidance with [cyan]--context[/cyan].
+    Use [cyan]--force[/cyan] with [cyan]--ai[/cyan] to proceed even if the act
+    already has a title or summary (they will be replaced by the AI generation).
 
     [yellow]Examples:[/yellow]
-        [green]Complete act with an interactive editor:[/green]
+        [green]Complete act using the interactive editor:[/green]
         $ sologm act complete
-
-        [green]Complete act with specific title and summary:[/green]
-        $ sologm act complete -t "The Fall of the Kingdom" -s \\
-          "The heroes failed to save the kingdom"
 
         [green]Complete act with AI-generated title and summary:[/green]
         $ sologm act complete --ai
@@ -1035,7 +1030,7 @@ def complete_act(
         $ sologm act complete --ai \\
           --context "Focus on the themes of betrayal and redemption"
 
-        [green]Force AI regeneration of title/summary:[/green]
+        [green]Force AI regeneration, overwriting existing title/summary:[/green]
         $ sologm act complete --ai --force
     """
     logger.debug("Completing act")
@@ -1071,9 +1066,10 @@ def complete_act(
                     act_manager, active_act, active_game, console, context, force
                 )
                 # If AI fails or is cancelled, completed_act will be None
-                # We implicitly stop here if AI path doesn't succeed
+            # REMOVED: elif title is not None or summary is not None: block
             else:
-                # Handle manual path
+                # Handle manual editor path (this is now the default if --ai is not used)
+                logger.debug("Handling manual completion via editor")
                 completed_act = _handle_manual_completion(
                     act_manager, active_act, active_game, console
                 )
