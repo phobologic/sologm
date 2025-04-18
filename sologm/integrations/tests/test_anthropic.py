@@ -49,6 +49,18 @@ def test_init_no_api_key(mock_anthropic, monkeypatch):
     assert "API key not found" in str(exc.value)
 
 
+def test_init_anthropic_client_failure(mock_anthropic):
+    """Test handling errors during Anthropic client instantiation."""
+    mock_class, _ = mock_anthropic
+    mock_class.side_effect = Exception("Initialization failed")  # Simulate failure
+
+    with pytest.raises(APIError) as exc:
+        AnthropicClient(api_key="test_key")
+    assert "Failed to initialize Anthropic client: Initialization failed" in str(
+        exc.value
+    )
+
+
 def test_send_message(mock_anthropic, mock_response):
     """Test sending a message to Claude."""
     mock_class, mock_instance = mock_anthropic
@@ -96,3 +108,38 @@ def test_send_message_api_error(mock_anthropic):
     with pytest.raises(APIError) as exc:
         client.send_message("Test prompt")
     assert "Failed to get response from Claude" in str(exc.value)
+
+
+def test_send_message_invalid_response_format_empty(mock_anthropic):
+    """Test handling empty content in response."""
+    mock_class, mock_instance = mock_anthropic
+    # Simulate response with empty content list
+    empty_response = MagicMock()
+    empty_response.content = []
+    mock_instance.messages.create.return_value = empty_response
+
+    client = AnthropicClient(api_key="test_key")
+    with pytest.raises(APIError) as exc:
+        client.send_message("Test prompt")
+    assert "Unexpected response format from Claude" in str(exc.value)
+
+
+def test_send_message_invalid_response_format_no_text(mock_anthropic):
+    """Test handling response content without 'text' attribute."""
+    mock_class, mock_instance = mock_anthropic
+    # Simulate response where content item lacks 'text'
+    malformed_response = MagicMock()
+    malformed_content_item = MagicMock()
+    # Ensure 'text' attribute is missing by removing it if present
+    # or by ensuring it's not part of the spec if creating a new mock
+    try:
+        del malformed_content_item.text
+    except AttributeError:
+        pass  # Attribute didn't exist, which is the desired state
+    malformed_response.content = [malformed_content_item]
+    mock_instance.messages.create.return_value = malformed_response
+
+    client = AnthropicClient(api_key="test_key")
+    with pytest.raises(APIError) as exc:
+        client.send_message("Test prompt")
+    assert "Unexpected response format from Claude" in str(exc.value)
