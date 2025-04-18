@@ -1,4 +1,4 @@
-"""Tests for the Act manager."""
+sologm/core/tests/test_act.py"""Tests for the Act manager."""
 
 from unittest.mock import MagicMock
 
