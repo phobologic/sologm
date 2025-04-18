@@ -739,7 +739,9 @@ def complete_act(
 
         # Create context information header
         title_display = act.title or "Untitled Act"
-        context_info = f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
+        context_info = (
+            f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
+        )
         context_info += f"Game: {game_name}\n"
         context_info += f"ID: {act.id}\n\n"
         context_info += "Please provide feedback on how you want the new generation to differ from the previous one.\n"
@@ -779,40 +781,40 @@ def complete_act(
         results: Dict[str, str], act: Act, game_name: str
     ) -> Optional[Dict[str, str]]:
         """Handle user feedback on AI-generated content.
-        
+
         Prompts the user to accept, edit, or regenerate the AI-generated content.
-        
+
         Args:
             results: Dictionary containing generated title and summary
             act: The act being completed
             game_name: Name of the game the act belongs to
-            
+
         Returns:
             Optional dictionary with updated title and summary, or None if user cancels
         """
         logger.debug("Handling user feedback on AI-generated content")
-        
+
         from rich.prompt import Prompt
-        
+
         # Prompt user for action
         choices = "(A)ccept, (E)dit, or (R)egenerate"
         default_choice = "E"
-        
+
         choice = Prompt.ask(
             f"[yellow]What would you like to do with this content?[/yellow] {choices}",
             choices=["A", "E", "R", "a", "e", "r"],
             default=default_choice,
         ).upper()
-        
+
         logger.debug(f"User chose: {choice}")
-        
+
         if choice == "A":  # Accept
             logger.debug("User accepted the generated content")
             return results
-            
+
         elif choice == "E":  # Edit
             logger.debug("User chose to edit the generated content")
-            
+
             # Create editor configuration
             editor_config = StructuredEditorConfig(
                 fields=[
@@ -832,21 +834,21 @@ def complete_act(
                 ],
                 wrap_width=70,
             )
-            
+
             # Create context information
             title_display = act.title or "Untitled Act"
             context_info = f"Editing AI-Generated Content for Act {act.sequence}: {title_display}\n"
             context_info += f"Game: {game_name}\n"
             context_info += f"ID: {act.id}\n\n"
             context_info += "Edit the AI-generated title and summary below."
-            
+
             # Add original content as comments if it exists
             original_data = {}
             if act.title:
                 original_data["title"] = act.title
             if act.summary:
                 original_data["summary"] = act.summary
-                
+
             # Open editor with the generated content
             edited_results, modified = edit_structured_data(
                 results,
@@ -855,50 +857,54 @@ def complete_act(
                 context_info=context_info,
                 original_data=original_data if original_data else None,
             )
-            
+
             if not modified:
                 logger.debug("User cancelled editing")
                 console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
                 # Recursive call to handle user feedback again
                 return _handle_user_feedback(results, act, game_name)
-                
+
             logger.debug("User edited the content")
             return edited_results
-            
+
         elif choice == "R":  # Regenerate
             logger.debug("User chose to regenerate content")
-            
+
             # Collect regeneration context
-            regeneration_context = _collect_regeneration_context(results, act, game_name)
-            
+            regeneration_context = _collect_regeneration_context(
+                results, act, game_name
+            )
+
             if regeneration_context is None:
                 logger.debug("User cancelled regeneration context collection")
-                console.print("[yellow]Regeneration cancelled. Returning to prompt.[/yellow]")
+                console.print(
+                    "[yellow]Regeneration cancelled. Returning to prompt.[/yellow]"
+                )
                 # Recursive call to handle user feedback again
                 return _handle_user_feedback(results, act, game_name)
-                
+
             # Generate new content with the updated context
             try:
                 console.print("[yellow]Regenerating summary with AI...[/yellow]")
-                
+
                 # Include previous generation in context
                 full_context = f"PREVIOUS GENERATION:\nTitle: {results.get('title', '')}\nSummary: {results.get('summary', '')}\n\nFEEDBACK: {regeneration_context}"
-                
+
                 # Generate new summary
                 new_results = _handle_ai_generation(act.id, full_context)
-                
+
                 # Display the new results
                 _process_ai_results(new_results, act)
-                
+
                 # Handle feedback on the new results
                 return _handle_user_feedback(new_results, act, game_name)
-                
+
             except APIError as e:
                 console.print(f"[red]AI Error:[/] {str(e)}")
                 console.print("[yellow]Returning to previous content.[/yellow]")
                 # Return to previous content
                 return _handle_user_feedback(results, act, game_name)
-                
+
         # Should never reach here due to Prompt validation
         return results
 
@@ -971,14 +977,16 @@ def complete_act(
 
                         # Display the generated content
                         _process_ai_results(summary_data, active_act)
-                        
+
                         # Handle user feedback
-                        final_data = _handle_user_feedback(summary_data, active_act, active_game.name)
-                        
+                        final_data = _handle_user_feedback(
+                            summary_data, active_act, active_game.name
+                        )
+
                         if final_data is None:
                             console.print("[yellow]Operation cancelled.[/yellow]")
                             return
-                            
+
                         # Use the final data (original or modified based on user feedback)
                         title = final_data.get("title")
                         summary = final_data.get("summary")
@@ -1048,14 +1056,16 @@ def complete_act(
 
                             # Display the generated content
                             _process_ai_results(summary_data, active_act)
-                            
+
                             # Handle user feedback
-                            final_data = _handle_user_feedback(summary_data, active_act, active_game.name)
-                            
+                            final_data = _handle_user_feedback(
+                                summary_data, active_act, active_game.name
+                            )
+
                             if final_data is None:
                                 console.print("[yellow]Operation cancelled.[/yellow]")
                                 return
-                                
+
                             # Use the final data (original or modified based on user feedback)
                             title = final_data.get("title")
                             summary = final_data.get("summary")
