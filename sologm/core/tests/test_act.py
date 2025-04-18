@@ -268,7 +268,7 @@ class TestActManager:
         """Test setting an act as active."""
         # First, complete the existing active act
         act_manager.complete_act(act_id=test_act.id)
-        
+
         # Create a second act
         second_act = create_test_act(
             game_id=test_game.id,
@@ -321,10 +321,10 @@ class TestActManager:
         with session_context as session:
             # Create act manager with session
             act_manager = ActManager(session=session)
-            
+
             # First, complete the existing active act
             act_manager.complete_act(act_id=test_act.id)
-            
+
             # Create a second act
             second_act = create_test_act(
                 game_id=test_game.id,
