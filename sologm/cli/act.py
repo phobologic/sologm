@@ -760,25 +760,8 @@ def complete_act(
             return None
 
         # Show a preview of the edited content
-        from rich.panel import Panel
-
-        console.print("\n[bold]Preview of your edited content:[/bold]")
-
-        title_panel = Panel(
-            edited_results["title"],
-            title="[bold]Edited Title[/bold]",
-            border_style="green",
-            expand=False,
-        )
-        console.print(title_panel)
-
-        summary_panel = Panel(
-            edited_results["summary"],
-            title="[bold]Edited Summary[/bold]",
-            border_style="green",
-            expand=False,
-        )
-        console.print(summary_panel)
+        from sologm.cli.utils.display import display_act_edited_content_preview
+        display_act_edited_content_preview(console, edited_results)
 
         # Ask for confirmation
         from rich.prompt import Confirm
@@ -812,16 +795,9 @@ def complete_act(
         while True:
             from rich.prompt import Prompt
 
-            # Prompt user for action
-            choices = "(A)ccept, (E)dit, or (R)egenerate"
-            default_choice = "E"
-
-            choice = Prompt.ask(
-                f"[yellow]What would you like to do with this content?[/yellow] "
-                f"{choices}",
-                choices=["A", "E", "R", "a", "e", "r"],
-                default=default_choice,
-            ).upper()
+            # Get user choice using the display helper
+            from sologm.cli.utils.display import display_act_ai_feedback_prompt
+            choice = display_act_ai_feedback_prompt(console)
 
             logger.debug(f"User chose: {choice}")
 
@@ -871,33 +847,7 @@ def complete_act(
                     console.print("[yellow]Returning to previous content.[/yellow]")
                     continue
 
-    def _display_completion_success(completed_act: Act) -> None:
-        """Display success message after completing an act.
-
-        Args:
-            completed_act: The completed act
-        """
-
-        title_display = (
-            f"'{completed_act.title}'" if completed_act.title else "untitled"
-        )
-        console.print(
-            StyledText.title_success(f"Act {title_display} completed successfully!")
-        )
-
-        # Display completed act details with metadata formatting
-        metadata = {
-            "ID": completed_act.id,
-            "Sequence": f"Act {completed_act.sequence}",
-            "Status": "Completed",
-        }
-        console.print(StyledText.format_metadata(metadata))
-
-        # Display title and summary if present
-        if completed_act.title:
-            console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
-        if completed_act.summary:
-            console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
+        from sologm.cli.utils.display import display_act_completion_success
 
     def _check_existing_content(act: Act, force: bool) -> bool:
         """Check if act has existing content and confirm replacement if needed.
@@ -981,7 +931,7 @@ def complete_act(
                     )
 
                     # Display the generated content
-                    _display_ai_results(summary_data, active_act)
+                    display_act_ai_generation_results(console, summary_data, active_act)
 
                     # Handle user feedback
                     final_data = _handle_user_feedback_loop(
@@ -1000,7 +950,7 @@ def complete_act(
                     )
 
                     # Display success message
-                    _display_completion_success(completed_act)
+                    display_act_completion_success(console, completed_act)
                     return
 
                 except APIError as e:
