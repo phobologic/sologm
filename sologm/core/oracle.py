@@ -50,13 +50,9 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self._scene_manager = scene_manager
         self._event_manager = event_manager
 
-        # If no anthropic_client is provided, create one using the config
+        # If no anthropic_client is provided, create one
         if not anthropic_client:
-            from sologm.utils.config import get_config
-
-            config = get_config()
-            api_key = config.get("anthropic_api_key")
-            self.anthropic_client = AnthropicClient(api_key=api_key)
+            self.anthropic_client = AnthropicClient()
         else:
             self.anthropic_client = anthropic_client
 

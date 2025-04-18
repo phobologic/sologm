@@ -20,39 +20,29 @@ class AnthropicClient:
 
         Args:
             api_key: Optional API key. If not provided, will try to get from
-                    environment variable ANTHROPIC_API_KEY.
+                    config (which checks environment variables and config file).
 
         Raises:
             APIError: If no API key is found or if client initialization fails.
         """
         try:
-            self.api_key = api_key or self._get_api_key_from_env()
+            if api_key is None:
+                from sologm.utils.config import get_config
+                config = get_config()
+                api_key = config.get("anthropic_api_key")
+                if not api_key:
+                    raise APIError(
+                        "Anthropic API key not found. Please set the "
+                        "ANTHROPIC_API_KEY environment variable or add 'anthropic_api_key' "
+                        "to your configuration file."
+                    )
+            
+            self.api_key = api_key
             logger.debug("Initializing Anthropic client")
             self.client = Anthropic(api_key=self.api_key)
         except Exception as e:
             logger.error(f"Failed to initialize Anthropic client: {e}")
             raise APIError(f"Failed to initialize Anthropic client: {str(e)}") from e
-
-    def _get_api_key_from_env(self) -> str:
-        """Get the Anthropic API key from environment variables.
-
-        Returns:
-            str: The API key.
-
-        Raises:
-            APIError: If no API key is found in environment variables.
-        """
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-
-        if not api_key:
-            logger.error("Anthropic API key not found in environment variables")
-            raise APIError(
-                "Anthropic API key not found. Please set the "
-                "ANTHROPIC_API_KEY environment variable or add 'anthropic_api_key' "
-                "to your configuration file."
-            )
-
-        return api_key
 
     def send_message(
         self,
