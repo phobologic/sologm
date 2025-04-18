@@ -1017,9 +1017,18 @@ def complete_act(
 
         Returns:
             The completed act
+
+        Raises:
+            GameError: If there's an error completing the act
         """
         logger.debug(f"Completing act {act_id} with title and summary")
-        return act_manager.complete_act(act_id=act_id, title=title, summary=summary)
+        try:
+            completed_act = act_manager.complete_act(act_id=act_id, title=title, summary=summary)
+            logger.info(f"Successfully completed act {act_id}")
+            return completed_act
+        except GameError as e:
+            logger.error(f"Error completing act {act_id}: {str(e)}")
+            raise
 
     from sologm.database.session import get_db_context
 
@@ -1093,20 +1102,33 @@ def complete_act(
                             active_act.id, title, summary
                         )
 
-                        # Display success message
+                        # Display success message with styled text
+                        from sologm.cli.utils.styled_text import StyledText
+                        
                         title_display = (
                             f"'{completed_act.title}'"
                             if completed_act.title
                             else "untitled"
                         )
                         console.print(
-                            f"[bold green]Act {title_display} completed successfully with AI-generated content![/bold green]"
+                            StyledText.title_success(
+                                f"Act {title_display} completed successfully with AI-generated content!"
+                            )
                         )
 
-                        # Display completed act details
-                        console.print(f"ID: {completed_act.id}")
-                        console.print(f"Sequence: Act {completed_act.sequence}")
-                        console.print(f"Active: {completed_act.is_active}")
+                        # Display completed act details with metadata formatting
+                        metadata = {
+                            "ID": completed_act.id,
+                            "Sequence": f"Act {completed_act.sequence}",
+                            "Status": "Completed",
+                        }
+                        console.print(StyledText.format_metadata(metadata))
+                        
+                        # Display title and summary if present
+                        if completed_act.title:
+                            console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
+                        if completed_act.summary:
+                            console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
 
                         # Exit early since we've completed the act
                         return
@@ -1172,20 +1194,33 @@ def complete_act(
                                 active_act.id, title, summary
                             )
 
-                            # Display success message
+                            # Display success message with styled text
+                            from sologm.cli.utils.styled_text import StyledText
+                            
                             title_display = (
                                 f"'{completed_act.title}'"
                                 if completed_act.title
                                 else "untitled"
                             )
                             console.print(
-                                f"[bold green]Act {title_display} completed successfully with AI-generated content![/bold green]"
+                                StyledText.title_success(
+                                    f"Act {title_display} completed successfully with AI-generated content!"
+                                )
                             )
 
-                            # Display completed act details
-                            console.print(f"ID: {completed_act.id}")
-                            console.print(f"Sequence: Act {completed_act.sequence}")
-                            console.print(f"Active: {completed_act.is_active}")
+                            # Display completed act details with metadata formatting
+                            metadata = {
+                                "ID": completed_act.id,
+                                "Sequence": f"Act {completed_act.sequence}",
+                                "Status": "Completed",
+                            }
+                            console.print(StyledText.format_metadata(metadata))
+                            
+                            # Display title and summary if present
+                            if completed_act.title:
+                                console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
+                            if completed_act.summary:
+                                console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
 
                             # Exit early since we've completed the act
                             return
@@ -1253,30 +1288,37 @@ def complete_act(
             title = result.get("title") or None
             summary = result.get("summary") or None
 
-            # Complete the act
+            # Complete the act using the helper method
             try:
-                completed_act = act_manager.complete_act(
-                    act_id=active_act.id,
-                    title=title,
-                    summary=summary,
+                completed_act = _complete_act_with_data(
+                    active_act.id, title, summary
                 )
 
-                # Display success message
+                # Display success message with styled text
+                from sologm.cli.utils.styled_text import StyledText
+                    
                 title_display = (
                     f"'{completed_act.title}'" if completed_act.title else "untitled"
                 )
                 console.print(
-                    f"[bold green]Act {title_display} completed successfully![/bold green]"
+                    StyledText.title_success(
+                        f"Act {title_display} completed successfully!"
+                    )
                 )
 
-                # Display completed act details
-                console.print(f"ID: {completed_act.id}")
-                console.print(f"Sequence: Act {completed_act.sequence}")
-                console.print(f"Active: {completed_act.is_active}")
+                # Display completed act details with metadata formatting
+                metadata = {
+                    "ID": completed_act.id,
+                    "Sequence": f"Act {completed_act.sequence}",
+                    "Status": "Completed",
+                }
+                console.print(StyledText.format_metadata(metadata))
+                    
+                # Display title and summary if present
                 if completed_act.title:
-                    console.print(f"Title: {completed_act.title}")
+                    console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
                 if completed_act.summary:
-                    console.print(f"Summary: {completed_act.summary}")
+                    console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
 
             except GameError as e:
                 console.print(f"[red]Error:[/] {str(e)}")
