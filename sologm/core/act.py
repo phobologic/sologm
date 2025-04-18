@@ -669,10 +669,10 @@ class ActManager(BaseManager[Act, Act]):
             context += f"ELEMENTS TO PRESERVE:\n{elements_to_keep}\n\n"
 
         context += (
-            f"INSTRUCTIONS:\n"
-            f"Generate a new title and summary that addresses the user's feedback. "
-            f"Make sure your new generation is noticeably different from the previous one "
-            f"while incorporating any elements the user wants to preserve."
+            "INSTRUCTIONS:\n"
+            "Generate a new title and summary that addresses the user's feedback. "
+            "Make sure your new generation is noticeably different from the previous one "
+            "while incorporating any elements the user wants to preserve."
         )
 
         logger.debug(f"Regeneration context prepared: {context[:100]}...")

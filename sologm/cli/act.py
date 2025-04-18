@@ -839,7 +839,6 @@ def complete_act(
         Args:
             completed_act: The completed act
         """
-        from sologm.cli.utils.styled_text import StyledText
 
         title_display = (
             f"'{completed_act.title}'" if completed_act.title else "untitled"
@@ -895,8 +894,8 @@ def complete_act(
         )
 
     # Main command flow
-    from sologm.database.session import get_db_context
     from sologm.cli.utils.styled_text import StyledText
+    from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
     with get_db_context() as session:
