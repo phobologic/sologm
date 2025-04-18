@@ -5,7 +5,7 @@ allowing users to export their game content for documentation or sharing purpose
 """
 
 import logging
-from typing import List, Optional
+from typing import List
 
 from sologm.core.event import EventManager
 from sologm.core.scene import SceneManager

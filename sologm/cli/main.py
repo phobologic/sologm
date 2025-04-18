@@ -26,6 +26,7 @@ app = typer.Typer(
     help="Solo RPG Helper command-line application",
     add_completion=True,
     no_args_is_help=True,
+    rich_markup_mode="rich",
 )
 
 

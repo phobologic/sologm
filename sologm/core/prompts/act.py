@@ -60,7 +60,7 @@ SCENES IN THIS ACT:
         prompt += """
 TASK:
 1. Create a compelling title for this act (1-7 words)
-2. Write a concise summary of the act (1-3 paragraphs)
+2. Write a concise summary of the act (3-5 paragraphs)
 
 The title should capture the essence or theme of the act.
 The summary should highlight key events, character developments, and narrative arcs.
@@ -70,7 +70,7 @@ Format your response exactly as follows:
 TITLE: [Your suggested title]
 
 SUMMARY:
-[Your 1-3 paragraph summary]
+[Your 3-5 paragraph summary]
 
 Do not include any other text or explanations outside this format.
 """
