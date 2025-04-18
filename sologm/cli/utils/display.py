@@ -15,6 +15,7 @@ from sologm.core.oracle import Interpretation, InterpretationSet
 from sologm.core.scene import Scene, SceneManager
 from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
+from sologm.models.scene import SceneStatus
 
 if TYPE_CHECKING:
     from sologm.core.oracle import OracleManager
