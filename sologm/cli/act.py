@@ -866,10 +866,6 @@ def complete_act(
                         "No context provided via command line, collecting interactively"
                     )
                     context = _collect_user_context(active_act, active_game.name)
-                    if context is None:
-                        console.print("[yellow]Operation cancelled.[/yellow]")
-                        return
-
                 try:
                     # Generate summary using AI
                     console.print("[yellow]Generating summary with AI...[/yellow]")
