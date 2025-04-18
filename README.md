@@ -2,6 +2,10 @@
 
 A command-line application designed to assist players of solo or GM-less roleplaying games by tracking game scenes, providing dice rolling functionality, and leveraging AI to help interpret "oracle" results.
 
+![Example output of the sologm game status command](sologm_game_status.png)
+
+*Example output of the `sologm game status` command, showing the current state of an active game.*
+
 ## Features
 
 - **Game Management**: Create, list, activate, edit, and export games to organize your solo RPG sessions. View game status.
