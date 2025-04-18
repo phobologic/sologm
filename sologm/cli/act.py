@@ -26,6 +26,7 @@ from sologm.cli.utils.structured_editor import (
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
 from sologm.models.act import Act
+from sologm.models.game import Game  # <-- Add this line
 from sologm.utils.errors import APIError, GameError
 
 logger = logging.getLogger(__name__)
