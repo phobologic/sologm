@@ -288,6 +288,22 @@ export SOLOGM_DATABASE_URL="sqlite:////path/to/my/custom_sologm.db"
 sologm game list
 ```
 
+## Development Conventions
+
+This project follows a set of coding and design conventions to ensure consistency, maintainability, and quality. These are documented in the `conventions/` directory. Contributors should familiarize themselves with these guidelines:
+
+*   **[Architecture (`conventions/architecture.md`)](conventions/architecture.md):** Describes the separation of concerns between the CLI (user interaction) and Manager (business logic) layers.
+*   **[CLI Conventions (`conventions/cli.md`)](conventions/cli.md):** Outlines patterns for command structure, parameter handling (options vs. editor), structured editor usage, display output, and error handling within the command-line interface.
+*   **[Code Style (`conventions/code_style.md`)](conventions/code_style.md):** Details Python code formatting (line length, whitespace, quotes), import ordering, naming conventions (PEP 8), docstring standards (Google Style), commenting, and type hinting usage.
+*   **[Database Access (`conventions/database_access.md`)](conventions/database_access.md):** Explains session management (`get_db_context`), the Manager pattern for database interactions, transaction boundaries (`_execute_db_operation`), and common query patterns.
+*   **[Display Design (`conventions/display.md`)](conventions/display.md):** Covers UI and output formatting using Rich, including panel structure, the `StyledText` helper class, border styles, layout patterns (grids, tables), and text truncation.
+*   **[Documentation (`conventions/documentation.md`)](conventions/documentation.md):** Specifies standards for writing docstrings (Google Style) and application logging practices (levels, formatting, content).
+*   **[Error Handling (`conventions/error_handling.md`)](conventions/error_handling.md):** Defines how exceptions should be handled, propagated, and presented to the user, particularly in the CLI.
+*   **[Manager Pattern (`conventions/managers.md`)](conventions/managers.md):** Details the design of Manager classes for encapsulating business logic, including base class usage, session handling, and lazy initialization of related managers.
+*   **[Models (`conventions/models.md`)](conventions/models.md):** Outlines conventions for defining SQLAlchemy ORM models, including primary keys, relationships (owning vs. non-owning), and the use of hybrid properties.
+*   **[Testing (`conventions/testing.md`)](conventions/testing.md):** Describes the testing strategy, focusing on testing Manager logic with session injection and avoiding direct CLI tests. Includes fixture patterns.
+*   **[Type Annotations (`conventions/type_annotations.md`)](conventions/type_annotations.md):** Specifies the requirements for using Python type hints, including function signatures, containers, `Optional`/`Union`, and SQLAlchemy `Mapped` types.
+
 ## Project Documentation
 
 This project was developed using a comprehensive documentation-driven approach:
