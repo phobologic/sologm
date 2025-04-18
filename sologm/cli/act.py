@@ -555,9 +555,27 @@ def complete_act(
     def _handle_ai_generation(
         act_id: str, user_context: Optional[str]
     ) -> Dict[str, str]:
-        """Handle the AI generation process for act summary and title."""
-        # Will be implemented in later phases
-        return {"title": "", "summary": ""}
+        """Handle the AI generation process for act summary and title.
+        
+        Args:
+            act_id: ID of the act to generate summary for
+            user_context: Optional additional context from the user
+            
+        Returns:
+            Dictionary containing generated title and summary
+            
+        Raises:
+            APIError: If there's an error with the AI API
+        """
+        logger.debug(f"Handling AI generation for act {act_id}")
+        try:
+            # Generate summary using the ActManager
+            summary_data = act_manager.generate_act_summary(act_id, user_context)
+            logger.debug(f"Generated summary data: {summary_data}")
+            return summary_data
+        except Exception as e:
+            logger.error(f"Error in AI generation: {str(e)}", exc_info=True)
+            raise
 
     def _collect_context(act: Act, game_name: str) -> Optional[str]:
         """Collect context from the user for AI generation."""
@@ -579,8 +597,17 @@ def complete_act(
     def _complete_act_with_data(
         act_id: str, title: Optional[str], summary: Optional[str]
     ) -> Act:
-        """Complete the act with the provided data."""
-        # Will be implemented in later phases
+        """Complete the act with the provided data.
+        
+        Args:
+            act_id: ID of the act to complete
+            title: Optional title for the completed act
+            summary: Optional summary for the completed act
+            
+        Returns:
+            The completed act
+        """
+        logger.debug(f"Completing act {act_id} with title and summary")
         return act_manager.complete_act(act_id=act_id, title=title, summary=summary)
 
     from sologm.database.session import get_db_context
