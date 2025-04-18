@@ -52,6 +52,42 @@ SoloGM integrates AI (currently Anthropic's Claude) to assist your creative proc
 
 *Note: The AI acts as a creative assistant and summarizer; it does not make decisions or play the game for you.*
 
+### Using Game Data with External AI
+
+The `sologm game dump` command outputs your game's structure (acts, scenes, events) in a clean markdown format. This structured text is ideal for use with external AI tools like Anthropic's Claude or OpenAI's ChatGPT to perform tasks like:
+
+*   Generating narrative prose based on game events.
+*   Summarizing specific acts or the entire game in different styles.
+*   Brainstorming plot twists or character motivations based on existing data.
+*   Analyzing game events for patterns or themes.
+
+**Example Workflow: Generating Narrative with Claude**
+
+1.  Dump the game data to your clipboard:
+    ```bash
+    # On macOS
+    sologm game dump | pbcopy
+    # On Linux (requires xclip)
+    # sologm game dump | xclip -selection clipboard
+    # On Windows (PowerShell)
+    # sologm game dump | Set-Clipboard
+    ```
+2.  Paste the markdown content into your AI chat interface (e.g., Claude.ai).
+3.  Provide a prompt asking the AI to use the data. For example:
+    > "Using the provided game log, write a narrative story focusing on the events of Act 1 from Marcus's perspective."
+
+**Example Result:**
+
+The output of the 'Sweetwater Vale' game (shown in the status image above) was processed this way using Claude.
+
+*   **See the resulting story artifact here:**
+    [Claude Artifact: Sweetwater Vale - Act 1 Narrative](https://claude.site/artifacts/b3884460-c7ea-4a3d-876e-a4e7f47a4dc6)
+
+*   **Snippet from the generated story:**
+    > The familiar din of The Golden Deer Tavern enveloped Marcus Autumnvale like a well-worn cloak. Evening shadows stretched across the worn floorboards as he finished his third—or perhaps fourth—cup of apple brandy. The warm glow of the hearth fire caught the amber liquid, reminding him of days when the Autumnvale name commanded respect rather than whispers of faded glory.
+
+This demonstrates how SoloGM's structured data export can serve as a powerful foundation for further AI-assisted creative writing and analysis.
+
 ## Installation
 
 ### From PyPI (Coming Soon)
