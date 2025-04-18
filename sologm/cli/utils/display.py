@@ -1,4 +1,4 @@
-"""Display helpers for CLI output."""
+sologm/cli/utils/display.py"""Display helpers for CLI output."""
 
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
