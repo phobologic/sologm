@@ -175,6 +175,87 @@ def retry_interpretation(
         raise typer.Exit(1) from e
 
 
+@oracle_app.command("list")
+def list_interpretation_sets(
+    act_id: Optional[str] = typer.Option(
+        None, "--act-id", "-a", help="ID of the act to list interpretations from"
+    ),
+    scene_id: Optional[str] = typer.Option(
+        None, "--scene-id", "-s", help="ID of the scene to list interpretations from"
+    ),
+    limit: int = typer.Option(
+        10, "--limit", "-l", help="Maximum number of interpretation sets to show"
+    ),
+) -> None:
+    """List oracle interpretation sets for the current scene or act.
+    
+    If neither scene-id nor act-id is provided, uses the active scene.
+    """
+    from sologm.database.session import get_db_context
+
+    try:
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            oracle_manager = OracleManager(session=session)
+            
+            # If neither scene_id nor act_id is provided, use active context
+            if not scene_id and not act_id:
+                try:
+                    active_scene, active_act, _ = oracle_manager.get_active_context()
+                    scene_id = active_scene.id
+                    act_id = active_act.id
+                except OracleError as e:
+                    console.print(f"[red]Error: {str(e)}[/red]")
+                    console.print("[yellow]Please specify --scene-id or --act-id[/yellow]")
+                    raise typer.Exit(1) from e
+            
+            # Get interpretation sets
+            interp_sets = oracle_manager.list_interpretation_sets(
+                scene_id=scene_id,
+                act_id=act_id,
+                limit=limit
+            )
+            
+            if not interp_sets:
+                if scene_id:
+                    console.print(f"[yellow]No interpretation sets found for scene ID: {scene_id}[/yellow]")
+                else:
+                    console.print(f"[yellow]No interpretation sets found for act ID: {act_id}[/yellow]")
+                raise typer.Exit(0)
+            
+            # Display the interpretation sets
+            display.display_interpretation_sets_table(console, interp_sets)
+            
+    except OracleError as e:
+        logger.error(f"Failed to list interpretation sets: {e}")
+        console.print(f"[red]Error: {str(e)}[/red]")
+        raise typer.Exit(1) from e
+
+
+@oracle_app.command("show")
+def show_interpretation_set(
+    set_id: str = typer.Argument(..., help="ID of the interpretation set to show"),
+) -> None:
+    """Show details of a specific interpretation set."""
+    from sologm.database.session import get_db_context
+
+    try:
+        # Use a single session for the entire command
+        with get_db_context() as session:
+            oracle_manager = OracleManager(session=session)
+            
+            # Get the interpretation set
+            interp_set = oracle_manager.get_interpretation_set(set_id)
+            
+            # Display the interpretation set
+            display.display_interpretation_set(console, interp_set, show_context=True)
+            
+    except OracleError as e:
+        logger.error(f"Failed to show interpretation set: {e}")
+        console.print(f"[red]Error: {str(e)}[/red]")
+        raise typer.Exit(1) from e
+
+
 @oracle_app.command("status")
 def show_interpretation_status() -> None:
     """Show current interpretation set status."""
