@@ -25,6 +25,29 @@ SoloGM organizes your solo roleplaying sessions using a hierarchical structure:
 
 Understanding this hierarchy helps clarify why certain commands require an active game, act, or scene. For example, `sologm event add` needs to know the *current scene* to associate the event correctly. Commands like `sologm game activate`, `sologm act create` (which activates the new act), and `sologm scene set-current` are used to manage this context.
 
+## AI-Powered Features
+
+SoloGM integrates AI (currently Anthropic's Claude) to assist your creative process and streamline game management. Using these features requires configuring an API key (see [Configuration](#configuration)).
+
+### Oracle Interpretation (`sologm oracle interpret`)
+
+*   **Purpose:** Helps turn abstract oracle results (like keywords, dice results, or card draws) into concrete narrative events or answers relevant to your game's situation.
+*   **How it Works:** When you provide a question/context (`--context`) and the oracle's raw result (`--results`), the command sends this information, along with details about the current scene (description, recent events), to the AI. The AI generates multiple possible interpretations (controlled by `--count`).
+*   **Interaction:** You can review the generated interpretations. The `sologm oracle select` command allows you to choose one interpretation, optionally edit it, and add it directly as a new Event in the current scene. `sologm oracle retry` lets you request new interpretations, potentially refining the context first (`--edit`).
+*   **Benefit:** Overcomes creative blocks and helps weave abstract prompts seamlessly into your ongoing narrative.
+
+### Act Completion Summarization (`sologm act complete --ai`)
+
+*   **Purpose:** Automatically generates a concise title and a narrative summary for an entire Act when you mark it as complete.
+*   **How it Works:** When invoked with the `--ai` flag, the command gathers the details of all Scenes and Events within the Act being completed. This data, potentially augmented by your specific instructions (`--context`), is sent to the AI with a request to synthesize a title and summary capturing the Act's key developments and story arc.
+*   **Interaction:** The AI-generated title and summary are presented to you. You then enter an interactive loop where you can:
+    *   **Accept (A):** Use the generated content as is.
+    *   **Edit (E):** Modify the generated title and/or summary in your text editor.
+    *   **Regenerate (R):** Ask the AI to try again, optionally providing specific feedback on what to change or keep.
+*   **Benefit:** Saves significant time compared to manually reviewing all act content. Provides a consistent narrative summary, useful for tracking the story's progression and for later review (e.g., using `sologm game dump`).
+
+*Note: The AI acts as a creative assistant and summarizer; it does not make decisions or play the game for you.*
+
 ## Installation
 
 ### From PyPI (Coming Soon)
@@ -127,16 +150,21 @@ sologm act edit
 # Edit a specific act by ID, setting only the title
 sologm act edit --id the-first-clue --title "The Digital Ghost"
 
-# Complete the current act (opens editor for final title/summary)
+# Complete the current act, marking it as finished.
+# This prepares the game for the next act. You can provide a final
+# title and summary manually via an editor, or use AI.
 sologm act complete
 
-# Complete act with AI-generated title and summary
+# Use AI (--ai) to analyze all scenes and events within the completed act
+# and generate a suggested title and narrative summary. This saves time
+# and helps create a cohesive overview of the act's story arc.
+# The command presents the AI suggestions for you to accept, edit, or regenerate.
 sologm act complete --ai
 
-# Complete act with AI, providing additional context
+# Guide the AI summary generation by providing additional context.
 sologm act complete --ai --context "Focus on the betrayal by the informant"
 
-# Force AI completion, overwriting existing title/summary
+# Force AI generation, overwriting any existing title/summary without prompting.
 sologm act complete --ai --force
 ```
 
