@@ -421,33 +421,8 @@ def complete_act(
     """
     logger.debug("Completing act")
 
-    # Helper methods for AI generation flow
-    def _handle_ai_generation(
-        act_id: str, user_context: Optional[str]
-    ) -> Dict[str, str]:
-        """Handle the AI generation process for act summary and title.
-
-        Args:
-            act_id: ID of the act to generate summary for
-            user_context: Optional additional context from the user
-
-        Returns:
-            Dictionary containing generated title and summary
-
-        Raises:
-            APIError: If there's an error with the AI API
-        """
-        logger.debug(f"Handling AI generation for act {act_id}")
-        try:
-            # Generate summary using the ActManager
-            summary_data = act_manager.generate_act_summary(act_id, user_context)
-            logger.debug(f"Generated summary data: {summary_data}")
-            return summary_data
-        except Exception as e:
-            logger.error(f"Error in AI generation: {str(e)}", exc_info=True)
-            raise
-
-    def _collect_context(act: Act, game_name: str) -> Optional[str]:
+    # Helper methods for UI interaction
+    def _collect_user_context(act: Act, game_name: str) -> Optional[str]:
         """Collect context from the user for AI generation.
 
         Opens a structured editor to allow the user to provide additional context
@@ -514,17 +489,14 @@ def complete_act(
         )
         return user_context if user_context else None
 
-    def _process_ai_results(results: Dict[str, str], act: Act) -> None:
-        """Process and display AI-generated content.
-
-        Formats and displays the AI-generated title and summary with appropriate styling.
-        If the act already has a title or summary, displays them for comparison.
+    def _display_ai_results(results: Dict[str, str], act: Act) -> None:
+        """Display AI-generated content with appropriate styling.
 
         Args:
             results: Dictionary containing generated title and summary
             act: The act being completed
         """
-        logger.debug("Processing AI results for display")
+        logger.debug("Displaying AI results")
 
         from rich.panel import Panel
 
@@ -574,14 +546,10 @@ def complete_act(
                 )
                 console.print(existing_summary_panel)
 
-    def _collect_regeneration_context(
+    def _collect_regeneration_feedback(
         results: Dict[str, str], act: Act, game_name: str
-    ) -> Optional[str]:
-        """Collect context for regenerating AI content.
-
-        Opens a structured editor to allow the user to provide feedback on how they
-        want the new generation to differ from the previous one. Includes the previously
-        generated content as reference.
+    ) -> Optional[Dict[str, str]]:
+        """Collect feedback for regenerating AI content.
 
         Args:
             results: Dictionary containing previously generated title and summary
@@ -589,11 +557,11 @@ def complete_act(
             game_name: Name of the game the act belongs to
 
         Returns:
-            The user-provided regeneration context, or None if the user cancels
+            Dictionary with feedback and elements to keep, or None if user cancels
         """
-        logger.debug("Collecting regeneration context")
+        logger.debug("Collecting regeneration feedback")
 
-        # Create editor configuration with improved guidance
+        # Create editor configuration
         editor_config = StructuredEditorConfig(
             fields=[
                 FieldConfig(
@@ -614,7 +582,7 @@ def complete_act(
             wrap_width=70,
         )
 
-        # Create enhanced context information header with more guidance
+        # Create context information header
         title_display = act.title or "Untitled Act"
         context_info = (
             f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
@@ -639,13 +607,13 @@ def complete_act(
             if act.summary:
                 context_info += f"Summary: {act.summary}\n"
 
-        # Create initial data with suggested structure
+        # Create initial data
         initial_data = {
             "feedback": "I'd like the new generation to...",
             "keep_elements": "",
         }
 
-        # Open editor with improved configuration
+        # Open editor
         result, modified = edit_structured_data(
             initial_data,
             console,
@@ -660,28 +628,18 @@ def complete_act(
         )
 
         if not modified:
-            logger.debug("User cancelled regeneration context collection")
+            logger.debug("User cancelled regeneration feedback collection")
             return None
 
-        feedback = result.get("feedback", "").strip()
-        keep_elements = result.get("keep_elements", "").strip()
+        return {
+            "feedback": result.get("feedback", "").strip(),
+            "keep_elements": result.get("keep_elements", "").strip(),
+        }
 
-        # Combine feedback and keep_elements into a structured format
-        combined_feedback = feedback
-        if keep_elements:
-            combined_feedback += f"\n\nELEMENTS TO PRESERVE:\n{keep_elements}"
-
-        logger.debug(
-            f"Collected regeneration feedback: {combined_feedback[:50]}{'...' if len(combined_feedback) > 50 else ''}"
-        )
-        return combined_feedback if combined_feedback else None
-
-    def _handle_user_feedback(
+    def _edit_ai_content(
         results: Dict[str, str], act: Act, game_name: str
     ) -> Optional[Dict[str, str]]:
-        """Handle user feedback on AI-generated content.
-
-        Prompts the user to accept, edit, or regenerate the AI-generated content.
+        """Allow user to edit AI-generated content.
 
         Args:
             results: Dictionary containing generated title and summary
@@ -689,224 +647,253 @@ def complete_act(
             game_name: Name of the game the act belongs to
 
         Returns:
-            Optional dictionary with updated title and summary, or None if user cancels
+            Dictionary with edited title and summary, or None if user cancels
         """
-        logger.debug("Handling user feedback on AI-generated content")
+        logger.debug("Opening editor for AI content")
 
-        from rich.prompt import Prompt
-
-        # Prompt user for action
-        choices = "(A)ccept, (E)dit, or (R)egenerate"
-        default_choice = "E"
-
-        choice = Prompt.ask(
-            f"[yellow]What would you like to do with this content?[/yellow] {choices}",
-            choices=["A", "E", "R", "a", "e", "r"],
-            default=default_choice,
-        ).upper()
-
-        logger.debug(f"User chose: {choice}")
-
-        if choice == "A":  # Accept
-            logger.debug("User accepted the generated content")
-            return results
-
-        elif choice == "E":  # Edit
-            logger.debug("User chose to edit the generated content")
-
-            # Create editor configuration with improved help text
-            editor_config = StructuredEditorConfig(
-                fields=[
-                    FieldConfig(
-                        name="title",
-                        display_name="Title",
-                        help_text="Edit the AI-generated title (1-7 words recommended)",
-                        required=True,
-                    ),
-                    FieldConfig(
-                        name="summary",
-                        display_name="Summary",
-                        help_text="Edit the AI-generated summary (1-3 paragraphs recommended)",
-                        multiline=True,
-                        required=True,
-                    ),
-                ],
-                wrap_width=70,
-            )
-
-            # Create enhanced context information with more guidance
-            title_display = act.title or "Untitled Act"
-            context_info = f"Editing AI-Generated Content for Act {act.sequence}: {title_display}\n"
-            context_info += f"Game: {game_name}\n"
-            context_info += f"ID: {act.id}\n\n"
-            context_info += "Edit the AI-generated title and summary below.\n"
-            context_info += "- The title should capture the essence or theme of the act (1-7 words)\n"
-            context_info += "- The summary should highlight key events and narrative arcs (1-3 paragraphs)\n"
-
-            # Add original content as comments if it exists
-            original_data = {}
-            if act.title:
-                original_data["title"] = act.title
-            if act.summary:
-                original_data["summary"] = act.summary
-
-            # Open editor with the generated content and improved configuration
-            edited_results, modified = edit_structured_data(
-                results,
-                console,
-                editor_config,
-                context_info=context_info,
-                original_data=original_data if original_data else None,
-                editor_config=EditorConfig(
-                    message="Edit the AI-generated content below:",
-                    success_message="AI-generated content updated successfully.",
-                    cancel_message="Edit cancelled. Returning to previous options.",
-                    error_message="Could not open editor. Please try again.",
+        # Create editor configuration
+        editor_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(
+                    name="title",
+                    display_name="Title",
+                    help_text="Edit the AI-generated title (1-7 words recommended)",
+                    required=True,
                 ),
-            )
+                FieldConfig(
+                    name="summary",
+                    display_name="Summary",
+                    help_text="Edit the AI-generated summary (1-3 paragraphs recommended)",
+                    multiline=True,
+                    required=True,
+                ),
+            ],
+            wrap_width=70,
+        )
 
-            if not modified:
-                logger.debug("User cancelled editing")
-                console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
-                # Recursive call to handle user feedback again
-                return _handle_user_feedback(results, act, game_name)
+        # Create context information
+        title_display = act.title or "Untitled Act"
+        context_info = f"Editing AI-Generated Content for Act {act.sequence}: {title_display}\n"
+        context_info += f"Game: {game_name}\n"
+        context_info += f"ID: {act.id}\n\n"
+        context_info += "Edit the AI-generated title and summary below.\n"
+        context_info += "- The title should capture the essence or theme of the act (1-7 words)\n"
+        context_info += "- The summary should highlight key events and narrative arcs (1-3 paragraphs)\n"
 
-            # Validate the edited content
-            if (
-                not edited_results.get("title")
-                or not edited_results.get("title").strip()
-            ):
-                console.print("[red]Error:[/] Title cannot be empty. Please try again.")
-                return _handle_user_feedback(results, act, game_name)
+        # Add original content as comments if it exists
+        original_data = {}
+        if act.title:
+            original_data["title"] = act.title
+        if act.summary:
+            original_data["summary"] = act.summary
 
-            if (
-                not edited_results.get("summary")
-                or not edited_results.get("summary").strip()
-            ):
-                console.print(
-                    "[red]Error:[/] Summary cannot be empty. Please try again."
-                )
-                return _handle_user_feedback(results, act, game_name)
+        # Open editor
+        edited_results, modified = edit_structured_data(
+            results,
+            console,
+            editor_config,
+            context_info=context_info,
+            original_data=original_data if original_data else None,
+            editor_config=EditorConfig(
+                message="Edit the AI-generated content below:",
+                success_message="AI-generated content updated successfully.",
+                cancel_message="Edit cancelled.",
+                error_message="Could not open editor. Please try again.",
+            ),
+        )
 
-            logger.debug("User edited the content")
+        if not modified:
+            logger.debug("User cancelled editing")
+            return None
 
-            # Show a preview of the edited content
-            from rich.panel import Panel
+        # Validate the edited content
+        if not edited_results.get("title") or not edited_results.get("title").strip():
+            console.print("[red]Error:[/] Title cannot be empty.")
+            return None
 
-            console.print("\n[bold]Preview of your edited content:[/bold]")
+        if not edited_results.get("summary") or not edited_results.get("summary").strip():
+            console.print("[red]Error:[/] Summary cannot be empty.")
+            return None
 
-            title_panel = Panel(
-                edited_results["title"],
-                title="[bold]Edited Title[/bold]",
-                border_style="green",
-                expand=False,
-            )
-            console.print(title_panel)
+        # Show a preview of the edited content
+        from rich.panel import Panel
 
-            summary_panel = Panel(
-                edited_results["summary"],
-                title="[bold]Edited Summary[/bold]",
-                border_style="green",
-                expand=False,
-            )
-            console.print(summary_panel)
+        console.print("\n[bold]Preview of your edited content:[/bold]")
 
-            # Ask for confirmation
-            from rich.prompt import Confirm
+        title_panel = Panel(
+            edited_results["title"],
+            title="[bold]Edited Title[/bold]",
+            border_style="green",
+            expand=False,
+        )
+        console.print(title_panel)
 
-            if Confirm.ask(
-                "[yellow]Use this edited content?[/yellow]",
-                default=True,
-            ):
-                logger.debug("User confirmed edited content")
-                return edited_results
-            else:
-                logger.debug("User rejected edited content")
-                console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
-                return _handle_user_feedback(results, act, game_name)
+        summary_panel = Panel(
+            edited_results["summary"],
+            title="[bold]Edited Summary[/bold]",
+            border_style="green",
+            expand=False,
+        )
+        console.print(summary_panel)
 
-        elif choice == "R":  # Regenerate
-            logger.debug("User chose to regenerate content")
+        # Ask for confirmation
+        from rich.prompt import Confirm
 
-            # Collect regeneration context
-            regeneration_context = _collect_regeneration_context(
-                results, act, game_name
-            )
+        if Confirm.ask(
+            "[yellow]Use this edited content?[/yellow]",
+            default=True,
+        ):
+            logger.debug("User confirmed edited content")
+            return edited_results
+        else:
+            logger.debug("User rejected edited content")
+            return None
 
-            if regeneration_context is None:
-                logger.debug("User cancelled regeneration context collection")
-                console.print(
-                    "[yellow]Regeneration cancelled. Returning to prompt.[/yellow]"
-                )
-                # Recursive call to handle user feedback again
-                return _handle_user_feedback(results, act, game_name)
-
-            # Generate new content with the updated context
-            try:
-                console.print("[yellow]Regenerating summary with AI...[/yellow]")
-
-                # Include previous generation in context with structured format
-                full_context = (
-                    f"PREVIOUS GENERATION:\n"
-                    f"Title: {results.get('title', '')}\n"
-                    f"Summary: {results.get('summary', '')}\n\n"
-                    f"USER FEEDBACK:\n{regeneration_context}\n\n"
-                    f"INSTRUCTIONS:\n"
-                    f"Generate a new title and summary that addresses the user's feedback. "
-                    f"Make sure your new generation is noticeably different from the previous one "
-                    f"while incorporating any elements the user wants to preserve."
-                )
-
-                # Generate new summary
-                new_results = _handle_ai_generation(act.id, full_context)
-
-                # Display the new results
-                _process_ai_results(new_results, act)
-
-                # Handle feedback on the new results
-                return _handle_user_feedback(new_results, act, game_name)
-
-            except APIError as e:
-                console.print(f"[red]AI Error:[/] {str(e)}")
-                console.print("[yellow]Returning to previous content.[/yellow]")
-                # Return to previous content
-                return _handle_user_feedback(results, act, game_name)
-
-        # Should never reach here due to Prompt validation
-        return results
-
-    def _complete_act_with_data(
-        act_id: str, title: Optional[str], summary: Optional[str]
-    ) -> Act:
-        """Complete the act with the provided data.
+    def _handle_user_feedback_loop(
+        results: Dict[str, str], act: Act, game_name: str, act_manager: ActManager
+    ) -> Optional[Dict[str, str]]:
+        """Handle the accept/edit/regenerate feedback loop.
 
         Args:
-            act_id: ID of the act to complete
-            title: Optional title for the completed act
-            summary: Optional summary for the completed act
+            results: Dictionary containing generated title and summary
+            act: The act being completed
+            game_name: Name of the game the act belongs to
+            act_manager: ActManager instance for business logic
 
         Returns:
-            The completed act
-
-        Raises:
-            GameError: If there's an error completing the act
+            Final dictionary with title and summary, or None if user cancels
         """
-        logger.debug(f"Completing act {act_id} with title and summary")
-        try:
-            completed_act = act_manager.complete_act(
-                act_id=act_id, title=title, summary=summary
-            )
-            logger.info(f"Successfully completed act {act_id}")
-            return completed_act
-        except GameError as e:
-            logger.error(f"Error completing act {act_id}: {str(e)}")
-            raise
+        logger.debug("Starting user feedback loop")
 
+        while True:
+            from rich.prompt import Prompt
+
+            # Prompt user for action
+            choices = "(A)ccept, (E)dit, or (R)egenerate"
+            default_choice = "E"
+
+            choice = Prompt.ask(
+                f"[yellow]What would you like to do with this content?[/yellow] {choices}",
+                choices=["A", "E", "R", "a", "e", "r"],
+                default=default_choice,
+            ).upper()
+
+            logger.debug(f"User chose: {choice}")
+
+            if choice == "A":  # Accept
+                logger.debug("User accepted the generated content")
+                return results
+
+            elif choice == "E":  # Edit
+                logger.debug("User chose to edit the generated content")
+                edited_results = _edit_ai_content(results, act, game_name)
+                
+                if edited_results:
+                    return edited_results
+                
+                # If editing was cancelled, return to the prompt
+                console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
+                continue
+
+            elif choice == "R":  # Regenerate
+                logger.debug("User chose to regenerate content")
+                
+                # Collect regeneration feedback
+                feedback_data = _collect_regeneration_feedback(results, act, game_name)
+                
+                if not feedback_data:
+                    console.print("[yellow]Regeneration cancelled. Returning to prompt.[/yellow]")
+                    continue
+                
+                try:
+                    console.print("[yellow]Regenerating summary with AI...[/yellow]")
+                    
+                    # Generate new content with feedback
+                    new_results = act_manager.generate_act_summary_with_feedback(
+                        act.id,
+                        feedback_data["feedback"],
+                        previous_generation=results
+                    )
+                    
+                    # Display the new results
+                    _display_ai_results(new_results, act)
+                    
+                    # Continue the loop with the new results
+                    results = new_results
+                    
+                except APIError as e:
+                    console.print(f"[red]AI Error:[/] {str(e)}")
+                    console.print("[yellow]Returning to previous content.[/yellow]")
+                    continue
+
+    def _display_completion_success(completed_act: Act) -> None:
+        """Display success message after completing an act.
+
+        Args:
+            completed_act: The completed act
+        """
+        from sologm.cli.utils.styled_text import StyledText
+        
+        title_display = f"'{completed_act.title}'" if completed_act.title else "untitled"
+        console.print(
+            StyledText.title_success(
+                f"Act {title_display} completed successfully!"
+            )
+        )
+
+        # Display completed act details with metadata formatting
+        metadata = {
+            "ID": completed_act.id,
+            "Sequence": f"Act {completed_act.sequence}",
+            "Status": "Completed",
+        }
+        console.print(StyledText.format_metadata(metadata))
+
+        # Display title and summary if present
+        if completed_act.title:
+            console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
+        if completed_act.summary:
+            console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
+
+    def _check_existing_content(act: Act, force: bool) -> bool:
+        """Check if act has existing content and confirm replacement if needed.
+
+        Args:
+            act: The act to check
+            force: Whether to force replacement without confirmation
+
+        Returns:
+            True if should proceed, False if cancelled
+        """
+        if force:
+            return True
+            
+        has_title = act.title is not None and act.title.strip() != ""
+        has_summary = act.summary is not None and act.summary.strip() != ""
+        
+        if not has_title and not has_summary:
+            return True
+            
+        if has_title and has_summary:
+            confirm_message = "This will replace your existing title and summary."
+        elif has_title:
+            confirm_message = "This will replace your existing title."
+        else:
+            confirm_message = "This will replace your existing summary."
+
+        from rich.prompt import Confirm
+        return Confirm.ask(
+            f"[yellow]{confirm_message} Continue?[/yellow]", 
+            default=False
+        )
+
+    # Main command flow
     from sologm.database.session import get_db_context
+    from sologm.cli.utils.styled_text import StyledText
 
     # Use a single session for the entire command
     with get_db_context() as session:
-        # Initialize manager with the session
+        # Initialize managers with the session
         game_manager = GameManager(session=session)
         act_manager = ActManager(session=session)
 
@@ -919,233 +906,89 @@ def complete_act(
 
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
-                console.print(
-                    f"[red]Error:[/] No active act in game '{active_game.name}'."
-                )
+                console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
                 console.print("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
 
             # Handle AI generation if requested
             if ai:
+                # Check if we should proceed with generation
+                if not _check_existing_content(active_act, force):
+                    console.print("[yellow]Operation cancelled.[/yellow]")
+                    return
+                
                 # If no context was provided via command line, collect it interactively
                 if not context:
-                    logger.debug(
-                        "No context provided via command line, collecting interactively"
-                    )
-                    context = _collect_context(active_act, active_game.name)
-                    if context:
-                        logger.debug(
-                            f"Context collected interactively: {context[:50]}{'...' if len(context) > 50 else ''}"
-                        )
-                else:
-                    logger.debug(
-                        f"Context provided via command line: {context[:50]}{'...' if len(context) > 50 else ''}"
-                    )
-
-                # Check if we should generate title/summary
-                should_generate_title = force or not active_act.title
-                should_generate_summary = force or not active_act.summary
-
-                if should_generate_title or should_generate_summary:
-                    try:
-                        console.print("[yellow]Generating summary with AI...[/yellow]")
-
-                        # Generate summary using AI
-                        summary_data = _handle_ai_generation(active_act.id, context)
-
-                        # Display the generated content
-                        _process_ai_results(summary_data, active_act)
-
-                        # Handle user feedback
-                        final_data = _handle_user_feedback(
-                            summary_data, active_act, active_game.name
-                        )
-
-                        if final_data is None:
-                            console.print("[yellow]Operation cancelled.[/yellow]")
-                            return
-
-                        # Use the final data (original or modified based on user feedback)
-                        title = final_data.get("title")
-                        summary = final_data.get("summary")
-
-                        # Complete the act with the final data
-                        completed_act = _complete_act_with_data(
-                            active_act.id, title, summary
-                        )
-
-                        # Display success message with styled text
-                        from sologm.cli.utils.styled_text import StyledText
-
-                        title_display = (
-                            f"'{completed_act.title}'"
-                            if completed_act.title
-                            else "untitled"
-                        )
-                        console.print(
-                            StyledText.title_success(
-                                f"Act {title_display} completed successfully with AI-generated content!"
-                            )
-                        )
-
-                        # Display completed act details with metadata formatting
-                        metadata = {
-                            "ID": completed_act.id,
-                            "Sequence": f"Act {completed_act.sequence}",
-                            "Status": "Completed",
-                        }
-                        console.print(StyledText.format_metadata(metadata))
-
-                        # Display title and summary if present
-                        if completed_act.title:
-                            console.print(
-                                f"\n[bold]Title:[/bold] {completed_act.title}"
-                            )
-                        if completed_act.summary:
-                            console.print(
-                                f"\n[bold]Summary:[/bold]\n{completed_act.summary}"
-                            )
-
-                        # Exit early since we've completed the act
-                        return
-
-                    except APIError as e:
-                        console.print(f"[red]AI Error:[/] {str(e)}")
-                        console.print("Falling back to manual entry.")
-                    except Exception as e:
-                        console.print(f"[red]Error:[/] {str(e)}")
-                        console.print("Falling back to manual entry.")
-                elif not force:
-                    # Ask for confirmation before replacing existing content
-                    has_title = (
-                        active_act.title is not None and active_act.title.strip() != ""
-                    )
-                    has_summary = (
-                        active_act.summary is not None
-                        and active_act.summary.strip() != ""
-                    )
-
-                    if has_title and has_summary:
-                        confirm_message = (
-                            "This will replace your existing title and summary."
-                        )
-                    elif has_title:
-                        confirm_message = "This will replace your existing title."
-                    else:
-                        confirm_message = "This will replace your existing summary."
-
-                    from rich.prompt import Confirm
-
-                    if Confirm.ask(
-                        f"[yellow]{confirm_message} Continue?[/yellow]", default=False
-                    ):
-                        logger.debug("User confirmed replacing existing content")
-                        # Generate summary using AI
-                        try:
-                            console.print(
-                                "[yellow]Generating summary with AI...[/yellow]"
-                            )
-
-                            # Generate summary using AI
-                            summary_data = _handle_ai_generation(active_act.id, context)
-
-                            # Display the generated content
-                            _process_ai_results(summary_data, active_act)
-
-                            # Handle user feedback
-                            final_data = _handle_user_feedback(
-                                summary_data, active_act, active_game.name
-                            )
-
-                            if final_data is None:
-                                console.print("[yellow]Operation cancelled.[/yellow]")
-                                return
-
-                            # Use the final data (original or modified based on user feedback)
-                            title = final_data.get("title")
-                            summary = final_data.get("summary")
-
-                            # Complete the act with the final data
-                            completed_act = _complete_act_with_data(
-                                active_act.id, title, summary
-                            )
-
-                            # Display success message with styled text
-                            from sologm.cli.utils.styled_text import StyledText
-
-                            title_display = (
-                                f"'{completed_act.title}'"
-                                if completed_act.title
-                                else "untitled"
-                            )
-                            console.print(
-                                StyledText.title_success(
-                                    f"Act {title_display} completed successfully with AI-generated content!"
-                                )
-                            )
-
-                            # Display completed act details with metadata formatting
-                            metadata = {
-                                "ID": completed_act.id,
-                                "Sequence": f"Act {completed_act.sequence}",
-                                "Status": "Completed",
-                            }
-                            console.print(StyledText.format_metadata(metadata))
-
-                            # Display title and summary if present
-                            if completed_act.title:
-                                console.print(
-                                    f"\n[bold]Title:[/bold] {completed_act.title}"
-                                )
-                            if completed_act.summary:
-                                console.print(
-                                    f"\n[bold]Summary:[/bold]\n{completed_act.summary}"
-                                )
-
-                            # Exit early since we've completed the act
-                            return
-
-                        except APIError as e:
-                            console.print(f"[red]AI Error:[/] {str(e)}")
-                            console.print("Falling back to manual entry.")
-                        except Exception as e:
-                            console.print(f"[red]Error:[/] {str(e)}")
-                            console.print("Falling back to manual entry.")
-                    else:
-                        logger.debug("User cancelled replacing existing content")
+                    logger.debug("No context provided via command line, collecting interactively")
+                    context = _collect_user_context(active_act, active_game.name)
+                    if context is None:
                         console.print("[yellow]Operation cancelled.[/yellow]")
                         return
+                
+                try:
+                    # Generate summary using AI
+                    console.print("[yellow]Generating summary with AI...[/yellow]")
+                    summary_data = act_manager.generate_act_summary(active_act.id, context)
+                    
+                    # Display the generated content
+                    _display_ai_results(summary_data, active_act)
+                    
+                    # Handle user feedback
+                    final_data = _handle_user_feedback_loop(
+                        summary_data, active_act, active_game.name, act_manager
+                    )
+                    
+                    if final_data is None:
+                        console.print("[yellow]Operation cancelled.[/yellow]")
+                        return
+                    
+                    # Complete the act with the final data
+                    completed_act = act_manager.complete_act_with_ai(
+                        active_act.id,
+                        final_data.get("title"),
+                        final_data.get("summary")
+                    )
+                    
+                    # Display success message
+                    _display_completion_success(completed_act)
+                    return
+                    
+                except APIError as e:
+                    console.print(f"[red]AI Error:[/] {str(e)}")
+                    console.print("Falling back to manual entry.")
+                except Exception as e:
+                    console.print(f"[red]Error:[/] {str(e)}")
+                    console.print("Falling back to manual entry.")
 
-            # If title and summary are not provided, open editor
-            if title is None and summary is None and not ai:
-                # Create editor configuration
-                editor_config = StructuredEditorConfig(
-                    fields=[
-                        FieldConfig(
-                            name="title",
-                            display_name="Title",
-                            help_text="Title of the completed act",
-                            required=False,
-                        ),
-                        FieldConfig(
-                            name="summary",
-                            display_name="Summary",
-                            help_text="Summary of the completed act",
-                            multiline=True,
-                            required=False,
-                        ),
-                    ],
-                    wrap_width=70,
-                )
+            # Handle manual completion
+            # Create editor configuration
+            editor_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="title",
+                        display_name="Title",
+                        help_text="Title of the completed act",
+                        required=False,
+                    ),
+                    FieldConfig(
+                        name="summary",
+                        display_name="Summary",
+                        help_text="Summary of the completed act",
+                        multiline=True,
+                        required=False,
+                    ),
+                ],
+                wrap_width=70,
+            )
 
-                # Create context information
-                title_display = active_act.title or "Untitled Act"
-                context_info = (
-                    f"Completing Act {active_act.sequence}: {title_display}\n"
-                )
-                context_info += f"Game: {active_game.name}\n"
-                context_info += f"ID: {active_act.id}\n\n"
-                context_info += "You can provide a title and description to summarize this act's events."
+            # Create context information
+            title_display = active_act.title or "Untitled Act"
+            context_info = (
+                f"Completing Act {active_act.sequence}: {title_display}\n"
+            )
+            context_info += f"Game: {active_game.name}\n"
+            context_info += f"ID: {active_act.id}\n\n"
+            context_info += "You can provide a title and description to summarize this act's events."
 
             # Create initial data
             initial_data = {
@@ -1168,39 +1011,21 @@ def complete_act(
             title = result.get("title") or None
             summary = result.get("summary") or None
 
-            # Complete the act using the helper method
+            # Complete the act
             try:
-                completed_act = _complete_act_with_data(active_act.id, title, summary)
-
-                # Display success message with styled text
-                from sologm.cli.utils.styled_text import StyledText
-
-                title_display = (
-                    f"'{completed_act.title}'" if completed_act.title else "untitled"
+                completed_act = act_manager.complete_act(
+                    act_id=active_act.id, 
+                    title=title, 
+                    summary=summary
                 )
-                console.print(
-                    StyledText.title_success(
-                        f"Act {title_display} completed successfully!"
-                    )
-                )
-
-                # Display completed act details with metadata formatting
-                metadata = {
-                    "ID": completed_act.id,
-                    "Sequence": f"Act {completed_act.sequence}",
-                    "Status": "Completed",
-                }
-                console.print(StyledText.format_metadata(metadata))
-
-                # Display title and summary if present
-                if completed_act.title:
-                    console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
-                if completed_act.summary:
-                    console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
-
+                
+                # Display success message
+                _display_completion_success(completed_act)
+                
             except GameError as e:
                 console.print(f"[red]Error:[/] {str(e)}")
                 raise typer.Exit(1)
+                
         except GameError as e:
             console.print(f"[red]Error:[/] {str(e)}")
             raise typer.Exit(1)
