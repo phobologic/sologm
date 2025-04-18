@@ -7,6 +7,10 @@ from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act
+# Ensure Session is imported if not already (it is in the provided snippet)
+# from sqlalchemy.orm import Session
+# Ensure Optional is imported if not already (it is in the provided snippet)
+# from typing import Optional
 from sologm.utils.errors import GameError
 
 if TYPE_CHECKING:
@@ -449,6 +453,40 @@ class ActManager(BaseManager[Act, Act]):
             f"Found active act: {active_act.id} ({active_act.title or 'Untitled'})"
         )
         return active_act
+
+    def get_most_recent_act(self, game_id: Optional[str] = None) -> Optional[Act]:
+        """Get the most recent act based on sequence number for a game.
+
+        Args:
+            game_id: ID of the game. If None, uses the active game.
+
+        Returns:
+            The most recent Act instance or None if no acts exist.
+        """
+        self.logger.debug(f"Getting most recent act for game_id='{game_id or 'active game'}'")
+
+        if game_id is None:
+            active_game = self.game_manager.get_active_game()
+            if not active_game:
+                self.logger.warning("Cannot get most recent act: No active game.")
+                # Raise error or return None depending on desired strictness. Returning None for status cmd.
+                return None
+            game_id = active_game.id
+            self.logger.debug(f"Using active game ID: {game_id}")
+
+        def _operation(session: Session, game_id: str) -> Optional[Act]:
+            # Ensure correct model is used and order_by is applied
+            return (
+                session.query(Act)
+                .filter(Act.game_id == game_id)
+                .order_by(Act.sequence.desc())
+                .first()
+            )
+
+        # Ensure correct arguments are passed to _execute_db_operation
+        return self._execute_db_operation(
+            "get most recent act", _operation, game_id=game_id
+        )
 
     def prepare_act_data_for_summary(
         self, act_id: str, additional_context: Optional[str] = None

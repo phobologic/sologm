@@ -580,26 +580,35 @@ def display_scene_info(console: Console, scene: Scene) -> None:
 def display_game_status(
     console: Console,
     game: Game,
-    active_scene: Optional[Scene],
+    latest_act: Optional[Act],
+    latest_scene: Optional[Scene],
     recent_events: List[Event],
     scene_manager: Optional[SceneManager] = None,
     oracle_manager: Optional["OracleManager"] = None,
     recent_rolls: Optional[List[DiceRoll]] = None,
+    is_act_active: bool = False, # Default to False if no act
+    is_scene_active: bool = False, # Default to False if no scene
 ) -> None:
     """Display comprehensive game status in a compact layout.
+
+    Shows the latest act and scene, indicating their active status.
 
     Args:
         console: Rich console instance
         game: Current game
-        active_scene: Active scene if any
-        recent_events: Recent events (limited list)
-        scene_manager: Optional scene manager for additional context
-        oracle_manager: Optional oracle manager for interpretation context
-        recent_rolls: Optional list of recent dice rolls
+        latest_act: The most recent act in the game.
+        latest_scene: The most recent scene in the latest act.
+        recent_events: Recent events (limited list, typically from latest scene).
+        scene_manager: Optional scene manager for additional context (like prev scene).
+        oracle_manager: Optional oracle manager for interpretation context.
+        recent_rolls: Optional list of recent dice rolls (typically from latest scene).
+        is_act_active: Whether the latest_act is flagged as active.
+        is_scene_active: Whether the latest_scene is flagged as active.
     """
     logger.debug(
-        f"Displaying game status for {game.id} with {len(recent_events)} events and "
-        f"active scene: {active_scene.id if active_scene else 'None'}"
+        f"Displaying game status for {game.id} with {len(recent_events)} events. "
+        f"Latest Act: {latest_act.id if latest_act else 'None'} (Active: {is_act_active}). "
+        f"Latest Scene: {latest_scene.id if latest_scene else 'None'} (Active: {is_scene_active})."
     )
 
     # Calculate display dimensions
@@ -608,23 +617,16 @@ def display_game_status(
     # Display game header
     console.print(_create_game_header_panel(game, console))
 
-    # Get active act
-    active_act = (
-        next((act for act in game.acts if act.is_active), None)
-        if hasattr(game, "acts")
-        else None
-    )
-
-    # Display act panel
-    console.print(_create_act_panel(game, active_act))
+    # Display act panel (pass latest act and its status)
+    console.print(_create_act_panel(game, latest_act, is_act_active))
 
     # Create and display the main grid with scene and events info
     grid = Table.grid(expand=True, padding=(0, 1))
     grid.add_column("Left", ratio=1)
     grid.add_column("Right", ratio=1)
 
-    # Add scene panels and events panel to main grid
-    left_grid = _create_scene_panels_grid(game, active_scene, scene_manager, console)
+    # Add scene panels and events panel to main grid (pass latest scene and its status)
+    left_grid = _create_scene_panels_grid(game, latest_scene, scene_manager, console, is_scene_active)
     events_panel = _create_events_panel(recent_events, truncation_length)
     grid.add_row(left_grid, events_panel)
     console.print(grid)
@@ -640,7 +642,7 @@ def display_game_status(
     oracle_panel = (
         _create_oracle_panel(
             game,
-            active_scene,
+            latest_scene, # Use latest_scene
             oracle_manager,
             truncation_length,
         )
@@ -683,62 +685,57 @@ def _calculate_truncation_length(console: Console) -> int:
         return 40
 
 
-def _create_act_panel(game: Game, active_act: Optional[Act] = None) -> Panel:
-    """Create a panel showing act information.
-
-    Args:
-        game: The current game
-        active_act: The currently active act, if any
-
-    Returns:
-        Panel containing formatted act information
-    """
+def _create_act_panel(game: Game, latest_act: Optional[Act] = None, is_act_active: bool = False) -> Panel:
+    """Create a panel showing the latest act information."""
     st = StyledText
 
-    if not active_act:
-        # No active act
+    panel_title_text = "Latest Act" # Always refer to latest
+    border_style = BORDER_STYLES["neutral"] # Default border
+
+    if not latest_act:
+        # No acts found
         panel_content = st.subtitle(
-            "No active act. Create one with 'sologm act create'."
+            "No acts found in this game. Create one with 'sologm act create'."
         )
         return Panel(
             panel_content,
-            title=st.title("Current Act"),
-            border_style=BORDER_STYLES["neutral"],
+            title=st.title(panel_title_text),
+            border_style=border_style,
             expand=True,
             title_align="left",
         )
 
+    # Set border if active
+    if is_act_active:
+        border_style = BORDER_STYLES["current"] # Use current border if active
+
     # Create panel content with act information
     panel_content = Text()
-
-    # Add act title and sequence
-    if active_act.title:
-        # Use the actual title if available
-        title_text = st.title(f"Act {active_act.sequence}: {active_act.title}")
+    # ... (use latest_act to build title_text) ...
+    if latest_act.title:
+        title_text = st.title(f"Act {latest_act.sequence}: {latest_act.title}")
     else:
-        # Create a properly styled "Untitled Act" text
         untitled_text = Text("Untitled Act", style="italic")
-        title_text = st.combine(st.title(f"Act {active_act.sequence}: "), untitled_text)
-
+        title_text = st.combine(st.title(f"Act {latest_act.sequence}: "), untitled_text)
     panel_content.append(title_text)
 
-    # Add act summary if available
-    if active_act.summary:
+    if latest_act.summary:
         panel_content.append("\n")
-        panel_content.append(active_act.summary)
+        panel_content.append(latest_act.summary)
 
-    # Add metadata
+    # Add metadata including status
     metadata = {
-        "Scenes": len(active_act.scenes) if hasattr(active_act, "scenes") else 0,
-        "Created": active_act.created_at.strftime("%Y-%m-%d"),
+        "Status": st.success("Active") if is_act_active else st.warning("Inactive"),
+        "Scenes": len(latest_act.scenes) if hasattr(latest_act, "scenes") else 0,
+        "Created": latest_act.created_at.strftime("%Y-%m-%d"),
     }
     panel_content.append("\n")
     panel_content.append(st.format_metadata(metadata))
 
     return Panel(
         panel_content,
-        title=st.title("Current Act"),
-        border_style=BORDER_STYLES["current"],
+        title=st.title(panel_title_text),
+        border_style=border_style, # Use dynamic border
         expand=True,
         title_align="left",
     )
@@ -826,22 +823,24 @@ def _create_game_header_panel(game: Game, console: Optional[Console] = None) -> 
 
 def _create_scene_panels_grid(
     game: Game,
-    active_scene: Optional[Scene],
+    latest_scene: Optional[Scene],
     scene_manager: Optional[SceneManager],
     console: Optional[Console] = None,
+    is_scene_active: bool = False,
 ) -> Table:
-    """Create a grid containing current and previous scene panels.
+    """Create a grid containing latest and previous scene panels.
 
     Args:
         game: The game to display information for
-        active_scene: The currently active scene, if any
-        scene_manager: Optional scene manager for retrieving previous scene
-        console: Optional console instance to determine width for text truncation
+        latest_scene: The most recent scene in the latest act.
+        scene_manager: Optional scene manager for retrieving previous scene.
+        console: Optional console instance to determine width for text truncation.
+        is_scene_active: Whether the latest_scene is flagged as active.
 
     Returns:
-        A Table grid containing the scene panels
+        A Table grid containing the scene panels.
     """
-    logger.debug(f"Creating scene panels grid for game {game.id}")
+    logger.debug(f"Creating scene panels grid for game {game.id} (Latest Scene Active: {is_scene_active})")
 
     st = StyledText
 
@@ -861,60 +860,84 @@ def _create_scene_panels_grid(
         f"Chars per line: {chars_per_line}, Max description length: {max_desc_length}"
     )
 
-    # Create current scene panel with consistent styling
+    # Determine title and border for the latest scene panel
+    latest_scene_title_text = "Latest Scene"
+    latest_scene_border_style = BORDER_STYLES["neutral"] # Default border
+
+    # Create latest scene panel
     scenes_content = Text()
-    if active_scene:
-        logger.debug(f"Including active scene {active_scene.id} in panel")
+    if latest_scene:
+        logger.debug(f"Including latest scene {latest_scene.id} in panel")
+        # ... (use latest_scene to build content, act_info, truncated_description) ...
         truncated_description = truncate_text(
-            active_scene.description, max_length=max_desc_length
+            latest_scene.description, max_length=max_desc_length
         )
         logger.debug(
-            f"Truncated active scene description from {len(active_scene.description)} to {len(truncated_description)} chars"
+            f"Truncated latest scene description from {len(latest_scene.description)} to {len(truncated_description)} chars"
         )
-
-        # Get act information for the scene
         act_info = ""
-        if hasattr(active_scene, "act") and active_scene.act:
-            act_title = active_scene.act.title or "Untitled Act"
-            act_info = f"Act {active_scene.act.sequence}: {act_title}\n"
+        if hasattr(latest_scene, "act") and latest_scene.act:
+            act_title = latest_scene.act.title or "Untitled Act"
+            act_info = f"Act {latest_scene.act.sequence}: {act_title}\n"
 
         scenes_content = st.combine(
             st.subtitle(act_info) if act_info else Text(),
-            st.title(active_scene.title),
+            st.title(latest_scene.title),
             "\n",
             truncated_description,
         )
+
+        # Determine status string and border style
+        if latest_scene.status == SceneStatus.COMPLETED:
+            status_string = st.success("Completed")
+            latest_scene_border_style = BORDER_STYLES["success"]
+        elif is_scene_active:
+            status_string = st.success("Active")
+            latest_scene_border_style = BORDER_STYLES["current"]
+        else:
+            status_string = st.warning("Inactive")
+            latest_scene_border_style = BORDER_STYLES["neutral"]
+
+        # Add metadata including status
+        metadata = {
+            "Status": status_string,
+            "Sequence": latest_scene.sequence,
+            "Created": latest_scene.created_at.strftime("%Y-%m-%d"),
+        }
+        scenes_content.append("\n")
+        scenes_content.append(st.format_metadata(metadata))
+
     else:
-        logger.debug("No active scene to display")
-        scenes_content = st.subtitle("No active scene")
+        logger.debug("No latest scene to display")
+        scenes_content = st.subtitle("No scenes found in this context")
+        latest_scene_title_text = "Scene Status" # Adjust title if no scene at all
 
     scenes_panel = Panel(
         scenes_content,
-        title=st.title("Current Scene"),
-        border_style=BORDER_STYLES["current"],
+        title=st.title(latest_scene_title_text),
+        border_style=latest_scene_border_style, # Use dynamic border
         title_align="left",
         expand=True,  # Ensure panel expands to fill available width
     )
 
-    # Create previous scene panel with consistent styling
+    # Create previous scene panel (logic remains similar, finds scene before latest_scene)
     prev_scene = None
-    if active_scene and scene_manager:
+    if latest_scene and scene_manager:
         logger.debug(
-            f"Attempting to get previous scene for active scene {active_scene.id}"
+            f"Attempting to get previous scene for latest scene {latest_scene.id}"
         )
-        prev_scene = scene_manager.get_previous_scene(active_scene.id)
+        prev_scene = scene_manager.get_previous_scene(latest_scene.id)
 
     prev_scene_content = Text()
     if prev_scene:
         logger.debug(f"Including previous scene {prev_scene.id} in panel")
+        # ... (get truncated_description, act_info for prev_scene) ...
         truncated_description = truncate_text(
             prev_scene.description, max_length=max_desc_length
         )
         logger.debug(
             f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars"
         )
-
-        # Get act information for the previous scene
         act_info = ""
         if hasattr(prev_scene, "act") and prev_scene.act:
             act_title = prev_scene.act.title or "Untitled Act"
@@ -926,6 +949,14 @@ def _create_scene_panels_grid(
             "\n",
             truncated_description,
         )
+        # Add metadata for previous scene (status is just its stored status)
+        prev_metadata = {
+            "Status": prev_scene.status.value, # Display stored status
+            "Sequence": prev_scene.sequence,
+            "Created": prev_scene.created_at.strftime("%Y-%m-%d"),
+        }
+        prev_scene_content.append("\n")
+        prev_scene_content.append(st.format_metadata(prev_metadata))
     else:
         logger.debug("No previous scene to display")
         prev_scene_content = st.subtitle("No previous scene")
@@ -1008,19 +1039,19 @@ def _create_events_panel(recent_events: List[Event], truncation_length: int) -> 
 
 def _create_oracle_panel(
     game: Game,
-    active_scene: Optional[Scene],
+    latest_scene: Optional[Scene],
     oracle_manager: Optional["OracleManager"],
     truncation_length: int,
 ) -> Optional[Panel]:
     """Create the oracle panel if applicable."""
     logger.debug(f"Creating oracle panel for game {game.id}")
 
-    if not oracle_manager or not active_scene:
-        logger.debug("No oracle manager or active scene, skipping oracle panel")
+    if not oracle_manager or not latest_scene:
+        logger.debug("No oracle manager or latest scene, skipping oracle panel")
         return None
 
-    # Check for current interpretation set
-    current_interp_set = oracle_manager.get_current_interpretation_set(active_scene.id)
+    # Check for current interpretation set using latest_scene.id
+    current_interp_set = oracle_manager.get_current_interpretation_set(latest_scene.id)
 
     if current_interp_set:
         # Check if any interpretation is selected
@@ -1032,8 +1063,8 @@ def _create_oracle_panel(
             logger.debug("Creating pending oracle panel")
             return _create_pending_oracle_panel(current_interp_set, truncation_length)
 
-    # Try to get most recent interpretation
-    recent_interp = oracle_manager.get_most_recent_interpretation(active_scene.id)
+    # Try to get most recent interpretation using latest_scene.id
+    recent_interp = oracle_manager.get_most_recent_interpretation(latest_scene.id)
 
     if recent_interp:
         logger.debug("Creating recent oracle panel")

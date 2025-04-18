@@ -1,7 +1,7 @@
 """Game management functionality."""
 
 import logging
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Dict, Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -339,3 +339,49 @@ class GameManager(BaseManager[Game, Game]):
         else:
             logger.debug(f"Game not found for deletion: {game_id}")
         return result
+
+    def get_latest_context_status(self) -> Dict[str, Any]:
+        """Gets the latest act/scene and their active status for the active game.
+
+        Returns:
+            A dictionary containing:
+                - 'game': The active Game object or None.
+                - 'latest_act': The most recent Act object or None.
+                - 'latest_scene': The most recent Scene object or None.
+                - 'is_act_active': Boolean indicating if the latest act is active.
+                - 'is_scene_active': Boolean indicating if the latest scene is active.
+        """
+        self.logger.debug("Getting latest context status for the active game.")
+
+        game = self.get_active_game()
+        if not game:
+            self.logger.warning("No active game found.")
+            return {
+                "game": None, "latest_act": None, "latest_scene": None,
+                "is_act_active": False, "is_scene_active": False
+            }
+
+        # Ensure act_manager property exists and works
+        latest_act = self.act_manager.get_most_recent_act(game_id=game.id)
+
+        latest_scene = None
+        if latest_act:
+            # Ensure act_manager.scene_manager property chain exists and works
+            latest_scene = self.act_manager.scene_manager.get_most_recent_scene(
+                act_id=latest_act.id
+            )
+            self.logger.debug(f"Found latest act: {latest_act.id}, latest scene: {latest_scene.id if latest_scene else 'None'}")
+        else:
+            self.logger.debug(f"No acts found in active game {game.id}.")
+
+        is_act_active = latest_act.is_active if latest_act else False
+        is_scene_active = latest_scene.is_active if latest_scene else False
+        self.logger.debug(f"Latest Act Active: {is_act_active}, Latest Scene Active: {is_scene_active}")
+
+        return {
+            "game": game,
+            "latest_act": latest_act,
+            "latest_scene": latest_scene,
+            "is_act_active": is_act_active,
+            "is_scene_active": is_scene_active,
+        }

@@ -110,62 +110,78 @@ def game_info() -> None:
 def game_status() -> None:
     """Show detailed status of the active game including recent events and dice rolls."""
     from sologm.database.session import get_db_context
+    # SceneError import likely not needed here anymore
 
     try:
-        logger.debug("Getting active game status")
+        logger.debug("Getting game status (showing most recent context)")
         with get_db_context() as session:
             game_manager = GameManager(session=session)
-            game = game_manager.get_active_game()
-            if not game:
+
+            # Use the new consolidated method
+            context_status = game_manager.get_latest_context_status()
+            game = context_status["game"]
+
+            if not game: # Check if game retrieval failed within the method
                 console.print("No active game. Use 'sologm game activate' to set one.")
                 return
 
-            # Access scene_manager through the chain
+            # Access managers through the chain (still needed for events/rolls/oracle)
+            # Note: These managers are initialized within get_latest_context_status if needed,
+            # but we might need them directly here too.
             act_manager = game_manager.act_manager
             scene_manager = act_manager.scene_manager
-            active_scene = scene_manager.get_active_scene()
-
-            # Get oracle_manager through the chain
             oracle_manager = scene_manager.oracle_manager
-
-            # Access other managers through the chain
             event_manager = scene_manager.event_manager
             dice_manager = scene_manager.dice_manager
 
+            # Extract context from the dictionary
+            latest_act = context_status["latest_act"]
+            latest_scene = context_status["latest_scene"]
+            is_act_active = context_status["is_act_active"]
+            is_scene_active = context_status["is_scene_active"]
+
+            # Fetch recent events and rolls based on the determined scene (active or most recent)
             recent_events = []
             recent_rolls = []
-            if active_scene:
+            if latest_scene:
                 logger.debug(
-                    f"Getting recent events and dice rolls for scene {active_scene.id}"
+                    f"Getting recent events and dice rolls for latest scene {latest_scene.id}"
                 )
-                recent_events = event_manager.list_events(limit=5)[
-                    :5
-                ]  # Ensure we get at most 5 events
+                recent_events = event_manager.list_events(scene_id=latest_scene.id, limit=5)
                 logger.debug(f"Retrieved {len(recent_events)} recent events")
 
-                recent_rolls = dice_manager.get_recent_rolls(active_scene, limit=3)
+                recent_rolls = dice_manager.get_recent_rolls(scene=latest_scene, limit=3)
                 logger.debug(
                     f"Retrieved {len(recent_rolls)} recent dice rolls for "
-                    f"scene {active_scene.id}"
+                    f"scene {latest_scene.id}"
                 )
-                # Log details of each roll to verify data
                 for i, roll in enumerate(recent_rolls):
                     logger.debug(
                         f"Roll {i + 1}: {roll.notation} = {roll.total} (ID: {roll.id})"
                     )
+            else:
+                 logger.debug("No latest scene found to fetch events/rolls from.")
 
-            logger.debug("Calling display_game_status with recent_rolls parameter")
+            logger.debug("Calling display_game_status with latest context info")
             display_game_status(
                 console,
                 game,
-                active_scene,
+                latest_act, # Pass latest act
+                latest_scene, # Pass latest scene
                 recent_events,
                 scene_manager=scene_manager,
                 oracle_manager=oracle_manager,
                 recent_rolls=recent_rolls,
+                is_act_active=is_act_active, # Pass act active status
+                is_scene_active=is_scene_active # Pass scene active status
             )
+    # Keep the original GameError catch block
     except GameError as e:
         console.print(f"[red]Error getting game status: {str(e)}[/red]")
+    # Add a catch block for other potential errors during fallback
+    except Exception as e:
+        logger.exception("An unexpected error occurred during game status retrieval.")
+        console.print(f"[red]An unexpected error occurred: {str(e)}[/red]")
 
 
 @game_app.command("edit")

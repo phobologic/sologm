@@ -9,6 +9,10 @@ from sqlalchemy.orm import Session
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act
 from sologm.models.scene import Scene, SceneStatus
+# Ensure Session is imported if not already (it is in the provided snippet)
+# from sqlalchemy.orm import Session
+# Ensure Optional is imported if not already (it is in the provided snippet)
+# from typing import Optional
 from sologm.utils.errors import SceneError
 
 if TYPE_CHECKING:
@@ -520,6 +524,31 @@ class SceneManager(BaseManager[Scene, Scene]):
             f"Previous scene for {scene_id}: {result.id if result else 'None'}"
         )
         return result
+
+    def get_most_recent_scene(self, act_id: str) -> Optional[Scene]:
+        """Get the most recent scene based on sequence number for a specific act.
+
+        Args:
+            act_id: ID of the act to search within.
+
+        Returns:
+            The most recent Scene instance in the act or None if no scenes exist.
+        """
+        self.logger.debug(f"Getting most recent scene for act_id='{act_id}'")
+
+        def _operation(session: Session, act_id: str) -> Optional[Scene]:
+            # Ensure correct model is used and order_by is applied
+            return (
+                session.query(Scene)
+                .filter(Scene.act_id == act_id)
+                .order_by(Scene.sequence.desc())
+                .first()
+            )
+
+        # Ensure correct arguments are passed to _execute_db_operation
+        return self._execute_db_operation(
+            "get most recent scene", _operation, act_id=act_id
+        )
 
     def validate_active_context(self) -> Tuple[str, Scene]:
         """Validate active game, act, and scene context.
