@@ -754,14 +754,14 @@ def complete_act(
         context_info += "Please provide feedback on how you want the new generation to differ from the previous one.\n"
         context_info += "Be specific about what you liked and didn't like about the previous generation.\n\n"
         context_info += "Examples of effective feedback:\n"
-        context_info += "- \"Make the title more dramatic and focus on the conflict with the dragon\"\n"
-        context_info += "- \"The summary is too focused on side characters. Center it on the protagonist's journey\"\n"
-        context_info += "- \"Change the tone to be more somber and reflective of the losses in this act\"\n"
-        context_info += "- \"I like the theme of betrayal in the summary but want it to be more subtle\"\n\n"
+        context_info += '- "Make the title more dramatic and focus on the conflict with the dragon"\n'
+        context_info += '- "The summary is too focused on side characters. Center it on the protagonist\'s journey"\n'
+        context_info += '- "Change the tone to be more somber and reflective of the losses in this act"\n'
+        context_info += '- "I like the theme of betrayal in the summary but want it to be more subtle"\n\n'
         context_info += "PREVIOUS GENERATION:\n"
         context_info += f"Title: {results.get('title', '')}\n"
         context_info += f"Summary: {results.get('summary', '')}\n\n"
-        
+
         if act.title or act.summary:
             context_info += "CURRENT ACT CONTENT:\n"
             if act.title:
@@ -795,12 +795,12 @@ def complete_act(
 
         feedback = result.get("feedback", "").strip()
         keep_elements = result.get("keep_elements", "").strip()
-        
+
         # Combine feedback and keep_elements into a structured format
         combined_feedback = feedback
         if keep_elements:
             combined_feedback += f"\n\nELEMENTS TO PRESERVE:\n{keep_elements}"
-            
+
         logger.debug(
             f"Collected regeneration feedback: {combined_feedback[:50]}{'...' if len(combined_feedback) > 50 else ''}"
         )
