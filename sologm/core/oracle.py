@@ -845,26 +845,26 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         limit: int = 10,
     ) -> List[InterpretationSet]:
         """List interpretation sets for a scene or act.
-        
+
         Args:
             scene_id: Optional ID of the scene to list interpretations from
             act_id: Optional ID of the act to list interpretations from
             limit: Maximum number of interpretation sets to return
-            
+
         Returns:
             List of interpretation sets
-            
+
         Raises:
             OracleError: If neither scene_id nor act_id is provided
         """
         self.logger.debug(
             f"Listing interpretation sets: scene_id={scene_id}, act_id={act_id}, limit={limit}"
         )
-        
+
         if not scene_id and not act_id:
             self.logger.error("Neither scene_id nor act_id provided")
             raise OracleError("Either scene_id or act_id must be provided")
-        
+
         def _list_interpretation_sets(
             session: Session,
             scene_id: Optional[str],
@@ -872,29 +872,31 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             limit: int,
         ) -> List[InterpretationSet]:
             query = session.query(InterpretationSet)
-            
+
             if scene_id:
                 # If scene_id is provided, filter by scene_id
-                self.logger.debug(f"Filtering interpretation sets by scene_id: {scene_id}")
+                self.logger.debug(
+                    f"Filtering interpretation sets by scene_id: {scene_id}"
+                )
                 query = query.filter(InterpretationSet.scene_id == scene_id)
             elif act_id:
                 # If act_id is provided, filter by scenes in the act
                 self.logger.debug(f"Filtering interpretation sets by act_id: {act_id}")
                 query = query.join(Scene).filter(Scene.act_id == act_id)
-            
+
             # Order by created_at descending to get most recent first
             query = query.order_by(InterpretationSet.created_at.desc())
-            
+
             # Apply limit
             if limit:
                 query = query.limit(limit)
-            
+
             # Execute query
             interp_sets = query.all()
             self.logger.debug(f"Found {len(interp_sets)} interpretation sets")
-            
+
             return interp_sets
-        
+
         try:
             return self._execute_db_operation(
                 "list interpretation sets",

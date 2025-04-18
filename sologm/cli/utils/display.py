@@ -1424,7 +1424,7 @@ def display_interpretation_sets_table(
         interp_sets: List of interpretation sets to display
     """
     logger.debug(f"Displaying interpretation sets table with {len(interp_sets)} sets")
-    
+
     st = StyledText
 
     # Create table without a title
@@ -1444,23 +1444,25 @@ def display_interpretation_sets_table(
     # Add rows with consistent formatting
     for interp_set in interp_sets:
         # Get scene title
-        scene_title = interp_set.scene.title if hasattr(interp_set, "scene") else "Unknown"
-        
+        scene_title = (
+            interp_set.scene.title if hasattr(interp_set, "scene") else "Unknown"
+        )
+
         # Truncate context and oracle results
         context = truncate_text(interp_set.context, max_length=40)
         oracle_results = truncate_text(interp_set.oracle_results, max_length=40)
-        
+
         # Determine status
         has_selection = any(interp.is_selected for interp in interp_set.interpretations)
         status = "Resolved" if has_selection else "Pending"
         status_style = "bold green" if has_selection else "bold yellow"
-        
+
         # Count interpretations
         interp_count = len(interp_set.interpretations)
-        
+
         # Format created_at
         created_at = interp_set.created_at.strftime("%Y-%m-%d %H:%M")
-        
+
         table.add_row(
             interp_set.id,
             scene_title,
