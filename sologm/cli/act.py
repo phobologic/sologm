@@ -744,7 +744,6 @@ def complete_act(
         logger.debug("Starting user feedback loop")
 
         while True:
-
             # Get user choice using the display helper
             from sologm.cli.utils.display import display_act_ai_feedback_prompt
 
@@ -797,7 +796,6 @@ def complete_act(
                     console.print(f"[red]AI Error:[/] {str(e)}")
                     console.print("[yellow]Returning to previous content.[/yellow]")
                     continue
-
 
     def _check_existing_content(act: Act, force: bool) -> bool:
         """Check if act has existing content and confirm replacement if needed.
