@@ -20,42 +20,46 @@ from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import SceneStatus
 
 from sologm.utils.config import Config  # Import for type hinting
+from typing import Any # Add Any if not already imported
 
 logger = logging.getLogger(__name__)
 
 
 # Config mocking fixture
 @pytest.fixture(autouse=True)
-def mock_global_config():  # Removed monkeypatch argument as it's not used now
+def mock_global_config():
     """
-    Mocks the global get_config to prevent reading real user config
-    and provides a predictable, isolated config object for tests.
+    Mocks get_config where it's used in the anthropic module to prevent
+    reading real user config and provide predictable config for tests.
 
-    The mocked config.get() will return None when asked for 'anthropic_api_key',
-    simulating that the key is not set in the config file.
+    The mocked config.get() will return None when asked for 'anthropic_api_key'.
     """
+    logger.debug("[Fixture mock_global_config] Setting up mock Config object")
     # Create a mock Config instance
     mock_config = MagicMock(spec=Config)
 
     # Define the behavior for the mock's get method
     def mock_get(key: str, default: Any = None) -> Any:
+        logger.debug(f"[Fixture mock_global_config] Mock config.get called with key: {key}")
         # Simulate the key not being found in the config file source
         if key == "anthropic_api_key":
-            logger.debug(f"Mock config returning None for key: {key}")
+            logger.debug(f"[Fixture mock_global_config] Mock config returning None for key: {key}")
             return None
         # For any other key requested from the mock config, return default
-        logger.debug(f"Mock config returning default for key: {key}")
+        logger.debug(f"[Fixture mock_global_config] Mock config returning default for key: {key}")
         return default
 
     mock_config.get.side_effect = mock_get
 
-    # Patch get_config where it's defined to affect all imports
-    # Use autospec=True to ensure the mock has the same signature
+    # Patch get_config where it's LOOKED UP in the anthropic module
+    patch_target = "sologm.integrations.anthropic.get_config"
+    logger.debug(f"[Fixture mock_global_config] Applying patch to: {patch_target}")
     with patch(
-        "sologm.utils.config.get_config", return_value=mock_config, autospec=True
+        patch_target, return_value=mock_config, autospec=True
     ) as mock_getter:
+        logger.debug(f"[Fixture mock_global_config] Patch applied. Yielding mock: {mock_getter}")
         yield mock_getter  # Yield the mock getter for potential inspection
-    # Patch is automatically undone when exiting 'with' block
+    logger.debug("[Fixture mock_global_config] Patch finished.")
 
 
 # Database fixtures
