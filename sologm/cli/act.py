@@ -618,7 +618,7 @@ def complete_act(
         )
         context_info += (
             '- "The summary is too focused on side characters. Center it on '
-            'the protagonist\'s journey"\n'
+            "the protagonist's journey\"\n"
         )
         context_info += (
             '- "Change the tone to be more somber and reflective of the '
