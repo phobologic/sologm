@@ -412,6 +412,592 @@ def edit_act(
             raise typer.Exit(1) from e
 
 
+# --- Helper Functions for complete_act ---
+
+def _check_existing_content(act: Act, force: bool) -> bool:
+    """Check if act has existing content and confirm replacement if needed.
+
+    Args:
+        act: The act to check
+        force: Whether to force replacement without confirmation
+
+    Returns:
+        True if should proceed, False if cancelled
+    """
+    if force:
+        return True
+
+    has_title = act.title is not None and act.title.strip() != ""
+    has_summary = act.summary is not None and act.summary.strip() != ""
+
+    if not has_title and not has_summary:
+        return True
+
+    if has_title and has_summary:
+        confirm_message = "This will replace your existing title and summary."
+    elif has_title:
+        confirm_message = "This will replace your existing title."
+    else:
+        confirm_message = "This will replace your existing summary."
+
+    from rich.prompt import Confirm
+
+    return Confirm.ask(
+        f"[yellow]{confirm_message} Continue?[/yellow]", default=False
+    )
+
+
+def _collect_user_context(act: Act, game_name: str) -> Optional[str]:
+    """Collect context from the user for AI generation.
+
+    Opens a structured editor to allow the user to provide additional context
+    for the AI summary generation. Displays relevant information about the
+    act being completed.
+
+    Args:
+        act: The act being completed
+        game_name: Name of the game the act belongs to
+
+    Returns:
+        The user-provided context, or None if the user cancels
+    """
+    logger.debug("Collecting context for AI generation")
+
+    # Create editor configuration
+    editor_config = StructuredEditorConfig(
+        fields=[
+            FieldConfig(
+                name="context",
+                display_name="Additional Context",
+                help_text="Provide any additional context or guidance for the AI summary generation",
+                multiline=True,
+                required=False,
+            ),
+        ],
+        wrap_width=70,
+    )
+
+    # Create context information header
+    title_display = act.title or "Untitled Act"
+    context_info = (
+        f"AI Summary Generation for Act {act.sequence}: {title_display}\n"
+    )
+    context_info += f"Game: {game_name}\n"
+    context_info += f"ID: {act.id}\n\n"
+    context_info += (
+        "Provide any additional context or guidance for the AI summary "
+        "generation.\n"
+    )
+    context_info += "For example:\n"
+    context_info += "- Focus on specific themes or character developments\n"
+    context_info += "- Highlight particular events or turning points\n"
+    context_info += "- Suggest a narrative style or tone for the summary\n\n"
+    context_info += (
+        "You can leave this empty to let the AI generate based only on "
+        "the act's content."
+    )
+
+    # Create initial data
+    initial_data = {
+        "context": "",
+    }
+
+    # Open editor
+    result, modified = edit_structured_data(
+        initial_data,
+        console,
+        editor_config,
+        context_info=context_info,
+    )
+
+    if not modified:
+        logger.debug("User cancelled context collection")
+        return None
+
+    user_context = result.get("context", "").strip()
+    logger.debug(
+        f"Collected context: {user_context[:50]}"
+        f"{'...' if len(user_context) > 50 else ''}"
+    )
+    return user_context if user_context else None
+
+
+def _collect_regeneration_feedback(
+    results: Dict[str, str],
+    act: Act,
+    game_name: str,
+    original_context: Optional[str] = None,
+) -> Optional[Dict[str, str]]:
+    """Collect feedback for regenerating AI content.
+
+    Args:
+        results: Dictionary containing previously generated title and summary
+        act: The act being completed
+        game_name: Name of the game the act belongs to
+        original_context: The original context provided for the first generation
+
+    Returns:
+        Dictionary with feedback and elements to keep, or None if user cancels
+    """
+    logger.debug("Collecting regeneration feedback")
+
+    # Create editor configuration
+    editor_config = StructuredEditorConfig(
+        fields=[
+            FieldConfig(
+                name="feedback",
+                display_name="Regeneration Feedback",
+                help_text=(
+                    "Provide feedback on how you want the new generation to differ "
+                    "(leave empty for a completely new attempt)"
+                ),
+                multiline=True,
+                required=False,
+            ),
+            FieldConfig(
+                name="context",
+                display_name="Original Context",
+                help_text=(
+                    "Original context provided for generation. You can modify this "
+                    "to include additional information."
+                ),
+                multiline=True,
+                required=False,
+            ),
+        ],
+        wrap_width=70,
+    )
+
+    # Create context information header
+    title_display = act.title or "Untitled Act"
+    context_info = (
+        f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
+    )
+    context_info += f"Game: {game_name}\n"
+    context_info += f"ID: {act.id}\n\n"
+    context_info += (
+        "Please provide feedback on how you want the new generation to "
+        "differ from the previous one.\n"
+    )
+    context_info += "You can leave this empty to get a completely new attempt.\n\n"
+    context_info += (
+        "Be specific about what you liked and didn't like about the "
+        "previous generation.\n\n"
+    )
+    context_info += "Examples of effective feedback:\n"
+    context_info += (
+        '- "Make the title more dramatic and focus on the conflict with '
+        'the dragon"\n'
+    )
+    context_info += (
+        '- "The summary is too focused on side characters. Center it on '
+        "the protagonist's journey\"\n"
+    )
+    context_info += (
+        '- "Change the tone to be more somber and reflective of the '
+        'losses in this act"\n'
+    )
+    context_info += (
+        '- "I like the theme of betrayal in the summary but want it to '
+        'be more subtle"\n'
+    )
+    context_info += (
+        '- "Keep the reference to the ancient ruins, but make the title '
+        'more ominous"\n\n'
+    )
+    context_info += "PREVIOUS GENERATION:\n"
+    context_info += f"Title: {results.get('title', '')}\n"
+    context_info += f"Summary: {results.get('summary', '')}\n\n"
+
+    if act.title or act.summary:
+        context_info += "CURRENT ACT CONTENT:\n"
+        if act.title:
+            context_info += f"Title: {act.title}\n"
+        if act.summary:
+            context_info += f"Summary: {act.summary}\n"
+
+    # Create initial data
+    initial_data = {
+        "feedback": "",
+        "context": original_context or "",
+    }
+
+    # Open editor
+    result, modified = edit_structured_data(
+        initial_data,
+        console,
+        editor_config,
+        context_info=context_info,
+        editor_config=EditorConfig(
+            edit_message="Edit your regeneration feedback below (or leave empty for a new attempt):",
+            success_message="Feedback collected successfully.",
+            cancel_message="Regeneration cancelled.",
+            error_message="Could not open editor. Please try again.",
+        ),
+    )
+
+    if not modified:
+        logger.debug("User cancelled regeneration feedback collection")
+        return None
+
+    return {
+        "feedback": result.get("feedback", "").strip(),
+        "context": result.get("context", "").strip(),
+    }
+
+
+def _edit_ai_content(
+    results: Dict[str, str], act: Act, game_name: str
+) -> Optional[Dict[str, str]]:
+    """Allow user to edit AI-generated content.
+
+    Args:
+        results: Dictionary containing generated title and summary
+        act: The act being completed
+        game_name: Name of the game the act belongs to
+
+    Returns:
+        Dictionary with edited title and summary, or None if user cancels
+    """
+    logger.debug("Opening editor for AI content")
+
+    # Create editor configuration
+    editor_config = StructuredEditorConfig(
+        fields=[
+            FieldConfig(
+                name="title",
+                display_name="Title",
+                help_text="Edit the AI-generated title (1-7 words recommended)",
+                required=True,
+            ),
+            FieldConfig(
+                name="summary",
+                display_name="Summary",
+                help_text=(
+                    "Edit the AI-generated summary (3-5 paragraphs recommended)"
+                ),
+                multiline=True,
+                required=True,
+            ),
+        ],
+        wrap_width=70,
+    )
+
+    # Create context information
+    title_display = act.title or "Untitled Act"
+    context_info = (
+        f"Editing AI-Generated Content for Act {act.sequence}: {title_display}\n"
+    )
+    context_info += f"Game: {game_name}\n"
+    context_info += f"ID: {act.id}\n\n"
+    context_info += "Edit the AI-generated title and summary below.\n"
+    context_info += (
+        "- The title should capture the essence or theme of the act (1-7 words)\n"
+    )
+    context_info += (
+        "- The summary should highlight key events and narrative arcs "
+        "(3-5 paragraphs)\n"
+    )
+
+    # Add original content as comments if it exists
+    original_data = {}
+    if act.title:
+        original_data["title"] = act.title
+    if act.summary:
+        original_data["summary"] = act.summary
+
+    # Open editor
+    edited_results, modified = edit_structured_data(
+        results,
+        console,
+        editor_config,
+        context_info=context_info,
+        original_data=original_data if original_data else None,
+        editor_config=EditorConfig(
+            edit_message="Edit the AI-generated content below:",
+            success_message="AI-generated content updated successfully.",
+            cancel_message="Edit cancelled.",
+            error_message="Could not open editor. Please try again.",
+        ),
+    )
+
+    if not modified:
+        logger.debug("User cancelled editing")
+        return None
+
+    # Validate the edited content
+    if not edited_results.get("title") or not edited_results.get("title").strip():
+        console.print("[red]Error:[/] Title cannot be empty.")
+        return None
+
+    if (
+        not edited_results.get("summary")
+        or not edited_results.get("summary").strip()
+    ):
+        console.print("[red]Error:[/] Summary cannot be empty.")
+        return None
+
+    # Show a preview of the edited content
+    from sologm.cli.utils.display import display_act_edited_content_preview
+
+    display_act_edited_content_preview(console, edited_results)
+
+    # Ask for confirmation
+    from rich.prompt import Confirm
+
+    if Confirm.ask(
+        "[yellow]Use this edited content?[/yellow]",
+        default=True,
+    ):
+        logger.debug("User confirmed edited content")
+        return edited_results
+    else:
+        logger.debug("User rejected edited content")
+        return None
+
+
+def _handle_user_feedback_loop(
+    results: Dict[str, str],
+    act: Act,
+    game_name: str,
+    act_manager: ActManager,
+    original_context: Optional[str] = None,
+) -> Optional[Dict[str, str]]:
+    """Handle the accept/edit/regenerate feedback loop.
+
+    Args:
+        results: Dictionary containing generated title and summary
+        act: The act being completed
+        game_name: Name of the game the act belongs to
+        act_manager: ActManager instance for business logic
+        original_context: The original context provided for the first generation
+
+    Returns:
+        Final dictionary with title and summary, or None if user cancels
+    """
+    logger.debug("Starting user feedback loop")
+
+    while True:
+        # Get user choice using the display helper
+        from sologm.cli.utils.display import display_act_ai_feedback_prompt
+
+        choice = display_act_ai_feedback_prompt(console)
+
+        logger.debug(f"User chose: {choice}")
+
+        if choice == "A":  # Accept
+            logger.debug("User accepted the generated content")
+            return results
+
+        elif choice == "E":  # Edit
+            logger.debug("User chose to edit the generated content")
+            edited_results = _edit_ai_content(results, act, game_name)
+
+            if edited_results:
+                return edited_results
+
+            # If editing was cancelled, return to the prompt
+            console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
+            continue
+
+        elif choice == "R":  # Regenerate
+            logger.debug("User chose to regenerate content")
+
+            # Collect regeneration feedback
+            feedback_data = _collect_regeneration_feedback(
+                results, act, game_name, original_context
+            )
+
+            if not feedback_data:
+                console.print(
+                    "[yellow]Regeneration cancelled. Returning to prompt.[/yellow]"
+                )
+                continue
+
+            try:
+                console.print("[yellow]Regenerating summary with AI...[/yellow]")
+
+                # Generate new content with feedback
+                if feedback_data["feedback"] or feedback_data["context"]:
+                    # If user provided feedback or updated context, use it
+                    new_results = act_manager.generate_act_summary_with_feedback(
+                        act.id,
+                        feedback_data["feedback"],
+                        previous_generation=results,
+                        context=feedback_data["context"],
+                    )
+                else:
+                    # If user didn't provide feedback or context, just generate a new summary
+                    # without referencing the previous one
+                    console.print(
+                        "[yellow]Generating completely new attempt...[/yellow]"
+                    )
+                    new_results = act_manager.generate_act_summary(act.id)
+
+                # Display the new results
+                display_act_ai_generation_results(console, new_results, active_act)
+
+                # Continue the loop with the new results
+                results = new_results
+
+            except APIError as e:
+                console.print(f"[red]AI Error:[/] {str(e)}")
+                console.print("[yellow]Returning to previous content.[/yellow]")
+                continue
+
+
+def _handle_ai_completion(
+    act_manager: ActManager,
+    active_act: Act,
+    active_game: Game,
+    console: Console,
+    context: Optional[str],
+    force: bool,
+) -> Optional[Act]:
+    """Handles the AI-driven act completion flow.
+
+    Args:
+        act_manager: Instance of ActManager
+        active_act: The act being completed
+        active_game: The game the act belongs to
+        console: Rich console instance
+        context: Optional context provided via CLI
+        force: Whether to force completion
+
+    Returns:
+        The completed Act object on success, or None if the process is cancelled or fails.
+    """
+    logger.debug("Handling AI completion path")
+
+    # 1. Check existing content
+    if not _check_existing_content(active_act, force):
+        console.print("[yellow]Operation cancelled.[/yellow]")
+        return None
+
+    # 2. Collect context if needed
+    original_context = context  # Keep track for regeneration feedback
+    if not context:
+        context = _collect_user_context(active_act, active_game.name)
+        # User might cancel context collection, context will be None which is handled by generate_act_summary
+
+    try:
+        # 3. Generate initial summary
+        console.print("[yellow]Generating summary with AI...[/yellow]")
+        summary_data = act_manager.generate_act_summary(active_act.id, context)
+
+        # 4. Display results
+        display_act_ai_generation_results(console, summary_data, active_act)
+
+        # 5. Handle user feedback loop
+        final_data = _handle_user_feedback_loop(
+            summary_data, active_act, active_game.name, act_manager, original_context
+        )
+
+        if final_data is None:
+            console.print("[yellow]Operation cancelled during feedback.[/yellow]")
+            return None  # User cancelled the loop
+
+        # 6. Complete the act with final AI data
+        completed_act = act_manager.complete_act_with_ai(
+            active_act.id,
+            final_data.get("title"),
+            final_data.get("summary"),
+        )
+        return completed_act  # Success
+
+    except APIError as e:
+        console.print(f"[red]AI Error:[/] {str(e)}")
+        console.print("[yellow]Falling back to manual entry might be needed.[/yellow]")
+        return None  # Indicate AI failure
+    except Exception as e:
+        logger.error(f"Unexpected error during AI completion: {e}", exc_info=True)
+        console.print(f"[red]Error during AI processing:[/] {str(e)}")
+        return None  # Indicate general failure
+
+
+def _handle_manual_completion(
+    act_manager: ActManager,
+    active_act: Act,
+    active_game: Game,
+    console: Console,
+) -> Optional[Act]:
+    """Handles the manual act completion flow using the editor.
+
+    Args:
+        act_manager: Instance of ActManager
+        active_act: The act being completed
+        active_game: The game the act belongs to
+        console: Rich console instance
+
+    Returns:
+        The completed Act object on success, or None if the editor is cancelled.
+    """
+    logger.debug("Handling manual completion path")
+
+    # 1. Setup editor config
+    editor_config = StructuredEditorConfig(
+        fields=[
+            FieldConfig(
+                name="title",
+                display_name="Title",
+                help_text="Title of the completed act",
+                required=False,
+            ),
+            FieldConfig(
+                name="summary",
+                display_name="Summary",
+                help_text="Summary of the completed act",
+                multiline=True,
+                required=False,
+            ),
+        ],
+        wrap_width=70,
+    )
+
+    # 2. Build context info
+    title_display = active_act.title or "Untitled Act"
+    context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
+    context_info += f"Game: {active_game.name}\n"
+    context_info += f"ID: {active_act.id}\n\n"
+    context_info += (
+        "You can provide a title and description to summarize this "
+        "act's events."
+    )
+
+    # 3. Prepare initial data
+    initial_data = {
+        "title": active_act.title or "",
+        "summary": active_act.summary or "",
+    }
+
+    # 4. Call editor
+    result, modified = edit_structured_data(
+        initial_data,
+        console,
+        editor_config,
+        context_info=context_info,
+    )
+
+    # 5. Handle cancellation
+    if not modified:
+        console.print("[yellow]Act completion canceled.[/yellow]")
+        return None
+
+    # 6. Extract results
+    title = result.get("title") or None
+    summary = result.get("summary") or None
+
+    # 7. Complete the act (outer function handles GameError)
+    completed_act = act_manager.complete_act(
+        act_id=active_act.id, title=title, summary=summary
+    )
+
+    # 8. Return completed act
+    return completed_act
+
+
+# --- Main Command ---
+
 @act_app.command("complete")
 def complete_act(
     title: Optional[str] = typer.Option(
