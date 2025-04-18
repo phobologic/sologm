@@ -618,8 +618,12 @@ def display_game_status(
     # Display game header
     console.print(_create_game_header_panel(game, console))
 
-    # Display act panel (pass latest act and its status)
-    console.print(_create_act_panel(game, latest_act, is_act_active))
+    # Display act panel (pass latest act, its status, and truncation_length)
+    console.print(
+        _create_act_panel(
+            game, latest_act, is_act_active, truncation_length=truncation_length
+        )
+    )
 
     # Create and display the main grid with scene and events info
     grid = Table.grid(expand=True, padding=(0, 1))
@@ -689,7 +693,10 @@ def _calculate_truncation_length(console: Console) -> int:
 
 
 def _create_act_panel(
-    game: Game, latest_act: Optional[Act] = None, is_act_active: bool = False
+    game: Game,
+    latest_act: Optional[Act] = None,
+    is_act_active: bool = False,
+    truncation_length: int = 80,  # Add parameter with a default
 ) -> Panel:
     """Create a panel showing the latest act information."""
     st = StyledText
@@ -725,8 +732,15 @@ def _create_act_panel(
     panel_content.append(title_text)
 
     if latest_act.summary:
+        # Calculate a max length suitable for a full-width panel
+        # Let's use 1.5 times the base truncation length as an example
+        max_summary_length = int(truncation_length * 1.5)
+        logger.debug(f"Truncating act summary to max length {max_summary_length}")
+        truncated_summary = truncate_text(
+            latest_act.summary, max_length=max_summary_length
+        )
         panel_content.append("\n")
-        panel_content.append(latest_act.summary)
+        panel_content.append(truncated_summary)  # Append the truncated summary
 
     # Add metadata including status
     metadata = {

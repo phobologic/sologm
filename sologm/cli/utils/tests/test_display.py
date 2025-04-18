@@ -195,18 +195,33 @@ def test_calculate_truncation_length(mock_console):
 
 def test_create_act_panel(test_game, test_act):
     """Test creating the act panel."""
-    # Test with active act
-    panel = _create_act_panel(test_game, test_act)
-    assert panel is not None
-    assert panel.title is not None
-    assert panel.border_style == BORDER_STYLES["current"]
+    # Test with active act (using default truncation)
+    panel_active = _create_act_panel(test_game, test_act, is_act_active=True)
+    assert panel_active is not None
+    assert panel_active.title is not None
+    assert panel_active.border_style == BORDER_STYLES["current"]
+    # Check if summary is present (might be truncated)
+    assert test_act.summary[:10] in panel_active.renderable  # Check start of summary
+
+    # Test with inactive act and specific truncation
+    test_act.summary = "This is a very long summary that definitely needs to be truncated for the test."
+    panel_inactive_truncated = _create_act_panel(
+        test_game, test_act, is_act_active=False, truncation_length=20
+    )
+    assert panel_inactive_truncated is not None
+    assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
+    # Check if the summary is truncated (20 * 1.5 = 30 chars max)
+    assert "This is a very long summary..." in panel_inactive_truncated.renderable
+    assert (
+        "truncated for the test." not in panel_inactive_truncated.renderable
+    )  # End should be cut off
 
     # Test with no active act
-    panel = _create_act_panel(test_game, None)
-    assert panel is not None
-    assert panel.title is not None
-    assert panel.border_style == BORDER_STYLES["neutral"]
-    assert "No active act" in panel.renderable
+    panel_no_act = _create_act_panel(test_game, None)
+    assert panel_no_act is not None
+    assert panel_no_act.title is not None
+    assert panel_no_act.border_style == BORDER_STYLES["neutral"]
+    assert "No active act" in panel_no_act.renderable
 
 
 def test_create_game_header_panel(test_game, mock_console):
