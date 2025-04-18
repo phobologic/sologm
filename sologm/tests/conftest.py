@@ -1,7 +1,7 @@
 """Common test fixtures for all sologm tests."""
 
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from sqlalchemy import create_engine
@@ -19,7 +19,41 @@ from sologm.models.event_source import EventSource
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import SceneStatus
 
+from sologm.utils.config import Config  # Import for type hinting
+
 logger = logging.getLogger(__name__)
+
+
+# Config mocking fixture
+@pytest.fixture(autouse=True)
+def mock_global_config(monkeypatch):
+    """
+    Mocks the global get_config to prevent reading real user config
+    and provides a predictable, isolated config object for tests.
+
+    By default, the mocked config.get() returns None. Tests needing config
+    should use environment variables (via monkeypatch) or specific patches.
+    """
+    # Create a mock Config instance
+    mock_config = MagicMock(spec=Config)
+
+    # Make config.get() return None by default for isolation
+    mock_config.get.return_value = None
+
+    # Patch get_config where it's defined to affect all imports
+    # Use autospec=True to ensure the mock has the same signature
+    with patch(
+        "sologm.utils.config.get_config", return_value=mock_config, autospec=True
+    ) as mock_getter:
+        # Prevent Config._instance from holding the real singleton if accessed directly
+        # Use monkeypatch for potentially safer patching of class attributes
+        original_instance = getattr(Config, "_instance", None)
+        monkeypatch.setattr(Config, "_instance", mock_config, raising=False)
+
+        yield mock_getter  # Yield the mock getter for potential inspection
+
+        # Restore original singleton instance after test
+        monkeypatch.setattr(Config, "_instance", original_instance, raising=False)
 
 
 # Database fixtures

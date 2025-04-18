@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from anthropic._types import NOT_GIVEN
 
+# Import Config for type hinting if needed elsewhere, but not strictly required for this change
+# from sologm.utils.config import Config
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.utils.errors import APIError
 
@@ -41,12 +43,19 @@ def test_init_with_env_var(mock_anthropic, monkeypatch):
     mock_class.assert_called_once_with(api_key="env_test_key")
 
 
+# Removed the specific @patch decorator, relies on mock_global_config fixture now
 def test_init_no_api_key(mock_anthropic, monkeypatch):
-    """Test initialization fails without API key."""
+    """Test initialization fails without API key from env or config."""
+    # Ensure environment variable is clear
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    # The mock_global_config fixture ensures config.get() returns None.
+    # AnthropicClient checks env var (cleared), then calls get_config().get() (returns None).
     with pytest.raises(APIError) as exc:
         client = AnthropicClient()
-    assert "API key not found" in str(exc.value)
+
+    # Check the specific error message
+    assert "Anthropic API key not found" in str(exc.value)
 
 
 def test_init_anthropic_client_failure(mock_anthropic):
