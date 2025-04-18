@@ -579,20 +579,20 @@ def complete_act(
 
     def _collect_context(act: Act, game_name: str) -> Optional[str]:
         """Collect context from the user for AI generation.
-        
+
         Opens a structured editor to allow the user to provide additional context
         for the AI summary generation. Displays relevant information about the
         act being completed.
-        
+
         Args:
             act: The act being completed
             game_name: Name of the game the act belongs to
-            
+
         Returns:
             The user-provided context, or None if the user cancels
         """
         logger.debug("Collecting context for AI generation")
-        
+
         # Create editor configuration
         editor_config = StructuredEditorConfig(
             fields=[
@@ -606,10 +606,12 @@ def complete_act(
             ],
             wrap_width=70,
         )
-        
+
         # Create context information header
         title_display = act.title or "Untitled Act"
-        context_info = f"AI Summary Generation for Act {act.sequence}: {title_display}\n"
+        context_info = (
+            f"AI Summary Generation for Act {act.sequence}: {title_display}\n"
+        )
         context_info += f"Game: {game_name}\n"
         context_info += f"ID: {act.id}\n\n"
         context_info += "Provide any additional context or guidance for the AI summary generation.\n"
@@ -618,12 +620,12 @@ def complete_act(
         context_info += "- Highlight particular events or turning points\n"
         context_info += "- Suggest a narrative style or tone for the summary\n\n"
         context_info += "You can leave this empty to let the AI generate based only on the act's content."
-        
+
         # Create initial data
         initial_data = {
             "context": "",
         }
-        
+
         # Open editor
         result, modified = edit_structured_data(
             initial_data,
@@ -631,13 +633,15 @@ def complete_act(
             editor_config,
             context_info=context_info,
         )
-        
+
         if not modified:
             logger.debug("User cancelled context collection")
             return None
-        
+
         user_context = result.get("context", "").strip()
-        logger.debug(f"Collected context: {user_context[:50]}{'...' if len(user_context) > 50 else ''}")
+        logger.debug(
+            f"Collected context: {user_context[:50]}{'...' if len(user_context) > 50 else ''}"
+        )
         return user_context if user_context else None
 
     def _process_ai_results(results: Dict[str, str], act: Act) -> None:
@@ -695,12 +699,18 @@ def complete_act(
             if ai:
                 # If no context was provided via command line, collect it interactively
                 if not context:
-                    logger.debug("No context provided via command line, collecting interactively")
+                    logger.debug(
+                        "No context provided via command line, collecting interactively"
+                    )
                     context = _collect_context(active_act, active_game.name)
                     if context:
-                        logger.debug(f"Context collected interactively: {context[:50]}{'...' if len(context) > 50 else ''}")
+                        logger.debug(
+                            f"Context collected interactively: {context[:50]}{'...' if len(context) > 50 else ''}"
+                        )
                 else:
-                    logger.debug(f"Context provided via command line: {context[:50]}{'...' if len(context) > 50 else ''}")
+                    logger.debug(
+                        f"Context provided via command line: {context[:50]}{'...' if len(context) > 50 else ''}"
+                    )
 
                 # Check if we should generate title/summary
                 should_generate_title = force or not active_act.title
@@ -752,43 +762,57 @@ def complete_act(
                         console.print("Falling back to manual entry.")
                 elif not force:
                     # Ask for confirmation before replacing existing content
-                    has_title = active_act.title is not None and active_act.title.strip() != ""
-                    has_summary = active_act.summary is not None and active_act.summary.strip() != ""
-                    
+                    has_title = (
+                        active_act.title is not None and active_act.title.strip() != ""
+                    )
+                    has_summary = (
+                        active_act.summary is not None
+                        and active_act.summary.strip() != ""
+                    )
+
                     if has_title and has_summary:
-                        confirm_message = "This will replace your existing title and summary."
+                        confirm_message = (
+                            "This will replace your existing title and summary."
+                        )
                     elif has_title:
                         confirm_message = "This will replace your existing title."
                     else:
                         confirm_message = "This will replace your existing summary."
-                    
+
                     from rich.prompt import Confirm
-                    if Confirm.ask(f"[yellow]{confirm_message} Continue?[/yellow]", default=False):
+
+                    if Confirm.ask(
+                        f"[yellow]{confirm_message} Continue?[/yellow]", default=False
+                    ):
                         logger.debug("User confirmed replacing existing content")
                         # Generate summary using AI
                         try:
-                            console.print("[yellow]Generating summary with AI...[/yellow]")
-                            
+                            console.print(
+                                "[yellow]Generating summary with AI...[/yellow]"
+                            )
+
                             # Generate summary using AI
                             summary_data = _handle_ai_generation(active_act.id, context)
-                            
+
                             # Use the generated data
                             title = summary_data.get("title")
                             summary = summary_data.get("summary")
-                            
+
                             # Complete the act with the generated data
                             completed_act = _complete_act_with_data(
                                 active_act.id, title, summary
                             )
-                            
+
                             # Display success message
                             title_display = (
-                                f"'{completed_act.title}'" if completed_act.title else "untitled"
+                                f"'{completed_act.title}'"
+                                if completed_act.title
+                                else "untitled"
                             )
                             console.print(
                                 f"[bold green]Act {title_display} completed successfully with AI-generated content![/bold green]"
                             )
-                            
+
                             # Display completed act details
                             console.print(f"ID: {completed_act.id}")
                             console.print(f"Sequence: Act {completed_act.sequence}")
@@ -797,10 +821,10 @@ def complete_act(
                                 console.print(f"Title: {completed_act.title}")
                             if completed_act.summary:
                                 console.print(f"Summary: {completed_act.summary}")
-                                
+
                             # Exit early since we've completed the act
                             return
-                            
+
                         except APIError as e:
                             console.print(f"[red]AI Error:[/] {str(e)}")
                             console.print("Falling back to manual entry.")
@@ -811,7 +835,6 @@ def complete_act(
                         logger.debug("User cancelled replacing existing content")
                         console.print("[yellow]Operation cancelled.[/yellow]")
                         return
-                    
 
             # If title and summary are not provided, open editor
             if title is None and summary is None and not ai:
@@ -834,7 +857,7 @@ def complete_act(
                     ],
                     wrap_width=70,
                 )
-                
+
                 # Create context information
                 title_display = active_act.title or "Untitled Act"
                 context_info = (
