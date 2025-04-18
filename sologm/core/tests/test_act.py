@@ -514,74 +514,70 @@ class TestActManager:
         # Verify mocks were called correctly
         mock_prepare_data.assert_called_once_with(test_act.id, "Additional context")
         mock_client.send_message.assert_called_once()
-        
-    def test_generate_act_summary_with_feedback(self, db_session, test_act, act_manager, monkeypatch):
+
+    def test_generate_act_summary_with_feedback(
+        self, db_session, test_act, act_manager, monkeypatch
+    ):
         """Test generating act summary with feedback on previous generation."""
         # Mock the generate_act_summary method
         mock_generate = MagicMock()
         mock_generate.return_value = {
             "title": "New Test Title",
-            "summary": "New test summary paragraph."
+            "summary": "New test summary paragraph.",
         }
-        
+
         # Mock prepare_regeneration_context
         mock_prepare_context = MagicMock()
         mock_prepare_context.return_value = "Formatted regeneration context"
-        
+
         # Apply mocks
         monkeypatch.setattr(act_manager, "generate_act_summary", mock_generate)
-        monkeypatch.setattr(act_manager, "prepare_regeneration_context", mock_prepare_context)
-        
-        # Test with previous generation
-        previous_gen = {
-            "title": "Old Title",
-            "summary": "Old summary"
-        }
-        
-        result = act_manager.generate_act_summary_with_feedback(
-            test_act.id,
-            "User feedback",
-            previous_gen
+        monkeypatch.setattr(
+            act_manager, "prepare_regeneration_context", mock_prepare_context
         )
-        
+
+        # Test with previous generation
+        previous_gen = {"title": "Old Title", "summary": "Old summary"}
+
+        result = act_manager.generate_act_summary_with_feedback(
+            test_act.id, "User feedback", previous_gen
+        )
+
         # Verify results
         assert result["title"] == "New Test Title"
         assert result["summary"] == "New test summary paragraph."
-        
+
         # Verify mocks were called correctly
         mock_prepare_context.assert_called_once_with(previous_gen, "User feedback")
-        mock_generate.assert_called_once_with(test_act.id, "Formatted regeneration context")
-        
+        mock_generate.assert_called_once_with(
+            test_act.id, "Formatted regeneration context"
+        )
+
         # Test without previous generation
         mock_generate.reset_mock()
         mock_prepare_context.reset_mock()
-        
+
         result = act_manager.generate_act_summary_with_feedback(
-            test_act.id,
-            "Just context"
+            test_act.id, "Just context"
         )
-        
+
         # Verify results
         assert result["title"] == "New Test Title"
         assert result["summary"] == "New test summary paragraph."
-        
+
         # Verify mocks were called correctly
         mock_prepare_context.assert_not_called()
         mock_generate.assert_called_once_with(test_act.id, "Just context")
-        
+
     def test_prepare_regeneration_context(self, db_session, act_manager):
         """Test preparing regeneration context."""
-        previous_gen = {
-            "title": "Old Title",
-            "summary": "Old summary paragraph."
-        }
-        
+        previous_gen = {"title": "Old Title", "summary": "Old summary paragraph."}
+
         # Test with just feedback
         context = act_manager.prepare_regeneration_context(
-            previous_gen,
-            "Make it more dramatic"
+            previous_gen, "Make it more dramatic"
         )
-        
+
         # Verify context structure
         assert "PREVIOUS GENERATION:" in context
         assert "Old Title" in context
@@ -590,14 +586,12 @@ class TestActManager:
         assert "Make it more dramatic" in context
         assert "INSTRUCTIONS:" in context
         assert "ELEMENTS TO PRESERVE:" not in context
-        
+
         # Test with elements to keep
         context = act_manager.prepare_regeneration_context(
-            previous_gen,
-            "Make it more dramatic",
-            "Keep the reference to the dragon"
+            previous_gen, "Make it more dramatic", "Keep the reference to the dragon"
         )
-        
+
         # Verify context structure
         assert "PREVIOUS GENERATION:" in context
         assert "Old Title" in context
@@ -607,29 +601,23 @@ class TestActManager:
         assert "ELEMENTS TO PRESERVE:" in context
         assert "Keep the reference to the dragon" in context
         assert "INSTRUCTIONS:" in context
-        
+
     def test_complete_act_with_ai(self, db_session, test_act, act_manager, monkeypatch):
         """Test completing an act with AI-generated content."""
         # Mock the complete_act method
         mock_complete = MagicMock()
         mock_complete.return_value = test_act
-        
+
         # Apply mock
         monkeypatch.setattr(act_manager, "complete_act", mock_complete)
-        
+
         # Test the method
-        result = act_manager.complete_act_with_ai(
-            test_act.id,
-            "AI Title",
-            "AI Summary"
-        )
-        
+        result = act_manager.complete_act_with_ai(test_act.id, "AI Title", "AI Summary")
+
         # Verify result
         assert result is test_act
-        
+
         # Verify mock was called correctly
         mock_complete.assert_called_once_with(
-            act_id=test_act.id,
-            title="AI Title",
-            summary="AI Summary"
+            act_id=test_act.id, title="AI Title", summary="AI Summary"
         )
