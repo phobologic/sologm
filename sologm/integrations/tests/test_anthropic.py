@@ -1,5 +1,6 @@
 """Tests for Anthropic API client."""
 
+import logging  # Make sure logger is available if not already imported/configured
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,7 +9,6 @@ from anthropic._types import NOT_GIVEN
 # Import Config for type hinting if needed elsewhere, but not strictly required for this change
 # from sologm.utils.config import Config
 from sologm.integrations.anthropic import AnthropicClient
-import logging  # Make sure logger is available if not already imported/configured
 from sologm.utils.errors import APIError
 
 logger = logging.getLogger(__name__)
