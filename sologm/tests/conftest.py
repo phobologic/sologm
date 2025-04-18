@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Config mocking fixture
 @pytest.fixture(autouse=True)
-def mock_global_config(): # Removed monkeypatch argument as it's not used now
+def mock_global_config():  # Removed monkeypatch argument as it's not used now
     """
     Mocks the global get_config to prevent reading real user config
     and provides a predictable, isolated config object for tests.
