@@ -168,8 +168,6 @@ def create_act(
         raise typer.Exit(1)
 
 
-
-
 @act_app.command("list")
 def list_acts() -> None:
     """List all acts in the current game.
