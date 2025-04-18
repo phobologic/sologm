@@ -8,7 +8,10 @@ from anthropic._types import NOT_GIVEN
 # Import Config for type hinting if needed elsewhere, but not strictly required for this change
 # from sologm.utils.config import Config
 from sologm.integrations.anthropic import AnthropicClient
+import logging # Make sure logger is available if not already imported/configured
 from sologm.utils.errors import APIError
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -46,16 +49,28 @@ def test_init_with_env_var(mock_anthropic, monkeypatch):
 # Removed the specific @patch decorator, relies on mock_global_config fixture now
 def test_init_no_api_key(mock_anthropic, monkeypatch):
     """Test initialization fails without API key from env or config."""
-    # Ensure environment variable is clear
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    logger.debug("--- Starting test_init_no_api_key ---")
+    # Ensure environment variables are clear
+    env_var1 = "ANTHROPIC_API_KEY"
+    env_var2 = "SOLOGM_ANTHROPIC_API_KEY" # Check Config.get logic
+    logger.debug(f"Clearing environment variable: {env_var1}")
+    monkeypatch.delenv(env_var1, raising=False)
+    logger.debug(f"Clearing environment variable: {env_var2}")
+    monkeypatch.delenv(env_var2, raising=False)
 
-    # The mock_global_config fixture ensures config.get() returns None.
-    # AnthropicClient checks env var (cleared), then calls get_config().get() (returns None).
+    # The mock_global_config fixture should patch get_config used by AnthropicClient
+    logger.debug("Expecting APIError during AnthropicClient initialization...")
     with pytest.raises(APIError) as exc:
+        # Instantiation happens here
         client = AnthropicClient()
+        # This line should not be reached if the error is raised correctly
+        logger.error("AnthropicClient initialized unexpectedly without raising APIError!")
 
+    # Log the caught exception
+    logger.debug(f"Caught expected exception: {exc.type.__name__}('{exc.value}')")
     # Check the specific error message
     assert "Anthropic API key not found" in str(exc.value)
+    logger.debug("--- Finished test_init_no_api_key successfully ---")
 
 
 def test_init_anthropic_client_failure(mock_anthropic):
