@@ -414,6 +414,7 @@ def edit_act(
 
 # --- Helper Functions for complete_act ---
 
+
 def _check_existing_content(act: Act, force: bool) -> bool:
     """Check if act has existing content and confirm replacement if needed.
 
@@ -442,9 +443,7 @@ def _check_existing_content(act: Act, force: bool) -> bool:
 
     from rich.prompt import Confirm
 
-    return Confirm.ask(
-        f"[yellow]{confirm_message} Continue?[/yellow]", default=False
-    )
+    return Confirm.ask(f"[yellow]{confirm_message} Continue?[/yellow]", default=False)
 
 
 def _collect_user_context(act: Act, game_name: str) -> Optional[str]:
@@ -479,14 +478,11 @@ def _collect_user_context(act: Act, game_name: str) -> Optional[str]:
 
     # Create context information header
     title_display = act.title or "Untitled Act"
-    context_info = (
-        f"AI Summary Generation for Act {act.sequence}: {title_display}\n"
-    )
+    context_info = f"AI Summary Generation for Act {act.sequence}: {title_display}\n"
     context_info += f"Game: {game_name}\n"
     context_info += f"ID: {act.id}\n\n"
     context_info += (
-        "Provide any additional context or guidance for the AI summary "
-        "generation.\n"
+        "Provide any additional context or guidance for the AI summary generation.\n"
     )
     context_info += "For example:\n"
     context_info += "- Focus on specific themes or character developments\n"
@@ -570,9 +566,7 @@ def _collect_regeneration_feedback(
 
     # Create context information header
     title_display = act.title or "Untitled Act"
-    context_info = (
-        f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
-    )
+    context_info = f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
     context_info += f"Game: {game_name}\n"
     context_info += f"ID: {act.id}\n\n"
     context_info += (
@@ -586,8 +580,7 @@ def _collect_regeneration_feedback(
     )
     context_info += "Examples of effective feedback:\n"
     context_info += (
-        '- "Make the title more dramatic and focus on the conflict with '
-        'the dragon"\n'
+        '- "Make the title more dramatic and focus on the conflict with the dragon"\n'
     )
     context_info += (
         '- "The summary is too focused on side characters. Center it on '
@@ -730,10 +723,7 @@ def _edit_ai_content(
         console.print("[red]Error:[/] Title cannot be empty.")
         return None
 
-    if (
-        not edited_results.get("summary")
-        or not edited_results.get("summary").strip()
-    ):
+    if not edited_results.get("summary") or not edited_results.get("summary").strip():
         console.print("[red]Error:[/] Summary cannot be empty.")
         return None
 
@@ -960,8 +950,7 @@ def _handle_manual_completion(
     context_info += f"Game: {active_game.name}\n"
     context_info += f"ID: {active_act.id}\n\n"
     context_info += (
-        "You can provide a title and description to summarize this "
-        "act's events."
+        "You can provide a title and description to summarize this act's events."
     )
 
     # 3. Prepare initial data
@@ -997,6 +986,7 @@ def _handle_manual_completion(
 
 
 # --- Main Command ---
+
 
 @act_app.command("complete")
 def complete_act(
@@ -1093,7 +1083,9 @@ def complete_act(
             if completed_act:
                 display_act_completion_success(console, completed_act)
             else:
-                logger.debug("Act completion did not finish successfully or was cancelled.")
+                logger.debug(
+                    "Act completion did not finish successfully or was cancelled."
+                )
                 # Optionally, add a message here if needed, e.g.:
                 # console.print("[yellow]Act completion process ended.[/yellow]")
 
