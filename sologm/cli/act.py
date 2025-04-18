@@ -12,10 +12,10 @@ import typer
 from rich.console import Console
 
 from sologm.cli.utils.display import (
+    display_act_ai_generation_results,
+    display_act_completion_success,
     display_act_info,
     display_acts_table,
-    display_act_completion_success,
-    display_act_ai_generation_results,
 )
 from sologm.cli.utils.structured_editor import (
     EditorConfig,
@@ -61,7 +61,9 @@ def create_act(
     Acts can be created without a title or summary, allowing you to name them
     later once their significance becomes clear.
 
-    [yellow]Note:[/yellow] You must complete the current active act (if any) before creating a new one.
+    [yellow]Note:[/yellow] You must complete the current active act (if any)
+    before creating a new one.
+
     Use [cyan]'sologm act complete'[/cyan] to complete the current act first.
 
     [yellow]Examples:[/yellow]
@@ -195,7 +197,7 @@ def list_acts() -> None:
         active_game = game_manager.get_active_game()
         if not active_game:
             console.print("[red]Error:[/] No active game. Activate a game first.")
-            raise typer.Exit(1) from e
+            raise typer.Exit(1)
 
         # Get all acts for the game
         acts = game_manager.act_manager.list_acts(active_game.id)
@@ -311,7 +313,8 @@ def edit_act(
             # Verify the act belongs to the active game
             if act_to_edit.game_id != active_game.id:
                 console.print(
-                    f"[red]Error:[/] Act with ID '{act_id}' does not belong to the active game."
+                    f"[red]Error:[/] Act with ID '{act_id}' does not "
+                    "belong to the active game."
                 )
                 raise typer.Exit(1)
         else:
@@ -332,7 +335,8 @@ def edit_act(
                     FieldConfig(
                         name="title",
                         display_name="Title",
-                        help_text="Title of the act (can be left empty for untitled acts)",
+                        help_text="Title of the act (can be left empty for "
+                                  "untitled acts)",
                         required=False,
                     ),
                     FieldConfig(
@@ -469,7 +473,8 @@ def _collect_user_context(act: Act, game_name: str) -> Optional[str]:
             FieldConfig(
                 name="context",
                 display_name="Additional Context",
-                help_text="Provide any additional context or guidance for the AI summary generation",
+                help_text="Provide any additional context or guidance for "
+                          "the AI summary generation",
                 multiline=True,
                 required=False,
             ),
@@ -623,7 +628,8 @@ def _collect_regeneration_feedback(
         editor_config,
         context_info=context_info,
         editor_config=EditorConfig(
-            edit_message="Edit your regeneration feedback below (or leave empty for a new attempt):",
+            edit_message="Edit your regeneration feedback below (or leave "
+                         "empty for a new attempt):",
             success_message="Feedback collected successfully.",
             cancel_message="Regeneration cancelled.",
             error_message="Could not open editor. Please try again.",
@@ -818,15 +824,17 @@ def _handle_user_feedback_loop(
                         context=feedback_data["context"],
                     )
                 else:
-                    # If user didn't provide feedback or context, just generate a new summary
-                    # without referencing the previous one
+                    # If user didn't provide feedback or context, just
+                    # generate a new summary without referencing the previous
+                    # one
                     console.print(
                         "[yellow]Generating completely new attempt...[/yellow]"
                     )
                     new_results = act_manager.generate_act_summary(act.id)
 
                 # Display the new results
-                display_act_ai_generation_results(console, new_results, active_act)
+                display_act_ai_generation_results(console, new_results,
+                                                  act)
 
                 # Continue the loop with the new results
                 results = new_results
@@ -856,7 +864,8 @@ def _handle_ai_completion(
         force: Whether to force completion
 
     Returns:
-        The completed Act object on success, or None if the process is cancelled or fails.
+        The completed Act object on success, or None if the process is
+        cancelled or fails.
     """
     logger.debug("Handling AI completion path")
 
@@ -869,7 +878,8 @@ def _handle_ai_completion(
     original_context = context  # Keep track for regeneration feedback
     if not context:
         context = _collect_user_context(active_act, active_game.name)
-        # User might cancel context collection, context will be None which is handled by generate_act_summary
+        # User might cancel context collection, context will be None which
+        # is handled by generate_act_summary
 
     try:
         # 3. Generate initial summary
@@ -986,13 +996,8 @@ def _handle_manual_completion(
     return completed_act
 
 
-# --- Main Command ---
-
-
 @act_app.command("complete")
 def complete_act(
-    # REMOVED: title parameter and Option
-    # REMOVED: summary parameter and Option
     ai: bool = typer.Option(False, "--ai", help="Use AI to generate title and summary"),
     context: Optional[str] = typer.Option(
         None,
@@ -1004,12 +1009,12 @@ def complete_act(
         False,
         "--force",
         # UPDATED help text for --force
-        help="Force AI generation even if title/summary already exist (overwrites existing)",
+        help="Force AI generation even if title/summary already exist "
+             "(overwrites existing)",
     ),
 ) -> None:
     """[bold]Complete the current active act.[/bold]
 
-    # UPDATED docstring
     Completing an act marks it as finished. This command will either use AI
     (if [cyan]--ai[/cyan] is specified) to generate a title and summary, or
     it will open a structured editor for you to provide them manually based
@@ -1050,7 +1055,7 @@ def complete_act(
             active_game = game_manager.get_active_game()
             if not active_game:
                 console.print("[red]Error:[/] No active game. Activate a game first.")
-                raise typer.Exit(1) from e
+                raise typer.Exit(1)
 
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
@@ -1069,7 +1074,8 @@ def complete_act(
                 # If AI fails or is cancelled, completed_act will be None
             # REMOVED: elif title is not None or summary is not None: block
             else:
-                # Handle manual editor path (this is now the default if --ai is not used)
+                # Handle manual editor path (this is now the default if
+                # --ai is not used)
                 logger.debug("Handling manual completion via editor")
                 completed_act = _handle_manual_completion(
                     act_manager, active_act, active_game, console
@@ -1090,4 +1096,3 @@ def complete_act(
             # Catch errors from validation or manual completion
             console.print(f"[red]Error:[/] {str(e)}")
             raise typer.Exit(1) from e
-        # Note: APIError and other exceptions during AI flow are handled within _handle_ai_completion

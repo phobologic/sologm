@@ -691,7 +691,10 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(f"Regeneration context prepared: {context[:100]}...")
         return context
 
-    def complete_act_with_ai(self, act_id: str, title: str, summary: str) -> Act:
+    def complete_act_with_ai(self,
+                             act_id: str,
+                             title: Optional[str] = None,
+                             summary: Optional[str] = None) -> Act:
         """Complete an act with AI-generated content.
 
         This is a convenience method that wraps complete_act for AI-generated content.
