@@ -1433,7 +1433,7 @@ def display_interpretation_sets_table(
     )
 
     # Add columns with consistent styling
-    table.add_column("ID", style=st.STYLES["timestamp"])
+    table.add_column("ID", style=st.STYLES["timestamp"], no_wrap=True)
     table.add_column("Scene", style=st.STYLES["category"])
     table.add_column("Context")
     table.add_column("Oracle Results")
