@@ -20,7 +20,7 @@ from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import SceneStatus
 
 from sologm.utils.config import Config  # Import for type hinting
-from typing import Any # Add Any if not already imported
+from typing import Any  # Add Any if not already imported
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +40,19 @@ def mock_global_config():
 
     # Define the behavior for the mock's get method
     def mock_get(key: str, default: Any = None) -> Any:
-        logger.debug(f"[Fixture mock_global_config] Mock config.get called with key: {key}")
+        logger.debug(
+            f"[Fixture mock_global_config] Mock config.get called with key: {key}"
+        )
         # Simulate the key not being found in the config file source
         if key == "anthropic_api_key":
-            logger.debug(f"[Fixture mock_global_config] Mock config returning None for key: {key}")
+            logger.debug(
+                f"[Fixture mock_global_config] Mock config returning None for key: {key}"
+            )
             return None
         # For any other key requested from the mock config, return default
-        logger.debug(f"[Fixture mock_global_config] Mock config returning default for key: {key}")
+        logger.debug(
+            f"[Fixture mock_global_config] Mock config returning default for key: {key}"
+        )
         return default
 
     mock_config.get.side_effect = mock_get
@@ -54,10 +60,10 @@ def mock_global_config():
     # Patch get_config where it's LOOKED UP in the anthropic module
     patch_target = "sologm.integrations.anthropic.get_config"
     logger.debug(f"[Fixture mock_global_config] Applying patch to: {patch_target}")
-    with patch(
-        patch_target, return_value=mock_config, autospec=True
-    ) as mock_getter:
-        logger.debug(f"[Fixture mock_global_config] Patch applied. Yielding mock: {mock_getter}")
+    with patch(patch_target, return_value=mock_config, autospec=True) as mock_getter:
+        logger.debug(
+            f"[Fixture mock_global_config] Patch applied. Yielding mock: {mock_getter}"
+        )
         yield mock_getter  # Yield the mock getter for potential inspection
     logger.debug("[Fixture mock_global_config] Patch finished.")
 
