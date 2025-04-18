@@ -527,10 +527,11 @@ def complete_act(
                     name="feedback",
                     display_name="Regeneration Feedback",
                     help_text=(
-                        "Provide feedback on how you want the new generation to differ"
+                        "Provide feedback on how you want the new generation to differ "
+                        "(leave empty for a completely new attempt)"
                     ),
                     multiline=True,
-                    required=True,
+                    required=False,
                 ),
                 FieldConfig(
                     name="keep_elements",
@@ -556,6 +557,9 @@ def complete_act(
         context_info += (
             "Please provide feedback on how you want the new generation to "
             "differ from the previous one.\n"
+        )
+        context_info += (
+            "You can leave this empty to get a completely new attempt.\n\n"
         )
         context_info += (
             "Be specific about what you liked and didn't like about the "
@@ -591,7 +595,7 @@ def complete_act(
 
         # Create initial data
         initial_data = {
-            "feedback": "I'd like the new generation to...",
+            "feedback": "",
             "keep_elements": "",
         }
 
@@ -602,7 +606,7 @@ def complete_act(
             editor_config,
             context_info=context_info,
             editor_config=EditorConfig(
-                edit_message="Edit your regeneration feedback below:",
+                edit_message="Edit your regeneration feedback below (or leave empty for a new attempt):",
                 success_message="Feedback collected successfully.",
                 cancel_message="Regeneration cancelled.",
                 error_message="Could not open editor. Please try again.",
@@ -782,9 +786,16 @@ def complete_act(
                     console.print("[yellow]Regenerating summary with AI...[/yellow]")
 
                     # Generate new content with feedback
-                    new_results = act_manager.generate_act_summary_with_feedback(
-                        act.id, feedback_data["feedback"], previous_generation=results
-                    )
+                    if feedback_data["feedback"]:
+                        # If user provided feedback, use it
+                        new_results = act_manager.generate_act_summary_with_feedback(
+                            act.id, feedback_data["feedback"], previous_generation=results
+                        )
+                    else:
+                        # If user didn't provide feedback, just generate a new summary
+                        # without referencing the previous one
+                        console.print("[yellow]Generating completely new attempt...[/yellow]")
+                        new_results = act_manager.generate_act_summary(act.id)
 
                     # Display the new results
                     _display_ai_results(new_results, act)
