@@ -646,24 +646,24 @@ def complete_act(
 
     def _process_ai_results(results: Dict[str, str], act: Act) -> None:
         """Process and display AI-generated content.
-        
+
         Formats and displays the AI-generated title and summary with appropriate styling.
         If the act already has a title or summary, displays them for comparison.
-        
+
         Args:
             results: Dictionary containing generated title and summary
             act: The act being completed
         """
         logger.debug("Processing AI results for display")
-        
+
         from rich.panel import Panel
-        
+
         # Define border styles for different content types
         BORDER_STYLES = {
             "generated": "green",
             "existing": "blue",
         }
-        
+
         # Display generated title
         if "title" in results and results["title"]:
             title_panel = Panel(
@@ -673,7 +673,7 @@ def complete_act(
                 expand=False,
             )
             console.print(title_panel)
-            
+
             # Display existing title for comparison if it exists
             if act.title:
                 existing_title_panel = Panel(
@@ -683,7 +683,7 @@ def complete_act(
                     expand=False,
                 )
                 console.print(existing_title_panel)
-        
+
         # Display generated summary
         if "summary" in results and results["summary"]:
             summary_panel = Panel(
@@ -693,7 +693,7 @@ def complete_act(
                 expand=False,
             )
             console.print(summary_panel)
-            
+
             # Display existing summary for comparison if it exists
             if act.summary:
                 existing_summary_panel = Panel(
@@ -777,7 +777,7 @@ def complete_act(
 
                         # Generate summary using AI
                         summary_data = _handle_ai_generation(active_act.id, context)
-                        
+
                         # Display the generated content
                         _process_ai_results(summary_data, active_act)
 
@@ -847,7 +847,7 @@ def complete_act(
 
                             # Generate summary using AI
                             summary_data = _handle_ai_generation(active_act.id, context)
-                            
+
                             # Display the generated content
                             _process_ai_results(summary_data, active_act)
 
