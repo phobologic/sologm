@@ -28,6 +28,7 @@ class AnthropicClient:
         try:
             if api_key is None:
                 from sologm.utils.config import get_config
+
                 config = get_config()
                 api_key = config.get("anthropic_api_key")
                 if not api_key:
@@ -36,7 +37,7 @@ class AnthropicClient:
                         "ANTHROPIC_API_KEY environment variable or add 'anthropic_api_key' "
                         "to your configuration file."
                     )
-            
+
             self.api_key = api_key
             logger.debug("Initializing Anthropic client")
             self.client = Anthropic(api_key=self.api_key)
