@@ -640,7 +640,7 @@ def complete_act(
                     name="summary",
                     display_name="Summary",
                     help_text=(
-                        "Edit the AI-generated summary (1-3 paragraphs recommended)"
+                        "Edit the AI-generated summary (3-5 paragraphs recommended)"
                     ),
                     multiline=True,
                     required=True,
@@ -662,7 +662,7 @@ def complete_act(
         )
         context_info += (
             "- The summary should highlight key events and narrative arcs "
-            "(1-3 paragraphs)\n"
+            "(3-5 paragraphs)\n"
         )
 
         # Add original content as comments if it exists
