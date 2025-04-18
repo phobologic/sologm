@@ -777,6 +777,9 @@ def complete_act(
 
                         # Generate summary using AI
                         summary_data = _handle_ai_generation(active_act.id, context)
+                        
+                        # Display the generated content
+                        _process_ai_results(summary_data, active_act)
 
                         # Use the generated data
                         title = summary_data.get("title")
@@ -801,10 +804,6 @@ def complete_act(
                         console.print(f"ID: {completed_act.id}")
                         console.print(f"Sequence: Act {completed_act.sequence}")
                         console.print(f"Active: {completed_act.is_active}")
-                        if completed_act.title:
-                            console.print(f"Title: {completed_act.title}")
-                        if completed_act.summary:
-                            console.print(f"Summary: {completed_act.summary}")
 
                         # Exit early since we've completed the act
                         return
