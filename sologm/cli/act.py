@@ -16,12 +16,14 @@ from sologm.cli.utils.display import (
     display_acts_table,
 )
 from sologm.cli.utils.structured_editor import (
+    EditorConfig,
     FieldConfig,
     StructuredEditorConfig,
     edit_structured_data,
 )
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
+from sologm.models.act import Act
 from sologm.utils.errors import APIError, GameError
 
 logger = logging.getLogger(__name__)
@@ -165,7 +167,7 @@ def create_act(
 
     except GameError as e:
         console.print(f"[red]Error:[/] {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @act_app.command("list")
@@ -189,7 +191,7 @@ def list_acts() -> None:
         active_game = game_manager.get_active_game()
         if not active_game:
             console.print("[red]Error:[/] No active game. Activate a game first.")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
         # Get all acts for the game
         acts = game_manager.act_manager.list_acts(active_game.id)
@@ -370,7 +372,7 @@ def edit_act(
 
         except GameError as e:
             console.print(f"[red]Error:[/] {str(e)}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
 
 @act_app.command("complete")
@@ -459,12 +461,18 @@ def complete_act(
         )
         context_info += f"Game: {game_name}\n"
         context_info += f"ID: {act.id}\n\n"
-        context_info += "Provide any additional context or guidance for the AI summary generation.\n"
+        context_info += (
+            "Provide any additional context or guidance for the AI summary "
+            "generation.\n"
+        )
         context_info += "For example:\n"
         context_info += "- Focus on specific themes or character developments\n"
         context_info += "- Highlight particular events or turning points\n"
         context_info += "- Suggest a narrative style or tone for the summary\n\n"
-        context_info += "You can leave this empty to let the AI generate based only on the act's content."
+        context_info += (
+            "You can leave this empty to let the AI generate based only on "
+            "the act's content."
+        )
 
         # Create initial data
         initial_data = {
@@ -485,7 +493,8 @@ def complete_act(
 
         user_context = result.get("context", "").strip()
         logger.debug(
-            f"Collected context: {user_context[:50]}{'...' if len(user_context) > 50 else ''}"
+            f"Collected context: {user_context[:50]}"
+            f"{'...' if len(user_context) > 50 else ''}"
         )
         return user_context if user_context else None
 
@@ -501,7 +510,7 @@ def complete_act(
         from rich.panel import Panel
 
         # Define border styles for different content types
-        BORDER_STYLES = {
+        border_styles = {
             "generated": "green",
             "existing": "blue",
         }
@@ -511,7 +520,7 @@ def complete_act(
             title_panel = Panel(
                 results["title"],
                 title="[bold]AI-Generated Title[/bold]",
-                border_style=BORDER_STYLES["generated"],
+                border_style=border_styles["generated"],
                 expand=False,
             )
             console.print(title_panel)
@@ -521,7 +530,7 @@ def complete_act(
                 existing_title_panel = Panel(
                     act.title,
                     title="[bold]Current Title[/bold]",
-                    border_style=BORDER_STYLES["existing"],
+                    border_style=border_styles["existing"],
                     expand=False,
                 )
                 console.print(existing_title_panel)
@@ -531,7 +540,7 @@ def complete_act(
             summary_panel = Panel(
                 results["summary"],
                 title="[bold]AI-Generated Summary[/bold]",
-                border_style=BORDER_STYLES["generated"],
+                border_style=border_styles["generated"],
                 expand=False,
             )
             console.print(summary_panel)
@@ -541,7 +550,7 @@ def complete_act(
                 existing_summary_panel = Panel(
                     act.summary,
                     title="[bold]Current Summary[/bold]",
-                    border_style=BORDER_STYLES["existing"],
+                    border_style=border_styles["existing"],
                     expand=False,
                 )
                 console.print(existing_summary_panel)
@@ -567,14 +576,19 @@ def complete_act(
                 FieldConfig(
                     name="feedback",
                     display_name="Regeneration Feedback",
-                    help_text="Provide feedback on how you want the new generation to differ",
+                    help_text=(
+                        "Provide feedback on how you want the new generation to differ"
+                    ),
                     multiline=True,
                     required=True,
                 ),
                 FieldConfig(
                     name="keep_elements",
                     display_name="Elements to Keep",
-                    help_text="Specify any elements from the previous generation you want to preserve",
+                    help_text=(
+                        "Specify any elements from the previous generation "
+                        "you want to preserve"
+                    ),
                     multiline=True,
                     required=False,
                 ),
@@ -589,13 +603,31 @@ def complete_act(
         )
         context_info += f"Game: {game_name}\n"
         context_info += f"ID: {act.id}\n\n"
-        context_info += "Please provide feedback on how you want the new generation to differ from the previous one.\n"
-        context_info += "Be specific about what you liked and didn't like about the previous generation.\n\n"
+        context_info += (
+            "Please provide feedback on how you want the new generation to "
+            "differ from the previous one.\n"
+        )
+        context_info += (
+            "Be specific about what you liked and didn't like about the "
+            "previous generation.\n\n"
+        )
         context_info += "Examples of effective feedback:\n"
-        context_info += '- "Make the title more dramatic and focus on the conflict with the dragon"\n'
-        context_info += '- "The summary is too focused on side characters. Center it on the protagonist\'s journey"\n'
-        context_info += '- "Change the tone to be more somber and reflective of the losses in this act"\n'
-        context_info += '- "I like the theme of betrayal in the summary but want it to be more subtle"\n\n'
+        context_info += (
+            '- "Make the title more dramatic and focus on the conflict with '
+            'the dragon"\n'
+        )
+        context_info += (
+            '- "The summary is too focused on side characters. Center it on '
+            'the protagonist\'s journey"\n'
+        )
+        context_info += (
+            '- "Change the tone to be more somber and reflective of the '
+            'losses in this act"\n'
+        )
+        context_info += (
+            '- "I like the theme of betrayal in the summary but want it to '
+            'be more subtle"\n\n'
+        )
         context_info += "PREVIOUS GENERATION:\n"
         context_info += f"Title: {results.get('title', '')}\n"
         context_info += f"Summary: {results.get('summary', '')}\n\n"
@@ -663,7 +695,9 @@ def complete_act(
                 FieldConfig(
                     name="summary",
                     display_name="Summary",
-                    help_text="Edit the AI-generated summary (1-3 paragraphs recommended)",
+                    help_text=(
+                        "Edit the AI-generated summary (1-3 paragraphs recommended)"
+                    ),
                     multiline=True,
                     required=True,
                 ),
@@ -682,7 +716,10 @@ def complete_act(
         context_info += (
             "- The title should capture the essence or theme of the act (1-7 words)\n"
         )
-        context_info += "- The summary should highlight key events and narrative arcs (1-3 paragraphs)\n"
+        context_info += (
+            "- The summary should highlight key events and narrative arcs "
+            "(1-3 paragraphs)\n"
+        )
 
         # Add original content as comments if it exists
         original_data = {}
@@ -780,7 +817,8 @@ def complete_act(
             default_choice = "E"
 
             choice = Prompt.ask(
-                f"[yellow]What would you like to do with this content?[/yellow] {choices}",
+                f"[yellow]What would you like to do with this content?[/yellow] "
+                f"{choices}",
                 choices=["A", "E", "R", "a", "e", "r"],
                 default=default_choice,
             ).upper()
@@ -908,7 +946,7 @@ def complete_act(
             active_game = game_manager.get_active_game()
             if not active_game:
                 console.print("[red]Error:[/] No active game. Activate a game first.")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from e
 
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
@@ -998,7 +1036,10 @@ def complete_act(
             context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
             context_info += f"Game: {active_game.name}\n"
             context_info += f"ID: {active_act.id}\n\n"
-            context_info += "You can provide a title and description to summarize this act's events."
+            context_info += (
+                "You can provide a title and description to summarize this "
+                "act's events."
+            )
 
             # Create initial data
             initial_data = {

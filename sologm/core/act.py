@@ -223,7 +223,8 @@ class ActManager(BaseManager[Act, Act]):
         result = acts[0] if acts else None
         logger.debug(
             f"Active act for game {game_id}: "
-            f"{result.id + ' (' + (result.title or 'Untitled') + ')' if result else 'None'}"
+            f"{result.id + ' (' + (result.title or 'Untitled') + ')' "
+            f"if result else 'None'}"
         )
         return result
 
@@ -328,7 +329,8 @@ class ActManager(BaseManager[Act, Act]):
                 old_title = act.title
                 act.title = title
                 logger.debug(
-                    f"Updated title from '{old_title or 'Untitled'}' to '{title or 'Untitled'}'"
+                    f"Updated title from '{old_title or 'Untitled'}' "
+                    f"to '{title or 'Untitled'}'"
                 )
 
                 # Update slug if title changes
@@ -617,7 +619,8 @@ class ActManager(BaseManager[Act, Act]):
         Args:
             act_id: ID of the act to summarize
             context: Optional additional context or feedback from the user
-            previous_generation: Optional dictionary containing previous title and summary
+            previous_generation: Optional dictionary containing previous title and 
+                summary
 
         Returns:
             Dict with generated title and summary
@@ -671,7 +674,8 @@ class ActManager(BaseManager[Act, Act]):
         context += (
             "INSTRUCTIONS:\n"
             "Generate a new title and summary that addresses the user's feedback. "
-            "Make sure your new generation is noticeably different from the previous one "
+            "Make sure your new generation is noticeably different from the "
+            "previous one "
             "while incorporating any elements the user wants to preserve."
         )
 
