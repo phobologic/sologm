@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act
 from sologm.models.scene import Scene, SceneStatus
+
 # Ensure Session is imported if not already (it is in the provided snippet)
 # from sqlalchemy.orm import Session
 # Ensure Optional is imported if not already (it is in the provided snippet)

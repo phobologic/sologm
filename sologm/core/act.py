@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act
+
 # Ensure Session is imported if not already (it is in the provided snippet)
 # from sqlalchemy.orm import Session
 # Ensure Optional is imported if not already (it is in the provided snippet)
@@ -463,7 +464,9 @@ class ActManager(BaseManager[Act, Act]):
         Returns:
             The most recent Act instance or None if no acts exist.
         """
-        self.logger.debug(f"Getting most recent act for game_id='{game_id or 'active game'}'")
+        self.logger.debug(
+            f"Getting most recent act for game_id='{game_id or 'active game'}'"
+        )
 
         if game_id is None:
             active_game = self.game_manager.get_active_game()
@@ -729,10 +732,9 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(f"Regeneration context prepared: {context[:100]}...")
         return context
 
-    def complete_act_with_ai(self,
-                             act_id: str,
-                             title: Optional[str] = None,
-                             summary: Optional[str] = None) -> Act:
+    def complete_act_with_ai(
+        self, act_id: str, title: Optional[str] = None, summary: Optional[str] = None
+    ) -> Act:
         """Complete an act with AI-generated content.
 
         This is a convenience method that wraps complete_act for AI-generated content.

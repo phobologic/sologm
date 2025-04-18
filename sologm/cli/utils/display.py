@@ -586,8 +586,8 @@ def display_game_status(
     scene_manager: Optional[SceneManager] = None,
     oracle_manager: Optional["OracleManager"] = None,
     recent_rolls: Optional[List[DiceRoll]] = None,
-    is_act_active: bool = False, # Default to False if no act
-    is_scene_active: bool = False, # Default to False if no scene
+    is_act_active: bool = False,  # Default to False if no act
+    is_scene_active: bool = False,  # Default to False if no scene
 ) -> None:
     """Display comprehensive game status in a compact layout.
 
@@ -626,7 +626,9 @@ def display_game_status(
     grid.add_column("Right", ratio=1)
 
     # Add scene panels and events panel to main grid (pass latest scene and its status)
-    left_grid = _create_scene_panels_grid(game, latest_scene, scene_manager, console, is_scene_active)
+    left_grid = _create_scene_panels_grid(
+        game, latest_scene, scene_manager, console, is_scene_active
+    )
     events_panel = _create_events_panel(recent_events, truncation_length)
     grid.add_row(left_grid, events_panel)
     console.print(grid)
@@ -642,7 +644,7 @@ def display_game_status(
     oracle_panel = (
         _create_oracle_panel(
             game,
-            latest_scene, # Use latest_scene
+            latest_scene,  # Use latest_scene
             oracle_manager,
             truncation_length,
         )
@@ -685,12 +687,14 @@ def _calculate_truncation_length(console: Console) -> int:
         return 40
 
 
-def _create_act_panel(game: Game, latest_act: Optional[Act] = None, is_act_active: bool = False) -> Panel:
+def _create_act_panel(
+    game: Game, latest_act: Optional[Act] = None, is_act_active: bool = False
+) -> Panel:
     """Create a panel showing the latest act information."""
     st = StyledText
 
-    panel_title_text = "Latest Act" # Always refer to latest
-    border_style = BORDER_STYLES["neutral"] # Default border
+    panel_title_text = "Latest Act"  # Always refer to latest
+    border_style = BORDER_STYLES["neutral"]  # Default border
 
     if not latest_act:
         # No acts found
@@ -707,7 +711,7 @@ def _create_act_panel(game: Game, latest_act: Optional[Act] = None, is_act_activ
 
     # Set border if active
     if is_act_active:
-        border_style = BORDER_STYLES["current"] # Use current border if active
+        border_style = BORDER_STYLES["current"]  # Use current border if active
 
     # Create panel content with act information
     panel_content = Text()
@@ -735,7 +739,7 @@ def _create_act_panel(game: Game, latest_act: Optional[Act] = None, is_act_activ
     return Panel(
         panel_content,
         title=st.title(panel_title_text),
-        border_style=border_style, # Use dynamic border
+        border_style=border_style,  # Use dynamic border
         expand=True,
         title_align="left",
     )
@@ -840,7 +844,9 @@ def _create_scene_panels_grid(
     Returns:
         A Table grid containing the scene panels.
     """
-    logger.debug(f"Creating scene panels grid for game {game.id} (Latest Scene Active: {is_scene_active})")
+    logger.debug(
+        f"Creating scene panels grid for game {game.id} (Latest Scene Active: {is_scene_active})"
+    )
 
     st = StyledText
 
@@ -862,7 +868,7 @@ def _create_scene_panels_grid(
 
     # Determine title and border for the latest scene panel
     latest_scene_title_text = "Latest Scene"
-    latest_scene_border_style = BORDER_STYLES["neutral"] # Default border
+    latest_scene_border_style = BORDER_STYLES["neutral"]  # Default border
 
     # Create latest scene panel
     scenes_content = Text()
@@ -910,12 +916,12 @@ def _create_scene_panels_grid(
     else:
         logger.debug("No latest scene to display")
         scenes_content = st.subtitle("No scenes found in this context")
-        latest_scene_title_text = "Scene Status" # Adjust title if no scene at all
+        latest_scene_title_text = "Scene Status"  # Adjust title if no scene at all
 
     scenes_panel = Panel(
         scenes_content,
         title=st.title(latest_scene_title_text),
-        border_style=latest_scene_border_style, # Use dynamic border
+        border_style=latest_scene_border_style,  # Use dynamic border
         title_align="left",
         expand=True,  # Ensure panel expands to fill available width
     )
@@ -951,7 +957,7 @@ def _create_scene_panels_grid(
         )
         # Add metadata for previous scene (status is just its stored status)
         prev_metadata = {
-            "Status": prev_scene.status.value, # Display stored status
+            "Status": prev_scene.status.value,  # Display stored status
             "Sequence": prev_scene.sequence,
             "Created": prev_scene.created_at.strftime("%Y-%m-%d"),
         }

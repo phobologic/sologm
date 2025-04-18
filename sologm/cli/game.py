@@ -121,7 +121,7 @@ def game_status() -> None:
             context_status = game_manager.get_latest_context_status()
             game = context_status["game"]
 
-            if not game: # Check if game retrieval failed within the method
+            if not game:  # Check if game retrieval failed within the method
                 console.print("No active game. Use 'sologm game activate' to set one.")
                 return
 
@@ -147,10 +147,14 @@ def game_status() -> None:
                 logger.debug(
                     f"Getting recent events and dice rolls for latest scene {latest_scene.id}"
                 )
-                recent_events = event_manager.list_events(scene_id=latest_scene.id, limit=5)
+                recent_events = event_manager.list_events(
+                    scene_id=latest_scene.id, limit=5
+                )
                 logger.debug(f"Retrieved {len(recent_events)} recent events")
 
-                recent_rolls = dice_manager.get_recent_rolls(scene=latest_scene, limit=3)
+                recent_rolls = dice_manager.get_recent_rolls(
+                    scene=latest_scene, limit=3
+                )
                 logger.debug(
                     f"Retrieved {len(recent_rolls)} recent dice rolls for "
                     f"scene {latest_scene.id}"
@@ -160,20 +164,20 @@ def game_status() -> None:
                         f"Roll {i + 1}: {roll.notation} = {roll.total} (ID: {roll.id})"
                     )
             else:
-                 logger.debug("No latest scene found to fetch events/rolls from.")
+                logger.debug("No latest scene found to fetch events/rolls from.")
 
             logger.debug("Calling display_game_status with latest context info")
             display_game_status(
                 console,
                 game,
-                latest_act, # Pass latest act
-                latest_scene, # Pass latest scene
+                latest_act,  # Pass latest act
+                latest_scene,  # Pass latest scene
                 recent_events,
                 scene_manager=scene_manager,
                 oracle_manager=oracle_manager,
                 recent_rolls=recent_rolls,
-                is_act_active=is_act_active, # Pass act active status
-                is_scene_active=is_scene_active # Pass scene active status
+                is_act_active=is_act_active,  # Pass act active status
+                is_scene_active=is_scene_active,  # Pass scene active status
             )
     # Keep the original GameError catch block
     except GameError as e:

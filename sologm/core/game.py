@@ -357,8 +357,11 @@ class GameManager(BaseManager[Game, Game]):
         if not game:
             self.logger.warning("No active game found.")
             return {
-                "game": None, "latest_act": None, "latest_scene": None,
-                "is_act_active": False, "is_scene_active": False
+                "game": None,
+                "latest_act": None,
+                "latest_scene": None,
+                "is_act_active": False,
+                "is_scene_active": False,
             }
 
         # Ensure act_manager property exists and works
@@ -370,13 +373,17 @@ class GameManager(BaseManager[Game, Game]):
             latest_scene = self.act_manager.scene_manager.get_most_recent_scene(
                 act_id=latest_act.id
             )
-            self.logger.debug(f"Found latest act: {latest_act.id}, latest scene: {latest_scene.id if latest_scene else 'None'}")
+            self.logger.debug(
+                f"Found latest act: {latest_act.id}, latest scene: {latest_scene.id if latest_scene else 'None'}"
+            )
         else:
             self.logger.debug(f"No acts found in active game {game.id}.")
 
         is_act_active = latest_act.is_active if latest_act else False
         is_scene_active = latest_scene.is_active if latest_scene else False
-        self.logger.debug(f"Latest Act Active: {is_act_active}, Latest Scene Active: {is_scene_active}")
+        self.logger.debug(
+            f"Latest Act Active: {is_act_active}, Latest Scene Active: {is_scene_active}"
+        )
 
         return {
             "game": game,
