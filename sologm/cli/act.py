@@ -260,15 +260,15 @@ def edit_act(
     title: Optional[str] = typer.Option(
         None, "--title", "-t", help="New title for the act"
     ),
-    description: Optional[str] = typer.Option(
-        None, "--description", "-d", help="New description for the act"
+    summary: Optional[str] = typer.Option(
+        None, "--summary", "-s", help="New summary for the act"
     ),
 ) -> None:
     """[bold]Edit an act in the current game.[/bold]
 
     If no act ID is provided, edits the current active act.
-    If title and description are not provided, opens an editor to enter them.
-    You can update the title and/or description of the act, or remove them
+    If title and summary are not provided, opens an editor to enter them.
+    You can update the title and/or summary of the act, or remove them
     by leaving the fields empty.
 
     [yellow]Examples:[/yellow]
@@ -281,8 +281,8 @@ def edit_act(
         [green]Update just the title:[/green]
         $ sologm act edit --title "New Title"
 
-        [green]Update both title and description for a specific act:[/green]
-        $ sologm act edit --id abc123 -t "New Title" -d "New description of the act"
+        [green]Update both title and summary for a specific act:[/green]
+        $ sologm act edit --id abc123 -t "New Title" -s "New summary of the act"
     """
     logger.debug("Editing act")
 
@@ -323,8 +323,8 @@ def edit_act(
                 console.print("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
 
-        # If title and description are not provided, open editor
-        if title is None and description is None:
+        # If title and summary are not provided, open editor
+        if title is None and summary is None:
             # Create editor configuration
             editor_config = StructuredEditorConfig(
                 fields=[
@@ -370,15 +370,22 @@ def edit_act(
                 console.print("[yellow]Act edit canceled.[/yellow]")
                 raise typer.Exit(0)
 
-            title = result.get("title") or None
-            summary = result.get("summary") or None
+            # If parameters were provided directly, use them
+            # Otherwise, use the results from the editor
+            final_title = title if title is not None else result.get("title") or None
+            final_summary = summary if summary is not None else result.get("summary") or None
+
+        else:
+            # If parameters were provided directly, use them
+            final_title = title
+            final_summary = summary
 
         # Update the act
         try:
             updated_act = game_manager.act_manager.edit_act(
                 act_id=act_to_edit.id,
-                title=title,
-                summary=summary,
+                title=final_title,
+                summary=final_summary,
             )
 
             # Display success message
