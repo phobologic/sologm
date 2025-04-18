@@ -28,6 +28,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+
 def version_callback(value: bool) -> None:
     """Print version information and exit.
 
