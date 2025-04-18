@@ -36,6 +36,7 @@ act_app = typer.Typer(
     name="act",
     help="Manage acts in your games",
     no_args_is_help=True,
+    rich_markup_mode="rich",  # Enable Rich markup in help text
 )
 
 
@@ -51,24 +52,24 @@ def create_act(
         None, "--summary", "-s", help="Summary of the act"
     ),
 ) -> None:
-    """Create a new act in the current game.
+    """[bold]Create a new act in the current game.[/bold]
 
     If title and summary are not provided, opens an editor to enter them.
     Acts can be created without a title or summary, allowing you to name them
     later once their significance becomes clear.
 
-    Note: You must complete the current active act (if any) before creating a new one.
-    Use 'sologm act complete' to complete the current act first.
+    [yellow]Note:[/yellow] You must complete the current active act (if any) before creating a new one.
+    Use [cyan]'sologm act complete'[/cyan] to complete the current act first.
 
-    Examples:
-        Create an act with title and summary directly:
-        $ sologm act create --title "The Journey Begins" \
+    [yellow]Examples:[/yellow]
+        [green]Create an act with title and summary directly:[/green]
+        $ sologm act create --title "The Journey Begins" \\
             --summary "The heroes set out on their quest"
 
-        Create an untitled act:
+        [green]Create an untitled act:[/green]
         $ sologm act create
 
-        Create an act with just a title:
+        [green]Create an act with just a title:[/green]
         $ sologm act create -t "The Journey Begins"
     """
     logger.debug("Creating new act")
@@ -172,12 +173,12 @@ def create_act(
 
 @act_app.command("list")
 def list_acts() -> None:
-    """List all acts in the current game.
+    """[bold]List all acts in the current game.[/bold]
 
     Displays a table of all acts in the current game, including their sequence,
     title, description, status, and whether they are active.
 
-    Examples:
+    [yellow]Examples:[/yellow]
         $ sologm act list
     """
     logger.debug("Listing acts")
@@ -212,12 +213,12 @@ def list_acts() -> None:
 
 @act_app.command("info")
 def act_info() -> None:
-    """Show details of the current active act.
+    """[bold]Show details of the current active act.[/bold]
 
     Displays detailed information about the currently active act, including
     its title, description, status, sequence, and any scenes it contains.
 
-    Examples:
+    [yellow]Examples:[/yellow]
         $ sologm act info
     """
     logger.debug("Showing act info")
@@ -258,20 +259,20 @@ def edit_act(
         None, "--description", "-d", help="New description for the act"
     ),
 ) -> None:
-    """Edit the current active act.
+    """[bold]Edit the current active act.[/bold]
 
     If title and description are not provided, opens an editor to enter them.
     You can update the title and/or description of the act, or remove them
     by leaving the fields empty.
 
-    Examples:
-        Edit act with an interactive editor:
+    [yellow]Examples:[/yellow]
+        [green]Edit act with an interactive editor:[/green]
         $ sologm act edit
 
-        Update just the title:
+        [green]Update just the title:[/green]
         $ sologm act edit --title "New Title"
 
-        Update both title and description:
+        [green]Update both title and description:[/green]
         $ sologm act edit -t "New Title" -d "New description of the act"
     """
     logger.debug("Editing act")
@@ -396,7 +397,7 @@ def complete_act(
         help="Force completion even if title/summary already exist",
     ),
 ) -> None:
-    """Complete the current active act and optionally set its title and summary.
+    """[bold]Complete the current active act and optionally set its title and summary.[/bold]
 
     If title and summary are not provided, opens an editor to enter them.
 
@@ -404,25 +405,25 @@ def complete_act(
     retrospective title and summary that summarize the narrative events that
     occurred.
 
-    The --ai flag can be used to generate a title and summary based on the
-    act's content using AI. You can provide additional context with --context.
+    The [cyan]--ai[/cyan] flag can be used to generate a title and summary based on the
+    act's content using AI. You can provide additional context with [cyan]--context[/cyan].
 
-    Examples:
-        Complete act with an interactive editor:
+    [yellow]Examples:[/yellow]
+        [green]Complete act with an interactive editor:[/green]
         $ sologm act complete
 
-        Complete act with specific title and summary:
-        $ sologm act complete -t "The Fall of the Kingdom" -s \
+        [green]Complete act with specific title and summary:[/green]
+        $ sologm act complete -t "The Fall of the Kingdom" -s \\
           "The heroes failed to save the kingdom"
 
-        Complete act with AI-generated title and summary:
+        [green]Complete act with AI-generated title and summary:[/green]
         $ sologm act complete --ai
 
-        Complete act with AI-generated content and additional context:
-        $ sologm act complete --ai \
+        [green]Complete act with AI-generated content and additional context:[/green]
+        $ sologm act complete --ai \\
           --context "Focus on the themes of betrayal and redemption"
 
-        Force AI regeneration of title/summary:
+        [green]Force AI regeneration of title/summary:[/green]
         $ sologm act complete --ai --force
     """
     logger.debug("Completing act")
