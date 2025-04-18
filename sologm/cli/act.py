@@ -608,8 +608,6 @@ def complete_act(
 
             # Handle AI generation if requested
             if ai:
-                # This will be implemented in later phases
-                # Placeholder for future implementation
                 if context:
                     logger.debug(f"Context provided for AI generation: {context}")
 
@@ -618,11 +616,47 @@ def complete_act(
                 should_generate_summary = force or not active_act.summary
 
                 if should_generate_title or should_generate_summary:
-                    console.print(
-                        "[yellow]AI generation of act title/summary is not yet implemented.[/yellow]"
-                    )
-                    console.print("Please provide title and summary manually.")
-                    # This is where AI generation would be implemented
+                    try:
+                        console.print("[yellow]Generating summary with AI...[/yellow]")
+                        
+                        # Generate summary using AI
+                        summary_data = _handle_ai_generation(active_act.id, context)
+                        
+                        # Use the generated data
+                        title = summary_data.get("title")
+                        summary = summary_data.get("summary")
+                        
+                        # Complete the act with the generated data
+                        completed_act = _complete_act_with_data(
+                            active_act.id, title, summary
+                        )
+                        
+                        # Display success message
+                        title_display = (
+                            f"'{completed_act.title}'" if completed_act.title else "untitled"
+                        )
+                        console.print(
+                            f"[bold green]Act {title_display} completed successfully with AI-generated content![/bold green]"
+                        )
+                        
+                        # Display completed act details
+                        console.print(f"ID: {completed_act.id}")
+                        console.print(f"Sequence: Act {completed_act.sequence}")
+                        console.print(f"Active: {completed_act.is_active}")
+                        if completed_act.title:
+                            console.print(f"Title: {completed_act.title}")
+                        if completed_act.summary:
+                            console.print(f"Summary: {completed_act.summary}")
+                            
+                        # Exit early since we've completed the act
+                        return
+                        
+                    except APIError as e:
+                        console.print(f"[red]AI Error:[/] {str(e)}")
+                        console.print("Falling back to manual entry.")
+                    except Exception as e:
+                        console.print(f"[red]Error:[/] {str(e)}")
+                        console.print("Falling back to manual entry.")
                 elif not force:
                     console.print(
                         "[yellow]Act already has title and summary. Use --force to override.[/yellow]"
@@ -650,12 +684,14 @@ def complete_act(
                     wrap_width=70,
                 )
 
-            # Create context information
-            title_display = active_act.title or "Untitled Act"
-            context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
-            context_info += f"Game: {active_game.name}\n"
-            context_info += f"ID: {active_act.id}\n\n"
-            context_info += "You can provide a title and description to summarize this act's events."
+            # If title and summary are not provided, open editor
+            if title is None and summary is None and not ai:
+                # Create context information
+                title_display = active_act.title or "Untitled Act"
+                context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
+                context_info += f"Game: {active_game.name}\n"
+                context_info += f"ID: {active_act.id}\n\n"
+                context_info += "You can provide a title and description to summarize this act's events."
 
             # Create initial data
             initial_data = {
