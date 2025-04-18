@@ -237,19 +237,56 @@ sologm oracle select --id 3 --edit
 
 ## Configuration
 
-The application stores data and configuration by default in `~/.sologm/`. Key configuration options can be set via environment variables or a configuration file (`config.yaml` or `config.toml` in the data directory).
+SoloGM manages its configuration using a combination of a YAML file and environment variables, providing flexibility for different setups.
 
-- **Database URL**:
-  - Environment Variable: `export SOLOGM_DATABASE_URL="sqlite:///~/.sologm/sologm.db"` (Example)
-  - Config File: `database_url: "sqlite:///path/to/your/db.sqlite"`
-- **AI Provider API Key** (Required for oracle interpretation):
-  - Environment Variable: `export ANTHROPIC_API_KEY="your_claude_api_key"`
-  - Config File: `anthropic_api_key: "your_claude_api_key"`
-- **Debug Logging**:
-  - Environment Variable: `export SOLOGM_DEBUG=1`
-  - Config File: `debug: true`
-- **Default Interpretations**:
-  - Config File: `default_interpretations: 3` (Example, defaults to 5 if not set)
+**Configuration File:**
+
+*   **Location:** By default, configuration is stored in `~/.sologm/config.yaml`.
+*   **Creation:** If this file does not exist when the application first runs, it will be created automatically with default settings.
+*   **Format:** The file uses YAML format with simple key-value pairs.
+
+**Environment Variables:**
+
+*   Environment variables can override settings defined in the configuration file.
+*   Most configuration keys can be set using an environment variable prefixed with `SOLOGM_` and converted to uppercase (e.g., `debug` becomes `SOLOGM_DEBUG`).
+*   **API Keys Exception:** API keys have a special format. They use the provider name followed by `_API_KEY` *without* the `SOLOGM_` prefix (e.g., `anthropic_api_key` becomes `ANTHROPIC_API_KEY`).
+
+**Priority Order:**
+
+Settings are loaded in the following order of precedence (highest priority first):
+
+1.  **Environment Variables:** (e.g., `SOLOGM_DEBUG`, `ANTHROPIC_API_KEY`)
+2.  **Configuration File:** (`~/.sologm/config.yaml`)
+3.  **Built-in Defaults:** (Defined within the application code)
+
+**Key Configuration Options:**
+
+| Setting Purpose             | `config.yaml` Key         | Environment Variable        | Default Value                                  |
+| :-------------------------- | :------------------------ | :-------------------------- | :--------------------------------------------- |
+| Database Connection URL     | `database_url`            | `SOLOGM_DATABASE_URL`       | `sqlite:///~/.sologm/sologm.db`                |
+| Anthropic API Key           | `anthropic_api_key`       | `ANTHROPIC_API_KEY`         | `""` (Empty String)                            |
+| Default Oracle Interpretations | `default_interpretations` | `SOLOGM_DEFAULT_INTERPRETATIONS` | `5`                                            |
+| Oracle Interpretation Retries | `oracle_retries`          | `SOLOGM_ORACLE_RETRIES`     | `2`                                            |
+| Enable Debug Logging        | `debug`                   | `SOLOGM_DEBUG`              | `false`                                        |
+| Log File Path               | `log_file_path`           | `SOLOGM_LOG_FILE_PATH`      | `~/.sologm/sologm.log`                         |
+| Max Log File Size (Bytes)   | `log_max_bytes`           | `SOLOGM_LOG_MAX_BYTES`      | `5242880` (5 MB)                               |
+| Log File Backup Count       | `log_backup_count`        | `SOLOGM_LOG_BACKUP_COUNT`   | `1`                                            |
+
+**Example:**
+
+To enable debug logging without editing the file, you could set the environment variable:
+
+```bash
+export SOLOGM_DEBUG=true
+sologm game status # This command will now run with debug logging enabled
+```
+
+To use a different database file:
+
+```bash
+export SOLOGM_DATABASE_URL="sqlite:////path/to/my/custom_sologm.db"
+sologm game list
+```
 
 ## Project Documentation
 
