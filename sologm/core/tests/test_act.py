@@ -597,7 +597,7 @@ class TestActManager:
         mock_prepare_context.reset_mock()
 
         result = act_manager.generate_act_summary_with_feedback(
-            test_act.id, "Just context"
+            test_act.id, context="Just context"
         )
 
         # Verify results
