@@ -254,6 +254,9 @@ def act_info() -> None:
 
 @act_app.command("edit")
 def edit_act(
+    act_id: Optional[str] = typer.Option(
+        None, "--id", help="ID of the act to edit (defaults to active act)"
+    ),
     title: Optional[str] = typer.Option(
         None, "--title", "-t", help="New title for the act"
     ),
@@ -261,21 +264,25 @@ def edit_act(
         None, "--description", "-d", help="New description for the act"
     ),
 ) -> None:
-    """[bold]Edit the current active act.[/bold]
+    """[bold]Edit an act in the current game.[/bold]
 
+    If no act ID is provided, edits the current active act.
     If title and description are not provided, opens an editor to enter them.
     You can update the title and/or description of the act, or remove them
     by leaving the fields empty.
 
     [yellow]Examples:[/yellow]
-        [green]Edit act with an interactive editor:[/green]
+        [green]Edit active act with an interactive editor:[/green]
         $ sologm act edit
+
+        [green]Edit a specific act by ID:[/green]
+        $ sologm act edit --id abc123
 
         [green]Update just the title:[/green]
         $ sologm act edit --title "New Title"
 
-        [green]Update both title and description:[/green]
-        $ sologm act edit -t "New Title" -d "New description of the act"
+        [green]Update both title and description for a specific act:[/green]
+        $ sologm act edit --id abc123 -t "New Title" -d "New description of the act"
     """
     logger.debug("Editing act")
 
@@ -290,13 +297,29 @@ def edit_act(
             console.print("[red]Error:[/] No active game. Activate a game first.")
             raise typer.Exit(1)
 
-        # Get the active act
+        # Get the act to edit
         act_manager = ActManager(session=session)
-        active_act = act_manager.get_active_act(active_game.id)
-        if not active_act:
-            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
-            console.print("Create one with 'sologm act create'.")
-            raise typer.Exit(1)
+        
+        if act_id:
+            # Get the specified act
+            act_to_edit = act_manager.get_act(act_id)
+            if not act_to_edit:
+                console.print(f"[red]Error:[/] Act with ID '{act_id}' not found.")
+                raise typer.Exit(1)
+            
+            # Verify the act belongs to the active game
+            if act_to_edit.game_id != active_game.id:
+                console.print(
+                    f"[red]Error:[/] Act with ID '{act_id}' does not belong to the active game."
+                )
+                raise typer.Exit(1)
+        else:
+            # Get the active act
+            act_to_edit = act_manager.get_active_act(active_game.id)
+            if not act_to_edit:
+                console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+                console.print("Create one with 'sologm act create'.")
+                raise typer.Exit(1)
 
         # If title and description are not provided, open editor
         if title is None and description is None:
@@ -321,16 +344,16 @@ def edit_act(
             )
 
             # Create context information
-            title_display = active_act.title or "Untitled Act"
-            context_info = f"Editing Act {active_act.sequence}: {title_display}\n"
+            title_display = act_to_edit.title or "Untitled Act"
+            context_info = f"Editing Act {act_to_edit.sequence}: {title_display}\n"
             context_info += f"Game: {active_game.name}\n"
-            context_info += f"ID: {active_act.id}\n\n"
+            context_info += f"ID: {act_to_edit.id}\n\n"
             context_info += "You can leave the title empty for an untitled act."
 
             # Create initial data
             initial_data = {
-                "title": active_act.title or "",
-                "summary": active_act.summary or "",
+                "title": act_to_edit.title or "",
+                "summary": act_to_edit.summary or "",
             }
 
             # Open editor
@@ -351,7 +374,7 @@ def edit_act(
         # Update the act
         try:
             updated_act = game_manager.act_manager.edit_act(
-                act_id=active_act.id,
+                act_id=act_to_edit.id,
                 title=title,
                 summary=summary,
             )
