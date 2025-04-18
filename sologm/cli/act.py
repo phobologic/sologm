@@ -558,9 +558,7 @@ def complete_act(
             "Please provide feedback on how you want the new generation to "
             "differ from the previous one.\n"
         )
-        context_info += (
-            "You can leave this empty to get a completely new attempt.\n\n"
-        )
+        context_info += "You can leave this empty to get a completely new attempt.\n\n"
         context_info += (
             "Be specific about what you liked and didn't like about the "
             "previous generation.\n\n"
@@ -789,12 +787,16 @@ def complete_act(
                     if feedback_data["feedback"]:
                         # If user provided feedback, use it
                         new_results = act_manager.generate_act_summary_with_feedback(
-                            act.id, feedback_data["feedback"], previous_generation=results
+                            act.id,
+                            feedback_data["feedback"],
+                            previous_generation=results,
                         )
                     else:
                         # If user didn't provide feedback, just generate a new summary
                         # without referencing the previous one
-                        console.print("[yellow]Generating completely new attempt...[/yellow]")
+                        console.print(
+                            "[yellow]Generating completely new attempt...[/yellow]"
+                        )
                         new_results = act_manager.generate_act_summary(act.id)
 
                     # Display the new results
