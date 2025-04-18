@@ -341,6 +341,7 @@ def test_interpretation_set(session_context, test_scene):
         session.refresh(interp_set)
         # Explicitly load the relationship
         _ = list(interp_set.interpretations)
+        _ = interp_set.scene
 
         return interp_set
 
