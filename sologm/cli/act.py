@@ -834,7 +834,7 @@ def complete_act(
                 ],
                 wrap_width=70,
             )
-            
+
             # Create enhanced context information with more guidance
             title_display = act.title or "Untitled Act"
             context_info = f"Editing AI-Generated Content for Act {act.sequence}: {title_display}\n"
@@ -843,7 +843,7 @@ def complete_act(
             context_info += "Edit the AI-generated title and summary below.\n"
             context_info += "- The title should capture the essence or theme of the act (1-7 words)\n"
             context_info += "- The summary should highlight key events and narrative arcs (1-3 paragraphs)\n"
-            
+
             # Add original content as comments if it exists
             original_data = {}
             if act.title:
@@ -871,23 +871,31 @@ def complete_act(
                 console.print("[yellow]Edit cancelled. Returning to prompt.[/yellow]")
                 # Recursive call to handle user feedback again
                 return _handle_user_feedback(results, act, game_name)
-                
+
             # Validate the edited content
-            if not edited_results.get("title") or not edited_results.get("title").strip():
+            if (
+                not edited_results.get("title")
+                or not edited_results.get("title").strip()
+            ):
                 console.print("[red]Error:[/] Title cannot be empty. Please try again.")
                 return _handle_user_feedback(results, act, game_name)
-                
-            if not edited_results.get("summary") or not edited_results.get("summary").strip():
-                console.print("[red]Error:[/] Summary cannot be empty. Please try again.")
+
+            if (
+                not edited_results.get("summary")
+                or not edited_results.get("summary").strip()
+            ):
+                console.print(
+                    "[red]Error:[/] Summary cannot be empty. Please try again."
+                )
                 return _handle_user_feedback(results, act, game_name)
-                
+
             logger.debug("User edited the content")
-            
+
             # Show a preview of the edited content
             from rich.panel import Panel
-            
+
             console.print("\n[bold]Preview of your edited content:[/bold]")
-            
+
             title_panel = Panel(
                 edited_results["title"],
                 title="[bold]Edited Title[/bold]",
@@ -895,7 +903,7 @@ def complete_act(
                 expand=False,
             )
             console.print(title_panel)
-            
+
             summary_panel = Panel(
                 edited_results["summary"],
                 title="[bold]Edited Summary[/bold]",
@@ -903,10 +911,10 @@ def complete_act(
                 expand=False,
             )
             console.print(summary_panel)
-            
+
             # Ask for confirmation
             from rich.prompt import Confirm
-            
+
             if Confirm.ask(
                 "[yellow]Use this edited content?[/yellow]",
                 default=True,
