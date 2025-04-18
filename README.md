@@ -62,7 +62,7 @@ cd sologm
 uv venv
 source .venv/bin/activate  # On Unix/macOS
 # .venv\Scripts\activate  # On Windows
-uv pip install -e .
+uv sync
 ```
 
 ## Development Setup
@@ -71,8 +71,7 @@ This project uses modern Python development tools:
 
 - **uv**: For virtual environment and package management
 - **pytest**: For testing
-- **black**: For code formatting
-- **isort**: For import sorting
+- **ruff**: For code formatting
 - **mypy**: For type checking
 
 ### Setting Up Development Environment
@@ -84,15 +83,14 @@ source .venv/bin/activate  # On Unix/macOS
 # .venv\Scripts\activate  # On Windows
 
 # Install development dependencies
-uv pip install -e ".[dev]"
+uv sync --all-extras
 
 # Run tests
-pytest
-pytest --cov=sologm  # With coverage
+pytest sologm/
+pytest --cov sologm/  # With coverage
 
 # Format code
-black sologm
-isort sologm
+ruff format sologm
 
 # Type checking
 mypy sologm
@@ -125,6 +123,11 @@ sologm game edit --id cyberpunk-noir
 
 # Export the active game to markdown (stdout)
 sologm game dump
+
+# (on mac) Export the active game to markdown to your clipboard, share this
+# with your favorite AI to have it turn this into rich text, etc. I plan
+# to make this a native AI feature eventually.
+sologm game dump | pbcopy
 
 # Export a specific game including metadata
 sologm game dump --id cyberpunk-noir --metadata
@@ -162,7 +165,7 @@ sologm act complete
 sologm act complete --ai
 
 # Guide the AI summary generation by providing additional context.
-sologm act complete --ai --context "Focus on the betrayal by the informant"
+sologm act complete --ai --context "Focus on the betrayal by the informant, make the summary 5 paragraphs long"
 
 # Force AI generation, overwriting any existing title/summary without prompting.
 sologm act complete --ai --force
@@ -229,7 +232,7 @@ sologm dice roll 2d6
 # Roll with modifier and reason
 sologm dice roll 1d20+3 --reason "Perception check"
 
-# Roll associated with a specific scene
+# Roll associated with a specific scene (uses current scene if not specified)
 sologm dice roll 3d10 --reason "Combat damage" --scene-id rainy-alley
 
 # Show recent dice roll history (for current scene if active)
@@ -321,6 +324,9 @@ To enable debug logging without editing the file, you could set the environment 
 ```bash
 export SOLOGM_DEBUG=true
 sologm game status # This command will now run with debug logging enabled
+
+# you can also use --debug
+sologm --debug game status
 ```
 
 To use a different database file:
@@ -350,20 +356,21 @@ This project follows a set of coding and design conventions to ensure consistenc
 
 This project was developed using a comprehensive documentation-driven approach:
 
-- **PRD.md**: Product Requirements Document detailing the complete feature set and user stories
-- **TDD.md**: Technical Design Document outlining the system architecture and implementation details
-- **PLAN.md**: Development plan breaking down the work into phases and parts
+- **ORIGINAL_PRD.md**: The original Product Requirements Document detailing the complete feature set and user stories. This was built by interacting with Claude to figure out the design.  We have iterated a bunch since then, but this has been useful in the beginning - now we rely more on the conventions documentation.
+- **ORIGINAL_TDD.md**: The original Technical Design Document outlining the system architecture and implementation details. Similar to the PRD.
+- **PLAN.md**: The original Development plan breaking down the work into phases and parts.
 - **COMPLETED.md**: Tracking document recording completed work and test results
 
-## Development Process
+## Original Development Process
 
 This project was developed using [Aider](https://github.com/paul-gauthier/aider), an AI-powered coding assistant. The development process followed these steps:
 
-1. Created detailed PRD to define the product requirements
-2. Developed comprehensive TDD to plan the technical implementation
-3. Created PLAN.md to break down work into manageable phases
-4. Used Aider to implement each phase, tracking progress in COMPLETED.md
-5. Maintained high test coverage throughout development
+1. Created detailed PRD (in Claude) to define the product requirements
+2. Re-ran the PRD through AI to help refine with further question asking.
+3. Fed PRD into Claude to generate a TDD, and refine with further question asking.
+4. Created PLAN.md to break down work into manageable phases
+5. Used Aider to implement each phase, tracking progress in COMPLETED.md
+6. Maintained high test coverage throughout development
 
 ## Contributing
 
@@ -371,7 +378,7 @@ This project was developed using [Aider](https://github.com/paul-gauthier/aider)
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Run tests (`pytest`)
-5. Format code (`black . && isort .`)
+5. Format code (`ruff format sologm`)
 6. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 7. Push to the branch (`git push origin feature/amazing-feature`)
 8. Open a Pull Request
@@ -388,6 +395,9 @@ This project uses Alembic for database migrations. To manage migrations:
 
 ```bash
 # Create a migration with auto-detection of model changes
+# Note, this often won't work because we use SQLite by default, which
+# requires batch operations/seemingly custom migrations - most of the
+# migrations were started this way, then edited in Aider.
 alembic revision --autogenerate -m "Description of changes"
 ```
 
