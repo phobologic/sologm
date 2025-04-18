@@ -533,16 +533,6 @@ def complete_act(
                     multiline=True,
                     required=False,
                 ),
-                FieldConfig(
-                    name="keep_elements",
-                    display_name="Elements to Keep",
-                    help_text=(
-                        "Specify any elements from the previous generation "
-                        "you want to preserve"
-                    ),
-                    multiline=True,
-                    required=False,
-                ),
             ],
             wrap_width=70,
         )
@@ -578,7 +568,11 @@ def complete_act(
         )
         context_info += (
             '- "I like the theme of betrayal in the summary but want it to '
-            'be more subtle"\n\n'
+            'be more subtle"\n'
+        )
+        context_info += (
+            '- "Keep the reference to the ancient ruins, but make the title '
+            'more ominous"\n\n'
         )
         context_info += "PREVIOUS GENERATION:\n"
         context_info += f"Title: {results.get('title', '')}\n"
@@ -594,7 +588,6 @@ def complete_act(
         # Create initial data
         initial_data = {
             "feedback": "",
-            "keep_elements": "",
         }
 
         # Open editor
@@ -617,7 +610,6 @@ def complete_act(
 
         return {
             "feedback": result.get("feedback", "").strip(),
-            "keep_elements": result.get("keep_elements", "").strip(),
         }
 
     def _edit_ai_content(

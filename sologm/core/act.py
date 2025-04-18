@@ -647,14 +647,12 @@ class ActManager(BaseManager[Act, Act]):
         self,
         previous_generation: Dict[str, str],
         feedback: str,
-        elements_to_keep: Optional[str] = None,
     ) -> str:
         """Format previous generation and feedback for the AI.
 
         Args:
             previous_generation: Dictionary containing previous title and summary
             feedback: User feedback on the previous generation
-            elements_to_keep: Optional elements from previous generation to preserve
 
         Returns:
             Formatted context string for AI
@@ -668,15 +666,12 @@ class ActManager(BaseManager[Act, Act]):
             f"USER FEEDBACK:\n{feedback}\n\n"
         )
 
-        if elements_to_keep:
-            context += f"ELEMENTS TO PRESERVE:\n{elements_to_keep}\n\n"
-
         context += (
             "INSTRUCTIONS:\n"
             "Generate a new title and summary that addresses the user's feedback. "
             "Make sure your new generation is noticeably different from the "
-            "previous one "
-            "while incorporating any elements the user wants to preserve."
+            "previous one while incorporating any elements the user specifically "
+            "mentioned wanting to keep."
         )
 
         logger.debug(f"Regeneration context prepared: {context[:100]}...")
