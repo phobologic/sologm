@@ -968,6 +968,7 @@ def complete_act(
 
                 # Display success message
                 from sologm.cli.utils.display import display_act_completion_success
+
                 display_act_completion_success(console, completed_act)
 
             except GameError as e:
