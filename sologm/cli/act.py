@@ -498,62 +498,7 @@ def complete_act(
         )
         return user_context if user_context else None
 
-    def _display_ai_results(results: Dict[str, str], act: Act) -> None:
-        """Display AI-generated content with appropriate styling.
-
-        Args:
-            results: Dictionary containing generated title and summary
-            act: The act being completed
-        """
-        logger.debug("Displaying AI results")
-
-        from rich.panel import Panel
-
-        # Define border styles for different content types
-        border_styles = {
-            "generated": "green",
-            "existing": "blue",
-        }
-
-        # Display generated title
-        if "title" in results and results["title"]:
-            title_panel = Panel(
-                results["title"],
-                title="[bold]AI-Generated Title[/bold]",
-                border_style=border_styles["generated"],
-                expand=False,
-            )
-            console.print(title_panel)
-
-            # Display existing title for comparison if it exists
-            if act.title:
-                existing_title_panel = Panel(
-                    act.title,
-                    title="[bold]Current Title[/bold]",
-                    border_style=border_styles["existing"],
-                    expand=False,
-                )
-                console.print(existing_title_panel)
-
-        # Display generated summary
-        if "summary" in results and results["summary"]:
-            summary_panel = Panel(
-                results["summary"],
-                title="[bold]AI-Generated Summary[/bold]",
-                border_style=border_styles["generated"],
-                expand=False,
-            )
-            console.print(summary_panel)
-
-            # Display existing summary for comparison if it exists
-            if act.summary:
-                existing_summary_panel = Panel(
-                    act.summary,
-                    title="[bold]Current Summary[/bold]",
-                    border_style=border_styles["existing"],
-                    expand=False,
-                )
-                console.print(existing_summary_panel)
+    from sologm.cli.utils.display import display_act_ai_generation_results
 
     def _collect_regeneration_feedback(
         results: Dict[str, str], act: Act, game_name: str
