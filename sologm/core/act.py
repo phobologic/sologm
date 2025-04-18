@@ -221,11 +221,11 @@ class ActManager(BaseManager[Act, Act]):
         )
 
         result = acts[0] if acts else None
-        logger.debug(
-            f"Active act for game {game_id}: "
-            f"{result.id + ' (' + (result.title or 'Untitled') + ')' "
-            f"if result else 'None'}"
-        )
+        if result:
+            act_info = f"{result.id} ({result.title or 'Untitled'})"
+        else:
+            act_info = "None"
+        logger.debug(f"Active act for game {game_id}: {act_info}")
         return result
 
     def edit_act(
