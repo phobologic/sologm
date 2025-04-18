@@ -508,7 +508,10 @@ def complete_act(
     from sologm.cli.utils.display import display_act_ai_generation_results
 
     def _collect_regeneration_feedback(
-        results: Dict[str, str], act: Act, game_name: str, original_context: Optional[str] = None
+        results: Dict[str, str],
+        act: Act,
+        game_name: str,
+        original_context: Optional[str] = None,
     ) -> Optional[Dict[str, str]]:
         """Collect feedback for regenerating AI content.
 
@@ -737,8 +740,11 @@ def complete_act(
             return None
 
     def _handle_user_feedback_loop(
-        results: Dict[str, str], act: Act, game_name: str, act_manager: ActManager,
-        original_context: Optional[str] = None
+        results: Dict[str, str],
+        act: Act,
+        game_name: str,
+        act_manager: ActManager,
+        original_context: Optional[str] = None,
     ) -> Optional[Dict[str, str]]:
         """Handle the accept/edit/regenerate feedback loop.
 
@@ -780,7 +786,9 @@ def complete_act(
                 logger.debug("User chose to regenerate content")
 
                 # Collect regeneration feedback
-                feedback_data = _collect_regeneration_feedback(results, act, game_name, original_context)
+                feedback_data = _collect_regeneration_feedback(
+                    results, act, game_name, original_context
+                )
 
                 if not feedback_data:
                     console.print(

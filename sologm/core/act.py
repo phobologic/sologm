@@ -638,14 +638,18 @@ class ActManager(BaseManager[Act, Act]):
             regeneration_context = self.prepare_regeneration_context(
                 previous_generation, feedback or ""
             )
-            
+
             # Combine with original context if provided
             if context:
-                full_context = f"{regeneration_context}\n\nADDITIONAL CONTEXT:\n{context}"
+                full_context = (
+                    f"{regeneration_context}\n\nADDITIONAL CONTEXT:\n{context}"
+                )
             else:
                 full_context = regeneration_context
-                
-            logger.debug("Using regeneration context with previous generation and feedback")
+
+            logger.debug(
+                "Using regeneration context with previous generation and feedback"
+            )
         else:
             # Just use the provided context
             full_context = context
