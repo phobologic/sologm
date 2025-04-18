@@ -432,14 +432,14 @@ class TestActManager:
     def test_create_act_no_active_game(self, db_session, act_manager, monkeypatch):
         """Test creating an act without game_id when no game is active."""
         # Mock get_active_game to return None
-        monkeypatch.setattr(
-            act_manager.game_manager, "get_active_game", lambda: None
-        )
+        monkeypatch.setattr(act_manager.game_manager, "get_active_game", lambda: None)
 
         with pytest.raises(GameError, match="No active game"):
             act_manager.create_act(title="Test Act")
 
-    def test_create_act_already_active(self, db_session, test_game, test_act, act_manager):
+    def test_create_act_already_active(
+        self, db_session, test_game, test_act, act_manager
+    ):
         """Test creating an active act when another is already active."""
         # test_act is already active by default fixture setup
         with pytest.raises(GameError, match="Cannot create a new act"):
