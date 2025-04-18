@@ -619,7 +619,7 @@ class ActManager(BaseManager[Act, Act]):
         Args:
             act_id: ID of the act to summarize
             context: Optional additional context or feedback from the user
-            previous_generation: Optional dictionary containing previous title and 
+            previous_generation: Optional dictionary containing previous title and
                 summary
 
         Returns:
