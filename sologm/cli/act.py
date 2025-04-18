@@ -556,14 +556,14 @@ def complete_act(
         act_id: str, user_context: Optional[str]
     ) -> Dict[str, str]:
         """Handle the AI generation process for act summary and title.
-        
+
         Args:
             act_id: ID of the act to generate summary for
             user_context: Optional additional context from the user
-            
+
         Returns:
             Dictionary containing generated title and summary
-            
+
         Raises:
             APIError: If there's an error with the AI API
         """
@@ -598,12 +598,12 @@ def complete_act(
         act_id: str, title: Optional[str], summary: Optional[str]
     ) -> Act:
         """Complete the act with the provided data.
-        
+
         Args:
             act_id: ID of the act to complete
             title: Optional title for the completed act
             summary: Optional summary for the completed act
-            
+
         Returns:
             The completed act
         """
@@ -645,27 +645,29 @@ def complete_act(
                 if should_generate_title or should_generate_summary:
                     try:
                         console.print("[yellow]Generating summary with AI...[/yellow]")
-                        
+
                         # Generate summary using AI
                         summary_data = _handle_ai_generation(active_act.id, context)
-                        
+
                         # Use the generated data
                         title = summary_data.get("title")
                         summary = summary_data.get("summary")
-                        
+
                         # Complete the act with the generated data
                         completed_act = _complete_act_with_data(
                             active_act.id, title, summary
                         )
-                        
+
                         # Display success message
                         title_display = (
-                            f"'{completed_act.title}'" if completed_act.title else "untitled"
+                            f"'{completed_act.title}'"
+                            if completed_act.title
+                            else "untitled"
                         )
                         console.print(
                             f"[bold green]Act {title_display} completed successfully with AI-generated content![/bold green]"
                         )
-                        
+
                         # Display completed act details
                         console.print(f"ID: {completed_act.id}")
                         console.print(f"Sequence: Act {completed_act.sequence}")
@@ -674,10 +676,10 @@ def complete_act(
                             console.print(f"Title: {completed_act.title}")
                         if completed_act.summary:
                             console.print(f"Summary: {completed_act.summary}")
-                            
+
                         # Exit early since we've completed the act
                         return
-                        
+
                     except APIError as e:
                         console.print(f"[red]AI Error:[/] {str(e)}")
                         console.print("Falling back to manual entry.")
@@ -715,7 +717,9 @@ def complete_act(
             if title is None and summary is None and not ai:
                 # Create context information
                 title_display = active_act.title or "Untitled Act"
-                context_info = f"Completing Act {active_act.sequence}: {title_display}\n"
+                context_info = (
+                    f"Completing Act {active_act.sequence}: {title_display}\n"
+                )
                 context_info += f"Game: {active_game.name}\n"
                 context_info += f"ID: {active_act.id}\n\n"
                 context_info += "You can provide a title and description to summarize this act's events."
