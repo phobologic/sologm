@@ -706,6 +706,7 @@ def complete_act(
 
         # Show a preview of the edited content
         from sologm.cli.utils.display import display_act_edited_content_preview
+
         display_act_edited_content_preview(console, edited_results)
 
         # Ask for confirmation
@@ -742,6 +743,7 @@ def complete_act(
 
             # Get user choice using the display helper
             from sologm.cli.utils.display import display_act_ai_feedback_prompt
+
             choice = display_act_ai_feedback_prompt(console)
 
             logger.debug(f"User chose: {choice}")
