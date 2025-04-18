@@ -792,7 +792,7 @@ def complete_act(
                         new_results = act_manager.generate_act_summary(act.id)
 
                     # Display the new results
-                    _display_ai_results(new_results, act)
+                    display_act_ai_generation_results(console, new_results, active_act)
 
                     # Continue the loop with the new results
                     results = new_results
@@ -967,7 +967,8 @@ def complete_act(
                 )
 
                 # Display success message
-                _display_completion_success(completed_act)
+                from sologm.cli.utils.display import display_act_completion_success
+                display_act_completion_success(console, completed_act)
 
             except GameError as e:
                 console.print(f"[red]Error:[/] {str(e)}")
