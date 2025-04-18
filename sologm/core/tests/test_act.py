@@ -49,6 +49,9 @@ class TestActManager:
         assert act.sequence == 1
         assert act.is_active is True
 
+        # Complete the first act before creating a new one
+        act_manager.complete_act(act_id=act.id)
+        
         # Create an untitled act
         untitled_act = act_manager.create_act(
             game_id=test_game.id,
