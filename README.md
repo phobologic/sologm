@@ -4,12 +4,12 @@ A command-line application designed to assist players of solo or GM-less rolepla
 
 ## Features
 
-- **Game Management**: Create, list, and activate games to organize your solo RPG sessions
-- **Act Management**: Organize your game into narrative acts that contain multiple scenes
-- **Scene Tracking**: Create scenes within acts, mark them as complete, and track the current active scene
-- **Event Recording**: Log important events that occur during gameplay
-- **Oracle Interpretation**: Use Claude AI to interpret oracle results in the context of your game
-- **Dice Rolling**: Roll dice using standard notation (e.g., 2d6+1) with optional reasons
+- **Game Management**: Create, list, activate, edit, and export games to organize your solo RPG sessions. View game status.
+- **Act Management**: Organize your game into narrative acts. Create, list, view, edit, and complete acts. AI can optionally summarize completed acts.
+- **Scene Tracking**: Create scenes within acts, mark them as complete, edit them, and track the current active scene.
+- **Event Recording**: Log important events that occur during gameplay, associating them with scenes. Edit existing events and manage event sources.
+- **Dice Rolling**: Roll dice using standard notation (e.g., 2d6+1) with optional reasons and scene association. View roll history.
+- **Oracle Interpretation**: Use AI (e.g., Claude) to interpret oracle results in the context of your game. Manage interpretation sets, retry interpretations, and select interpretations to become events.
 
 ## Installation
 
@@ -66,102 +66,190 @@ mypy sologm
 ### Game Management
 ```bash
 # Create a new game (becomes active automatically)
-sologm game create --name "Fantasy Adventure" --description "A solo adventure in a fantasy world"
+sologm game create --name "Cyberpunk Noir" --description "A gritty investigation in Neo-Kyoto"
 
 # List all games
 sologm game list
 
 # Switch active game
-sologm game activate --id fantasy-adventure
+sologm game activate --id cyberpunk-noir
 
-# Show current game info
+# Show basic info about the active game
 sologm game info
+
+# Show detailed status (active/latest act/scene, recent events/rolls)
+sologm game status
+
+# Edit the active game's name/description (opens editor)
+sologm game edit
+
+# Edit a specific game by ID (opens editor)
+sologm game edit --id cyberpunk-noir
+
+# Export the active game to markdown (stdout)
+sologm game dump
+
+# Export a specific game including metadata
+sologm game dump --id cyberpunk-noir --metadata
 ```
 
 ### Act Management
 ```bash
-# Create a new act (becomes active automatically)
-sologm act create --title "The Journey Begins" --description "The heroes set out on their quest"
-
-# Create an untitled act
+# Create a new act in the current game (opens editor for title/summary)
 sologm act create
+
+# Create an act with title and summary directly
+sologm act create --title "The First Clue" --summary "Following the trail of the missing data courier"
 
 # List all acts in the current game
 sologm act list
 
-# Show current act info
+# Show details of the current active act
 sologm act info
 
-# Edit the current act
-sologm act edit --title "New Title" --description "New description"
+# Edit the current active act (opens editor)
+sologm act edit
 
-# Complete the current act
+# Edit a specific act by ID, setting only the title
+sologm act edit --id the-first-clue --title "The Digital Ghost"
+
+# Complete the current act (opens editor for final title/summary)
 sologm act complete
 
-# Complete act with AI-generated title and description (when implemented)
+# Complete act with AI-generated title and summary
 sologm act complete --ai
+
+# Complete act with AI, providing additional context
+sologm act complete --ai --context "Focus on the betrayal by the informant"
+
+# Force AI completion, overwriting existing title/summary
+sologm act complete --ai --force
 ```
 
 ### Scene Management
 ```bash
 # Add a new scene to the current act (becomes current automatically)
-sologm scene add --title "The Forest" --description "A dark and mysterious forest"
+sologm scene add --title "Rainy Alley" --description "Searching for contacts in the neon-drenched backstreets"
 
 # List all scenes in the current act
 sologm scene list
 
-# Complete current scene
+# Show info about the current scene (includes events by default)
+sologm scene info
+
+# Show info about the current scene without events
+sologm scene info --no-events
+
+# Edit the current scene (opens editor)
+sologm scene edit
+
+# Edit a specific scene by ID (opens editor)
+sologm scene edit --id rainy-alley
+
+# Complete the current scene
 sologm scene complete
 
-# Switch current scene
-sologm scene set-current --id forest-scene
+# Switch the current scene
+sologm scene set-current --id rainy-alley
 ```
 
 ### Event Recording
 ```bash
-# Add an event to current scene
-sologm event add --text "Encountered a strange creature in the woods"
+# Add an event to the current scene (opens editor for description/source)
+sologm event add
 
-# List recent events
+# Add an event with description directly
+sologm event add --description "Found a cryptic message on a datapad"
+
+# Add an event from a specific source
+sologm event add --description "Oracle suggested 'Unexpected Ally'" --source oracle
+
+# List available event sources
+sologm event sources
+
+# List recent events in the current scene
 sologm event list
 sologm event list --limit 10  # Show more events
+sologm event list --scene-id rainy-alley # List events for a specific scene
+
+# Edit the most recent event in the current scene (opens editor)
+sologm event edit
+
+# Edit a specific event by ID (opens editor)
+sologm event edit --id evt_abc123
 ```
 
 ### Dice Rolling
 ```bash
-# Basic roll
+# Basic roll (associated with current scene if active)
 sologm dice roll 2d6
 
 # Roll with modifier and reason
-sologm dice roll 2d6+1 --reason "Skill check"
+sologm dice roll 1d20+3 --reason "Perception check"
 
-# Multiple dice
-sologm dice roll 3d6 --reason "Damage roll"
+# Roll associated with a specific scene
+sologm dice roll 3d10 --reason "Combat damage" --scene-id rainy-alley
+
+# Show recent dice roll history (for current scene if active)
+sologm dice history
+sologm dice history --limit 10
+sologm dice history --scene-id rainy-alley # History for a specific scene
 ```
 
 ### Oracle Interpretation
 ```bash
-# Get AI interpretations
-sologm oracle interpret --context "What happens next?" --results "Danger, Mystery" --count 3
+# Get AI interpretations for the current scene
+sologm oracle interpret --context "Does the contact show up?" --results "Yes, but..."
 
-# Select an interpretation
-sologm oracle select --id interp-1
+# Specify number of interpretations
+sologm oracle interpret --context "What complication arises?" --results "Betrayal, Ambush" --count 5
 
-# Get new interpretations for same context
+# Show the prompt that would be sent to the AI without sending it
+sologm oracle interpret --context "What complication arises?" --results "Betrayal, Ambush" --show-prompt
+
+# Get new interpretations for the last query (retry)
 sologm oracle retry
+
+# Retry, but edit the context first (opens editor)
+sologm oracle retry --edit
+
+# List interpretation sets for the current scene
+sologm oracle list
+sologm oracle list --limit 20
+sologm oracle list --scene-id rainy-alley # List for a specific scene
+sologm oracle list --act-id the-first-clue # List for a specific act
+
+# Show details of a specific interpretation set
+sologm oracle show set_xyz789
+
+# Show the status of the current interpretation set for the active scene
+sologm oracle status
+
+# Select an interpretation (e.g., the 2nd one) from the current set to add as an event
+sologm oracle select --id 2
+
+# Select an interpretation by slug from a specific set
+sologm oracle select --id unexpected-visitor --set-id set_xyz789
+
+# Select interpretation and edit the event description before adding
+sologm oracle select --id 3 --edit
 ```
 
 ## Configuration
 
-The application stores data in `~/.sologm/` directory and uses environment variables for configuration:
+The application stores data and configuration by default in `~/.sologm/`. Key configuration options can be set via environment variables or a configuration file (`config.yaml` or `config.toml` in the data directory).
 
-```bash
-# Required for oracle interpretation
-export ANTHROPIC_API_KEY=your_api_key_here
-
-# Optional: Enable debug logging
-export SOLOGM_DEBUG=1
-```
+- **Database URL**:
+  - Environment Variable: `export SOLOGM_DATABASE_URL="sqlite:///~/.sologm/sologm.db"` (Example)
+  - Config File: `database_url: "sqlite:///path/to/your/db.sqlite"`
+- **AI Provider API Key** (Required for oracle interpretation):
+  - Environment Variable: `export ANTHROPIC_API_KEY="your_claude_api_key"`
+  - Config File: `anthropic_api_key: "your_claude_api_key"`
+- **Debug Logging**:
+  - Environment Variable: `export SOLOGM_DEBUG=1`
+  - Config File: `debug: true`
+- **Default Interpretations**:
+  - Config File: `default_interpretations: 3` (Example, defaults to 5 if not set)
 
 ## Project Documentation
 
