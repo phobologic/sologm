@@ -299,14 +299,14 @@ def edit_act(
 
         # Get the act to edit
         act_manager = ActManager(session=session)
-        
+
         if act_id:
             # Get the specified act
             act_to_edit = act_manager.get_act(act_id)
             if not act_to_edit:
                 console.print(f"[red]Error:[/] Act with ID '{act_id}' not found.")
                 raise typer.Exit(1)
-            
+
             # Verify the act belongs to the active game
             if act_to_edit.game_id != active_game.id:
                 console.print(
@@ -317,7 +317,9 @@ def edit_act(
             # Get the active act
             act_to_edit = act_manager.get_active_act(active_game.id)
             if not act_to_edit:
-                console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
+                console.print(
+                    f"[red]Error:[/] No active act in game '{active_game.name}'."
+                )
                 console.print("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
 
