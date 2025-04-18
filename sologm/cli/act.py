@@ -1023,7 +1023,9 @@ def complete_act(
         """
         logger.debug(f"Completing act {act_id} with title and summary")
         try:
-            completed_act = act_manager.complete_act(act_id=act_id, title=title, summary=summary)
+            completed_act = act_manager.complete_act(
+                act_id=act_id, title=title, summary=summary
+            )
             logger.info(f"Successfully completed act {act_id}")
             return completed_act
         except GameError as e:
@@ -1104,7 +1106,7 @@ def complete_act(
 
                         # Display success message with styled text
                         from sologm.cli.utils.styled_text import StyledText
-                        
+
                         title_display = (
                             f"'{completed_act.title}'"
                             if completed_act.title
@@ -1123,12 +1125,16 @@ def complete_act(
                             "Status": "Completed",
                         }
                         console.print(StyledText.format_metadata(metadata))
-                        
+
                         # Display title and summary if present
                         if completed_act.title:
-                            console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
+                            console.print(
+                                f"\n[bold]Title:[/bold] {completed_act.title}"
+                            )
                         if completed_act.summary:
-                            console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
+                            console.print(
+                                f"\n[bold]Summary:[/bold]\n{completed_act.summary}"
+                            )
 
                         # Exit early since we've completed the act
                         return
@@ -1196,7 +1202,7 @@ def complete_act(
 
                             # Display success message with styled text
                             from sologm.cli.utils.styled_text import StyledText
-                            
+
                             title_display = (
                                 f"'{completed_act.title}'"
                                 if completed_act.title
@@ -1215,12 +1221,16 @@ def complete_act(
                                 "Status": "Completed",
                             }
                             console.print(StyledText.format_metadata(metadata))
-                            
+
                             # Display title and summary if present
                             if completed_act.title:
-                                console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
+                                console.print(
+                                    f"\n[bold]Title:[/bold] {completed_act.title}"
+                                )
                             if completed_act.summary:
-                                console.print(f"\n[bold]Summary:[/bold]\n{completed_act.summary}")
+                                console.print(
+                                    f"\n[bold]Summary:[/bold]\n{completed_act.summary}"
+                                )
 
                             # Exit early since we've completed the act
                             return
@@ -1290,13 +1300,11 @@ def complete_act(
 
             # Complete the act using the helper method
             try:
-                completed_act = _complete_act_with_data(
-                    active_act.id, title, summary
-                )
+                completed_act = _complete_act_with_data(active_act.id, title, summary)
 
                 # Display success message with styled text
                 from sologm.cli.utils.styled_text import StyledText
-                    
+
                 title_display = (
                     f"'{completed_act.title}'" if completed_act.title else "untitled"
                 )
@@ -1313,7 +1321,7 @@ def complete_act(
                     "Status": "Completed",
                 }
                 console.print(StyledText.format_metadata(metadata))
-                    
+
                 # Display title and summary if present
                 if completed_act.title:
                     console.print(f"\n[bold]Title:[/bold] {completed_act.title}")
