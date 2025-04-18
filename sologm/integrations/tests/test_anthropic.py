@@ -61,7 +61,7 @@ def test_init_no_api_key(
     monkeypatch.delenv(env_var2, raising=False)
 
     # Define the target to patch - WHERE get_config IS DEFINED
-    patch_target = "sologm.utils.config.get_config" # <--- CHANGE THIS LINE
+    patch_target = "sologm.utils.config.get_config"  # <--- CHANGE THIS LINE
     logger.debug(
         f"Attempting to patch '{patch_target}' to return mock config: {mock_config_no_api_key}"
     )
