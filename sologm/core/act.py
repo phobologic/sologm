@@ -87,7 +87,7 @@ class ActManager(BaseManager[Act, Act]):
             game_id = active_game.id
             logger.debug(f"Using active game with ID {game_id}")
 
-        # Validate that we can create a new act
+        # Validate that we can create a new act if it will be active
         if make_active:
             self.validate_can_create_act(game_id)
 
