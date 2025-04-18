@@ -1475,7 +1475,7 @@ def display_act_ai_generation_results(
         act: The act being completed
     """
     logger.debug("Displaying AI generation results for act")
-    
+
     st = StyledText
 
     # Display generated title
@@ -1534,11 +1534,11 @@ def display_act_completion_success(console: Console, completed_act: Act) -> None
         completed_act: The completed act
     """
     logger.debug(f"Displaying completion success for act {completed_act.id}")
-    
+
     st = StyledText
 
     title_display = f"'{completed_act.title}'" if completed_act.title else "untitled"
-    
+
     # Create success message with consistent styling
     console.print(st.title_success(f"Act {title_display} completed successfully!"))
 
@@ -1552,9 +1552,13 @@ def display_act_completion_success(console: Console, completed_act: Act) -> None
 
     # Display title and summary if present
     if completed_act.title:
-        console.print("\n" + st.combine(st.title("Title:"), " ", completed_act.title).plain)
+        console.print(
+            "\n" + st.combine(st.title("Title:"), " ", completed_act.title).plain
+        )
     if completed_act.summary:
-        console.print("\n" + st.combine(st.title("Summary:"), "\n", completed_act.summary).plain)
+        console.print(
+            "\n" + st.combine(st.title("Summary:"), "\n", completed_act.summary).plain
+        )
 
 
 def display_act_ai_feedback_prompt(console: Console) -> str:
@@ -1570,7 +1574,7 @@ def display_act_ai_feedback_prompt(console: Console) -> str:
         User's choice: "A" for Accept, "E" for Edit, or "R" for Regenerate
     """
     logger.debug("Displaying AI feedback prompt for act")
-    
+
     from rich.prompt import Prompt
 
     # Prompt user for action with consistent styling
@@ -1578,8 +1582,8 @@ def display_act_ai_feedback_prompt(console: Console) -> str:
     default_choice = "E"
 
     choice = Prompt.ask(
-        StyledText.warning("What would you like to do with this content?").plain + 
-        f" {choices}",
+        StyledText.warning("What would you like to do with this content?").plain
+        + f" {choices}",
         choices=["A", "E", "R", "a", "e", "r"],
         default=default_choice,
     ).upper()
@@ -1588,7 +1592,9 @@ def display_act_ai_feedback_prompt(console: Console) -> str:
     return choice
 
 
-def display_act_edited_content_preview(console: Console, edited_results: Dict[str, str]) -> None:
+def display_act_edited_content_preview(
+    console: Console, edited_results: Dict[str, str]
+) -> None:
     """Display a preview of edited act AI content.
 
     Shows a formatted preview of the user-edited AI-generated content
@@ -1599,9 +1605,9 @@ def display_act_edited_content_preview(console: Console, edited_results: Dict[st
         edited_results: Dictionary with edited title and summary
     """
     logger.debug("Displaying edited content preview for act")
-    
+
     st = StyledText
-    
+
     console.print("\n" + st.title("Preview of your edited content:").plain)
 
     title_panel = Panel(
