@@ -704,6 +704,77 @@ def complete_act(
                 )
                 console.print(existing_summary_panel)
 
+    def _collect_regeneration_context(
+        results: Dict[str, str], act: Act, game_name: str
+    ) -> Optional[str]:
+        """Collect context for regenerating AI content.
+
+        Opens a structured editor to allow the user to provide feedback on how they
+        want the new generation to differ from the previous one. Includes the previously
+        generated content as reference.
+
+        Args:
+            results: Dictionary containing previously generated title and summary
+            act: The act being completed
+            game_name: Name of the game the act belongs to
+
+        Returns:
+            The user-provided regeneration context, or None if the user cancels
+        """
+        logger.debug("Collecting regeneration context")
+
+        # Create editor configuration
+        editor_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(
+                    name="feedback",
+                    display_name="Regeneration Feedback",
+                    help_text="Provide feedback on how you want the new generation to differ",
+                    multiline=True,
+                    required=True,
+                ),
+            ],
+            wrap_width=70,
+        )
+
+        # Create context information header
+        title_display = act.title or "Untitled Act"
+        context_info = f"Regeneration Feedback for Act {act.sequence}: {title_display}\n"
+        context_info += f"Game: {game_name}\n"
+        context_info += f"ID: {act.id}\n\n"
+        context_info += "Please provide feedback on how you want the new generation to differ from the previous one.\n"
+        context_info += "For example:\n"
+        context_info += "- Make the title more dramatic/concise/specific\n"
+        context_info += "- Focus more on certain events or themes\n"
+        context_info += "- Change the tone or style of the summary\n"
+        context_info += "- Add or remove specific details\n\n"
+        context_info += "PREVIOUS GENERATION:\n"
+        context_info += f"Title: {results.get('title', '')}\n"
+        context_info += f"Summary: {results.get('summary', '')}\n"
+
+        # Create initial data
+        initial_data = {
+            "feedback": "",
+        }
+
+        # Open editor
+        result, modified = edit_structured_data(
+            initial_data,
+            console,
+            editor_config,
+            context_info=context_info,
+        )
+
+        if not modified:
+            logger.debug("User cancelled regeneration context collection")
+            return None
+
+        feedback = result.get("feedback", "").strip()
+        logger.debug(
+            f"Collected regeneration feedback: {feedback[:50]}{'...' if len(feedback) > 50 else ''}"
+        )
+        return feedback if feedback else None
+
     def _handle_user_feedback(
         results: Dict[str, str], act: Act, game_name: str
     ) -> Optional[Dict[str, str]]:
