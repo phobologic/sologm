@@ -15,6 +15,7 @@ from sologm.models.event import Event  # <-- Added import
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
+from sqlalchemy.orm import Session  # Add Session import
 
 # Import manager types for mocking/type hinting if needed by tests
 from sologm.core.oracle import OracleManager
@@ -57,6 +58,7 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 
 def test_display_game_status_full(
     mock_console: MagicMock,
+    db_session: Session,  # Add db_session fixture
     test_game: Game,
     test_act: Act,  # Assuming test_act is available
     test_scene: Scene,
@@ -67,7 +69,24 @@ def test_display_game_status_full(
 ):
     """Test displaying full game status with all components using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
+
+    # --- Add this section ---
+    # Explicitly load relationships needed by the renderer within the active session
+    # This prevents DetachedInstanceError during lazy loading inside the renderer.
+    try:
+        db_session.add(test_game)  # Re-attach if it became detached
+        db_session.refresh(test_game, attribute_names=["acts"])
+        # If other relationships are needed later by the renderer, load them too:
+        # for act in test_game.acts:
+        #     db_session.refresh(act, attribute_names=['scenes'])
+        # db_session.refresh(test_scene, attribute_names=['act', 'events']) # Example
+        # db_session.refresh(test_act, attribute_names=['game', 'scenes']) # Example
+    except Exception as e:
+        # Log potential issues during refresh, but proceed
+        print(f"Warning: Error refreshing test objects: {e}")  # Or use logger
+    # --- End added section ---
+
+    # This call should now succeed as 'game.acts' is pre-loaded
     renderer.display_game_status(
         game=test_game,
         latest_act=test_act,
