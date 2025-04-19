@@ -38,134 +38,28 @@ from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 # --- test_display_scenes_table_* removed, moved to test_rich_renderer.py ---
 
 
-def test_calculate_truncation_length(mock_console):
-    """Test the truncation length calculation."""
-    # Test with a valid console width
-    mock_console.width = 100
-    result = _calculate_truncation_length(mock_console)
-    assert result == 90  # 100 - 10
-
-    # Test with a small console width
-    mock_console.width = 30
-    result = _calculate_truncation_length(mock_console)
-    assert result == 40  # min value
-
-    # Test with an invalid console width
-    mock_console.width = None
-    result = _calculate_truncation_length(mock_console)
-    assert result == 40  # default value
+# --- test_calculate_truncation_length removed, moved to test_rich_renderer.py ---
 
 
-def test_create_act_panel(test_game, test_act):
-    """Test creating the act panel."""
-    # Test with active act (using default truncation)
-    panel_active = _create_act_panel(test_game, test_act, is_act_active=True)
-    assert panel_active is not None
-    assert panel_active.title is not None
-    assert panel_active.border_style == BORDER_STYLES["current"]
-    # Check if summary is present (might be truncated)
-    assert test_act.summary[:10] in panel_active.renderable  # Check start of summary
-
-    # Test with inactive act and specific truncation
-    test_act.summary = "This is a very long summary that definitely needs to be truncated for the test."
-    panel_inactive_truncated = _create_act_panel(
-        test_game, test_act, is_act_active=False, truncation_length=20
-    )
-    assert panel_inactive_truncated is not None
-    assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
-    # Check if the summary is truncated (20 * 1.5 = 30 chars max)
-    assert "This is a very long summary..." in panel_inactive_truncated.renderable
-    assert (
-        "truncated for the test." not in panel_inactive_truncated.renderable
-    )  # End should be cut off
-
-    # Test with no active act
-    panel_no_act = _create_act_panel(test_game, None)
-    assert panel_no_act is not None
-    assert panel_no_act.title is not None
-    assert panel_no_act.border_style == BORDER_STYLES["neutral"]
-    # Check for the updated message when no act is provided
-    assert "No acts found in this game." in panel_no_act.renderable
+# --- test_create_act_panel removed, moved to test_rich_renderer.py ---
 
 
-def test_create_game_header_panel(test_game, mock_console):
-    """Test creating the game header panel."""
-    # Test without console
-    panel = _create_game_header_panel(test_game)
-    assert panel is not None
-    assert panel.title is not None
-    assert panel.border_style == BORDER_STYLES["game_info"]
-
-    # Test with console
-    panel = _create_game_header_panel(test_game, mock_console)
-    assert panel is not None
-    assert panel.title is not None
-    assert panel.border_style == BORDER_STYLES["game_info"]
+# --- test_create_game_header_panel removed, moved to test_rich_renderer.py ---
 
 
-def test_create_scene_panels_grid(test_game, test_scene):
-    """Test creating the scene panels grid."""
-    # Test with active scene but no scene manager
-    grid = _create_scene_panels_grid(test_game, test_scene, None)
-    assert grid is not None
-
-    # Test with no active scene
-    grid = _create_scene_panels_grid(test_game, None, None)
-    assert grid is not None
+# --- test_create_scene_panels_grid removed, moved to test_rich_renderer.py ---
 
 
-def test_create_events_panel(test_events, display_helpers):
-    """Test creating the events panel."""
-    create_events_panel = display_helpers["create_events_panel"]
-
-    # Test with events
-    panel = create_events_panel(test_events, 60)
-    assert panel is not None
-    assert "Recent Events" in panel.title
-    assert panel.border_style == BORDER_STYLES["success"]
-
-    # Test with no events
-    panel = create_events_panel([], 60)
-    assert panel is not None
-    assert "Recent Events" in panel.title
+# --- test_create_events_panel removed, moved to test_rich_renderer.py ---
 
 
-def test_create_oracle_panel(test_game, test_scene, oracle_manager):
-    """Test creating the oracle panel."""
-    # Test with no oracle manager
-    panel = _create_oracle_panel(test_game, test_scene, None, 60)
-    assert panel is None
-
-    # Test with oracle manager
-    panel = _create_oracle_panel(test_game, test_scene, oracle_manager, 60)
-    assert (
-        panel is None or panel is not None
-    )  # Either outcome is valid depending on test data
+# --- test_create_oracle_panel removed, moved to test_rich_renderer.py ---
 
 
-def test_create_empty_oracle_panel(display_helpers):
-    """Test creating an empty oracle panel."""
-    panel = display_helpers["create_empty_oracle_panel"]()
-    assert panel is not None
-    assert "Oracle" in panel.title
-    assert panel.border_style == BORDER_STYLES["neutral"]
+# --- test_create_empty_oracle_panel removed, moved to test_rich_renderer.py ---
 
 
-def test_create_dice_rolls_panel(test_dice_roll, display_helpers):
-    """Test creating the dice rolls panel."""
-    create_dice_rolls_panel = display_helpers["create_dice_rolls_panel"]
-
-    # Test with no rolls
-    panel = create_dice_rolls_panel([])
-    assert panel is not None
-    assert "Recent Rolls" in panel.title
-    assert "No recent dice rolls" in panel.renderable
-
-    # Test with rolls
-    panel = create_dice_rolls_panel([test_dice_roll])
-    assert panel is not None
-    assert "Recent Rolls" in panel.title
-    assert test_dice_roll.notation in panel.renderable
+# --- test_create_dice_rolls_panel removed, moved to test_rich_renderer.py ---
 
 
 # --- test_display_interpretation removed, moved to test_rich_renderer.py ---
