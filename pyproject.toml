@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sologm"
-version = "0.1.0"
+version = "0.2.0"
 description = "Solo RPG Helper command-line application with AI-enabled features"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -16,7 +16,7 @@ authors = [
     {name = "Michael Barrett"},
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
