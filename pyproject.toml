@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "sologm"
 version = "0.1.0"
-description = "Solo RPG Helper command-line application"
+description = "Solo RPG Helper command-line application with AI-enabled features"
 readme = "README.md"
 requires-python = ">=3.13"
 license = {
@@ -30,6 +30,10 @@ dependencies = [
     "rich>=13.3.5",
     "sqlalchemy>=2.0.40",
 ]
+
+[project.urls]
+Homepage = "https://github.com/phobologic/sologm"
+Issues = "https://github.com/phobologic/sologm/issues"
 
 [project.optional-dependencies]
 dev = [
