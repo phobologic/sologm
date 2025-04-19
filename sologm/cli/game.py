@@ -84,26 +84,39 @@ def activate_game(
 
 @game_app.command("info")
 def game_info() -> None:
-    """Show basic information about the active game."""
+    """Show basic information about the active game (or latest context if none active)."""
     from sologm.database.session import get_db_context
 
     try:
-        logger.debug("Getting active game info")
+        logger.debug("Getting game info (using latest context if needed)")
         with get_db_context() as session:
             game_manager = GameManager(session=session)
-            game = game_manager.get_active_game()
+
+            # Use the consolidated method to get the latest context
+            context_status = game_manager.get_latest_context_status()
+            game = context_status["game"]
+
             if not game:
                 console.print("No active game. Use 'sologm game activate' to set one.")
                 return
 
-            # Access scene_manager through the chain
-            act_manager = game_manager.act_manager
-            scene_manager = act_manager.scene_manager
-            active_scene = scene_manager.get_active_scene()
+            # Extract the latest scene (might be None if no acts/scenes exist)
+            latest_scene = context_status["latest_scene"]
 
-            display_game_info(console, game, active_scene)
+            logger.debug(
+                f"Displaying info for game {game.id}, "
+                f"latest scene: {latest_scene.id if latest_scene else 'None'}"
+            )
+            # Pass the potentially None latest_scene to the display function
+            display_game_info(console, game, latest_scene)
+
     except GameError as e:
+        # Keep the specific GameError catch
         console.print(f"[red]Error getting game info: {str(e)}[/red]")
+    except Exception as e:
+        # Add a general exception catch like in game_status for robustness
+        logger.exception("An unexpected error occurred during game info retrieval.")
+        console.print(f"[red]An unexpected error occurred: {str(e)}[/red]")
 
 
 @game_app.command("status")
