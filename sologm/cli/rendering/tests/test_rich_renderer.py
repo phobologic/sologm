@@ -45,6 +45,37 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 # --- End Tests for display_scene_info ---
 
 
+# --- Tests for display_acts_table (Moved & Adapted) ---
+
+
+def test_display_acts_table_with_acts(mock_console: MagicMock, test_act: Act):
+    """Test displaying acts table with acts using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_acts_table([test_act], test_act.id)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+
+
+def test_display_acts_table_no_acts(mock_console: MagicMock):
+    """Test displaying acts table with no acts using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_acts_table([], None)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once_with(
+        "No acts found. Create one with 'sologm act create'."
+    )
+
+
+# --- End Tests for display_acts_table ---
+
+
 # --- Tests for display_scenes_table (Moved & Adapted) ---
 
 

@@ -530,7 +530,57 @@ class RichRenderer(Renderer):
         self, acts: List[Act], active_act_id: Optional[str] = None
     ) -> None:
         """Displays a list of acts in a Rich table."""
-        raise NotImplementedError
+        logger.debug(f"Displaying acts table with {len(acts)} acts")
+        logger.debug(f"Active act ID: {active_act_id if active_act_id else 'None'}")
+        if not acts:
+            logger.debug("No acts found to display")
+            # Use self.console
+            self.console.print("No acts found. Create one with 'sologm act create'.")
+            return
+
+        st = StyledText
+
+        # Create table without a title
+        table = Table(
+            border_style=BORDER_STYLES["game_info"],
+        )
+
+        # Add columns with consistent styling
+        table.add_column("ID", style=st.STYLES["timestamp"])
+        table.add_column("Sequence", justify="right")
+        table.add_column("Title", style=st.STYLES["category"])
+        table.add_column("Summary")
+        table.add_column("Current", style=st.STYLES["success"], justify="center")
+
+        # Add rows with consistent formatting
+        for act in acts:
+            is_active = active_act_id and act.id == active_act_id
+            active_marker = "✓" if is_active else ""
+
+            # Create act title with appropriate styling
+            act_title = act.title if act.title else "[italic]Untitled Act[/italic]"
+            act_title_styled = st.title(act_title).plain if is_active else act_title
+
+            table.add_row(
+                act.id,
+                str(act.sequence),
+                act_title_styled,
+                act.summary or "",
+                active_marker,
+            )
+
+        # Create panel title
+        panel_title = st.title("Acts")
+
+        # Wrap the table in a panel with a title
+        panel = Panel(
+            table,
+            title=panel_title,
+            title_align="left",
+            border_style=BORDER_STYLES["game_info"],
+        )
+        # Use self.console
+        self.console.print(panel)
 
     def display_act_info(self, act: Act, game_name: str) -> None:
         """Displays detailed information about a specific act using Rich."""
