@@ -26,10 +26,7 @@ from sologm.cli.utils.display import (
 from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 
 
-def test_display_dice_roll(mock_console, test_dice_roll):
-    """Test displaying a dice roll."""
-    display_dice_roll(mock_console, test_dice_roll)
-    assert mock_console.print.called
+# --- test_display_dice_roll removed, moved to test_rich_renderer.py ---
 
 
 def test_display_events_table_with_events(mock_console, test_events, test_scene):
