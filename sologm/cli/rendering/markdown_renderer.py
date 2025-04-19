@@ -1,6 +1,7 @@
 """
 Renderer implementation for generating Markdown output.
 """
+
 from rich.console import Console
 
 # Import base class
