@@ -35,18 +35,7 @@ from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 # --- test_display_games_table_* removed, moved to test_rich_renderer.py ---
 
 
-def test_display_scenes_table_with_scenes(mock_console, test_scene):
-    """Test displaying scenes table with scenes."""
-    display_scenes_table(mock_console, [test_scene], test_scene.id)
-    assert mock_console.print.called
-
-
-def test_display_scenes_table_no_scenes(mock_console):
-    """Test displaying scenes table with no scenes."""
-    display_scenes_table(mock_console, [], None)
-    mock_console.print.assert_called_once_with(
-        "No scenes found. Create one with 'sologm scene create'."
-    )
+# --- test_display_scenes_table_* removed, moved to test_rich_renderer.py ---
 
 
 def test_display_game_status_full(

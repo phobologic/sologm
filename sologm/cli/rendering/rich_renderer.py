@@ -23,7 +23,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene  # Added SceneStatus
+from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
 
 # Corrected import based on file structure from Phase 1
 from .base import Renderer
@@ -324,7 +324,62 @@ class RichRenderer(Renderer):
         self, scenes: List[Scene], active_scene_id: Optional[str] = None
     ) -> None:
         """Displays a list of scenes in a Rich table."""
-        raise NotImplementedError
+        logger.debug(f"Displaying scenes table with {len(scenes)} scenes")
+        logger.debug(
+            f"Active scene ID: {active_scene_id if active_scene_id else 'None'}"
+        )
+        if not scenes:
+            logger.debug("No scenes found to display")
+            # Use self.console
+            self.console.print(
+                "No scenes found. Create one with 'sologm scene create'."
+            )
+            return
+
+        st = StyledText
+
+        # Create table without a title
+        table = Table(
+            border_style=BORDER_STYLES["game_info"],
+        )
+
+        # Add columns with consistent styling
+        table.add_column("ID", style=st.STYLES["timestamp"])
+        table.add_column("Title", style=st.STYLES["category"])
+        table.add_column("Description")
+        table.add_column("Status", style=st.STYLES["success"])
+        table.add_column("Current", style=st.STYLES["success"], justify="center")
+        table.add_column("Sequence", justify="right")
+
+        # Add rows with consistent formatting
+        for scene in scenes:
+            is_active = active_scene_id and scene.id == active_scene_id
+            active_marker = "✓" if is_active else ""
+
+            # Create scene title with appropriate styling
+            scene_title = st.title(scene.title).plain if is_active else scene.title
+
+            table.add_row(
+                scene.id,
+                scene_title,
+                scene.description,
+                scene.status.value,
+                active_marker,
+                str(scene.sequence),
+            )
+
+        # Create panel title
+        panel_title = st.title("Scenes")
+
+        # Wrap the table in a panel with a title
+        panel = Panel(
+            table,
+            title=panel_title,
+            title_align="left",
+            border_style=BORDER_STYLES["game_info"],
+        )
+        # Use self.console
+        self.console.print(panel)
 
     def display_game_info(
         self, game: Game, active_scene: Optional[Scene] = None

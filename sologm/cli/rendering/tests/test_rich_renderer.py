@@ -45,6 +45,37 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 # --- End Tests for display_scene_info ---
 
 
+# --- Tests for display_scenes_table (Moved & Adapted) ---
+
+
+def test_display_scenes_table_with_scenes(mock_console: MagicMock, test_scene: Scene):
+    """Test displaying scenes table with scenes using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_scenes_table([test_scene], test_scene.id)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+
+
+def test_display_scenes_table_no_scenes(mock_console: MagicMock):
+    """Test displaying scenes table with no scenes using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_scenes_table([], None)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once_with(
+        "No scenes found. Create one with 'sologm scene create'."
+    )
+
+
+# --- End Tests for display_scenes_table ---
+
+
 # --- Tests for display_events_table (Moved & Adapted) ---
 
 
