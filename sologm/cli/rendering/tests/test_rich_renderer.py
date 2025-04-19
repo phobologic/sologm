@@ -59,13 +59,13 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 def test_display_game_status_full(
     mock_console: MagicMock,
     # db_session: Session, # No longer needed directly
-    test_game: Game,       # Fixture now provides session-bound object
-    test_act: Act,         # Fixture now provides session-bound object
-    test_scene: Scene,     # Fixture now provides session-bound object
-    test_events: List[Event], # Fixture now provides session-bound objects
+    test_game: Game,  # Fixture now provides session-bound object
+    test_act: Act,  # Fixture now provides session-bound object
+    test_scene: Scene,  # Fixture now provides session-bound object
+    test_events: List[Event],  # Fixture now provides session-bound objects
     scene_manager: MagicMock,
     oracle_manager: MagicMock,
-    test_dice_roll: DiceRoll, # Fixture now provides session-bound object
+    test_dice_roll: DiceRoll,  # Fixture now provides session-bound object
 ):
     """Test displaying full game status with all components using RichRenderer."""
     renderer = RichRenderer(mock_console)
