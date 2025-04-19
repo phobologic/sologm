@@ -74,7 +74,30 @@ class MarkdownRenderer(Renderer):
         sequence: Optional[int] = None,
     ) -> None:
         """Displays a single oracle interpretation as Markdown."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying interpretation as Markdown: {interp.id} (selected: {selected}, sequence: {sequence})"
+        )
+
+        # Build the title
+        title_parts = []
+        if sequence is not None:
+            title_parts.append(f"Interpretation #{sequence}:")
+        title_parts.append(interp.title)
+        if selected:
+            title_parts.append("(**Selected**)")
+
+        title = f"#### {' '.join(title_parts)}"
+
+        # Build the body
+        body = interp.description
+
+        # Build the footer (metadata)
+        footer = f"*ID: {interp.id} / {interp.slug}*"
+
+        # Combine parts
+        output = f"{title}\n\n{body}\n\n{footer}"
+
+        self.console.print(output)
 
     def display_events_table(
         self,
