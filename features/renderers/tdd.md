@@ -20,7 +20,7 @@ The core components involved are:
 ## 2. Prerequisites & Assumptions
 
 *   The PRD (`features/renderers/prd.md`) accurately reflects the desired functionality.
-*   We will initially use a simple module-level variable in `sologm/cli/main.py` to hold the selected renderer instance for accessibility in command modules. This can be refactored later to a more robust DI or context-based approach if needed.
+*   We will use **Typer's context object (`ctx.obj`)** to hold the selected renderer instance for accessibility in command modules.
 *   The `rich.console.Console` instance created in `main.py` will be passed to the chosen renderer during initialization. Both renderers can use it (`console.print`) for consistent output stream handling.
 *   Helper functions like `truncate_text` from `sologm/cli/utils/display.py` might be kept in `utils` and used by both renderers. `StyledText` might remain useful for `RichRenderer` and potentially for semantic structuring in `MarkdownRenderer` before final output.
 *   We will *not* write direct tests for the CLI command functions themselves, but rather focus on unit-testing the renderer classes thoroughly.
@@ -43,20 +43,16 @@ The core components involved are:
         *   Define abstract methods for *all* current functions in `sologm/cli/utils/display.py` (e.g., `display_game_info`, `display_games_table`, `display_dice_roll`, `display_error`, etc.). Ensure method signatures match the data they need (e.g., `game: Game`, `roll: DiceRoll`).
     *   Modify `sologm/cli/main.py`:
         *   Add the `--no-ui: bool` option to the `main` callback function, defaulting to `False`.
+        *   Ensure the `main` callback accepts `ctx: typer.Context` as its first argument.
         *   Import `Renderer`, `RichRenderer`, `MarkdownRenderer` (placeholders for now).
-        *   Add a module-level variable `current_renderer: Optional[Renderer] = None`.
         *   In the `main` callback, *after* logger/config setup but *before* DB init, add logic:
             ```python
-            global current_renderer
-            if no_ui:
-                # current_renderer = MarkdownRenderer(console, markdown_mode=True) # Placeholder
-                logger.debug("MarkdownRenderer selected (placeholder)")
-                pass # Replace with actual instantiation later
-            else:
-                # current_renderer = RichRenderer(console, markdown_mode=False) # Placeholder
-                logger.debug("RichRenderer selected (placeholder)")
-                pass # Replace with actual instantiation later
-            # Add a check if current_renderer is still None and raise an error
+            # Instantiate the chosen renderer (placeholder for now) into a local variable
+            # selected_renderer = ...
+            # Initialize ctx.obj if necessary: if ctx.obj is None: ctx.obj = {}
+            # Store the renderer on the context: ctx.obj["renderer"] = selected_renderer
+            # Store the console on the context: ctx.obj["console"] = console
+            # Add a check if selected_renderer is still None and raise an error
             ```
 *   **(Refactor) Code:** Ensure imports are correct. Add basic logging. Rename `plain_mode` to `markdown_mode` in the `Renderer` base class and implementations for clarity.
 
@@ -128,7 +124,9 @@ The core components involved are:
 *   **(Red) Test:** No new unit tests. This relies on the correctness of the renderer unit tests (Steps 2 & 3) and manual/integration testing.
 *   **(Green) Code:**
     *   Modify `sologm/cli/game.py`:
-        *   Import the `current_renderer` from `sologm.cli.main` (or the chosen access mechanism).
+        *   Ensure command functions accept `ctx: typer.Context`.
+        *   Access the renderer via `renderer: Renderer = ctx.obj['renderer']`.
+        *   Access the console via `console: Console = ctx.obj['console']` (if needed directly).
         *   In `game_info`, replace `display_game_info(console, game, latest_scene)` with `renderer.display_game_info(game, latest_scene)`.
         *   In `list_games`, replace `display_games_table(...)` with `renderer.display_games_table(...)`.
         *   In `game_status`, replace `display_game_status(...)` with `renderer.display_game_status(...)`. (Note: `display_game_status` itself likely calls other display methods internally. When moved to `RichRenderer`, it should call `self.display_sub_component`. The `MarkdownRenderer` version will need to construct its Markdown equivalent).
@@ -155,7 +153,7 @@ The core components involved are:
 
 ## 4. Future Considerations
 
-*   Refactor renderer access from a global variable to a more robust mechanism (Typer context, DI framework) if the application complexity warrants it.
+*   Consider more advanced dependency injection patterns if application complexity grows significantly beyond `ctx.obj` capabilities.
 *   Further unify `MarkdownRenderer` logic with `sologm/cli/utils/markdown.py` if significant overlap exists.
 *   Consider adding more renderer types (JSON, HTML) in the future by implementing the `Renderer` interface.
 ````
