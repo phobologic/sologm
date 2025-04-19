@@ -789,41 +789,7 @@ def format_metadata(items: Dict[str, Any]) -> str:
 # --- display_act_ai_feedback_prompt removed, moved to RichRenderer ---
 
 
-def display_act_edited_content_preview(
-    console: Console, edited_results: Dict[str, str]
-) -> None:
-    """Display a preview of edited act AI content.
-
-    Shows a formatted preview of the user-edited AI-generated content
-    for an act.
-
-    Args:
-        console: Rich console instance
-        edited_results: Dictionary with edited title and summary
-    """
-    logger.debug("Displaying edited content preview for act")
-
-    st = StyledText
-
-    console.print("\n" + st.title("Preview of your edited content:").plain)
-
-    title_panel = Panel(
-        edited_results["title"],
-        title=st.title("Edited Title"),
-        border_style=BORDER_STYLES["success"],
-        expand=False,
-        title_align="left",
-    )
-    console.print(title_panel)
-
-    summary_panel = Panel(
-        edited_results["summary"],
-        title=st.title("Edited Summary"),
-        border_style=BORDER_STYLES["success"],
-        expand=False,
-        title_align="left",
-    )
-    console.print(summary_panel)
+# --- display_act_edited_content_preview removed, moved to RichRenderer ---
 
 
 def get_event_context_header(

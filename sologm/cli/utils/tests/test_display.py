@@ -306,13 +306,7 @@ def test_format_metadata():
 # --- test_display_act_completion_success removed, moved to test_rich_renderer.py ---
 
 
-def test_display_act_edited_content_preview(mock_console):
-    """Test displaying edited content preview for an act."""
-    from sologm.cli.utils.display import display_act_edited_content_preview
-
-    edited_results = {"title": "Edited Title", "summary": "Edited Summary"}
-    display_act_edited_content_preview(mock_console, edited_results)
-    assert mock_console.print.called
+# --- test_display_act_edited_content_preview removed, moved to test_rich_renderer.py ---
 
 
 # --- test_display_act_ai_feedback_prompt removed, moved to test_rich_renderer.py ---

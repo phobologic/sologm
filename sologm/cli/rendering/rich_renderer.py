@@ -896,8 +896,38 @@ class RichRenderer(Renderer):
     def display_act_edited_content_preview(
         self, edited_results: Dict[str, str]
     ) -> None:
-        """Displays a preview of edited AI-generated content using Rich."""
-        raise NotImplementedError
+        """Display a preview of edited act AI content using Rich.
+
+        Shows a formatted preview of the user-edited AI-generated content
+        for an act.
+
+        Args:
+            edited_results: Dictionary with edited title and summary
+        """
+        logger.debug("Displaying edited content preview for act")
+
+        st = StyledText
+
+        # Use self.console
+        self.console.print("\n" + st.title("Preview of your edited content:").plain)
+
+        title_panel = Panel(
+            edited_results["title"],
+            title=st.title("Edited Title"),
+            border_style=BORDER_STYLES["success"],
+            expand=False,
+            title_align="left",
+        )
+        self.console.print(title_panel)  # Use self.console
+
+        summary_panel = Panel(
+            edited_results["summary"],
+            title=st.title("Edited Summary"),
+            border_style=BORDER_STYLES["success"],
+            expand=False,
+            title_align="left",
+        )
+        self.console.print(summary_panel)  # Use self.console
 
     def display_act_ai_generation_results(
         self, results: Dict[str, str], act: Act

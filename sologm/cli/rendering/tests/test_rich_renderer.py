@@ -403,6 +403,28 @@ def test_display_act_ai_feedback_prompt(mock_ask: MagicMock, mock_console: Magic
 # --- End Tests for display_act_ai_feedback_prompt ---
 
 
+# --- Tests for display_act_edited_content_preview (Moved & Adapted) ---
+
+
+def test_display_act_edited_content_preview(mock_console: MagicMock):
+    """Test displaying edited content preview for an act using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    edited_results = {"title": "Edited Title", "summary": "Edited Summary"}
+    # This call should fail with NotImplementedError initially
+    renderer.display_act_edited_content_preview(edited_results)
+
+    # Assertions will run after implementation
+    # Expecting 3 prints: header, title panel, summary panel
+    assert mock_console.print.call_count == 3
+    args_list = mock_console.print.call_args_list
+    assert "Preview of your edited content:" in args_list[0][0][0]
+    assert isinstance(args_list[1][0][0], Panel)  # Title Panel
+    assert isinstance(args_list[2][0][0], Panel)  # Summary Panel
+
+
+# --- End Tests for display_act_edited_content_preview ---
+
+
 # --- Tests for display_game_info (Moved & Adapted) ---
 
 
