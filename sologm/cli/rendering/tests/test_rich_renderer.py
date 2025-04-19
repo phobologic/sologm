@@ -259,16 +259,12 @@ def test_calculate_truncation_length(mock_console: MagicMock):
     assert result == 40  # default value
 
 
-def test_create_act_panel(
-    mock_console: MagicMock, test_game: Game, test_act: Act
-):
+def test_create_act_panel(mock_console: MagicMock, test_game: Game, test_act: Act):
     """Test creating the act panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
     # This call should fail with AttributeError initially
     # Test with active act (using default truncation)
-    panel_active = renderer._create_act_panel(
-        test_game, test_act, is_act_active=True
-    )
+    panel_active = renderer._create_act_panel(test_game, test_act, is_act_active=True)
     assert panel_active is not None
     assert panel_active.title is not None
     assert panel_active.border_style == BORDER_STYLES["current"]
@@ -382,9 +378,7 @@ def test_create_empty_oracle_panel(mock_console: MagicMock):
     assert panel.border_style == BORDER_STYLES["neutral"]
 
 
-def test_create_dice_rolls_panel(
-    mock_console: MagicMock, test_dice_roll: DiceRoll
-):
+def test_create_dice_rolls_panel(mock_console: MagicMock, test_dice_roll: DiceRoll):
     """Test creating the dice rolls panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
     # This call should fail with AttributeError initially
