@@ -24,7 +24,9 @@ from sologm.models.scene import Scene
 
 # Import utilities that RichRenderer will use directly
 from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
-from sologm.cli.utils.display import truncate_text # Assuming this stays in display.py for now
+from sologm.cli.utils.display import (
+    truncate_text,
+)  # Assuming this stays in display.py for now
 
 # Use TYPE_CHECKING for manager imports to avoid circular dependencies if needed later
 if TYPE_CHECKING:
