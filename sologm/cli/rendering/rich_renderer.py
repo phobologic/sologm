@@ -204,7 +204,73 @@ class RichRenderer(Renderer):
         self, game: Game, active_scene: Optional[Scene] = None
     ) -> None:
         """Displays detailed information about a specific game using Rich."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying game info for {game.id} with active scene: "
+            f"{active_scene.id if active_scene else 'None'}"
+        )
+
+        st = StyledText
+
+        # Get active act if available
+        active_act = (
+            next((act for act in game.acts if act.is_active), None)
+            if hasattr(game, "acts")
+            else None
+        )
+
+        # Count scenes across all acts
+        scene_count = (
+            sum(len(act.scenes) for act in game.acts)
+            if hasattr(game, "acts")
+            else len(game.scenes)
+        )
+        act_count = len(game.acts) if hasattr(game, "acts") else 0
+
+        logger.debug(
+            f"Game details: name='{game.name}', acts={act_count}, scenes={scene_count}"
+        )
+
+        # Create metadata with consistent formatting
+        metadata = {
+            "Created": game.created_at.strftime("%Y-%m-%d"),
+            "Modified": game.modified_at.strftime("%Y-%m-%d"),
+            "Acts": act_count,
+            "Scenes": scene_count,
+        }
+
+        # Create panel content
+        content = Text()
+        content.append(st.subtitle(game.description))
+        content.append("\n")
+        content.append(st.format_metadata(metadata))
+
+        if active_act:
+            act_title = active_act.title or "Untitled Act"
+            content.append("\nActive Act: ")
+            content.append(st.title(f"Act {active_act.sequence}: {act_title}"))
+
+        if active_scene:
+            content.append("\nActive Scene: ")
+            content.append(st.title(active_scene.title))
+
+        # Create panel title
+        panel_title = st.combine(
+            st.title_blue(game.name),
+            " (",
+            st.title_timestamp(game.slug),
+            ") ",
+            st.timestamp(game.id),
+        )
+
+        panel = Panel(
+            content,
+            title=panel_title,
+            border_style=BORDER_STYLES["game_info"],
+            title_align="left",
+        )
+
+        # Use self.console instead of the console parameter
+        self.console.print(panel)
 
     def display_interpretation_set(
         self, interp_set: InterpretationSet, show_context: bool = True

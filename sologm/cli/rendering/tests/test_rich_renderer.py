@@ -82,6 +82,40 @@ def test_display_interpretation_selected(
 # --- Add other tests below ---
 
 
+# --- Tests for display_game_info (Moved & Adapted) ---
+
+
+def test_display_game_info(
+    mock_console: MagicMock, test_game: Game, test_scene: Scene
+):
+    """Test displaying game info using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_game_info(test_game, test_scene)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)
+
+
+def test_display_game_info_no_scene(mock_console: MagicMock, test_game: Game):
+    """Test displaying game info without active scene using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_game_info(test_game, None)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)
+
+
+# --- End Tests for display_game_info ---
+
+
 def test_display_scene_info(mock_console: MagicMock, test_scene: Scene):
     """Test displaying scene info using RichRenderer."""
     renderer = RichRenderer(mock_console)
