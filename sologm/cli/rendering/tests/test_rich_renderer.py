@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.panel import Panel  # Import Panel for assertion
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
-from sologm.models.act import Act # <-- Added import
+from sologm.models.act import Act  # <-- Added import
 from sologm.models.dice import DiceRoll
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation
