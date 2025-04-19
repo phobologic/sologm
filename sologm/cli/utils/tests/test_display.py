@@ -29,37 +29,7 @@ from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 # --- test_display_dice_roll removed, moved to test_rich_renderer.py ---
 
 
-def test_display_events_table_with_events(mock_console, test_events, test_scene):
-    """Test displaying events table with events."""
-    display_events_table(mock_console, test_events, test_scene)
-    assert mock_console.print.called
-
-
-def test_display_events_table_with_truncation(mock_console, test_events, test_scene):
-    """Test displaying events table with truncated descriptions."""
-    # Test with truncation enabled
-    display_events_table(
-        mock_console,
-        test_events,
-        test_scene,
-        truncate_descriptions=True,
-        max_description_length=20,
-    )
-    assert mock_console.print.called
-
-    # Test with truncation disabled
-    display_events_table(
-        mock_console, test_events, test_scene, truncate_descriptions=False
-    )
-    assert mock_console.print.called
-
-
-def test_display_events_table_no_events(mock_console, test_scene):
-    """Test displaying events table with no events."""
-    display_events_table(mock_console, [], test_scene)
-    mock_console.print.assert_called_once_with(
-        f"\nNo events in scene '{test_scene.title}'"
-    )
+# --- test_display_events_table_* removed, moved to test_rich_renderer.py ---
 
 
 def test_display_games_table_with_games(mock_console, test_game):

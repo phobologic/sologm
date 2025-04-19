@@ -185,8 +185,75 @@ class RichRenderer(Renderer):
         truncate_descriptions: bool = True,
         max_description_length: int = 80,
     ) -> None:
-        """Displays a list of events in a Rich table."""
-        raise NotImplementedError
+        """Display events in a formatted table using Rich.
+
+        Args:
+            events: List of events to display
+            scene: The Scene to display events from.
+            truncate_descriptions: Whether to truncate long descriptions
+            max_description_length: Maximum length for descriptions if truncating
+        """
+        logger.debug(
+            f"Displaying events table for scene '{scene.title}' with {len(events)} events"
+        )
+        if not events:
+            logger.debug(f"No events to display for scene '{scene.title}'")
+            # Use self.console
+            self.console.print(f"\nNo events in scene '{scene.title}'")
+            return
+
+        logger.debug(f"Creating table with {len(events)} events")
+
+        st = StyledText
+
+        # Create table without a title
+        table = Table(
+            border_style=BORDER_STYLES["game_info"],
+        )
+
+        # Add columns with consistent styling
+        table.add_column("ID", style=st.STYLES["timestamp"])
+        table.add_column("Time", style=st.STYLES["timestamp"])
+        table.add_column("Source", style=st.STYLES["category"])
+        table.add_column("Description")
+
+        # Add rows with consistent formatting
+        for event in events:
+            # Get the source name instead of the source object
+            source_name = (
+                event.source.name
+                if hasattr(event.source, "name")
+                else str(event.source)
+            )
+
+            # Truncate description if needed
+            description = event.description
+            if truncate_descriptions:
+                description = truncate_text(
+                    description, max_length=max_description_length
+                )
+
+            table.add_row(
+                event.id,
+                event.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                source_name,
+                description,
+            )
+
+        # Create panel title
+        panel_title = st.title(
+            f"Events in game '{scene.act.game.name}', scene '{scene.title}'"
+        )
+
+        # Wrap the table in a panel with a title
+        panel = Panel(
+            table,
+            title=panel_title,
+            title_align="left",
+            border_style=BORDER_STYLES["game_info"],
+        )
+        # Use self.console
+        self.console.print(panel)
 
     def display_games_table(
         self, games: List[Game], active_game: Optional[Game] = None

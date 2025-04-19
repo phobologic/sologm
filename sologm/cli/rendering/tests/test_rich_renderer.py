@@ -40,6 +40,64 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
     assert isinstance(args[0], Panel)
 
 
+# --- End Tests for display_scene_info ---
+
+
+# --- Tests for display_events_table (Moved & Adapted) ---
+
+
+def test_display_events_table_with_events(
+    mock_console: MagicMock, test_events: List[Event], test_scene: Scene
+):
+    """Test displaying events table with events using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_events_table(test_events, test_scene)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+
+
+def test_display_events_table_with_truncation(
+    mock_console: MagicMock, test_events: List[Event], test_scene: Scene
+):
+    """Test displaying events table with truncated descriptions using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+
+    # Test with truncation enabled (default)
+    renderer.display_events_table(
+        test_events, test_scene, max_description_length=20
+    )  # Pass max_length
+    mock_console.print.assert_called_once()
+    args1, _ = mock_console.print.call_args
+    assert isinstance(args1[0], Panel)
+    mock_console.reset_mock()  # Reset for the next call
+
+    # Test with truncation disabled
+    renderer.display_events_table(test_events, test_scene, truncate_descriptions=False)
+    mock_console.print.assert_called_once()
+    args2, _ = mock_console.print.call_args
+    assert isinstance(args2[0], Panel)
+
+
+def test_display_events_table_no_events(mock_console: MagicMock, test_scene: Scene):
+    """Test displaying events table with no events using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_events_table([], test_scene)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once_with(
+        f"\nNo events in scene '{test_scene.title}'"
+    )
+
+
+# --- End Tests for display_events_table ---
+
+
 # --- Tests for display_interpretation (Moved & Adapted) ---
 
 
@@ -133,6 +191,9 @@ def test_display_act_info(mock_console: MagicMock, test_act: Act, test_game: Gam
 
 
 # --- End Tests for display_act_info ---
+
+
+# --- Tests for display_scene_info (Moved & Adapted) ---
 
 
 def test_display_scene_info(mock_console: MagicMock, test_scene: Scene):
