@@ -942,9 +942,6 @@ def test_hybrid_property_game(
             },
         },
     }
-        return game
-
-    return _create_game
 
 
 @pytest.fixture
