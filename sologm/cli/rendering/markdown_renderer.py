@@ -152,9 +152,7 @@ class MarkdownRenderer(Renderer):
 
         if not games:
             logger.debug("No games found to display")
-            self.console.print(
-                "No games found. Create one with 'sologm game create'."
-            )
+            self.console.print("No games found. Create one with 'sologm game create'.")
             return
 
         output_lines = []
