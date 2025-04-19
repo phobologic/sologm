@@ -53,6 +53,23 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 # --- End Tests for display_scene_info ---
 
 
+# --- Test for display_error (New Method) ---
+
+
+def test_display_error(mock_console: MagicMock):
+    """Test displaying an error message using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    error_message = "Something went wrong!"
+    # This call should fail with NotImplementedError initially
+    renderer.display_error(error_message)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once_with(f"[red]Error: {error_message}[/red]")
+
+
+# --- End Test for display_error ---
+
+
 # --- Tests for display_game_status (Moved & Adapted) ---
 
 

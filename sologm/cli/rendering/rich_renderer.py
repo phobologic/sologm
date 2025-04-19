@@ -1735,5 +1735,6 @@ class RichRenderer(Renderer):
 
     def display_error(self, message: str) -> None:
         """Displays an error message to the user using Rich."""
-        # Implementation will use self.console.print with red styling.
-        raise NotImplementedError
+        logger.error(f"Displaying error: {message}")
+        # Use self.console to print the error message with red styling
+        self.console.print(f"[red]Error: {message}[/red]")
