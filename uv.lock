@@ -554,10 +554,9 @@ wheels = [
 
 [[package]]
 name = "sologm"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "alembic" },
     { name = "anthropic" },
     { name = "pyyaml" },
     { name = "rich" },
@@ -567,6 +566,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "alembic" },
     { name = "black" },
     { name = "isort" },
     { name = "mypy" },
@@ -583,7 +583,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "alembic", specifier = ">=1.15.2" },
+    { name = "alembic", marker = "extra == 'dev'", specifier = ">=1.15.2" },
     { name = "anthropic", specifier = ">=0.5.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.3.0" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.12.0" },
