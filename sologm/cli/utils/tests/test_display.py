@@ -300,43 +300,10 @@ def test_format_metadata():
 # --- test_display_interpretation_status removed, moved to test_rich_renderer.py ---
 
 
-def test_display_act_ai_generation_results(mock_console, test_act):
-    """Test displaying AI generation results for an act."""
-    from sologm.cli.utils.display import display_act_ai_generation_results
-
-    # Test with both title and summary
-    results = {"title": "AI Generated Title", "summary": "AI Generated Summary"}
-    display_act_ai_generation_results(mock_console, results, test_act)
-    assert mock_console.print.called
-
-    # Test with only title
-    results = {"title": "AI Generated Title"}
-    display_act_ai_generation_results(mock_console, results, test_act)
-    assert mock_console.print.called
-
-    # Test with only summary
-    results = {"summary": "AI Generated Summary"}
-    display_act_ai_generation_results(mock_console, results, test_act)
-    assert mock_console.print.called
-
-    # Test with empty results
-    results = {}
-    display_act_ai_generation_results(mock_console, results, test_act)
-    assert mock_console.print.called
+# --- test_display_act_ai_generation_results removed, moved to test_rich_renderer.py ---
 
 
-def test_display_act_completion_success(mock_console, test_act):
-    """Test displaying act completion success."""
-    from sologm.cli.utils.display import display_act_completion_success
-
-    # Test with title and summary
-    display_act_completion_success(mock_console, test_act)
-    assert mock_console.print.called
-
-    # Test with untitled act
-    test_act.title = None
-    display_act_completion_success(mock_console, test_act)
-    assert mock_console.print.called
+# --- test_display_act_completion_success removed, moved to test_rich_renderer.py ---
 
 
 def test_display_act_edited_content_preview(mock_console):
@@ -348,16 +315,7 @@ def test_display_act_edited_content_preview(mock_console):
     assert mock_console.print.called
 
 
-def test_display_act_ai_feedback_prompt(mock_console, monkeypatch):
-    """Test displaying AI feedback prompt for an act."""
-    from sologm.cli.utils.display import display_act_ai_feedback_prompt
-    from rich.prompt import Prompt
-
-    # Mock the Prompt.ask method to return a fixed value
-    monkeypatch.setattr(Prompt, "ask", lambda *args, **kwargs: "A")
-
-    result = display_act_ai_feedback_prompt(mock_console)
-    assert result == "A"
+# --- test_display_act_ai_feedback_prompt removed, moved to test_rich_renderer.py ---
 
 
 @pytest.fixture
