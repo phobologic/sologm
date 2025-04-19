@@ -44,26 +44,34 @@ This document outlines the phased implementation plan for the pluggable renderer
         *   `display_error(self, message: str)` # Add a dedicated error display method
 4.  **Modify `sologm/cli/main.py`:**
     *   Add the `--no-ui: bool = typer.Option(False, "--no-ui", help="Disable rich UI elements and use Markdown output.")` parameter to the `main` callback.
+    *   Ensure the `main` callback signature includes `ctx: typer.Context`.
     *   Add placeholder imports for renderers: `from sologm.cli.rendering.base import Renderer # Placeholder imports below`
-    *   Add a module-level variable: `current_renderer: Optional[Renderer] = None`
     *   In the `main` callback (after logger/config setup, before DB init):
-        *   Add `global current_renderer`.
         *   Implement the selection logic:
             ```python
+            selected_renderer: Optional[Renderer] = None # Local variable
             if no_ui:
                 # from sologm.cli.rendering.markdown_renderer import MarkdownRenderer # Placeholder
-                # current_renderer = MarkdownRenderer(console, markdown_mode=True) # Placeholder
+                # selected_renderer = MarkdownRenderer(console, markdown_mode=True) # Placeholder
                 logger.debug("MarkdownRenderer selected (placeholder implementation)")
                 pass # Replace with actual instantiation later
             else:
                 # from sologm.cli.rendering.rich_renderer import RichRenderer # Placeholder
-                # current_renderer = RichRenderer(console, markdown_mode=False) # Placeholder
+                # selected_renderer = RichRenderer(console, markdown_mode=False) # Placeholder
                 logger.debug("RichRenderer selected (placeholder implementation)")
                 pass # Replace with actual instantiation later
-            if current_renderer is None:
+
+            if selected_renderer is None:
                  # This check ensures we don't proceed if instantiation fails later
                  logger.critical("Renderer could not be instantiated!")
                  raise typer.Exit(code=1)
+
+            # Store renderer and console on context object
+            if ctx.obj is None:
+                ctx.obj = {}
+            ctx.obj["renderer"] = selected_renderer # Store the (placeholder) renderer
+            ctx.obj["console"] = console # Store the console instance
+            logger.debug("Renderer and console stored in Typer context.")
             ```
 
 **Result:** Foundational structure is in place. No tests pass yet, but the framework for the renderers exists. The `--no-ui` flag is available but doesn't fully function.
@@ -133,17 +141,18 @@ This document outlines the phased implementation plan for the pluggable renderer
 
 ## Phase 4: Integrate Renderer into CLI Commands
 
-**Goal:** Refactor all CLI command functions to use the selected renderer instance, removing direct calls to old display functions or `console.print` for errors.
+**Goal:** Refactor all CLI command functions to use the selected renderer instance stored on the Typer context, removing direct calls to old display functions or `console.print` for errors.
 
 **Steps:**
 
-1.  **Ensure Renderer Access:** Confirm the chosen mechanism for accessing `current_renderer` from command modules works (e.g., `from sologm.cli.main import current_renderer`).
+1.  **Ensure Renderer Access:** Verify that command functions accept `ctx: typer.Context` in their signatures.
 2.  **Refactor Command Files:** Iterate through each CLI command file (`game.py`, `act.py`, `scene.py`, `event.py`, `dice.py`, `oracle.py`):
-    *   Import the `current_renderer`.
+    *   Inside each command function, retrieve the renderer: `renderer: Renderer = ctx.obj['renderer']`.
+    *   Retrieve the console if needed: `console: Console = ctx.obj['console']`.
     *   Find all calls to functions that were previously in `sologm.cli.utils.display` (e.g., `display_game_info(...)`, `display_games_table(...)`).
-    *   Replace these calls with calls to the corresponding method on the renderer instance (e.g., `current_renderer.display_game_info(...)`, `current_renderer.display_games_table(...)`). Pass the required data. Remove the `console` argument if the original function took it, as the renderer holds the console instance.
+    *   Replace these calls with calls to the corresponding method on the retrieved `renderer` instance (e.g., `renderer.display_game_info(...)`, `renderer.display_games_table(...)`). Pass the required data. Remove the `console` argument if the original function took it.
     *   Find all direct `console.print("[red]Error...")` or similar error outputs within `except` blocks.
-    *   Replace these with `current_renderer.display_error("Specific error message...")`.
+    *   Replace these with `renderer.display_error("Specific error message...")`.
 3.  **Manual Testing:** Perform manual testing for key commands:
     *   Run commands *without* `--no-ui` and verify the output matches the previous Rich output.
     *   Run commands *with* `--no-ui` and verify the output is the expected Markdown format.
