@@ -90,7 +90,7 @@ This demonstrates how SoloGM's structured data export can serve as a powerful fo
 
 ## Installation
 
-### From PyPI (Coming Soon)
+### From PyPI
 ```bash
 pip install sologm
 ```
