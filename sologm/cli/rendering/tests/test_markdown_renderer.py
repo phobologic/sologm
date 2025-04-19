@@ -284,8 +284,17 @@ def test_display_game_info_markdown(
     renderer = MarkdownRenderer(mock_console)
 
     # Mock relationships needed by the display method
-    test_game.acts = [test_scene.act]  # Assuming test_scene has an act
-    test_game.scenes = [test_scene]
+    # Ensure the act object itself has the scene associated
+    if test_scene.act: # Make sure the act exists from the fixture
+        test_scene.act.scenes = [test_scene]
+        test_game.acts = [test_scene.act]
+    else:
+        # Handle case where test_scene might not have an act (though fixture should provide it)
+        pytest.fail("Test setup error: test_scene fixture did not provide an associated act.")
+        test_game.acts = [] # Or handle appropriately
+
+    # Remove the direct assignment to game.scenes as it's not used by the calculation logic being tested
+    # test_game.scenes = [test_scene] # This line is removed/commented out
 
     # Test case 1: With active scene
     renderer.display_game_info(test_game, active_scene=test_scene)
