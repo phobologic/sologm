@@ -14,8 +14,8 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event  # <-- Added import
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
-from sqlalchemy.orm import Session  # Add Session import
+from sologm.models.scene import Scene, SceneStatus
+# from sqlalchemy.orm import Session # No longer needed directly in test_display_game_status_full
 
 # Import manager types for mocking/type hinting if needed by tests
 from sologm.core.oracle import OracleManager
@@ -58,35 +58,22 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 
 def test_display_game_status_full(
     mock_console: MagicMock,
-    db_session: Session,  # Add db_session fixture
-    test_game: Game,
-    test_act: Act,  # Assuming test_act is available
-    test_scene: Scene,
-    test_events: List[Event],
-    scene_manager: MagicMock,  # Assuming scene_manager fixture is available
-    oracle_manager: MagicMock,  # Assuming oracle_manager fixture is available
-    test_dice_roll: DiceRoll,  # Assuming test_dice_roll is available
+    # db_session: Session, # No longer needed directly
+    test_game: Game,       # Fixture now provides session-bound object
+    test_act: Act,         # Fixture now provides session-bound object
+    test_scene: Scene,     # Fixture now provides session-bound object
+    test_events: List[Event], # Fixture now provides session-bound objects
+    scene_manager: MagicMock,
+    oracle_manager: MagicMock,
+    test_dice_roll: DiceRoll, # Fixture now provides session-bound object
 ):
     """Test displaying full game status with all components using RichRenderer."""
     renderer = RichRenderer(mock_console)
 
-    # --- Add this section ---
-    # Explicitly load relationships needed by the renderer within the active session
-    # This prevents DetachedInstanceError during lazy loading inside the renderer.
-    try:
-        db_session.add(test_game)  # Re-attach if it became detached
-        db_session.refresh(test_game, attribute_names=["acts"])
-        # If other relationships are needed later by the renderer, load them too:
-        # for act in test_game.acts:
-        #     db_session.refresh(act, attribute_names=['scenes'])
-        # db_session.refresh(test_scene, attribute_names=['act', 'events']) # Example
-        # db_session.refresh(test_act, attribute_names=['game', 'scenes']) # Example
-    except Exception as e:
-        # Log potential issues during refresh, but proceed
-        print(f"Warning: Error refreshing test objects: {e}")  # Or use logger
-    # --- End added section ---
+    # --- REMOVE the manual merge/refresh block ---
+    # The fixtures now handle attaching objects to the session and loading relationships
 
-    # This call should now succeed as 'game.acts' is pre-loaded
+    # Call the renderer method with the objects directly from fixtures
     renderer.display_game_status(
         game=test_game,
         latest_act=test_act,
@@ -99,7 +86,7 @@ def test_display_game_status_full(
         is_scene_active=True,
     )
 
-    # Assertions will run after implementation
+    # Assertions remain the same
     assert mock_console.print.called
 
 
@@ -784,10 +771,8 @@ def test_display_act_edited_content_preview(mock_console: MagicMock):
 def test_display_game_info(mock_console: MagicMock, test_game: Game, test_scene: Scene):
     """Test displaying game info using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
+    # No merge/refresh needed here, test_game and test_scene come from fixtures
     renderer.display_game_info(test_game, test_scene)
-
-    # Assertions will run after implementation
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
