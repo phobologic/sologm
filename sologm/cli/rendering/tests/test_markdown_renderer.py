@@ -24,9 +24,7 @@ def mock_console() -> MagicMock:
 # --- Test for display_dice_roll ---
 
 
-def test_display_dice_roll_markdown(
-    mock_console: MagicMock, test_dice_roll: DiceRoll
-):
+def test_display_dice_roll_markdown(mock_console: MagicMock, test_dice_roll: DiceRoll):
     """Test displaying a dice roll as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
