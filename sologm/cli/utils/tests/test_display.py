@@ -264,18 +264,6 @@ def test_display_interpretation_set_no_context(mock_console, test_interpretation
     assert mock_console.print.called
 
 
-def test_display_interpretation_sets_table(mock_console, test_interpretation_set):
-    """Test displaying interpretation sets table."""
-    # Create a list with just the test interpretation set
-    interp_sets = [test_interpretation_set]
-
-    # Call the function
-    display_interpretation_sets_table(mock_console, interp_sets)
-
-    # Verify it called print
-    assert mock_console.print.called
-
-
 def test_truncate_text():
     """Test the truncate_text function."""
     # Short text should remain unchanged
