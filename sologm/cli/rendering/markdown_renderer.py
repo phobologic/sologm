@@ -1,6 +1,7 @@
 """
 Renderer implementation for generating Markdown output.
 """
+
 import logging
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
