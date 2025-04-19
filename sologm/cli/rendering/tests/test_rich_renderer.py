@@ -45,6 +45,30 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 # --- End Tests for display_scene_info ---
 
 
+# --- Tests for display_interpretation_sets_table (Moved & Adapted) ---
+
+
+def test_display_interpretation_sets_table(
+    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+):
+    """Test displaying interpretation sets table using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # Create a list with just the test interpretation set
+    interp_sets = [test_interpretation_set]
+
+    # This call should fail with NotImplementedError initially
+    renderer.display_interpretation_sets_table(interp_sets)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+
+
+# --- End Tests for display_interpretation_sets_table ---
+
+
 # --- Tests for display_acts_table (Moved & Adapted) ---
 
 
