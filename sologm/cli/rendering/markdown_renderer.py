@@ -260,9 +260,7 @@ class MarkdownRenderer(Renderer):
             else (len(game.scenes) if hasattr(game, "scenes") else 0)
         )
 
-        output_lines.append(
-            f"*   **Created:** {game.created_at.strftime('%Y-%m-%d')}"
-        )
+        output_lines.append(f"*   **Created:** {game.created_at.strftime('%Y-%m-%d')}")
         output_lines.append(
             f"*   **Modified:** {game.modified_at.strftime('%Y-%m-%d')}"
         )
