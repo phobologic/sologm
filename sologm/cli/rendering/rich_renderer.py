@@ -667,7 +667,9 @@ class RichRenderer(Renderer):
             # Calculate appropriate truncation length based on console width
             # Since we're using a two-column layout, each column gets roughly half the width
             # Subtract some space for borders, padding, and formatting
-            truncation_length = max(40, int(console_width / 2) - 10) # Adjusted calculation for half-width
+            truncation_length = max(
+                40, int(console_width / 2) - 10
+            )  # Adjusted calculation for half-width
             logger.debug(
                 f"Using truncation length of {truncation_length} "
                 f"characters for event descriptions"
@@ -1083,7 +1085,6 @@ class RichRenderer(Renderer):
         # If no current set and no recent interpretation, return an empty panel
         return self._create_empty_oracle_panel()
 
-
     def _create_pending_oracle_panel(
         self,
         interp_set: InterpretationSet,
@@ -1115,9 +1116,10 @@ class RichRenderer(Renderer):
             panel_content.append(st.title(f"{i}. {interp.title}"))
             panel_content.append("\n")
             # Truncate description here
-            truncated_desc = truncate_text(interp.description, max_length=truncation_length)
+            truncated_desc = truncate_text(
+                interp.description, max_length=truncation_length
+            )
             panel_content.append(truncated_desc)
-
 
         # Add footer
         panel_content.append("\n\n")
