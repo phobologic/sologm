@@ -56,7 +56,7 @@ class Renderer(abc.ABC):
     def display_events_table(
         self,
         events: List[Event],
-        scene: Scene, # Scene context might be useful for titles etc.
+        scene: Scene,  # Scene context might be useful for titles etc.
         truncate_descriptions: bool = True,
         max_description_length: int = 80,
     ) -> None:
