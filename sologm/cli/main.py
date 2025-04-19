@@ -13,6 +13,9 @@ from sologm.cli.event import event_app
 from sologm.cli.game import game_app
 from sologm.cli.oracle import oracle_app
 from sologm.cli.scene import scene_app
+# --- Added Placeholder Import ---
+from sologm.cli.rendering.base import Renderer # Placeholder imports below
+# --- End Added Placeholder Import ---
 from sologm.utils.logger import setup_root_logger
 
 logger = logging.getLogger(__name__)
@@ -49,9 +52,11 @@ app.add_typer(dice_app, name="dice", no_args_is_help=True)
 app.add_typer(oracle_app, name="oracle", no_args_is_help=True)
 app.add_typer(act_app, name="act", no_args_is_help=True)
 
-
 @app.callback()
 def main(
+    # --- Added ctx parameter ---
+    ctx: typer.Context,
+    # --- End Added ctx parameter ---
     debug: bool = typer.Option(
         False, "--debug", help="Enable debug mode with verbose output."
     ),
@@ -61,6 +66,11 @@ def main(
     config_path: Optional[str] = typer.Option(
         None, "--config", help="Path to configuration file."
     ),
+    # --- Added no_ui option ---
+    no_ui: bool = typer.Option(
+        False, "--no-ui", help="Disable rich UI elements and use Markdown output."
+    ),
+    # --- End Added no_ui option ---
 ) -> None:
     """Solo RPG Helper - A command-line tool for solo roleplaying games.
 
@@ -79,6 +89,34 @@ def main(
 
         logger.debug("Loading config from %s", config_path)
         Config.get_instance(Path(config_path))
+
+    # --- Added Renderer Selection Logic ---
+    selected_renderer: Optional[Renderer] = None # Local variable
+    if no_ui:
+        # from sologm.cli.rendering.markdown_renderer import MarkdownRenderer # Placeholder
+        # selected_renderer = MarkdownRenderer(console, markdown_mode=True) # Placeholder
+        logger.debug("MarkdownRenderer selected (placeholder implementation)")
+        pass # Replace with actual instantiation later
+    else:
+        # from sologm.cli.rendering.rich_renderer import RichRenderer # Placeholder
+        # selected_renderer = RichRenderer(console, markdown_mode=False) # Placeholder
+        logger.debug("RichRenderer selected (placeholder implementation)")
+        pass # Replace with actual instantiation later
+
+    if selected_renderer is None:
+         # This check ensures we don't proceed if instantiation fails later
+         # NOTE: In this phase, this will *always* trigger until placeholders are replaced
+         logger.critical("Renderer could not be instantiated (placeholder logic active)!")
+         raise typer.Exit(code=1)
+
+    # Store renderer and console on context object
+    if ctx.obj is None:
+        ctx.obj = {}
+    ctx.obj["renderer"] = selected_renderer # Store the (placeholder) renderer
+    ctx.obj["console"] = console # Store the console instance
+    logger.debug("Renderer and console stored in Typer context.")
+    # --- End Added Renderer Selection Logic ---
+
 
     # Initialize database
     try:
