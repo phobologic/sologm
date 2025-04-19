@@ -916,7 +916,7 @@ class RichRenderer(Renderer):
                 expand=False,
                 title_align="left",
             )
-            self.console.print(title_panel) # Use self.console
+            self.console.print(title_panel)  # Use self.console
 
             # Display existing title for comparison if it exists
             if act.title:
@@ -927,7 +927,7 @@ class RichRenderer(Renderer):
                     expand=False,
                     title_align="left",
                 )
-                self.console.print(existing_title_panel) # Use self.console
+                self.console.print(existing_title_panel)  # Use self.console
 
         # Display generated summary
         if "summary" in results and results["summary"]:
@@ -938,7 +938,7 @@ class RichRenderer(Renderer):
                 expand=False,
                 title_align="left",
             )
-            self.console.print(summary_panel) # Use self.console
+            self.console.print(summary_panel)  # Use self.console
 
             # Display existing summary for comparison if it exists
             if act.summary:
@@ -949,7 +949,7 @@ class RichRenderer(Renderer):
                     expand=False,
                     title_align="left",
                 )
-                self.console.print(existing_summary_panel) # Use self.console
+                self.console.print(existing_summary_panel)  # Use self.console
 
     def display_act_completion_success(self, completed_act: Act) -> None:
         """Displays a success message upon act completion using Rich."""
@@ -957,10 +957,14 @@ class RichRenderer(Renderer):
 
         st = StyledText
 
-        title_display = f"'{completed_act.title}'" if completed_act.title else "untitled"
+        title_display = (
+            f"'{completed_act.title}'" if completed_act.title else "untitled"
+        )
 
         # Create success message with consistent styling
-        self.console.print(st.title_success(f"Act {title_display} completed successfully!")) # Use self.console
+        self.console.print(
+            st.title_success(f"Act {title_display} completed successfully!")
+        )  # Use self.console
 
         # Display completed act details with metadata formatting
         metadata = {
@@ -969,16 +973,17 @@ class RichRenderer(Renderer):
             "Status": "Completed",
         }
         # Use StyledText.format_metadata directly for Rich Text object
-        self.console.print(st.format_metadata(metadata)) # Use self.console
+        self.console.print(st.format_metadata(metadata))  # Use self.console
 
         # Display title and summary if present
         if completed_act.title:
-            self.console.print( # Use self.console
+            self.console.print(  # Use self.console
                 "\n" + st.combine(st.title("Title:"), " ", completed_act.title).plain
             )
         if completed_act.summary:
-            self.console.print( # Use self.console
-                "\n" + st.combine(st.title("Summary:"), "\n", completed_act.summary).plain
+            self.console.print(  # Use self.console
+                "\n"
+                + st.combine(st.title("Summary:"), "\n", completed_act.summary).plain
             )
 
     def display_act_ai_feedback_prompt(self, console: Console) -> str:
@@ -1005,7 +1010,7 @@ class RichRenderer(Renderer):
         prompt_message = st.warning("What would you like to do with this content?")
 
         choice = Prompt.ask(
-            prompt_message, # Pass the Text object directly
+            prompt_message,  # Pass the Text object directly
             choices=["A", "E", "R", "a", "e", "r"],
             default=default_choice,
             # console=self.console # Optionally pass console if needed by Prompt internals

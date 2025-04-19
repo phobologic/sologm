@@ -291,6 +291,7 @@ def test_display_interpretation_selected(
 
 # --- Tests for display_act_ai_generation_results (Moved & Adapted) ---
 
+
 def test_display_act_ai_generation_results(mock_console: MagicMock, test_act: Act):
     """Test displaying AI generation results for an act using RichRenderer."""
     renderer = RichRenderer(mock_console)
@@ -300,19 +301,19 @@ def test_display_act_ai_generation_results(mock_console: MagicMock, test_act: Ac
     # This call should fail with NotImplementedError initially
     renderer.display_act_ai_generation_results(results_both, test_act)
     # Assertions will run after implementation
-    assert mock_console.print.call_count >= 2 # At least title and summary panels
+    assert mock_console.print.call_count >= 2  # At least title and summary panels
     mock_console.reset_mock()
 
     # Test with only title
     results_title = {"title": "AI Generated Title"}
     renderer.display_act_ai_generation_results(results_title, test_act)
-    assert mock_console.print.call_count >= 1 # At least title panel
+    assert mock_console.print.call_count >= 1  # At least title panel
     mock_console.reset_mock()
 
     # Test with only summary
     results_summary = {"summary": "AI Generated Summary"}
     renderer.display_act_ai_generation_results(results_summary, test_act)
-    assert mock_console.print.call_count >= 1 # At least summary panel
+    assert mock_console.print.call_count >= 1  # At least summary panel
     mock_console.reset_mock()
 
     # Test with empty results
@@ -330,16 +331,17 @@ def test_display_act_ai_generation_results(mock_console: MagicMock, test_act: Ac
     # Expect 4 panels: AI title, existing title, AI summary, existing summary
     assert mock_console.print.call_count == 4
     args_list = mock_console.print.call_args_list
-    assert isinstance(args_list[0][0][0], Panel) # AI Title
-    assert isinstance(args_list[1][0][0], Panel) # Existing Title
-    assert isinstance(args_list[2][0][0], Panel) # AI Summary
-    assert isinstance(args_list[3][0][0], Panel) # Existing Summary
+    assert isinstance(args_list[0][0][0], Panel)  # AI Title
+    assert isinstance(args_list[1][0][0], Panel)  # Existing Title
+    assert isinstance(args_list[2][0][0], Panel)  # AI Summary
+    assert isinstance(args_list[3][0][0], Panel)  # Existing Summary
 
 
 # --- End Tests for display_act_ai_generation_results ---
 
 
 # --- Tests for display_act_completion_success (Moved & Adapted) ---
+
 
 def test_display_act_completion_success(mock_console: MagicMock, test_act: Act):
     """Test displaying act completion success using RichRenderer."""
@@ -349,7 +351,7 @@ def test_display_act_completion_success(mock_console: MagicMock, test_act: Act):
     # This call should fail with NotImplementedError initially
     renderer.display_act_completion_success(test_act)
     # Assertions will run after implementation
-    assert mock_console.print.call_count >= 3 # Title message, metadata, title, summary
+    assert mock_console.print.call_count >= 3  # Title message, metadata, title, summary
 
     mock_console.reset_mock()
     # Test with untitled act
@@ -357,7 +359,7 @@ def test_display_act_completion_success(mock_console: MagicMock, test_act: Act):
         id="act-untitled",
         game_id=test_act.game_id,
         sequence=test_act.sequence,
-        title=None, # No title
+        title=None,  # No title
         summary="Summary only",
         is_active=False,
         # Add created_at and modified_at if needed by the method
@@ -365,7 +367,9 @@ def test_display_act_completion_success(mock_console: MagicMock, test_act: Act):
         modified_at=test_act.modified_at,
     )
     renderer.display_act_completion_success(test_act_untitled)
-    assert mock_console.print.call_count >= 2 # Title message, metadata, summary (no title print)
+    assert (
+        mock_console.print.call_count >= 2
+    )  # Title message, metadata, summary (no title print)
 
 
 # --- End Tests for display_act_completion_success ---
@@ -373,9 +377,10 @@ def test_display_act_completion_success(mock_console: MagicMock, test_act: Act):
 
 # --- Tests for display_act_ai_feedback_prompt (Moved & Adapted) ---
 
-from unittest.mock import patch # Import patch
+from unittest.mock import patch  # Import patch
 
-@patch('rich.prompt.Prompt.ask') # Patch Prompt.ask
+
+@patch("rich.prompt.Prompt.ask")  # Patch Prompt.ask
 def test_display_act_ai_feedback_prompt(mock_ask: MagicMock, mock_console: MagicMock):
     """Test displaying AI feedback prompt for an act using RichRenderer."""
     renderer = RichRenderer(mock_console)
@@ -392,7 +397,7 @@ def test_display_act_ai_feedback_prompt(mock_ask: MagicMock, mock_console: Magic
 
     # Assertions will run after implementation
     assert result == "A"
-    mock_ask.assert_called_once() # Verify Prompt.ask was called
+    mock_ask.assert_called_once()  # Verify Prompt.ask was called
 
 
 # --- End Tests for display_act_ai_feedback_prompt ---
