@@ -12,6 +12,7 @@ from sologm.models.dice import (
     DiceRoll,
 )  # Assuming you have a fixture for test_dice_roll
 from sologm.models.oracle import Interpretation  # Import Interpretation for test data
+from sologm.models.scene import Scene  # <-- Added import
 
 
 # Add mock_console fixture if not already present globally
