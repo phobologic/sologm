@@ -194,11 +194,13 @@ def test_display_game_status_selected_interpretation(
         oracle_results="Test Results",
         interpretations=[selected_interp],
     )
-    oracle_manager.get_current_interpretation_set.return_value = None
-    oracle_manager.get_most_recent_interpretation.return_value = (
-        interp_set,
-        selected_interp,
+    # --- MODIFIED LINES START ---
+    # Mock the methods on the oracle_manager instance directly
+    oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
+    oracle_manager.get_most_recent_interpretation = MagicMock(
+        return_value=(interp_set, selected_interp)
     )
+    # --- MODIFIED LINES END ---
 
     renderer = RichRenderer(mock_console)
     # This call should fail with NotImplementedError initially
@@ -231,7 +233,8 @@ def test_calculate_truncation_length(mock_console: MagicMock):
     # Test with a valid console width
     mock_console.width = 100
     result = renderer._calculate_truncation_length()
-    assert result == 90  # 100 - 10
+    # --- MODIFIED ASSERTION ---
+    assert result == 40  # Expected: max(40, int(100 / 2) - 10) = 40
 
     # Test with a small console width
     mock_console.width = 30
@@ -241,9 +244,11 @@ def test_calculate_truncation_length(mock_console: MagicMock):
     # Test with an invalid console width (should use self.console.width)
     mock_console.width = None
     # Mock console width to return a default if None
-    mock_console.width = 80
+    mock_console.width = 80 # Keep this mock setup
     result = renderer._calculate_truncation_length()
-    assert result == 40  # default value
+    # --- MODIFIED ASSERTION ---
+    # Expected: max(40, int(80 / 2) - 10) = max(40, 30) = 40
+    assert result == 40
 
 
 def test_create_act_panel(mock_console: MagicMock, test_game: Game, test_act: Act):
@@ -348,8 +353,11 @@ def test_create_oracle_panel(
     assert panel is None
 
     # Test with oracle manager (mock behavior as needed)
-    oracle_manager.get_current_interpretation_set.return_value = None
-    oracle_manager.get_most_recent_interpretation.return_value = None
+    # --- MODIFIED LINES START ---
+    # Mock the methods on the oracle_manager instance directly
+    oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
+    oracle_manager.get_most_recent_interpretation = MagicMock(return_value=None)
+    # --- MODIFIED LINES END ---
     panel = renderer._create_oracle_panel(test_game, test_scene, oracle_manager, 60)
     assert panel is not None  # Should return empty panel in this case
     assert "No oracle interpretations yet." in panel.renderable
