@@ -1,11 +1,31 @@
 """
 Renderer implementation for generating Markdown output.
 """
+import logging
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from rich.console import Console
 
 # Import base class
 from .base import Renderer
+
+# Import necessary models for type hinting
+from sologm.models.act import Act
+from sologm.models.dice import DiceRoll
+from sologm.models.event import Event
+from sologm.models.game import Game
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene
+
+# Import utilities if needed (e.g., truncate_text)
+# from sologm.cli.utils.display import truncate_text
+
+if TYPE_CHECKING:
+    # Assuming managers are in sologm.core.<manager_name>
+    from sologm.core.oracle import OracleManager
+    from sologm.core.scene import SceneManager
+
+logger = logging.getLogger(__name__)
 
 
 class MarkdownRenderer(Renderer):
