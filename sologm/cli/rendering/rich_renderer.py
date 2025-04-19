@@ -214,7 +214,55 @@ class RichRenderer(Renderer):
 
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene using Rich."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying scene info for {scene.id} (status: {scene.status.value})"
+        )
+        logger.debug(
+            f"Scene details: title='{scene.title}', sequence={scene.sequence}, "
+            f"act_id={scene.act_id if hasattr(scene, 'act_id') else 'unknown'}"
+        )
+
+        st = StyledText
+
+        # Get act information
+        act_info = ""
+        if hasattr(scene, "act") and scene.act:
+            act_title = scene.act.title or "Untitled Act"
+            act_info = f"Act {scene.act.sequence}: {act_title}"
+
+        # Create metadata with consistent formatting
+        metadata = {
+            "Status": scene.status.value,
+            "Sequence": scene.sequence,
+            "Act": act_info,
+            "Created": scene.created_at.strftime("%Y-%m-%d"),
+            "Modified": scene.modified_at.strftime("%Y-%m-%d"),
+        }
+
+        # Determine border style based on scene status
+        border_style = BORDER_STYLES["current"]
+        if scene.status.value == "COMPLETED":
+            border_style = BORDER_STYLES["success"]
+
+        # Create panel content
+        panel_content = st.combine(
+            st.subtitle(scene.description), "\n", st.format_metadata(metadata)
+        )
+
+        # Create panel title
+        panel_title = st.combine(
+            st.title_blue(scene.title), " ", st.timestamp(f"({scene.id})")
+        )
+
+        panel = Panel(
+            panel_content,
+            title=panel_title,
+            border_style=border_style,
+            title_align="left",
+        )
+
+        # Use self.console instead of the console parameter
+        self.console.print(panel)
 
     def display_game_status(
         self,

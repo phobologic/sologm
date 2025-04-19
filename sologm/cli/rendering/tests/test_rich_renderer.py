@@ -79,3 +79,16 @@ def test_display_interpretation_selected(
 
 
 # --- Add other tests below ---
+
+
+def test_display_scene_info(mock_console: MagicMock, test_scene: Scene):
+    """Test displaying scene info using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_scene_info(test_scene)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)
