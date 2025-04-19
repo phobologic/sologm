@@ -260,6 +260,8 @@ def display_scenes_table(
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
+
+
 def display_interpretation_set(
     console: Console,
     interp_set: InterpretationSet,

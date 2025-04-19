@@ -85,9 +85,7 @@ def test_display_interpretation_selected(
 # --- Tests for display_game_info (Moved & Adapted) ---
 
 
-def test_display_game_info(
-    mock_console: MagicMock, test_game: Game, test_scene: Scene
-):
+def test_display_game_info(mock_console: MagicMock, test_game: Game, test_scene: Scene):
     """Test displaying game info using RichRenderer."""
     renderer = RichRenderer(mock_console)
     # This call should fail with NotImplementedError initially
