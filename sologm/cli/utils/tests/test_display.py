@@ -87,6 +87,9 @@ def test_display_scenes_table_no_scenes(mock_console):
     display_scenes_table(mock_console, [], None)
     mock_console.print.assert_called_once_with(
         "No scenes found. Create one with 'sologm scene create'."
+    )
+
+
 def test_display_game_status_full(
     mock_console, test_game, test_scene, test_events, scene_manager
 ):
