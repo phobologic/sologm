@@ -20,8 +20,6 @@ from sologm.cli.utils.styled_text import StyledText
 # --- test_display_games_table_* removed, moved to test_rich_renderer.py ---
 
 
-
-
 # --- test_display_interpretation_selected removed, moved to test_rich_renderer.py ---
 
 
@@ -94,5 +92,3 @@ def test_format_metadata():
 
 
 # --- test_display_act_ai_feedback_prompt removed, moved to test_rich_renderer.py ---
-
-
