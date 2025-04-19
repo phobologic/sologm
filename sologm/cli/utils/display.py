@@ -1089,6 +1089,8 @@ def display_acts_table(
         title_align="left",
         border_style=BORDER_STYLES["game_info"],
     )
+
+
 def display_interpretation_sets_table(
     console: Console, interp_sets: List[InterpretationSet]
 ) -> None:

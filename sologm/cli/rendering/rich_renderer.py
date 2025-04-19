@@ -20,13 +20,13 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus # Added SceneStatus
+from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
 
 # Import utilities that RichRenderer will use directly
 from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 from sologm.cli.utils.display import (
     truncate_text,
-) # Assuming this stays in display.py for now
+)  # Assuming this stays in display.py for now
 
 # Use TYPE_CHECKING for manager imports to avoid circular dependencies if needed later
 if TYPE_CHECKING:
@@ -423,7 +423,9 @@ class RichRenderer(Renderer):
             scenes_table.add_column("Sequence", justify="right")
             scenes_table.add_column("Title", style=st.STYLES["category"])
             scenes_table.add_column("Summary")
-            scenes_table.add_column("Status", style=st.STYLES["success"]) # Added Status column
+            scenes_table.add_column(
+                "Status", style=st.STYLES["success"]
+            )  # Added Status column
             scenes_table.add_column(
                 "Current", style=st.STYLES["success"], justify="center"
             )
@@ -445,7 +447,7 @@ class RichRenderer(Renderer):
                     str(scene.sequence),
                     scene_title,
                     truncated_description,
-                    scene.status.value, # Display status value
+                    scene.status.value,  # Display status value
                     active_marker,
                 )
 
