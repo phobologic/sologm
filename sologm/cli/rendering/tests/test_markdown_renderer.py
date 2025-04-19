@@ -8,10 +8,14 @@ import pytest
 from rich.console import Console  # <-- Import Console
 
 # Import the renderer and models needed for tests
+from typing import List  # <-- Added import
+
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
 from sologm.models.dice import DiceRoll
-from sologm.models.oracle import Interpretation  # <-- Added import
+from sologm.models.event import Event  # <-- Added import
+from sologm.models.oracle import Interpretation
+from sologm.models.scene import Scene  # <-- Added import
 
 
 # Fixture for mock console (can be shared or defined here)
@@ -91,6 +95,72 @@ def test_display_interpretation_markdown(
         f"*ID: {interp.id} / {interp.slug}*"
     )
     mock_console.print.assert_called_with(expected_output_sequence)
+
+
+# --- Test for display_events_table ---
+
+
+def test_display_events_table_markdown(
+    mock_console: MagicMock, test_events: List[Event], test_scene: Scene
+):
+    """Test displaying a list of events as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+
+    # Test with events and default truncation
+    renderer.display_events_table(test_events, test_scene)
+
+    # Expected output (adjust based on test_events fixture data)
+    event1 = test_events[0]
+    event2 = test_events[1]
+    expected_output = (
+        f"### Events in Scene: {test_scene.title}\n\n"
+        f"| ID | Time | Source | Description |\n"
+        f"|---|---|---|---|\n"
+        f"| `{event1.id}` | {event1.created_at.strftime('%Y-%m-%d %H:%M')} | {event1.source_name} | {event1.description} |\n"
+        f"| `{event2.id}` | {event2.created_at.strftime('%Y-%m-%d %H:%M')} | {event2.source_name} | {event2.description} |"
+    )
+    mock_console.print.assert_called_with(expected_output)
+    mock_console.reset_mock()
+
+    # Test with truncation enabled explicitly
+    short_len = 10
+    renderer.display_events_table(
+        test_events, test_scene, max_description_length=short_len
+    )
+    truncated_desc1 = event1.description[: short_len - 3] + "..."
+    truncated_desc2 = event2.description[: short_len - 3] + "..."
+    expected_output_truncated = (
+        f"### Events in Scene: {test_scene.title}\n\n"
+        f"| ID | Time | Source | Description |\n"
+        f"|---|---|---|---|\n"
+        f"| `{event1.id}` | {event1.created_at.strftime('%Y-%m-%d %H:%M')} | {event1.source_name} | {truncated_desc1} |\n"
+        f"| `{event2.id}` | {event2.created_at.strftime('%Y-%m-%d %H:%M')} | {event2.source_name} | {truncated_desc2} |"
+    )
+    mock_console.print.assert_called_with(expected_output_truncated)
+    mock_console.reset_mock()
+
+    # Test with truncation disabled
+    renderer.display_events_table(test_events, test_scene, truncate_descriptions=False)
+    # Expected output should be the same as the first case if descriptions are short
+    expected_output_no_trunc = (
+        f"### Events in Scene: {test_scene.title}\n\n"
+        f"| ID | Time | Source | Description |\n"
+        f"|---|---|---|---|\n"
+        f"| `{event1.id}` | {event1.created_at.strftime('%Y-%m-%d %H:%M')} | {event1.source_name} | {event1.description} |\n"
+        f"| `{event2.id}` | {event2.created_at.strftime('%Y-%m-%d %H:%M')} | {event2.source_name} | {event2.description} |"
+    )
+    mock_console.print.assert_called_with(expected_output_no_trunc)
+    mock_console.reset_mock()
+
+
+def test_display_events_table_no_events_markdown(
+    mock_console: MagicMock, test_scene: Scene
+):
+    """Test displaying an empty list of events as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    renderer.display_events_table([], test_scene)
+    expected_output = f"\nNo events in scene '{test_scene.title}'"
+    mock_console.print.assert_called_with(expected_output)
 
 
 # --- Add other tests below ---

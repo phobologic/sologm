@@ -18,8 +18,8 @@ from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene
 
-# Import utilities if needed (e.g., truncate_text)
-# from sologm.cli.utils.display import truncate_text
+# Import utilities
+from sologm.cli.utils.display import truncate_text
 
 if TYPE_CHECKING:
     # Assuming managers are in sologm.core.<manager_name>
@@ -106,8 +106,42 @@ class MarkdownRenderer(Renderer):
         truncate_descriptions: bool = True,
         max_description_length: int = 80,
     ) -> None:
-        """Displays a list of events as Markdown."""
-        raise NotImplementedError
+        """Displays a list of events as a Markdown table."""
+        logger.debug(
+            f"Displaying events table as Markdown for scene '{scene.title}' with {len(events)} events"
+        )
+
+        if not events:
+            logger.debug(f"No events to display for scene '{scene.title}'")
+            self.console.print(f"\nNo events in scene '{scene.title}'")
+            return
+
+        output_lines = []
+        output_lines.append(f"### Events in Scene: {scene.title}")
+        output_lines.append("")
+        output_lines.append("| ID | Time | Source | Description |")
+        output_lines.append("|---|---|---|---|")
+
+        for event in events:
+            description = event.description
+            if truncate_descriptions and len(description) > max_description_length:
+                description = truncate_text(
+                    description, max_length=max_description_length
+                )
+
+            # Escape pipe characters within the description to avoid breaking the table
+            description = description.replace("|", "\\|")
+
+            # Format row
+            row = (
+                f"| `{event.id}` "
+                f"| {event.created_at.strftime('%Y-%m-%d %H:%M')} "
+                f"| {event.source_name} "
+                f"| {description} |"
+            )
+            output_lines.append(row)
+
+        self.console.print("\n".join(output_lines))
 
     def display_games_table(
         self, games: List[Game], active_game: Optional[Game] = None
