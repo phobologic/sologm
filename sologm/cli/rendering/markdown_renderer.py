@@ -146,8 +146,50 @@ class MarkdownRenderer(Renderer):
     def display_games_table(
         self, games: List[Game], active_game: Optional[Game] = None
     ) -> None:
-        """Displays a list of games as Markdown."""
-        raise NotImplementedError
+        """Displays a list of games as a Markdown table."""
+        logger.debug(f"Displaying games table as Markdown with {len(games)} games")
+        logger.debug(f"Active game: {active_game.id if active_game else 'None'}")
+
+        if not games:
+            logger.debug("No games found to display")
+            self.console.print(
+                "No games found. Create one with 'sologm game create'."
+            )
+            return
+
+        output_lines = []
+        output_lines.append("### Games")
+        output_lines.append("")
+        output_lines.append("| ID | Name | Description | Acts | Scenes | Current |")
+        output_lines.append("|---|---|---|---|---|---|")
+
+        for game in games:
+            # Get acts and scenes count (handle potential missing attributes)
+            act_count = len(game.acts) if hasattr(game, "acts") else 0
+            scene_count = (
+                sum(len(act.scenes) for act in game.acts)
+                if hasattr(game, "acts") and game.acts
+                else (len(game.scenes) if hasattr(game, "scenes") else 0)
+            )
+
+            is_active = active_game and game.id == active_game.id
+            active_marker = "✓" if is_active else ""
+            game_name = f"**{game.name}**" if is_active else game.name
+
+            # Escape pipe characters in description
+            description = game.description.replace("|", "\\|")
+
+            row = (
+                f"| `{game.id}` "
+                f"| {game_name} "
+                f"| {description} "
+                f"| {act_count} "
+                f"| {scene_count} "
+                f"| {active_marker} |"
+            )
+            output_lines.append(row)
+
+        self.console.print("\n".join(output_lines))
 
     def display_scenes_table(
         self, scenes: List[Scene], active_scene_id: Optional[str] = None

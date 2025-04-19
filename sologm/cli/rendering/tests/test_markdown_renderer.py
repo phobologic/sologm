@@ -13,9 +13,10 @@ from typing import List  # <-- Added import
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
 from sologm.models.dice import DiceRoll
-from sologm.models.event import Event  # <-- Added import
+from sologm.models.event import Event
+from sologm.models.game import Game  # <-- Added import
 from sologm.models.oracle import Interpretation
-from sologm.models.scene import Scene  # <-- Added import
+from sologm.models.scene import Scene
 
 
 # Fixture for mock console (can be shared or defined here)
@@ -160,6 +161,63 @@ def test_display_events_table_no_events_markdown(
     renderer = MarkdownRenderer(mock_console)
     renderer.display_events_table([], test_scene)
     expected_output = f"\nNo events in scene '{test_scene.title}'"
+    mock_console.print.assert_called_with(expected_output)
+
+
+# --- Test for display_games_table ---
+
+
+def test_display_games_table_markdown(mock_console: MagicMock, test_game: Game):
+    """Test displaying a list of games as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    other_game = Game(
+        id="game-other",
+        name="Other Game",
+        description="Another game.",
+        slug="other-game",
+        is_active=False,
+        # Add created_at/modified_at if needed by the method
+        created_at=test_game.created_at,
+        modified_at=test_game.modified_at,
+    )
+    # Mock relationships if needed by the display method (e.g., act/scene counts)
+    test_game.acts = []
+    test_game.scenes = []
+    other_game.acts = []
+    other_game.scenes = []
+
+    games = [test_game, other_game]
+
+    # Test case 1: With an active game
+    renderer.display_games_table(games, active_game=test_game)
+    expected_output_active = (
+        "### Games\n\n"
+        "| ID | Name | Description | Acts | Scenes | Current |\n"
+        "|---|---|---|---|---|---|\n"
+        f"| `{test_game.id}` | **{test_game.name}** | {test_game.description} | 0 | 0 | ✓ |\n"
+        f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
+    )
+    mock_console.print.assert_called_with(expected_output_active)
+    mock_console.reset_mock()
+
+    # Test case 2: Without an active game
+    renderer.display_games_table(games, active_game=None)
+    expected_output_no_active = (
+        "### Games\n\n"
+        "| ID | Name | Description | Acts | Scenes | Current |\n"
+        "|---|---|---|---|---|---|\n"
+        f"| `{test_game.id}` | {test_game.name} | {test_game.description} | 0 | 0 |  |\n"
+        f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
+    )
+    mock_console.print.assert_called_with(expected_output_no_active)
+    mock_console.reset_mock()
+
+
+def test_display_games_table_no_games_markdown(mock_console: MagicMock):
+    """Test displaying an empty list of games as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    renderer.display_games_table([], active_game=None)
+    expected_output = "No games found. Create one with 'sologm game create'."
     mock_console.print.assert_called_with(expected_output)
 
 
