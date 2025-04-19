@@ -32,18 +32,7 @@ from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 # --- test_display_events_table_* removed, moved to test_rich_renderer.py ---
 
 
-def test_display_games_table_with_games(mock_console, test_game):
-    """Test displaying games table with games."""
-    display_games_table(mock_console, [test_game], test_game)
-    assert mock_console.print.called
-
-
-def test_display_games_table_no_games(mock_console):
-    """Test displaying games table with no games."""
-    display_games_table(mock_console, [], None)
-    mock_console.print.assert_called_once_with(
-        "No games found. Create one with 'sologm game create'."
-    )
+# --- test_display_games_table_* removed, moved to test_rich_renderer.py ---
 
 
 def test_display_scenes_table_with_scenes(mock_console, test_scene):

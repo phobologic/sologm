@@ -259,7 +259,66 @@ class RichRenderer(Renderer):
         self, games: List[Game], active_game: Optional[Game] = None
     ) -> None:
         """Displays a list of games in a Rich table."""
-        raise NotImplementedError
+        logger.debug(f"Displaying games table with {len(games)} games")
+        logger.debug(f"Active game: {active_game.id if active_game else 'None'}")
+        if not games:
+            logger.debug("No games found to display")
+            # Use self.console
+            self.console.print("No games found. Create one with 'sologm game create'.")
+            return
+
+        st = StyledText
+
+        # Create table without a title
+        table = Table(
+            border_style=BORDER_STYLES["game_info"],
+        )
+
+        # Add columns with consistent styling
+        table.add_column("ID", style=st.STYLES["timestamp"])
+        table.add_column("Name", style=st.STYLES["category"])
+        table.add_column("Description")
+        table.add_column("Acts", justify="right")
+        table.add_column("Scenes", justify="right")
+        table.add_column("Current", style=st.STYLES["success"], justify="center")
+
+        # Add rows with consistent formatting
+        for game in games:
+            # Get acts and scenes count
+            act_count = len(game.acts) if hasattr(game, "acts") else 0
+            scene_count = (
+                sum(len(act.scenes) for act in game.acts)
+                if hasattr(game, "acts")
+                else len(game.scenes)
+            )
+
+            is_active = active_game and game.id == active_game.id
+            active_marker = "✓" if is_active else ""
+
+            # Create game name with appropriate styling
+            game_name = st.title(game.name).plain if is_active else game.name
+
+            table.add_row(
+                game.id,
+                game_name,
+                game.description,
+                str(act_count),
+                str(scene_count),
+                active_marker,
+            )
+
+        # Create panel title
+        panel_title = st.title("Games")
+
+        # Wrap the table in a panel with a title
+        panel = Panel(
+            table,
+            title=panel_title,
+            title_align="left",
+            border_style=BORDER_STYLES["game_info"],
+        )
+        # Use self.console
+        self.console.print(panel)
 
     def display_scenes_table(
         self, scenes: List[Scene], active_scene_id: Optional[str] = None

@@ -194,6 +194,34 @@ def test_display_act_info(mock_console: MagicMock, test_act: Act, test_game: Gam
 # --- End Tests for display_act_info ---
 
 
+# --- Tests for display_games_table (Moved & Adapted) ---
+
+def test_display_games_table_with_games(mock_console: MagicMock, test_game: Game):
+    """Test displaying games table with games using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_games_table([test_game], test_game)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Panel) # Expecting a Panel containing the Table
+
+def test_display_games_table_no_games(mock_console: MagicMock):
+    """Test displaying games table with no games using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_games_table([], None)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called_once_with(
+        "No games found. Create one with 'sologm game create'."
+    )
+
+# --- End Tests for display_games_table ---
+
+
 # --- Tests for display_scene_info (Moved & Adapted) ---
 
 
