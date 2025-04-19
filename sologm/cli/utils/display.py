@@ -70,6 +70,9 @@ def truncate_text(text: str, max_length: int = 60) -> str:
 # --- display_interpretation_set removed, moved to RichRenderer ---
 
 
+# --- display_game_status and its helpers removed, moved to RichRenderer ---
+
+
 def format_metadata(items: Dict[str, Any]) -> str:
     """Format metadata items consistently.
 

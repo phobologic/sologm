@@ -5,25 +5,10 @@ from rich.text import Text
 
 from sologm.cli.utils.display import (
     METADATA_SEPARATOR,
-    _calculate_truncation_length,
-    _create_act_panel,
-    _create_events_panel,
-    _create_game_header_panel,
-    _create_oracle_panel,
-    _create_scene_panels_grid,
-    display_dice_roll,
-    display_events_table,
-    display_game_info,
-    display_game_status,
-    display_games_table,
-    display_interpretation,
-    display_interpretation_set,
-    display_interpretation_sets_table,
-    display_scenes_table,
     format_metadata,
     truncate_text,
 )
-from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
+from sologm.cli.utils.styled_text import StyledText
 
 
 # --- test_display_dice_roll removed, moved to test_rich_renderer.py ---
@@ -35,34 +20,6 @@ from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 # --- test_display_games_table_* removed, moved to test_rich_renderer.py ---
 
 
-# --- test_display_scenes_table_* removed, moved to test_rich_renderer.py ---
-
-
-# --- test_calculate_truncation_length removed, moved to test_rich_renderer.py ---
-
-
-# --- test_create_act_panel removed, moved to test_rich_renderer.py ---
-
-
-# --- test_create_game_header_panel removed, moved to test_rich_renderer.py ---
-
-
-# --- test_create_scene_panels_grid removed, moved to test_rich_renderer.py ---
-
-
-# --- test_create_events_panel removed, moved to test_rich_renderer.py ---
-
-
-# --- test_create_oracle_panel removed, moved to test_rich_renderer.py ---
-
-
-# --- test_create_empty_oracle_panel removed, moved to test_rich_renderer.py ---
-
-
-# --- test_create_dice_rolls_panel removed, moved to test_rich_renderer.py ---
-
-
-# --- test_display_interpretation removed, moved to test_rich_renderer.py ---
 
 
 # --- test_display_interpretation_selected removed, moved to test_rich_renderer.py ---
@@ -136,16 +93,3 @@ def test_format_metadata():
 # --- test_display_act_ai_feedback_prompt removed, moved to test_rich_renderer.py ---
 
 
-@pytest.fixture
-def display_helpers():
-    """Fixture to provide access to private display helper functions."""
-    from sologm.cli.utils.display import (
-        _create_dice_rolls_panel,
-        _create_empty_oracle_panel,
-    )
-
-    return {
-        "create_empty_oracle_panel": _create_empty_oracle_panel,
-        "create_events_panel": _create_events_panel,
-        "create_dice_rolls_panel": _create_dice_rolls_panel,
-    }
