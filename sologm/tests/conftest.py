@@ -1,7 +1,8 @@
 """Common test fixtures for all sologm tests."""
 
 import logging
-from unittest.mock import MagicMock, patch
+from typing import Any  # Add Any if not already imported
+from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine
@@ -18,9 +19,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event_source import EventSource
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import SceneStatus
-
 from sologm.utils.config import Config  # Import for type hinting
-from typing import Any  # Add Any if not already imported
 
 logger = logging.getLogger(__name__)
 
