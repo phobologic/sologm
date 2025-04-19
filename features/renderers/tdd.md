@@ -29,7 +29,7 @@ The core components involved are:
 
 ---
 
-### Step 1: Setup Basic Structure & Flag
+### Phase 1: Setup Basic Structure & Flag
 
 **Goal:** Create the rendering directory, the base `Renderer` interface, add the `--no-ui` flag, and implement basic renderer selection in `main.py`.
 
@@ -62,7 +62,7 @@ The core components involved are:
 
 ---
 
-### Step 2: Implement `RichRenderer` by Refactoring `display.py`
+### Phase 2: Implement `RichRenderer` by Refactoring `display.py`
 
 **Goal:** Move all existing display logic from `sologm/cli/utils/display.py` into a concrete `RichRenderer` class, ensuring existing display functionality remains unchanged when `--no-ui` is `False`.
 
@@ -91,7 +91,7 @@ The core components involved are:
 
 ---
 
-### Step 3: Implement `MarkdownRenderer`
+### Phase 3: Implement `MarkdownRenderer`
 
 **Goal:** Create the `MarkdownRenderer` class and implement methods to output information in valid Markdown format.
 
@@ -121,7 +121,7 @@ The core components involved are:
 
 ---
 
-### Step 4: Integrate Renderer into CLI Commands
+### Phase 4: Integrate Renderer into CLI Commands
 
 **Goal:** Refactor all CLI command functions to use the globally selected renderer instance instead of calling `display.*` functions directly.
 
@@ -141,7 +141,7 @@ The core components involved are:
 
 ---
 
-### Step 5: Final Cleanup & Documentation
+### Phase 5: Final Cleanup & Documentation
 
 **Goal:** Tidy up the codebase, remove obsolete files/functions, and update documentation.
 
