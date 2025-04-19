@@ -58,9 +58,10 @@ def test_display_interpretation_set(
 
     # Assertions will run after implementation
     # Expect calls for context panel (if show_context=True), each interpretation, and instruction panel
-    assert mock_console.print.call_count >= len(
-        test_interpretation_set.interpretations
-    ) + 2
+    assert (
+        mock_console.print.call_count
+        >= len(test_interpretation_set.interpretations) + 2
+    )
 
 
 def test_display_interpretation_set_no_context(
@@ -73,9 +74,10 @@ def test_display_interpretation_set_no_context(
 
     # Assertions will run after implementation
     # Expect calls for each interpretation and instruction panel
-    assert mock_console.print.call_count == len(
-        test_interpretation_set.interpretations
-    ) + 1
+    assert (
+        mock_console.print.call_count
+        == len(test_interpretation_set.interpretations) + 1
+    )
 
 
 # --- End Tests for display_interpretation_set ---
