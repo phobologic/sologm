@@ -192,8 +192,46 @@ class MarkdownRenderer(Renderer):
     def display_scenes_table(
         self, scenes: List[Scene], active_scene_id: Optional[str] = None
     ) -> None:
-        """Displays a list of scenes as Markdown."""
-        raise NotImplementedError
+        """Displays a list of scenes as a Markdown table."""
+        logger.debug(f"Displaying scenes table as Markdown with {len(scenes)} scenes")
+        logger.debug(
+            f"Active scene ID: {active_scene_id if active_scene_id else 'None'}"
+        )
+
+        if not scenes:
+            logger.debug("No scenes found to display")
+            self.console.print(
+                "No scenes found. Create one with 'sologm scene create'."
+            )
+            return
+
+        output_lines = []
+        output_lines.append("### Scenes")
+        output_lines.append("")
+        output_lines.append(
+            "| ID | Title | Description | Status | Current | Sequence |"
+        )
+        output_lines.append("|---|---|---|---|---|---|")
+
+        for scene in scenes:
+            is_active = active_scene_id and scene.id == active_scene_id
+            active_marker = "✓" if is_active else ""
+            scene_title = f"**{scene.title}**" if is_active else scene.title
+
+            # Escape pipe characters in description
+            description = scene.description.replace("|", "\\|")
+
+            row = (
+                f"| `{scene.id}` "
+                f"| {scene_title} "
+                f"| {description} "
+                f"| {scene.status.value} "
+                f"| {active_marker} "
+                f"| {scene.sequence} |"
+            )
+            output_lines.append(row)
+
+        self.console.print("\n".join(output_lines))
 
     def display_game_info(
         self, game: Game, active_scene: Optional[Scene] = None

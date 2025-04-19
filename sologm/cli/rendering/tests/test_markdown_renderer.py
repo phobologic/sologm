@@ -221,4 +221,57 @@ def test_display_games_table_no_games_markdown(mock_console: MagicMock):
     mock_console.print.assert_called_with(expected_output)
 
 
+# --- Test for display_scenes_table ---
+
+
+def test_display_scenes_table_markdown(mock_console: MagicMock, test_scene: Scene):
+    """Test displaying a list of scenes as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    other_scene = Scene(
+        id="scene-other",
+        act_id=test_scene.act_id,
+        title="Other Scene",
+        description="Another scene.",
+        sequence=test_scene.sequence + 1,
+        status=test_scene.status,
+        is_active=False,
+        # Add created_at/modified_at if needed by the method
+        created_at=test_scene.created_at,
+        modified_at=test_scene.modified_at,
+    )
+    scenes = [test_scene, other_scene]
+
+    # Test case 1: With an active scene ID
+    renderer.display_scenes_table(scenes, active_scene_id=test_scene.id)
+    expected_output_active = (
+        "### Scenes\n\n"
+        "| ID | Title | Description | Status | Current | Sequence |\n"
+        "|---|---|---|---|---|---|\n"
+        f"| `{test_scene.id}` | **{test_scene.title}** | {test_scene.description} | {test_scene.status.value} | ✓ | {test_scene.sequence} |\n"
+        f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
+    )
+    mock_console.print.assert_called_with(expected_output_active)
+    mock_console.reset_mock()
+
+    # Test case 2: Without an active scene ID
+    renderer.display_scenes_table(scenes, active_scene_id=None)
+    expected_output_no_active = (
+        "### Scenes\n\n"
+        "| ID | Title | Description | Status | Current | Sequence |\n"
+        "|---|---|---|---|---|---|\n"
+        f"| `{test_scene.id}` | {test_scene.title} | {test_scene.description} | {test_scene.status.value} |  | {test_scene.sequence} |\n"
+        f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
+    )
+    mock_console.print.assert_called_with(expected_output_no_active)
+    mock_console.reset_mock()
+
+
+def test_display_scenes_table_no_scenes_markdown(mock_console: MagicMock):
+    """Test displaying an empty list of scenes as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    renderer.display_scenes_table([], active_scene_id=None)
+    expected_output = "No scenes found. Create one with 'sologm scene create'."
+    mock_console.print.assert_called_with(expected_output)
+
+
 # --- Add other tests below ---
