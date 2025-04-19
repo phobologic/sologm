@@ -31,6 +31,9 @@ from sologm.cli.utils.styled_text import StyledText
 # --- test_display_interpretation_set_no_context removed, moved to test_rich_renderer.py ---
 
 
+# --- test_display_game_status_* and helper tests removed, moved to test_rich_renderer.py ---
+
+
 def test_truncate_text():
     """Test the truncate_text function."""
     # Short text should remain unchanged
