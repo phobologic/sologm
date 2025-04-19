@@ -52,76 +52,7 @@ def truncate_text(text: str, max_length: int = 60) -> str:
     return text[: max_length - 3] + "..."
 
 
-def display_dice_roll(console: Console, roll: DiceRoll) -> None:
-    """Display a dice roll result.
-
-    Args:
-        console: Rich console instance
-        roll: DiceRoll model to display
-    """
-    logger.debug(f"Displaying dice roll: {roll.notation} (total: {roll.total})")
-    logger.debug(
-        f"Individual results: {roll.individual_results}, modifier: {roll.modifier}"
-    )
-
-    st = StyledText
-
-    # Create title with consistent styling
-    title_parts = []
-    if roll.reason:
-        title_parts.extend([st.title(f"{roll.reason}:"), " ", st.title(roll.notation)])
-    else:
-        title_parts.append(st.title(roll.notation))
-
-    panel_title = st.combine(*title_parts)
-
-    # Build details with consistent styling
-    details = []
-
-    if len(roll.individual_results) > 1:
-        details.append(
-            st.combine(
-                st.subtitle("Rolls:"), " ", st.timestamp(str(roll.individual_results))
-            )
-        )
-
-    if roll.modifier != 0:
-        details.append(
-            st.combine(st.subtitle("Modifier:"), " ", st.warning(f"{roll.modifier:+d}"))
-        )
-
-    details.append(
-        st.combine(st.subtitle("Result:"), " ", st.title_success(str(roll.total)))
-    )
-
-    # Add timestamp metadata if available
-    metadata = {}
-    if roll.created_at:
-        metadata["Time"] = roll.created_at.isoformat()
-
-    # Create panel content
-    panel_content = Text()
-
-    # Add all details
-    for i, detail in enumerate(details):
-        if i > 0:
-            panel_content.append("\n")
-        panel_content.append(detail)
-
-    # Add metadata if available
-    if metadata:
-        panel_content.append("\n")
-        panel_content.append(st.format_metadata(metadata))
-
-    # Use consistent border style for dice rolls (neutral information)
-    panel = Panel(
-        panel_content,
-        title=panel_title,
-        border_style=BORDER_STYLES["neutral"],
-        expand=True,
-        title_align="left",
-    )
-    console.print(panel)
+# --- display_dice_roll removed, moved to RichRenderer ---
 
 
 def display_interpretation(
