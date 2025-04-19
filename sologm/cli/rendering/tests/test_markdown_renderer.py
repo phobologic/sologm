@@ -274,4 +274,45 @@ def test_display_scenes_table_no_scenes_markdown(mock_console: MagicMock):
     mock_console.print.assert_called_with(expected_output)
 
 
+# --- Test for display_game_info ---
+
+
+def test_display_game_info_markdown(
+    mock_console: MagicMock, test_game: Game, test_scene: Scene
+):
+    """Test displaying game info as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+
+    # Mock relationships needed by the display method
+    test_game.acts = [test_scene.act]  # Assuming test_scene has an act
+    test_game.scenes = [test_scene]
+
+    # Test case 1: With active scene
+    renderer.display_game_info(test_game, active_scene=test_scene)
+    expected_output_active = (
+        f"## {test_game.name} (`{test_game.slug}` / `{test_game.id}`)\n\n"
+        f"{test_game.description}\n\n"
+        f"*   **Created:** {test_game.created_at.strftime('%Y-%m-%d')}\n"
+        f"*   **Modified:** {test_game.modified_at.strftime('%Y-%m-%d')}\n"
+        f"*   **Acts:** 1\n"  # Based on mocked relationship
+        f"*   **Scenes:** 1\n"  # Based on mocked relationship
+        f"*   **Active Scene:** {test_scene.title}"
+    )
+    mock_console.print.assert_called_with(expected_output_active)
+    mock_console.reset_mock()
+
+    # Test case 2: Without active scene
+    renderer.display_game_info(test_game, active_scene=None)
+    expected_output_no_active = (
+        f"## {test_game.name} (`{test_game.slug}` / `{test_game.id}`)\n\n"
+        f"{test_game.description}\n\n"
+        f"*   **Created:** {test_game.created_at.strftime('%Y-%m-%d')}\n"
+        f"*   **Modified:** {test_game.modified_at.strftime('%Y-%m-%d')}\n"
+        f"*   **Acts:** 1\n"
+        f"*   **Scenes:** 1"
+        # No Active Scene line
+    )
+    mock_console.print.assert_called_with(expected_output_no_active)
+
+
 # --- Add other tests below ---

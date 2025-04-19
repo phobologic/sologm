@@ -237,7 +237,42 @@ class MarkdownRenderer(Renderer):
         self, game: Game, active_scene: Optional[Scene] = None
     ) -> None:
         """Displays detailed information about a specific game as Markdown."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying game info as Markdown for {game.id} with active scene: "
+            f"{active_scene.id if active_scene else 'None'}"
+        )
+
+        output_lines = []
+
+        # Header
+        output_lines.append(f"## {game.name} (`{game.slug}` / `{game.id}`)")
+        output_lines.append("")
+
+        # Description
+        output_lines.append(game.description)
+        output_lines.append("")
+
+        # Metadata
+        act_count = len(game.acts) if hasattr(game, "acts") else 0
+        scene_count = (
+            sum(len(act.scenes) for act in game.acts)
+            if hasattr(game, "acts") and game.acts
+            else (len(game.scenes) if hasattr(game, "scenes") else 0)
+        )
+
+        output_lines.append(
+            f"*   **Created:** {game.created_at.strftime('%Y-%m-%d')}"
+        )
+        output_lines.append(
+            f"*   **Modified:** {game.modified_at.strftime('%Y-%m-%d')}"
+        )
+        output_lines.append(f"*   **Acts:** {act_count}")
+        output_lines.append(f"*   **Scenes:** {scene_count}")
+
+        if active_scene:
+            output_lines.append(f"*   **Active Scene:** {active_scene.title}")
+
+        self.console.print("\n".join(output_lines))
 
     def display_interpretation_set(
         self, interp_set: InterpretationSet, show_context: bool = True
