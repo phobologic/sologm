@@ -2,8 +2,9 @@
 
 # Add necessary imports
 from typing import List  # Added for Interpretation list type hint
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from rich.console import Console
 from rich.panel import Panel  # Import Panel for assertion
 

@@ -3,16 +3,19 @@ Concrete implementation of the Renderer interface using Rich library components.
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt
 from rich.table import Table
 from rich.text import Text
 
-# Corrected import based on file structure from Phase 1
-from .base import Renderer
+from sologm.cli.utils.display import (
+    truncate_text,
+)  # Assuming this stays in display.py for now
+
+# Import utilities that RichRenderer will use directly
+from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 
 # Import necessary models
 from sologm.models.act import Act
@@ -20,13 +23,10 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
+from sologm.models.scene import Scene  # Added SceneStatus
 
-# Import utilities that RichRenderer will use directly
-from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
-from sologm.cli.utils.display import (
-    truncate_text,
-)  # Assuming this stays in display.py for now
+# Corrected import based on file structure from Phase 1
+from .base import Renderer
 
 # Use TYPE_CHECKING for manager imports to avoid circular dependencies if needed later
 if TYPE_CHECKING:
