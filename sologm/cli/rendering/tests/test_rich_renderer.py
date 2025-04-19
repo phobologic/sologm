@@ -1,8 +1,8 @@
 """Tests for the RichRenderer class."""
 
 # Add necessary imports
-from typing import List  # Added for Interpretation list type hint
-from unittest.mock import MagicMock
+from typing import List, Optional  # Added Optional
+from unittest.mock import MagicMock, patch  # Added patch
 
 import pytest
 from rich.console import Console
@@ -13,8 +13,15 @@ from sologm.models.act import Act  # <-- Added import
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event  # <-- Added import
 from sologm.models.game import Game
-from sologm.models.oracle import Interpretation, InterpretationSet  # <-- Added import
-from sologm.models.scene import Scene
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
+
+# Import manager types for mocking/type hinting if needed by tests
+from sologm.core.oracle import OracleManager
+from sologm.core.scene import SceneManager
+
+# Import BORDER_STYLES for assertions if needed
+from sologm.cli.utils.styled_text import BORDER_STYLES
 
 
 # Add mock_console fixture if not already present globally
@@ -43,6 +50,339 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 
 
 # --- End Tests for display_scene_info ---
+
+
+# --- Tests for display_game_status (Moved & Adapted) ---
+
+
+def test_display_game_status_full(
+    mock_console: MagicMock,
+    test_game: Game,
+    test_act: Act,  # Assuming test_act is available
+    test_scene: Scene,
+    test_events: List[Event],
+    scene_manager: MagicMock,  # Assuming scene_manager fixture is available
+    oracle_manager: MagicMock,  # Assuming oracle_manager fixture is available
+    test_dice_roll: DiceRoll,  # Assuming test_dice_roll is available
+):
+    """Test displaying full game status with all components using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_game_status(
+        game=test_game,
+        latest_act=test_act,
+        latest_scene=test_scene,
+        recent_events=test_events,
+        scene_manager=scene_manager,
+        oracle_manager=oracle_manager,
+        recent_rolls=[test_dice_roll],
+        is_act_active=True,
+        is_scene_active=True,
+    )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
+
+
+def test_display_game_status_no_scene(
+    mock_console: MagicMock,
+    test_game: Game,
+    test_act: Act,
+    oracle_manager: MagicMock,
+):
+    """Test displaying game status without an active scene using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_game_status(
+        game=test_game,
+        latest_act=test_act,
+        latest_scene=None,
+        recent_events=[],
+        scene_manager=None,
+        oracle_manager=oracle_manager,
+        recent_rolls=None,
+        is_act_active=True,
+        is_scene_active=False,
+    )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
+
+
+def test_display_game_status_no_events(
+    mock_console: MagicMock,
+    test_game: Game,
+    test_act: Act,
+    test_scene: Scene,
+    scene_manager: MagicMock,
+    oracle_manager: MagicMock,
+):
+    """Test displaying game status without any events using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_game_status(
+        game=test_game,
+        latest_act=test_act,
+        latest_scene=test_scene,
+        recent_events=[],
+        scene_manager=scene_manager,
+        oracle_manager=oracle_manager,
+        recent_rolls=None,
+        is_act_active=True,
+        is_scene_active=True,
+    )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
+
+
+def test_display_game_status_no_interpretation(
+    mock_console: MagicMock,
+    test_game: Game,
+    test_act: Act,
+    test_scene: Scene,
+    test_events: List[Event],
+    scene_manager: MagicMock,
+):
+    """Test displaying game status without oracle manager using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_game_status(
+        game=test_game,
+        latest_act=test_act,
+        latest_scene=test_scene,
+        recent_events=test_events,
+        scene_manager=scene_manager,
+        oracle_manager=None,  # No oracle manager
+        recent_rolls=None,
+        is_act_active=True,
+        is_scene_active=True,
+    )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
+
+
+def test_display_game_status_selected_interpretation(
+    mock_console: MagicMock,
+    test_game: Game,
+    test_act: Act,
+    test_scene: Scene,
+    test_events: List[Event],
+    scene_manager: MagicMock,
+    oracle_manager: MagicMock,  # Assuming oracle_manager fixture is available
+):
+    """Test displaying game status with a selected interpretation using RichRenderer."""
+    # Setup: Ensure oracle_manager returns a selected interpretation
+    selected_interp = Interpretation(
+        id="interp-selected",
+        set_id="set-1",
+        title="Selected Interp",
+        description="This was chosen.",
+        is_selected=True,
+    )
+    interp_set = InterpretationSet(
+        id="set-1",
+        scene_id=test_scene.id,
+        context="Test Context",
+        oracle_results="Test Results",
+        interpretations=[selected_interp],
+    )
+    oracle_manager.get_current_interpretation_set.return_value = None
+    oracle_manager.get_most_recent_interpretation.return_value = (
+        interp_set,
+        selected_interp,
+    )
+
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_game_status(
+        game=test_game,
+        latest_act=test_act,
+        latest_scene=test_scene,
+        recent_events=test_events,
+        scene_manager=scene_manager,
+        oracle_manager=oracle_manager,
+        recent_rolls=None,
+        is_act_active=True,
+        is_scene_active=True,
+    )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
+
+
+# --- End Tests for display_game_status ---
+
+
+# --- Tests for display_game_status Helpers (Moved & Adapted) ---
+
+
+def test_calculate_truncation_length(mock_console: MagicMock):
+    """Test the truncation length calculation using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    # Test with a valid console width
+    mock_console.width = 100
+    result = renderer._calculate_truncation_length()
+    assert result == 90  # 100 - 10
+
+    # Test with a small console width
+    mock_console.width = 30
+    result = renderer._calculate_truncation_length()
+    assert result == 40  # min value
+
+    # Test with an invalid console width (should use self.console.width)
+    mock_console.width = None
+    # Mock console width to return a default if None
+    mock_console.width = 80
+    result = renderer._calculate_truncation_length()
+    assert result == 40  # default value
+
+
+def test_create_act_panel(
+    mock_console: MagicMock, test_game: Game, test_act: Act
+):
+    """Test creating the act panel using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    # Test with active act (using default truncation)
+    panel_active = renderer._create_act_panel(
+        test_game, test_act, is_act_active=True
+    )
+    assert panel_active is not None
+    assert panel_active.title is not None
+    assert panel_active.border_style == BORDER_STYLES["current"]
+    # Check if summary is present (might be truncated)
+    assert test_act.summary[:10] in panel_active.renderable  # Check start of summary
+
+    # Test with inactive act and specific truncation
+    test_act.summary = "This is a very long summary that definitely needs to be truncated for the test."
+    panel_inactive_truncated = renderer._create_act_panel(
+        test_game, test_act, is_act_active=False, truncation_length=20
+    )
+    assert panel_inactive_truncated is not None
+    assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
+    # Check if the summary is truncated (20 * 1.5 = 30 chars max)
+    assert "This is a very long summary..." in panel_inactive_truncated.renderable
+    assert (
+        "truncated for the test." not in panel_inactive_truncated.renderable
+    )  # End should be cut off
+
+    # Test with no active act
+    panel_no_act = renderer._create_act_panel(test_game, None)
+    assert panel_no_act is not None
+    assert panel_no_act.title is not None
+    assert panel_no_act.border_style == BORDER_STYLES["neutral"]
+    # Check for the updated message when no act is provided
+    assert "No acts found in this game." in panel_no_act.renderable
+
+
+def test_create_game_header_panel(mock_console: MagicMock, test_game: Game):
+    """Test creating the game header panel using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    panel = renderer._create_game_header_panel(test_game)
+    assert panel is not None
+    assert panel.title is not None
+    assert panel.border_style == BORDER_STYLES["game_info"]
+
+
+def test_create_scene_panels_grid(
+    mock_console: MagicMock,
+    test_game: Game,
+    test_scene: Scene,
+    scene_manager: MagicMock,
+):
+    """Test creating the scene panels grid using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    # Test with active scene and scene manager
+    grid = renderer._create_scene_panels_grid(
+        test_game, test_scene, scene_manager, is_scene_active=True
+    )
+    assert grid is not None
+
+    # Test with active scene but no scene manager
+    grid = renderer._create_scene_panels_grid(
+        test_game, test_scene, None, is_scene_active=True
+    )
+    assert grid is not None
+
+    # Test with no active scene
+    grid = renderer._create_scene_panels_grid(
+        test_game, None, None, is_scene_active=False
+    )
+    assert grid is not None
+
+
+def test_create_events_panel(mock_console: MagicMock, test_events: List[Event]):
+    """Test creating the events panel using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    # Test with events
+    panel = renderer._create_events_panel(test_events, 60)
+    assert panel is not None
+    assert "Recent Events" in panel.title
+    assert panel.border_style == BORDER_STYLES["success"]
+
+    # Test with no events
+    panel = renderer._create_events_panel([], 60)
+    assert panel is not None
+    assert "Recent Events" in panel.title
+
+
+def test_create_oracle_panel(
+    mock_console: MagicMock,
+    test_game: Game,
+    test_scene: Scene,
+    oracle_manager: MagicMock,
+):
+    """Test creating the oracle panel using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    # Test with no oracle manager
+    panel = renderer._create_oracle_panel(test_game, test_scene, None, 60)
+    assert panel is None
+
+    # Test with oracle manager (mock behavior as needed)
+    oracle_manager.get_current_interpretation_set.return_value = None
+    oracle_manager.get_most_recent_interpretation.return_value = None
+    panel = renderer._create_oracle_panel(test_game, test_scene, oracle_manager, 60)
+    assert panel is not None  # Should return empty panel in this case
+    assert "No oracle interpretations yet." in panel.renderable
+
+
+def test_create_empty_oracle_panel(mock_console: MagicMock):
+    """Test creating an empty oracle panel using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    panel = renderer._create_empty_oracle_panel()
+    assert panel is not None
+    assert "Oracle" in panel.title
+    assert panel.border_style == BORDER_STYLES["neutral"]
+
+
+def test_create_dice_rolls_panel(
+    mock_console: MagicMock, test_dice_roll: DiceRoll
+):
+    """Test creating the dice rolls panel using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with AttributeError initially
+    # Test with no rolls
+    panel = renderer._create_dice_rolls_panel([])
+    assert panel is not None
+    assert "Recent Rolls" in panel.title
+    assert "No recent dice rolls" in panel.renderable
+
+    # Test with rolls
+    panel = renderer._create_dice_rolls_panel([test_dice_roll])
+    assert panel is not None
+    assert "Recent Rolls" in panel.title
+    assert test_dice_roll.notation in panel.renderable
+
+
+# --- End Tests for display_game_status Helpers ---
 
 
 # --- Tests for display_interpretation_set (Moved & Adapted) ---
