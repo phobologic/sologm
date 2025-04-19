@@ -8,11 +8,10 @@ from rich.console import Console
 from rich.panel import Panel  # Import Panel for assertion
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
-from sologm.models.dice import (
-    DiceRoll,
-)  # Assuming you have a fixture for test_dice_roll
-from sologm.models.oracle import Interpretation  # Import Interpretation for test data
-from sologm.models.scene import Scene  # <-- Added import
+from sologm.models.dice import DiceRoll
+from sologm.models.game import Game  # <-- Added import
+from sologm.models.oracle import Interpretation
+from sologm.models.scene import Scene
 
 
 # Add mock_console fixture if not already present globally
