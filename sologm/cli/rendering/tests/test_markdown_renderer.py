@@ -12,11 +12,12 @@ from typing import List  # <-- Added import
 
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
+from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
-from sologm.models.game import Game  # <-- Added import
-from sologm.models.oracle import Interpretation
-from sologm.models.scene import Scene
+from sologm.models.game import Game
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene, SceneStatus
 
 
 # Fixture for mock console (can be shared or defined here)
@@ -324,6 +325,367 @@ def test_display_game_info_markdown(
         # No Active Scene line
     )
     mock_console.print.assert_called_with(expected_output_no_active)
+
+
+# --- Test for display_interpretation_set ---
+
+
+def test_display_interpretation_set_markdown(
+    mock_console: MagicMock,
+    test_interpretation_set: InterpretationSet,
+    test_interpretations: List[Interpretation],
+):
+    """Test displaying an interpretation set as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    # Ensure the set has the interpretations linked for the test
+    test_interpretation_set.interpretations = test_interpretations
+
+    # Test case 1: Show context
+    renderer.display_interpretation_set(test_interpretation_set, show_context=True)
+
+    # Expected output (simplified, relies on display_interpretation output)
+    expected_context = (
+        f"### Oracle Interpretations\n\n"
+        f"**Context:** {test_interpretation_set.context}\n"
+        f"**Results:** {test_interpretation_set.oracle_results}\n\n"
+        f"---"
+    )
+    # Expected calls: context, interp1, interp2, instruction
+    assert mock_console.print.call_count == len(test_interpretations) + 2
+    # Check context print call
+    mock_console.print.assert_any_call(expected_context)
+    # Check instruction print call
+    expected_instruction = (
+        f"Interpretation Set ID: `{test_interpretation_set.id}`\n"
+        f"(Use 'sologm oracle select' to choose)"
+    )
+    mock_console.print.assert_any_call(expected_instruction)
+    mock_console.reset_mock()
+
+    # Test case 2: Hide context
+    renderer.display_interpretation_set(test_interpretation_set, show_context=False)
+    # Expected calls: interp1, interp2, instruction
+    assert mock_console.print.call_count == len(test_interpretations) + 1
+    # Ensure context was NOT printed
+    with pytest.raises(AssertionError):
+        mock_console.print.assert_any_call(expected_context)
+    # Check instruction print call again
+    mock_console.print.assert_any_call(expected_instruction)
+
+
+# --- Test for display_scene_info ---
+
+
+def test_display_scene_info_markdown(mock_console: MagicMock, test_scene: Scene):
+    """Test displaying scene info as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+
+    # Ensure act relationship is loaded for the test
+    if not hasattr(test_scene, "act") or not test_scene.act:
+        # Mock the act if necessary for testing display logic
+        test_scene.act = MagicMock(spec=Act)
+        test_scene.act.sequence = 1
+        test_scene.act.title = "Mock Act Title"
+
+    renderer.display_scene_info(test_scene)
+
+    act_title = test_scene.act.title or "Untitled Act"
+    act_info = f"Act {test_scene.act.sequence}: {act_title}"
+    status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
+
+    expected_output = (
+        f"### Scene {test_scene.sequence}: {test_scene.title}{status_indicator} (`{test_scene.id}`)\n\n"
+        f"{test_scene.description}\n\n"
+        f"*   **Status:** {test_scene.status.value}\n"
+        f"*   **Act:** {act_info}\n"
+        f"*   **Created:** {test_scene.created_at.strftime('%Y-%m-%d')}\n"
+        f"*   **Modified:** {test_scene.modified_at.strftime('%Y-%m-%d')}"
+    )
+    mock_console.print.assert_called_once_with(expected_output)
+
+
+# --- Test for display_acts_table ---
+
+
+def test_display_acts_table_markdown(mock_console: MagicMock, test_act: Act):
+    """Test displaying a list of acts as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    other_act = Act(
+        id="act-other",
+        game_id=test_act.game_id,
+        sequence=test_act.sequence + 1,
+        title="Other Act",
+        summary="Another act.",
+        is_active=False,
+        created_at=test_act.created_at,
+        modified_at=test_act.modified_at,
+    )
+    acts = [test_act, other_act]
+
+    # Test case 1: With an active act ID
+    renderer.display_acts_table(acts, active_act_id=test_act.id)
+    expected_output_active = (
+        "### Acts\n\n"
+        "| ID | Seq | Title | Summary | Current |\n"
+        "|---|---|---|---|---|\n"
+        f"| `{test_act.id}` | {test_act.sequence} | **{test_act.title}** | {test_act.summary} | ✓ |\n"
+        f"| `{other_act.id}` | {other_act.sequence} | {other_act.title} | {other_act.summary} |  |"
+    )
+    mock_console.print.assert_called_with(expected_output_active)
+    mock_console.reset_mock()
+
+    # Test case 2: Without an active act ID
+    renderer.display_acts_table(acts, active_act_id=None)
+    expected_output_no_active = (
+        "### Acts\n\n"
+        "| ID | Seq | Title | Summary | Current |\n"
+        "|---|---|---|---|---|\n"
+        f"| `{test_act.id}` | {test_act.sequence} | {test_act.title} | {test_act.summary} |  |\n"
+        f"| `{other_act.id}` | {other_act.sequence} | {other_act.title} | {other_act.summary} |  |"
+    )
+    mock_console.print.assert_called_with(expected_output_no_active)
+
+
+def test_display_acts_table_no_acts_markdown(mock_console: MagicMock):
+    """Test displaying an empty list of acts as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    renderer.display_acts_table([], active_act_id=None)
+    expected_output = "No acts found. Create one with 'sologm act create'."
+    mock_console.print.assert_called_with(expected_output)
+
+
+# --- Test for display_act_info ---
+
+
+def test_display_act_info_markdown(
+    mock_console: MagicMock, test_act: Act, test_game: Game, test_scene: Scene
+):
+    """Test displaying act info as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+
+    # Mock relationships for the test
+    test_act.scenes = [test_scene]
+    test_scene.act = test_act  # Ensure back-reference if needed by display logic
+
+    renderer.display_act_info(test_act, test_game.name)
+
+    # Expected output for act info
+    expected_act_output = (
+        f"## Act {test_act.sequence}: {test_act.title} (`{test_act.id}`)\n\n"
+        f"{test_act.summary}\n\n"
+        f"*   **Game:** {test_game.name}\n"
+        f"*   **Created:** {test_act.created_at.strftime('%Y-%m-%d')}\n"
+        f"*   **Modified:** {test_act.modified_at.strftime('%Y-%m-%d')}"
+    )
+
+    # Expected output for scenes table within act info
+    expected_scenes_output = (
+        f"### Scenes in Act {test_act.sequence}\n\n"
+        "| ID | Seq | Title | Summary | Status | Current |\n"
+        "|---|---|---|---|---|---|\n"
+        f"| `{test_scene.id}` | {test_scene.sequence} | {test_scene.title} | {test_scene.description[:40]}... | {test_scene.status.value} | ✓ |"
+    )
+
+    # Check that both parts were printed
+    mock_console.print.assert_any_call(expected_act_output)
+    mock_console.print.assert_any_call(expected_scenes_output)
+    assert mock_console.print.call_count == 2
+
+
+def test_display_act_info_no_scenes_markdown(
+    mock_console: MagicMock, test_act: Act, test_game: Game
+):
+    """Test displaying act info with no scenes as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    test_act.scenes = []  # Ensure no scenes
+
+    renderer.display_act_info(test_act, test_game.name)
+
+    # Expected output for act info (same as before)
+    expected_act_output = (
+        f"## Act {test_act.sequence}: {test_act.title} (`{test_act.id}`)\n\n"
+        f"{test_act.summary}\n\n"
+        f"*   **Game:** {test_game.name}\n"
+        f"*   **Created:** {test_act.created_at.strftime('%Y-%m-%d')}\n"
+        f"*   **Modified:** {test_act.modified_at.strftime('%Y-%m-%d')}"
+    )
+
+    # Expected output for no scenes
+    expected_no_scenes_output = (
+        f"### Scenes in Act {test_act.sequence}\n\n" f"No scenes in this act yet."
+    )
+
+    mock_console.print.assert_any_call(expected_act_output)
+    mock_console.print.assert_any_call(expected_no_scenes_output)
+    assert mock_console.print.call_count == 2
+
+
+# --- Test for display_interpretation_sets_table ---
+
+
+def test_display_interpretation_sets_table_markdown(
+    mock_console: MagicMock,
+    test_interpretation_set: InterpretationSet,
+    test_interpretations: List[Interpretation],
+    test_scene: Scene,
+):
+    """Test displaying interpretation sets table as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    # Link interpretations and scene for the test
+    test_interpretation_set.interpretations = test_interpretations
+    test_interpretation_set.scene = test_scene
+    # Ensure one interpretation is selected
+    test_interpretations[0].is_selected = True
+    test_interpretations[1].is_selected = False
+
+    interp_sets = [test_interpretation_set]
+
+    renderer.display_interpretation_sets_table(interp_sets)
+
+    expected_output = (
+        "### Oracle Interpretation Sets\n\n"
+        "| ID | Scene | Context | Oracle Results | Created | Status | Count |\n"
+        "|---|---|---|---|---|---|---|\n"
+        f"| `{test_interpretation_set.id}` "
+        f"| {test_scene.title} "
+        f"| {test_interpretation_set.context[:40]}... "  # Assuming truncation
+        f"| {test_interpretation_set.oracle_results[:40]}... "  # Assuming truncation
+        f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')} "
+        f"| Resolved "
+        f"| {len(test_interpretations)} |"
+    )
+    mock_console.print.assert_called_once_with(expected_output)
+
+
+# --- Test for display_interpretation_status ---
+
+
+def test_display_interpretation_status_markdown(
+    mock_console: MagicMock,
+    test_interpretation_set: InterpretationSet,
+    test_interpretations: List[Interpretation],
+):
+    """Test displaying interpretation status as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    # Link interpretations for the test
+    test_interpretation_set.interpretations = test_interpretations
+    test_interpretations[0].is_selected = True  # Mark one as selected
+
+    renderer.display_interpretation_status(test_interpretation_set)
+
+    expected_output = (
+        f"### Current Oracle Interpretation Status\n\n"
+        f"**Context:** {test_interpretation_set.context}\n"
+        f"**Results:** {test_interpretation_set.oracle_results}\n\n"
+        f"*   **Set ID:** `{test_interpretation_set.id}`\n"
+        f"*   **Retry Count:** {test_interpretation_set.retry_attempt}\n"
+        f"*   **Resolved:** True"
+    )
+    mock_console.print.assert_called_once_with(expected_output)
+
+
+# --- Test for display_act_ai_generation_results ---
+
+
+def test_display_act_ai_generation_results_markdown(
+    mock_console: MagicMock, test_act: Act
+):
+    """Test displaying AI generation results for an act as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    results = {"title": "AI Title", "summary": "AI Summary"}
+    test_act.title = "Existing Title"
+    test_act.summary = "Existing Summary"
+
+    renderer.display_act_ai_generation_results(results, test_act)
+
+    expected_output = (
+        "### AI Generation Results\n\n"
+        "**AI-Generated Title:**\n"
+        "> AI Title\n\n"
+        "**Current Title:**\n"
+        "> Existing Title\n\n"
+        "---\n\n"
+        "**AI-Generated Summary:**\n"
+        "> AI Summary\n\n"
+        "**Current Summary:**\n"
+        "> Existing Summary\n"
+    )
+    mock_console.print.assert_called_once_with(expected_output)
+
+
+# --- Test for display_act_completion_success ---
+
+
+def test_display_act_completion_success_markdown(
+    mock_console: MagicMock, test_act: Act
+):
+    """Test displaying act completion success as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    renderer.display_act_completion_success(test_act)
+
+    expected_output = (
+        f"## Act '{test_act.title}' Completed Successfully!\n\n"
+        f"*   **ID:** `{test_act.id}`\n"
+        f"*   **Sequence:** Act {test_act.sequence}\n"
+        f"*   **Status:** Completed\n\n"
+        f"**Final Title:**\n> {test_act.title}\n\n"
+        f"**Final Summary:**\n> {test_act.summary}\n"
+    )
+    mock_console.print.assert_called_once_with(expected_output)
+
+
+# --- Test for display_act_ai_feedback_prompt ---
+
+
+def test_display_act_ai_feedback_prompt_markdown(mock_console: MagicMock):
+    """Test displaying AI feedback prompt instructions as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    # The console argument is required by the base class but not used here
+    renderer.display_act_ai_feedback_prompt(mock_console)
+
+    expected_output = (
+        "\n---\n"
+        "**Next Step:**\n"
+        "Review the generated content above.\n"
+        "*   To **accept** it, run: `sologm act accept`\n"
+        "*   To **edit** it, run: `sologm act edit`\n"
+        "*   To **regenerate** it, run: `sologm act generate --retry`\n"
+        "---"
+    )
+    mock_console.print.assert_called_once_with(expected_output)
+
+
+# --- Test for display_act_edited_content_preview ---
+
+
+def test_display_act_edited_content_preview_markdown(mock_console: MagicMock):
+    """Test displaying edited content preview as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    edited_results = {"title": "Edited Title", "summary": "Edited Summary"}
+
+    renderer.display_act_edited_content_preview(edited_results)
+
+    expected_output = (
+        "\n### Preview of Edited Content:\n\n"
+        "**Edited Title:**\n"
+        "> Edited Title\n\n"
+        "**Edited Summary:**\n"
+        "> Edited Summary\n"
+    )
+    mock_console.print.assert_called_once_with(expected_output)
+
+
+# --- Test for display_error ---
+
+
+def test_display_error_markdown(mock_console: MagicMock):
+    """Test displaying an error message as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    error_message = "Something went wrong!"
+    renderer.display_error(error_message)
+
+    expected_output = f"> **Error:** {error_message}"
+    mock_console.print.assert_called_once_with(expected_output)
 
 
 # --- Add other tests below ---

@@ -276,11 +276,66 @@ class MarkdownRenderer(Renderer):
         self, interp_set: InterpretationSet, show_context: bool = True
     ) -> None:
         """Displays a set of oracle interpretations as Markdown."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying interpretation set as Markdown: {interp_set.id} (show_context: {show_context})"
+        )
+        output_lines = []
+
+        if show_context:
+            output_lines.append("### Oracle Interpretations")
+            output_lines.append("")
+            output_lines.append(f"**Context:** {interp_set.context}")
+            output_lines.append(f"**Results:** {interp_set.oracle_results}")
+            output_lines.append("")
+            output_lines.append("---")
+            self.console.print("\n".join(output_lines))
+            output_lines = []  # Reset for interpretations
+
+        # Display each interpretation
+        for i, interp in enumerate(interp_set.interpretations, 1):
+            # Call self.display_interpretation which handles its own printing
+            self.display_interpretation(interp, sequence=i)
+            self.console.print("")  # Add a newline between interpretations
+
+        # Display instruction footer
+        instruction = (
+            f"Interpretation Set ID: `{interp_set.id}`\n"
+            f"(Use 'sologm oracle select' to choose)"
+        )
+        self.console.print(instruction)
 
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene as Markdown."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying scene info as Markdown for {scene.id} (status: {scene.status.value})"
+        )
+        output_lines = []
+
+        # Header with status indicator
+        status_indicator = " ✓" if scene.status == SceneStatus.COMPLETED else ""
+        output_lines.append(
+            f"### Scene {scene.sequence}: {scene.title}{status_indicator} (`{scene.id}`)"
+        )
+        output_lines.append("")
+
+        # Description
+        output_lines.append(scene.description)
+        output_lines.append("")
+
+        # Metadata
+        act_info = "Unknown Act"
+        if hasattr(scene, "act") and scene.act:
+            act_title = scene.act.title or "Untitled Act"
+            act_info = f"Act {scene.act.sequence}: {act_title}"
+
+        output_lines.append(f"*   **Status:** {scene.status.value}")
+        output_lines.append(f"*   **Act:** {act_info}")
+        output_lines.append(f"*   **Created:** {scene.created_at.strftime('%Y-%m-%d')}")
+        output_lines.append(
+            f"*   **Modified:** {scene.modified_at.strftime('%Y-%m-%d')}"
+        )
+
+        self.console.print("\n".join(output_lines))
 
     def display_game_status(
         self,
@@ -300,44 +355,254 @@ class MarkdownRenderer(Renderer):
     def display_acts_table(
         self, acts: List[Act], active_act_id: Optional[str] = None
     ) -> None:
-        """Displays a list of acts as Markdown."""
-        raise NotImplementedError
+        """Displays a list of acts as a Markdown table."""
+        logger.debug(f"Displaying acts table as Markdown with {len(acts)} acts")
+        logger.debug(f"Active act ID: {active_act_id if active_act_id else 'None'}")
+
+        if not acts:
+            logger.debug("No acts found to display")
+            self.console.print("No acts found. Create one with 'sologm act create'.")
+            return
+
+        output_lines = []
+        output_lines.append("### Acts")
+        output_lines.append("")
+        output_lines.append("| ID | Seq | Title | Summary | Current |")
+        output_lines.append("|---|---|---|---|---|")
+
+        for act in acts:
+            is_active = active_act_id and act.id == active_act_id
+            active_marker = "✓" if is_active else ""
+            act_title = act.title or "*Untitled Act*"
+            act_title_display = f"**{act_title}**" if is_active else act_title
+            summary = (act.summary or "").replace("|", "\\|")
+
+            row = (
+                f"| `{act.id}` "
+                f"| {act.sequence} "
+                f"| {act_title_display} "
+                f"| {summary} "
+                f"| {active_marker} |"
+            )
+            output_lines.append(row)
+
+        self.console.print("\n".join(output_lines))
 
     def display_act_info(self, act: Act, game_name: str) -> None:
         """Displays detailed information about a specific act as Markdown."""
-        raise NotImplementedError
+        logger.debug(f"Displaying act info as Markdown for {act.id}")
+        output_lines = []
+
+        # Header
+        act_title = act.title or "*Untitled Act*"
+        output_lines.append(f"## Act {act.sequence}: {act_title} (`{act.id}`)")
+        output_lines.append("")
+
+        # Summary
+        if act.summary:
+            output_lines.append(act.summary)
+            output_lines.append("")
+
+        # Metadata
+        output_lines.append(f"*   **Game:** {game_name}")
+        output_lines.append(f"*   **Created:** {act.created_at.strftime('%Y-%m-%d')}")
+        output_lines.append(
+            f"*   **Modified:** {act.modified_at.strftime('%Y-%m-%d')}"
+        )
+
+        self.console.print("\n".join(output_lines))
+        self.console.print("")  # Add a blank line before scenes
+
+        # Display scenes in this act
+        if hasattr(act, "scenes") and act.scenes:
+            # Sort scenes by sequence for consistent output
+            sorted_scenes = sorted(act.scenes, key=lambda s: s.sequence)
+            # Use display_scenes_table for consistency
+            # Need to determine the active scene ID within this act
+            active_scene_id = next(
+                (s.id for s in sorted_scenes if s.is_active), None
+            )
+            self.display_scenes_table(sorted_scenes, active_scene_id=active_scene_id)
+        else:
+            # Print a specific message if no scenes exist
+            self.console.print(f"### Scenes in Act {act.sequence}")
+            self.console.print("")
+            self.console.print("No scenes in this act yet.")
 
     def display_interpretation_sets_table(
         self, interp_sets: List[InterpretationSet]
     ) -> None:
         """Displays a table of interpretation sets as Markdown."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying interpretation sets table as Markdown with {len(interp_sets)} sets"
+        )
+
+        if not interp_sets:
+            self.console.print("No interpretation sets found.")
+            return
+
+        output_lines = []
+        output_lines.append("### Oracle Interpretation Sets")
+        output_lines.append("")
+        output_lines.append(
+            "| ID | Scene | Context | Oracle Results | Created | Status | Count |"
+        )
+        output_lines.append("|---|---|---|---|---|---|---|")
+
+        for interp_set in interp_sets:
+            scene_title = (
+                interp_set.scene.title
+                if hasattr(interp_set, "scene") and interp_set.scene
+                else "Unknown"
+            )
+            context = truncate_text(interp_set.context, max_length=40).replace(
+                "|", "\\|"
+            )
+            oracle_results = truncate_text(
+                interp_set.oracle_results, max_length=40
+            ).replace("|", "\\|")
+            created_at = interp_set.created_at.strftime("%Y-%m-%d %H:%M")
+            has_selection = any(
+                interp.is_selected for interp in interp_set.interpretations
+            )
+            status = "Resolved" if has_selection else "Pending"
+            interp_count = len(interp_set.interpretations)
+
+            row = (
+                f"| `{interp_set.id}` "
+                f"| {scene_title} "
+                f"| {context} "
+                f"| {oracle_results} "
+                f"| {created_at} "
+                f"| {status} "
+                f"| {interp_count} |"
+            )
+            output_lines.append(row)
+
+        self.console.print("\n".join(output_lines))
 
     def display_interpretation_status(self, interp_set: InterpretationSet) -> None:
         """Displays the status of an interpretation set as Markdown."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying interpretation status as Markdown for set {interp_set.id}"
+        )
+        output_lines = []
+
+        output_lines.append("### Current Oracle Interpretation Status")
+        output_lines.append("")
+        output_lines.append(f"**Context:** {interp_set.context}")
+        output_lines.append(f"**Results:** {interp_set.oracle_results}")
+        output_lines.append("")
+        output_lines.append(f"*   **Set ID:** `{interp_set.id}`")
+        output_lines.append(f"*   **Retry Count:** {interp_set.retry_attempt}")
+        resolved = any(interp.is_selected for interp in interp_set.interpretations)
+        output_lines.append(f"*   **Resolved:** {resolved}")
+
+        self.console.print("\n".join(output_lines))
 
     def display_act_ai_generation_results(
         self, results: Dict[str, str], act: Act
     ) -> None:
         """Displays the results generated by AI for an act as Markdown."""
-        raise NotImplementedError
+        logger.debug(f"Displaying AI generation results as Markdown for act {act.id}")
+        output_lines = ["### AI Generation Results", ""]
+
+        if "title" in results and results["title"]:
+            output_lines.append("**AI-Generated Title:**")
+            output_lines.append(f"> {results['title']}")
+            output_lines.append("")
+            if act.title:
+                output_lines.append("**Current Title:**")
+                output_lines.append(f"> {act.title}")
+                output_lines.append("")
+            output_lines.append("---")
+            output_lines.append("")
+
+        if "summary" in results and results["summary"]:
+            output_lines.append("**AI-Generated Summary:**")
+            # Use blockquote for multi-line summary
+            summary_lines = results["summary"].split("\n")
+            for line in summary_lines:
+                output_lines.append(f"> {line}")
+            output_lines.append("")
+            if act.summary:
+                output_lines.append("**Current Summary:**")
+                current_summary_lines = act.summary.split("\n")
+                for line in current_summary_lines:
+                    output_lines.append(f"> {line}")
+                output_lines.append("")
+
+        self.console.print("\n".join(output_lines))
 
     def display_act_completion_success(self, completed_act: Act) -> None:
         """Displays a success message upon act completion as Markdown."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying act completion success as Markdown for act {completed_act.id}"
+        )
+        output_lines = []
+        title_display = (
+            f"'{completed_act.title}'" if completed_act.title else "*Untitled Act*"
+        )
+
+        output_lines.append(f"## Act {title_display} Completed Successfully!")
+        output_lines.append("")
+        output_lines.append(f"*   **ID:** `{completed_act.id}`")
+        output_lines.append(f"*   **Sequence:** Act {completed_act.sequence}")
+        output_lines.append("*   **Status:** Completed")
+        output_lines.append("")
+
+        if completed_act.title:
+            output_lines.append("**Final Title:**")
+            output_lines.append(f"> {completed_act.title}")
+            output_lines.append("")
+
+        if completed_act.summary:
+            output_lines.append("**Final Summary:**")
+            summary_lines = completed_act.summary.split("\n")
+            for line in summary_lines:
+                output_lines.append(f"> {line}")
+            output_lines.append("")
+
+        self.console.print("\n".join(output_lines).strip()) # Remove trailing newline if summary was last
 
     def display_act_ai_feedback_prompt(self, console: Console) -> None:
-        """Displays the prompt asking for feedback on AI generation as Markdown."""
-        # Note: Markdown renderer might just print instructions instead of interactive prompt
-        raise NotImplementedError
+        """Displays instructions for AI feedback as Markdown."""
+        # Note: This doesn't actually prompt interactively in Markdown mode.
+        logger.debug("Displaying AI feedback instructions as Markdown")
+        output = (
+            "\n---\n"
+            "**Next Step:**\n"
+            "Review the generated content above.\n"
+            "*   To **accept** it, run: `sologm act accept`\n"
+            "*   To **edit** it, run: `sologm act edit`\n"
+            "*   To **regenerate** it, run: `sologm act generate --retry`\n"
+            "---"
+        )
+        self.console.print(output)
 
     def display_act_edited_content_preview(
         self, edited_results: Dict[str, str]
     ) -> None:
         """Displays a preview of edited AI-generated content as Markdown."""
-        raise NotImplementedError
+        logger.debug("Displaying edited content preview as Markdown")
+        output_lines = ["\n### Preview of Edited Content:", ""]
+
+        if "title" in edited_results:
+            output_lines.append("**Edited Title:**")
+            output_lines.append(f"> {edited_results['title']}")
+            output_lines.append("")
+
+        if "summary" in edited_results:
+            output_lines.append("**Edited Summary:**")
+            summary_lines = edited_results["summary"].split("\n")
+            for line in summary_lines:
+                output_lines.append(f"> {line}")
+            output_lines.append("")
+
+        self.console.print("\n".join(output_lines).strip())
 
     def display_error(self, message: str) -> None:
-        """Displays an error message to the user as Markdown."""
-        raise NotImplementedError
+        """Displays an error message to the user as a Markdown blockquote."""
+        logger.error(f"Displaying error as Markdown: {message}")
+        # Use blockquote for errors
+        self.console.print(f"> **Error:** {message}")
