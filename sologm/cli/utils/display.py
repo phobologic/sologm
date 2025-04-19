@@ -55,61 +55,7 @@ def truncate_text(text: str, max_length: int = 60) -> str:
 # --- display_dice_roll removed, moved to RichRenderer ---
 
 
-def display_interpretation(
-    console: Console,
-    interp: Interpretation,
-    selected: bool = False,
-    sequence: Optional[int] = None,
-) -> None:
-    """Display a single interpretation.
-
-    Args:
-        console: Rich console instance
-        interp: Interpretation to display
-        selected: Whether this interpretation is selected
-        sequence: Optional sequence number of the interpretation
-    """
-    logger.debug(
-        f"Displaying interpretation {interp.id} (selected: {interp.is_selected})"
-    )
-    logger.debug(
-        f"Interpretation title: '{interp.title}', created: {interp.created_at}"
-    )
-
-    st = StyledText
-
-    # Create panel title with sequence number, title, selection indicator, and ID
-    sequence_text = f"(#{sequence}) " if sequence is not None else ""
-
-    # Build the title components
-    title_parts = [st.title(f"{sequence_text}{interp.title}")]
-
-    # Add selection indicator if selected
-    if interp.is_selected or selected:
-        title_parts.extend([" ", st.success("(Selected)")])
-
-    # Add ID and slug
-    title_parts.extend([" ", st.timestamp(f"({interp.slug} / {interp.id})")])
-
-    # Combine into a single Text object
-    panel_title = st.combine(*title_parts)
-
-    # Determine border style based on selection status
-    border_style = (
-        BORDER_STYLES["success"]
-        if (interp.is_selected or selected)
-        else BORDER_STYLES["game_info"]
-    )
-
-    # Panel content is just the description
-    panel = Panel(
-        interp.description,
-        title=panel_title,
-        border_style=border_style,
-        title_align="left",
-    )
-    console.print(panel)
-    console.print()
+# --- display_interpretation removed, moved to RichRenderer ---
 
 
 def display_events_table(

@@ -387,6 +387,12 @@ def test_format_metadata():
     assert isinstance(styled_result, Text)
 
 
+# --- test_display_interpretation removed, moved to test_rich_renderer.py ---
+
+
+# --- test_display_interpretation_selected removed, moved to test_rich_renderer.py ---
+
+
 def test_display_act_ai_generation_results(mock_console, test_act):
     """Test displaying AI generation results for an act."""
     from sologm.cli.utils.display import display_act_ai_generation_results

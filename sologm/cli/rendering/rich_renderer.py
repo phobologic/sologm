@@ -129,7 +129,48 @@ class RichRenderer(Renderer):
         sequence: Optional[int] = None,
     ) -> None:
         """Displays a single oracle interpretation using Rich."""
-        raise NotImplementedError
+        logger.debug(
+            f"Displaying interpretation {interp.id} (selected: {interp.is_selected or selected})"
+        )
+        logger.debug(
+            f"Interpretation title: '{interp.title}', created: {interp.created_at}"
+        )
+
+        st = StyledText
+
+        # Create panel title with sequence number, title, selection indicator, and ID
+        sequence_text = f"(#{sequence}) " if sequence is not None else ""
+
+        # Build the title components
+        title_parts = [st.title(f"{sequence_text}{interp.title}")]
+
+        # Add selection indicator if selected
+        if interp.is_selected or selected:
+            title_parts.extend([" ", st.success("(Selected)")])
+
+        # Add ID and slug
+        title_parts.extend([" ", st.timestamp(f"({interp.slug} / {interp.id})")])
+
+        # Combine into a single Text object
+        panel_title = st.combine(*title_parts)
+
+        # Determine border style based on selection status
+        border_style = (
+            BORDER_STYLES["success"]
+            if (interp.is_selected or selected)
+            else BORDER_STYLES["game_info"]
+        )
+
+        # Panel content is just the description
+        panel = Panel(
+            interp.description,
+            title=panel_title,
+            border_style=border_style,
+            title_align="left",
+        )
+        # Use self.console instead of the console parameter
+        self.console.print(panel)
+        self.console.print() # Print the trailing newline
 
     def display_events_table(
         self,

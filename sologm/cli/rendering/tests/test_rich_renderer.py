@@ -1,6 +1,7 @@
 """Tests for the RichRenderer class."""
 
 # Add necessary imports
+from typing import List # Added for Interpretation list type hint
 import pytest
 from unittest.mock import MagicMock
 from rich.console import Console
@@ -8,6 +9,7 @@ from rich.panel import Panel # Import Panel for assertion
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
 from sologm.models.dice import DiceRoll # Assuming you have a fixture for test_dice_roll
+from sologm.models.oracle import Interpretation # Import Interpretation for test data
 
 # Add mock_console fixture if not already present globally
 @pytest.fixture
@@ -32,5 +34,38 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
     assert len(args) == 1
     assert isinstance(args[0], Panel)
 
+
+# --- Tests for display_interpretation (Moved & Adapted) ---
+
+def test_display_interpretation(mock_console: MagicMock, test_interpretations: List[Interpretation]):
+    """Test displaying an interpretation using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_interpretation(test_interpretations[0])
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called()
+    args, kwargs = mock_console.print.call_args_list[0] # Check first call
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)
+    # Check second call is just a newline print
+    args, kwargs = mock_console.print.call_args_list[1]
+    assert len(args) == 0
+
+
+def test_display_interpretation_selected(mock_console: MagicMock, test_interpretations: List[Interpretation]):
+    """Test displaying a selected interpretation using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_interpretation(test_interpretations[0], selected=True)
+
+    # Assertions will run after implementation
+    mock_console.print.assert_called()
+    args, kwargs = mock_console.print.call_args_list[0] # Check first call
+    assert len(args) == 1
+    assert isinstance(args[0], Panel)
+    # Check second call is just a newline print
+    args, kwargs = mock_console.print.call_args_list[1]
+    assert len(args) == 0
 
 # --- Add other tests below ---
