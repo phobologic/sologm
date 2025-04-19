@@ -5,7 +5,7 @@ Concrete implementation of the Renderer interface using Rich library components.
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from rich.console import Console, get_console
+from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
