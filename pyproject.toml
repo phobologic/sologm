@@ -8,10 +8,10 @@ version = "0.1.0"
 description = "Solo RPG Helper command-line application with AI-enabled features"
 readme = "README.md"
 requires-python = ">=3.13"
-license = {
-    text = "MIT",
-    file = "LICENSE.md",
-}
+
+license = "MIT"
+license-files = ["LICENSE.md"]
+
 authors = [
     {name = "Michael Barrett"},
 ]
