@@ -244,7 +244,7 @@ def test_calculate_truncation_length(mock_console: MagicMock):
     # Test with an invalid console width (should use self.console.width)
     mock_console.width = None
     # Mock console width to return a default if None
-    mock_console.width = 80 # Keep this mock setup
+    mock_console.width = 80  # Keep this mock setup
     result = renderer._calculate_truncation_length()
     # --- MODIFIED ASSERTION ---
     # Expected: max(40, int(80 / 2) - 10) = max(40, 30) = 40
