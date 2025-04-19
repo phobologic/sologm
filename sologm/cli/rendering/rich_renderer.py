@@ -62,12 +62,14 @@ class RichRenderer(Renderer):
             f"Individual results: {roll.individual_results}, modifier: {roll.modifier}"
         )
 
-        st = StyledText # Assuming StyledText is imported
+        st = StyledText  # Assuming StyledText is imported
 
         # Create title with consistent styling
         title_parts = []
         if roll.reason:
-            title_parts.extend([st.title(f"{roll.reason}:"), " ", st.title(roll.notation)])
+            title_parts.extend(
+                [st.title(f"{roll.reason}:"), " ", st.title(roll.notation)]
+            )
         else:
             title_parts.append(st.title(roll.notation))
 
@@ -79,13 +81,17 @@ class RichRenderer(Renderer):
         if len(roll.individual_results) > 1:
             details.append(
                 st.combine(
-                    st.subtitle("Rolls:"), " ", st.timestamp(str(roll.individual_results))
+                    st.subtitle("Rolls:"),
+                    " ",
+                    st.timestamp(str(roll.individual_results)),
                 )
             )
 
         if roll.modifier != 0:
             details.append(
-                st.combine(st.subtitle("Modifier:"), " ", st.warning(f"{roll.modifier:+d}"))
+                st.combine(
+                    st.subtitle("Modifier:"), " ", st.warning(f"{roll.modifier:+d}")
+                )
             )
 
         details.append(
@@ -98,7 +104,7 @@ class RichRenderer(Renderer):
             metadata["Time"] = roll.created_at.isoformat()
 
         # Create panel content
-        panel_content = Text() # Assuming Text is imported
+        panel_content = Text()  # Assuming Text is imported
 
         # Add all details
         for i, detail in enumerate(details):
@@ -112,10 +118,10 @@ class RichRenderer(Renderer):
             panel_content.append(st.format_metadata(metadata))
 
         # Use consistent border style for dice rolls (neutral information)
-        panel = Panel( # Assuming Panel is imported
+        panel = Panel(  # Assuming Panel is imported
             panel_content,
             title=panel_title,
-            border_style=BORDER_STYLES["neutral"], # Assuming BORDER_STYLES is imported
+            border_style=BORDER_STYLES["neutral"],  # Assuming BORDER_STYLES is imported
             expand=True,
             title_align="left",
         )
@@ -170,7 +176,7 @@ class RichRenderer(Renderer):
         )
         # Use self.console instead of the console parameter
         self.console.print(panel)
-        self.console.print() # Print the trailing newline
+        self.console.print()  # Print the trailing newline
 
     def display_events_table(
         self,

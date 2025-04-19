@@ -1,15 +1,18 @@
 """Tests for the RichRenderer class."""
 
 # Add necessary imports
-from typing import List # Added for Interpretation list type hint
+from typing import List  # Added for Interpretation list type hint
 import pytest
 from unittest.mock import MagicMock
 from rich.console import Console
-from rich.panel import Panel # Import Panel for assertion
+from rich.panel import Panel  # Import Panel for assertion
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
-from sologm.models.dice import DiceRoll # Assuming you have a fixture for test_dice_roll
-from sologm.models.oracle import Interpretation # Import Interpretation for test data
+from sologm.models.dice import (
+    DiceRoll,
+)  # Assuming you have a fixture for test_dice_roll
+from sologm.models.oracle import Interpretation  # Import Interpretation for test data
+
 
 # Add mock_console fixture if not already present globally
 @pytest.fixture
@@ -19,6 +22,7 @@ def mock_console() -> MagicMock:
     # Set a default width for consistent testing if needed
     console.width = 100
     return console
+
 
 # --- Adapted Test (Red Phase - Expecting Failure) ---
 def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
@@ -37,7 +41,10 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 
 # --- Tests for display_interpretation (Moved & Adapted) ---
 
-def test_display_interpretation(mock_console: MagicMock, test_interpretations: List[Interpretation]):
+
+def test_display_interpretation(
+    mock_console: MagicMock, test_interpretations: List[Interpretation]
+):
     """Test displaying an interpretation using RichRenderer."""
     renderer = RichRenderer(mock_console)
     # This call should fail with NotImplementedError initially
@@ -45,7 +52,7 @@ def test_display_interpretation(mock_console: MagicMock, test_interpretations: L
 
     # Assertions will run after implementation
     mock_console.print.assert_called()
-    args, kwargs = mock_console.print.call_args_list[0] # Check first call
+    args, kwargs = mock_console.print.call_args_list[0]  # Check first call
     assert len(args) == 1
     assert isinstance(args[0], Panel)
     # Check second call is just a newline print
@@ -53,7 +60,9 @@ def test_display_interpretation(mock_console: MagicMock, test_interpretations: L
     assert len(args) == 0
 
 
-def test_display_interpretation_selected(mock_console: MagicMock, test_interpretations: List[Interpretation]):
+def test_display_interpretation_selected(
+    mock_console: MagicMock, test_interpretations: List[Interpretation]
+):
     """Test displaying a selected interpretation using RichRenderer."""
     renderer = RichRenderer(mock_console)
     # This call should fail with NotImplementedError initially
@@ -61,11 +70,12 @@ def test_display_interpretation_selected(mock_console: MagicMock, test_interpret
 
     # Assertions will run after implementation
     mock_console.print.assert_called()
-    args, kwargs = mock_console.print.call_args_list[0] # Check first call
+    args, kwargs = mock_console.print.call_args_list[0]  # Check first call
     assert len(args) == 1
     assert isinstance(args[0], Panel)
     # Check second call is just a newline print
     args, kwargs = mock_console.print.call_args_list[1]
     assert len(args) == 0
+
 
 # --- Add other tests below ---
