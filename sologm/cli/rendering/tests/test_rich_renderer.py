@@ -45,6 +45,65 @@ def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
 # --- End Tests for display_scene_info ---
 
 
+# --- Tests for display_interpretation_set (Moved & Adapted) ---
+
+
+def test_display_interpretation_set(
+    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+):
+    """Test displaying an interpretation set using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_interpretation_set(test_interpretation_set)
+
+    # Assertions will run after implementation
+    # Expect calls for context panel (if show_context=True), each interpretation, and instruction panel
+    assert mock_console.print.call_count >= len(
+        test_interpretation_set.interpretations
+    ) + 2
+
+
+def test_display_interpretation_set_no_context(
+    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+):
+    """Test displaying an interpretation set without context using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_interpretation_set(test_interpretation_set, show_context=False)
+
+    # Assertions will run after implementation
+    # Expect calls for each interpretation and instruction panel
+    assert mock_console.print.call_count == len(
+        test_interpretation_set.interpretations
+    ) + 1
+
+
+# --- End Tests for display_interpretation_set ---
+
+
+# --- Tests for display_interpretation_status (Moved & Adapted) ---
+
+
+def test_display_interpretation_status(
+    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+):
+    """Test displaying interpretation status using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_interpretation_status(test_interpretation_set)
+
+    # Assertions will run after implementation
+    # Expecting two prints: one for the panel, one for the trailing newline
+    assert mock_console.print.call_count == 2
+    args1, _ = mock_console.print.call_args_list[0]
+    args2, _ = mock_console.print.call_args_list[1]
+    assert isinstance(args1[0], Panel)
+    assert len(args2) == 0  # Second call is just print()
+
+
+# --- End Tests for display_interpretation_status ---
+
+
 # --- Tests for display_interpretation_sets_table (Moved & Adapted) ---
 
 

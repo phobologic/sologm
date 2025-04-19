@@ -67,66 +67,7 @@ def truncate_text(text: str, max_length: int = 60) -> str:
 # --- display_scenes_table removed, moved to RichRenderer ---
 
 
-def display_interpretation_set(
-    console: Console,
-    interp_set: InterpretationSet,
-    show_context: bool = True,
-) -> None:
-    """Display a full interpretation set.
-
-    Args:
-        console: Rich console instance
-        interp_set: InterpretationSet to display
-        show_context: Whether to show context information
-    """
-    st = StyledText
-
-    # Access interpretations relationship directly
-    interpretation_count = len(interp_set.interpretations)
-
-    logger.debug(
-        f"Displaying interpretation set {interp_set.id} with "
-        f"{interpretation_count} interpretations"
-    )
-
-    # Show context panel if requested
-    if show_context:
-        # Create context content
-        context_content = st.combine(
-            st.subtitle("Context:"),
-            " ",
-            interp_set.context,
-            "\n",
-            st.subtitle("Results:"),
-            " ",
-            interp_set.oracle_results,
-        )
-
-        # Create panel title
-        panel_title = st.title("Oracle Interpretations")
-
-        context_panel = Panel(
-            context_content,
-            title=panel_title,
-            border_style=BORDER_STYLES["game_info"],
-            title_align="left",
-        )
-        console.print(context_panel)
-        console.print()
-
-    # Display each interpretation with its sequence number
-    for i, interp in enumerate(interp_set.interpretations, 1):
-        display_interpretation(console, interp, sequence=i)
-
-    # Show set ID with instruction
-    instruction_panel = Panel(
-        "Use this ID to select an interpretation with 'sologm oracle select'",
-        title=st.timestamp(f"Interpretation Set: {interp_set.id}"),
-        border_style=BORDER_STYLES["pending"],
-        expand=False,
-        title_align="left",
-    )
-    console.print(instruction_panel)
+# --- display_interpretation_set removed, moved to RichRenderer ---
 
 
 def display_game_status(
@@ -836,49 +777,7 @@ def format_metadata(items: Dict[str, Any]) -> str:
     return StyledText.format_metadata(items, METADATA_SEPARATOR).plain
 
 
-def display_interpretation_status(
-    console: Console, interp_set: InterpretationSet
-) -> None:
-    """Display the status of the current interpretation set.
-
-    Args:
-        console: Rich console instance
-        interp_set: The current interpretation set to display
-    """
-    logger.debug(f"Displaying interpretation status for set {interp_set.id}")
-
-    st = StyledText
-    panel_title = st.title("Current Oracle Interpretation")
-
-    # Create metadata with consistent formatting
-    metadata = {
-        "Set ID": interp_set.id,
-        "Retry count": interp_set.retry_attempt,
-        "Resolved": any(interp.is_selected for interp in interp_set.interpretations),
-    }
-
-    # Create panel content
-    panel_content = st.combine(
-        st.subtitle("Context:"),
-        " ",
-        interp_set.context,
-        "\n",
-        st.subtitle("Results:"),
-        " ",
-        interp_set.oracle_results,
-        "\n",
-        st.format_metadata(metadata),
-    )
-
-    # Create and display the panel
-    panel = Panel(
-        panel_content,
-        title=panel_title,
-        border_style=BORDER_STYLES["current"],
-        title_align="left",
-    )
-    console.print(panel)
-    console.print()
+# --- display_interpretation_status removed, moved to RichRenderer ---
 
 
 def display_act_ai_generation_results(

@@ -456,8 +456,61 @@ class RichRenderer(Renderer):
     def display_interpretation_set(
         self, interp_set: InterpretationSet, show_context: bool = True
     ) -> None:
-        """Displays a set of oracle interpretations using Rich."""
-        raise NotImplementedError
+        """Display a full interpretation set using Rich.
+
+        Args:
+            interp_set: InterpretationSet to display
+            show_context: Whether to show context information
+        """
+        st = StyledText
+
+        # Access interpretations relationship directly
+        interpretation_count = len(interp_set.interpretations)
+
+        logger.debug(
+            f"Displaying interpretation set {interp_set.id} with "
+            f"{interpretation_count} interpretations"
+        )
+
+        # Show context panel if requested
+        if show_context:
+            # Create context content
+            context_content = st.combine(
+                st.subtitle("Context:"),
+                " ",
+                interp_set.context,
+                "\n",
+                st.subtitle("Results:"),
+                " ",
+                interp_set.oracle_results,
+            )
+
+            # Create panel title
+            panel_title = st.title("Oracle Interpretations")
+
+            context_panel = Panel(
+                context_content,
+                title=panel_title,
+                border_style=BORDER_STYLES["game_info"],
+                title_align="left",
+            )
+            self.console.print(context_panel)
+            self.console.print()
+
+        # Display each interpretation with its sequence number
+        for i, interp in enumerate(interp_set.interpretations, 1):
+            # CRUCIAL: Call the method on self
+            self.display_interpretation(interp, sequence=i)
+
+        # Show set ID with instruction
+        instruction_panel = Panel(
+            "Use this ID to select an interpretation with 'sologm oracle select'",
+            title=st.timestamp(f"Interpretation Set: {interp_set.id}"),
+            border_style=BORDER_STYLES["pending"],
+            expand=False,
+            title_align="left",
+        )
+        self.console.print(instruction_panel)
 
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene using Rich."""
@@ -779,8 +832,47 @@ class RichRenderer(Renderer):
         self.console.print(panel)
 
     def display_interpretation_status(self, interp_set: InterpretationSet) -> None:
-        """Displays the status of an interpretation set using Rich."""
-        raise NotImplementedError
+        """Display the status of the current interpretation set using Rich.
+
+        Args:
+            interp_set: The current interpretation set to display
+        """
+        logger.debug(f"Displaying interpretation status for set {interp_set.id}")
+
+        st = StyledText
+        panel_title = st.title("Current Oracle Interpretation")
+
+        # Create metadata with consistent formatting
+        metadata = {
+            "Set ID": interp_set.id,
+            "Retry count": interp_set.retry_attempt,
+            "Resolved": any(
+                interp.is_selected for interp in interp_set.interpretations
+            ),
+        }
+
+        # Create panel content
+        panel_content = st.combine(
+            st.subtitle("Context:"),
+            " ",
+            interp_set.context,
+            "\n",
+            st.subtitle("Results:"),
+            " ",
+            interp_set.oracle_results,
+            "\n",
+            st.format_metadata(metadata),
+        )
+
+        # Create and display the panel
+        panel = Panel(
+            panel_content,
+            title=panel_title,
+            border_style=BORDER_STYLES["current"],
+            title_align="left",
+        )
+        self.console.print(panel)
+        self.console.print()
 
     def display_act_ai_generation_results(
         self, results: Dict[str, str], act: Act

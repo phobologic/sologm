@@ -238,30 +238,16 @@ def test_create_dice_rolls_panel(test_dice_roll, display_helpers):
     assert test_dice_roll.notation in panel.renderable
 
 
-def test_display_interpretation(mock_console, test_interpretations):
-    """Test displaying an interpretation."""
-    display_interpretation(mock_console, test_interpretations[0])
-    assert mock_console.print.called
+# --- test_display_interpretation removed, moved to test_rich_renderer.py ---
 
 
-def test_display_interpretation_selected(mock_console, test_interpretations):
-    """Test displaying a selected interpretation."""
-    display_interpretation(mock_console, test_interpretations[0], selected=True)
-    assert mock_console.print.called
+# --- test_display_interpretation_selected removed, moved to test_rich_renderer.py ---
 
 
-def test_display_interpretation_set(mock_console, test_interpretation_set):
-    """Test displaying an interpretation set."""
-    display_interpretation_set(mock_console, test_interpretation_set)
-    assert mock_console.print.called
+# --- test_display_interpretation_set removed, moved to test_rich_renderer.py ---
 
 
-def test_display_interpretation_set_no_context(mock_console, test_interpretation_set):
-    """Test displaying an interpretation set without context."""
-    display_interpretation_set(
-        mock_console, test_interpretation_set, show_context=False
-    )
-    assert mock_console.print.called
+# --- test_display_interpretation_set_no_context removed, moved to test_rich_renderer.py ---
 
 
 def test_truncate_text():
@@ -311,10 +297,7 @@ def test_format_metadata():
     assert isinstance(styled_result, Text)
 
 
-# --- test_display_interpretation removed, moved to test_rich_renderer.py ---
-
-
-# --- test_display_interpretation_selected removed, moved to test_rich_renderer.py ---
+# --- test_display_interpretation_status removed, moved to test_rich_renderer.py ---
 
 
 def test_display_act_ai_generation_results(mock_console, test_act):
