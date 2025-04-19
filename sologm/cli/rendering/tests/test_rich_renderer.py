@@ -113,6 +113,27 @@ def test_display_game_info_no_scene(mock_console: MagicMock, test_game: Game):
 # --- End Tests for display_game_info ---
 
 
+# --- Tests for display_act_info (Moved & Adapted) ---
+
+
+def test_display_act_info(mock_console: MagicMock, test_act: Act, test_game: Game):
+    """Test displaying act info using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    # This call should fail with NotImplementedError initially
+    renderer.display_act_info(test_act, test_game.name)
+
+    # Assertions will run after implementation
+    # Expecting two prints: one for the main act panel, one for the scenes panel/table
+    assert mock_console.print.call_count == 2
+    args1, _ = mock_console.print.call_args_list[0]
+    args2, _ = mock_console.print.call_args_list[1]
+    assert isinstance(args1[0], Panel)
+    assert isinstance(args2[0], Panel)
+
+
+# --- End Tests for display_act_info ---
+
+
 def test_display_scene_info(mock_console: MagicMock, test_scene: Scene):
     """Test displaying scene info using RichRenderer."""
     renderer = RichRenderer(mock_console)

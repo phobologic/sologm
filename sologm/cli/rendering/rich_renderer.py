@@ -20,13 +20,13 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene
+from sologm.models.scene import Scene, SceneStatus # Added SceneStatus
 
 # Import utilities that RichRenderer will use directly
 from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
 from sologm.cli.utils.display import (
     truncate_text,
-)  # Assuming this stays in display.py for now
+) # Assuming this stays in display.py for now
 
 # Use TYPE_CHECKING for manager imports to avoid circular dependencies if needed later
 if TYPE_CHECKING:
@@ -353,7 +353,122 @@ class RichRenderer(Renderer):
 
     def display_act_info(self, act: Act, game_name: str) -> None:
         """Displays detailed information about a specific act using Rich."""
-        raise NotImplementedError
+        logger.debug(f"Displaying act info for {act.id}")
+        logger.debug(
+            f"Act details: title='{act.title}', sequence={act.sequence}, "
+            f"game_id={act.game_id}"
+        )
+
+        st = StyledText
+
+        # Create metadata with consistent formatting
+        metadata = {
+            "Game": game_name,
+            "Sequence": f"Act {act.sequence}",
+            "Created": act.created_at.strftime("%Y-%m-%d"),
+            "Modified": act.modified_at.strftime("%Y-%m-%d"),
+        }
+
+        # Determine border style based on act status
+        border_style = (
+            BORDER_STYLES["current"] if act.is_active else BORDER_STYLES["game_info"]
+        )
+
+        # Create panel content
+        panel_content = Text()
+
+        # Add description if available
+        if act.summary:
+            panel_content.append(st.subtitle(act.summary))
+            panel_content.append("\n\n")
+
+        # Add metadata
+        panel_content.append(st.format_metadata(metadata))
+
+        # Create panel title
+        if act.title:
+            title_display = act.title
+            panel_title = st.combine(
+                st.title_blue(f"Act {act.sequence}: {title_display}"),
+                " ",
+                st.timestamp(f"({act.id})"),
+            )
+        else:
+            untitled_text = Text("Untitled Act", style="italic")
+            panel_title = st.combine(
+                st.title_blue(f"Act {act.sequence}: "),
+                untitled_text,
+                " ",
+                st.timestamp(f"({act.id})"),
+            )
+
+        panel = Panel(
+            panel_content,
+            title=panel_title,
+            border_style=border_style,
+            title_align="left",
+        )
+
+        self.console.print(panel)
+
+        # Display scenes in this act if any
+        if hasattr(act, "scenes") and act.scenes:
+            # Create a table for scenes
+            scenes_table = Table(
+                border_style=BORDER_STYLES["game_info"],
+            )
+
+            # Add columns with consistent styling
+            scenes_table.add_column("ID", style=st.STYLES["timestamp"])
+            scenes_table.add_column("Sequence", justify="right")
+            scenes_table.add_column("Title", style=st.STYLES["category"])
+            scenes_table.add_column("Summary")
+            scenes_table.add_column("Status", style=st.STYLES["success"]) # Added Status column
+            scenes_table.add_column(
+                "Current", style=st.STYLES["success"], justify="center"
+            )
+
+            # Add rows for each scene
+            for scene in act.scenes:
+                active_marker = "✓" if scene.is_active else ""
+
+                # Create scene title with appropriate styling
+                scene_title = (
+                    st.title(scene.title).plain if scene.is_active else scene.title
+                )
+
+                # Truncate description for table display
+                truncated_description = truncate_text(scene.description, max_length=40)
+
+                scenes_table.add_row(
+                    scene.id,
+                    str(scene.sequence),
+                    scene_title,
+                    truncated_description,
+                    scene.status.value, # Display status value
+                    active_marker,
+                )
+
+            # Create panel title
+            panel_title = st.title(f"Scenes in Act {act.sequence}")
+
+            # Wrap the table in a panel with a title
+            scenes_panel = Panel(
+                scenes_table,
+                title=panel_title,
+                title_align="left",
+                border_style=BORDER_STYLES["game_info"],
+            )
+            self.console.print(scenes_panel)
+        else:
+            # Create an empty panel for no scenes
+            empty_panel = Panel(
+                st.subtitle("No scenes in this act yet."),
+                title=st.title("Scenes"),
+                title_align="left",
+                border_style=BORDER_STYLES["neutral"],
+            )
+            self.console.print(empty_panel)
 
     def display_interpretation_sets_table(
         self, interp_sets: List[InterpretationSet]
