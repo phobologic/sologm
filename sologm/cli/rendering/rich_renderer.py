@@ -1,0 +1,168 @@
+"""
+Concrete implementation of the Renderer interface using Rich library components.
+"""
+
+import logging
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.table import Table
+from rich.text import Text
+
+# Corrected import based on file structure from Phase 1
+from .base import Renderer
+
+# Import necessary models
+from sologm.models.act import Act
+from sologm.models.dice import DiceRoll
+from sologm.models.event import Event
+from sologm.models.game import Game
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene
+
+# Import utilities that RichRenderer will use directly
+from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
+from sologm.cli.utils.display import truncate_text # Assuming this stays in display.py for now
+
+# Use TYPE_CHECKING for manager imports to avoid circular dependencies if needed later
+if TYPE_CHECKING:
+    from sologm.core.oracle import OracleManager
+    from sologm.core.scene import SceneManager
+
+
+logger = logging.getLogger(__name__)
+
+
+class RichRenderer(Renderer):
+    """
+    Renders CLI output using Rich library components like Panels, Tables, and styled text.
+    """
+
+    def __init__(self, console: Console):
+        """
+        Initializes the RichRenderer.
+
+        Args:
+            console: The Rich Console instance for output.
+        """
+        # Pass the console and explicitly set markdown_mode to False
+        super().__init__(console, markdown_mode=False)
+        logger.debug("RichRenderer initialized")
+
+    # --- Method implementations will be moved here from display.py in Step 3 ---
+
+    def display_dice_roll(self, roll: DiceRoll) -> None:
+        """Displays the results of a dice roll using Rich."""
+        raise NotImplementedError
+
+    def display_interpretation(
+        self,
+        interp: Interpretation,
+        selected: bool = False,
+        sequence: Optional[int] = None,
+    ) -> None:
+        """Displays a single oracle interpretation using Rich."""
+        raise NotImplementedError
+
+    def display_events_table(
+        self,
+        events: List[Event],
+        scene: Scene,
+        truncate_descriptions: bool = True,
+        max_description_length: int = 80,
+    ) -> None:
+        """Displays a list of events in a Rich table."""
+        raise NotImplementedError
+
+    def display_games_table(
+        self, games: List[Game], active_game: Optional[Game] = None
+    ) -> None:
+        """Displays a list of games in a Rich table."""
+        raise NotImplementedError
+
+    def display_scenes_table(
+        self, scenes: List[Scene], active_scene_id: Optional[str] = None
+    ) -> None:
+        """Displays a list of scenes in a Rich table."""
+        raise NotImplementedError
+
+    def display_game_info(
+        self, game: Game, active_scene: Optional[Scene] = None
+    ) -> None:
+        """Displays detailed information about a specific game using Rich."""
+        raise NotImplementedError
+
+    def display_interpretation_set(
+        self, interp_set: InterpretationSet, show_context: bool = True
+    ) -> None:
+        """Displays a set of oracle interpretations using Rich."""
+        raise NotImplementedError
+
+    def display_scene_info(self, scene: Scene) -> None:
+        """Displays detailed information about a specific scene using Rich."""
+        raise NotImplementedError
+
+    def display_game_status(
+        self,
+        game: Game,
+        latest_act: Optional[Act],
+        latest_scene: Optional[Scene],
+        recent_events: List[Event],
+        scene_manager: Optional["SceneManager"] = None,
+        oracle_manager: Optional["OracleManager"] = None,
+        recent_rolls: Optional[List[DiceRoll]] = None,
+        is_act_active: bool = False,
+        is_scene_active: bool = False,
+    ) -> None:
+        """Displays the overall status of the current game using Rich."""
+        raise NotImplementedError
+
+    def display_acts_table(
+        self, acts: List[Act], active_act_id: Optional[str] = None
+    ) -> None:
+        """Displays a list of acts in a Rich table."""
+        raise NotImplementedError
+
+    def display_act_info(self, act: Act, game_name: str) -> None:
+        """Displays detailed information about a specific act using Rich."""
+        raise NotImplementedError
+
+    def display_interpretation_sets_table(
+        self, interp_sets: List[InterpretationSet]
+    ) -> None:
+        """Displays a table of interpretation sets using Rich."""
+        raise NotImplementedError
+
+    def display_interpretation_status(self, interp_set: InterpretationSet) -> None:
+        """Displays the status of an interpretation set using Rich."""
+        raise NotImplementedError
+
+    def display_act_ai_generation_results(
+        self, results: Dict[str, str], act: Act
+    ) -> None:
+        """Displays the results generated by AI for an act using Rich."""
+        raise NotImplementedError
+
+    def display_act_completion_success(self, completed_act: Act) -> None:
+        """Displays a success message upon act completion using Rich."""
+        raise NotImplementedError
+
+    def display_act_ai_feedback_prompt(self, console: Console) -> None:
+        """Displays the prompt asking for feedback on AI generation using Rich Prompt."""
+        # Note: This implementation will likely directly use Rich Prompt.
+        # The base class signature includes `console` which might be redundant
+        # if we always use `self.console`. We'll refine this when implementing.
+        raise NotImplementedError
+
+    def display_act_edited_content_preview(
+        self, edited_results: Dict[str, str]
+    ) -> None:
+        """Displays a preview of edited AI-generated content using Rich."""
+        raise NotImplementedError
+
+    def display_error(self, message: str) -> None:
+        """Displays an error message to the user using Rich."""
+        # Implementation will use self.console.print with red styling.
+        raise NotImplementedError
