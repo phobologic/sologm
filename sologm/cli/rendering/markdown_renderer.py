@@ -406,9 +406,7 @@ class MarkdownRenderer(Renderer):
         # Metadata
         output_lines.append(f"*   **Game:** {game_name}")
         output_lines.append(f"*   **Created:** {act.created_at.strftime('%Y-%m-%d')}")
-        output_lines.append(
-            f"*   **Modified:** {act.modified_at.strftime('%Y-%m-%d')}"
-        )
+        output_lines.append(f"*   **Modified:** {act.modified_at.strftime('%Y-%m-%d')}")
 
         self.console.print("\n".join(output_lines))
         self.console.print("")  # Add a blank line before scenes
@@ -419,9 +417,7 @@ class MarkdownRenderer(Renderer):
             sorted_scenes = sorted(act.scenes, key=lambda s: s.sequence)
             # Use display_scenes_table for consistency
             # Need to determine the active scene ID within this act
-            active_scene_id = next(
-                (s.id for s in sorted_scenes if s.is_active), None
-            )
+            active_scene_id = next((s.id for s in sorted_scenes if s.is_active), None)
             self.display_scenes_table(sorted_scenes, active_scene_id=active_scene_id)
         else:
             # Print a specific message if no scenes exist
@@ -563,7 +559,9 @@ class MarkdownRenderer(Renderer):
                 output_lines.append(f"> {line}")
             output_lines.append("")
 
-        self.console.print("\n".join(output_lines).strip()) # Remove trailing newline if summary was last
+        self.console.print(
+            "\n".join(output_lines).strip()
+        )  # Remove trailing newline if summary was last
 
     def display_act_ai_feedback_prompt(self, console: Console) -> None:
         """Displays instructions for AI feedback as Markdown."""

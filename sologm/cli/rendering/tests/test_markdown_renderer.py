@@ -512,7 +512,7 @@ def test_display_act_info_no_scenes_markdown(
 
     # Expected output for no scenes
     expected_no_scenes_output = (
-        f"### Scenes in Act {test_act.sequence}\n\n" f"No scenes in this act yet."
+        f"### Scenes in Act {test_act.sequence}\n\nNo scenes in this act yet."
     )
 
     mock_console.print.assert_any_call(expected_act_output)
