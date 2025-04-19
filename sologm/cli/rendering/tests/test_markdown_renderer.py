@@ -285,13 +285,15 @@ def test_display_game_info_markdown(
 
     # Mock relationships needed by the display method
     # Ensure the act object itself has the scene associated
-    if test_scene.act: # Make sure the act exists from the fixture
+    if test_scene.act:  # Make sure the act exists from the fixture
         test_scene.act.scenes = [test_scene]
         test_game.acts = [test_scene.act]
     else:
         # Handle case where test_scene might not have an act (though fixture should provide it)
-        pytest.fail("Test setup error: test_scene fixture did not provide an associated act.")
-        test_game.acts = [] # Or handle appropriately
+        pytest.fail(
+            "Test setup error: test_scene fixture did not provide an associated act."
+        )
+        test_game.acts = []  # Or handle appropriately
 
     # Remove the direct assignment to game.scenes as it's not used by the calculation logic being tested
     # test_game.scenes = [test_scene] # This line is removed/commented out
