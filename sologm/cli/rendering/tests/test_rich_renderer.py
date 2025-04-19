@@ -13,7 +13,7 @@ from sologm.models.act import Act  # <-- Added import
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event  # <-- Added import
 from sologm.models.game import Game
-from sologm.models.oracle import Interpretation
+from sologm.models.oracle import Interpretation, InterpretationSet  # <-- Added import
 from sologm.models.scene import Scene
 
 
