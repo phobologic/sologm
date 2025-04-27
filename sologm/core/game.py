@@ -75,6 +75,7 @@ class GameManager(BaseManager[Game, Game]):
             logger.debug(f"Created game: {game.id}, name='{game.name}'")
             return game
         except IntegrityError as e:
+            self._session.rollback() # Explicitly rollback the failed transaction state
             self._handle_integrity_error(e, "create", name)
 
     def _handle_integrity_error(
