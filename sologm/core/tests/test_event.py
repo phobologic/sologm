@@ -52,51 +52,6 @@ class TestEventManager:
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # <<< Add Diagnostic Check >>>
-            from sqlalchemy import inspect  # Import inspect
-
-            logger.info(
-                f"Checking for scene {scene.id} (obj ID: {id(scene)}) immediately after creation using session {id(session)}"
-            )
-
-            # Inspect the state of the scene object returned by the factory
-            scene_state = inspect(scene)
-            logger.info(
-                f"Scene object state: transient={scene_state.transient}, pending={scene_state.pending}, persistent={scene_state.persistent}, detached={scene_state.detached}"
-            )
-            logger.info(f"Scene object session_id: {scene_state.session_id}")
-            logger.info(
-                f"Is scene in session identity map? {scene in session.identity_map.values()}"
-            )
-
-            # Use session.get() first as it primarily checks the identity map
-            logger.info(f"Attempting session.get(Scene, {scene.id})")
-            found_scene_immediately = session.get(Scene, scene.id)
-            if found_scene_immediately:
-                logger.info(
-                    f"Scene {scene.id} FOUND immediately via session.get(). Object ID: {id(found_scene_immediately)}"
-                )
-                # Optional: Double-check with a query
-                # found_scene_query = session.query(Scene).filter(Scene.id == scene.id).first()
-                # logger.info(f"Scene {scene.id} found via query: {found_scene_query is not None}")
-            else:
-                logger.error(
-                    f"Scene {scene.id} NOT FOUND immediately via session.get()."
-                )
-                # If session.get fails, query likely will too, but let's check
-                logger.info(
-                    f"Attempting session.query(Scene).filter(Scene.id == {scene.id}).first()"
-                )
-                found_scene_query = (
-                    session.query(Scene).filter(Scene.id == scene.id).first()
-                )
-                logger.error(
-                    f"Scene {scene.id} found via query: {found_scene_query is not None}"
-                )
-                # Optionally raise here to make the failure point clearer if this is the issue
-                # pytest.fail(f"Scene {scene.id} not found in session immediately after creation")
-            # <<< End Diagnostic Check >>>
-
             event = managers.event.add_event(
                 description="Test event",
                 scene_id=scene.id,  # Pass the ID of the scene just created
