@@ -658,25 +658,20 @@ def test_interpretations(
         )
         # Add directly to db_session
         db_session.add(interp)
-        db_session.flush()  # Assign ID
-        # No merge/refresh needed for the interpretation itself
-        # Refresh relationships if needed for display
+        db_session.flush() # Assign ID
+        # REMOVED: merge call (wasn't present, but confirming removal)
         try:
+            # Refresh relationships directly on the created instance
             db_session.refresh(interp, attribute_names=["interpretation_set"])
         except Exception as e:
-            logger.warning(
-                f"Warning: Error refreshing relationships for interpretation {i}: {e}"
-            )
+             logger.warning(f"Warning: Error refreshing relationships for interpretation {i}: {e}")
         interpretations_data.append(interp)
 
-    # Refresh the parent *only if absolutely necessary* for the test setup
-    # Often, accessing test_interpretation_set.interpretations later will lazy-load correctly
     try:
+        # Refresh the parent set's collection after adding children
         db_session.refresh(test_interpretation_set, attribute_names=["interpretations"])
     except Exception as e:
-        logger.warning(
-            f"Warning: Error refreshing interpretation_set relationship in test_interpretations: {e}"
-        )
+        logger.warning(f"Warning: Error refreshing interpretation_set relationship in test_interpretations: {e}")
 
     return interpretations_data
 
