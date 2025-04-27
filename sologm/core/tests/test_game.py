@@ -26,7 +26,7 @@ class TestGameManager:
         assert game.description == "A test game"
         assert game.created_at is not None
         assert game.modified_at is not None
-            assert game.is_active is True
+        assert game.is_active is True
 
             # Verify game was saved to database
             db_game = session.get(Game, game.id)
