@@ -963,39 +963,6 @@ def test_hybrid_property_game(
     }
 
 
-# Note: The duplicate definitions of create_test_xxx fixtures have been removed
-# by applying the changes above, ensuring only the manager-based versions remain.
-# Similarly, the duplicate definitions of test_xxx object fixtures have been
-# updated to use the factories and inject db_session for refreshing.
-    how the application code would create acts.
-    """
-
-    def _create_act(
-        game_id,
-        title="Test Act",
-        summary="A test act",
-        is_active=True,
-        sequence=None,  # Add sequence parameter
-    ):
-        act = act_manager.create_act(
-            game_id=game_id,
-            title=title,
-            summary=summary,
-            make_active=is_active,
-        )
-
-        # If sequence was specified, update it directly
-        if sequence is not None:
-            session = act_manager._session
-            act.sequence = sequence
-            session.add(act)
-            session.flush()
-
-        return act
-
-    return _create_act
-
-
 @pytest.fixture
 def create_test_scene(scene_manager):
     """Factory fixture to create test scenes using the SceneManager.
