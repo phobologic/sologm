@@ -40,6 +40,7 @@ class TestScene:
                 sequence=1,
             )
             session.add(scene)
+            session.flush()  # Ensure DB defaults like created_at are populated
             # No commit needed, context manager handles it
 
             assert scene.id is not None
