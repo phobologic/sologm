@@ -238,21 +238,11 @@ def create_test_scene() -> Callable[..., Scene]:
             # Use manager for completion logic (it uses the correct session)
             managers.scene.complete_scene(scene.id)
             # Re-fetch the scene to get updated state
+            # Re-fetch the scene to get updated state
             scene = managers.scene.get_scene(scene.id)
 
         # No merge needed
-        try:
-            # Refresh relationships using the passed-in session
-            session.refresh(
-                scene,
-                attribute_names=["act", "events", "interpretations", "dice_rolls"],
-            )
-            if scene.act:
-                session.refresh(scene.act, attribute_names=["game"])
-        except Exception as e:
-            logger.warning(
-                f"Warning: Error refreshing relationships in create_test_scene factory: {e}"
-            )
+        # REMOVED: session.refresh call and try/except block
         return scene
 
     return _create_scene
