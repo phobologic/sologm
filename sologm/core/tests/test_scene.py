@@ -241,9 +241,7 @@ class TestSceneManager:
             managers = create_all_managers(session)
             _, act = create_base_test_data(session, create_test_game, create_test_act)
             # Create scene using factory (which makes it active by default)
-            scene = create_test_scene(
-                session, act_id=act.id, title="Active Scene"
-            )
+            scene = create_test_scene(session, act_id=act.id, title="Active Scene")
 
             active_scene = managers.scene.get_active_scene(act.id)
             assert active_scene is not None
@@ -321,9 +319,7 @@ class TestSceneManager:
         with session_context as session:
             managers = create_all_managers(session)
             _, act = create_base_test_data(session, create_test_game, create_test_act)
-            scene = create_test_scene(
-                session, act_id=act.id, title="Test Scene"
-            )
+            scene = create_test_scene(session, act_id=act.id, title="Test Scene")
 
             managers.scene.complete_scene(scene.id)
 
@@ -483,9 +479,7 @@ class TestSceneManager:
                 session, create_test_game, create_test_act
             )
             # Create a scene to be active
-            scene = create_test_scene(
-                session, act_id=act.id, title="Active Scene"
-            )
+            scene = create_test_scene(session, act_id=act.id, title="Active Scene")
 
             context = managers.scene.get_active_context()
             assert context["game"].id == game.id
@@ -502,13 +496,9 @@ class TestSceneManager:
         """Test validating active game and scene context."""
         with session_context as session:
             managers = create_all_managers(session)
-            _, act = create_base_test_data(
-                session, create_test_game, create_test_act
-            )
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
             # Create a scene to be active
-            scene = create_test_scene(
-                session, act_id=act.id, title="Active Scene"
-            )
+            scene = create_test_scene(session, act_id=act.id, title="Active Scene")
 
             act_id, active_scene = managers.scene.validate_active_context()
             assert act_id == act.id
@@ -529,9 +519,7 @@ class TestSceneManager:
                 session, act_id=act.id, title="Test Scene"
             )
 
-            retrieved_scene = managers.scene.get_scene_in_act(
-                act.id, created_scene.id
-            )
+            retrieved_scene = managers.scene.get_scene_in_act(act.id, created_scene.id)
             assert retrieved_scene is not None
             assert retrieved_scene.id == created_scene.id
             assert retrieved_scene.title == created_scene.title
@@ -542,9 +530,7 @@ class TestSceneManager:
             )
             assert wrong_scene is None
 
-    def test_validate_active_context_no_game(
-        self, session_context: SessionContext
-    ):
+    def test_validate_active_context_no_game(self, session_context: SessionContext):
         """Test validation with no active game."""
         with session_context as session:
             managers = create_all_managers(session)
@@ -631,13 +617,9 @@ class TestSceneManager:
         """Test getting the active scene without providing an act_id."""
         with session_context as session:
             managers = create_all_managers(session)
-            _, act = create_base_test_data(
-                session, create_test_game, create_test_act
-            )
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
             # Create a scene to be active
-            scene = create_test_scene(
-                session, act_id=act.id, title="Active Scene"
-            )
+            scene = create_test_scene(session, act_id=act.id, title="Active Scene")
 
             active_scene = managers.scene.get_active_scene()  # act_id is omitted
             assert active_scene is not None
@@ -656,9 +638,7 @@ class TestSceneManager:
             _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             # Create a first scene that will be active
-            scene1 = create_test_scene(
-                session, act_id=act.id, title="First Scene"
-            )
+            scene1 = create_test_scene(session, act_id=act.id, title="First Scene")
 
             # Create a second scene without making it active
             scene2 = create_test_scene(
@@ -686,13 +666,9 @@ class TestSceneManager:
         """Test that scene relationships are properly loaded."""
         with session_context as session:
             managers = create_all_managers(session)
-            _, act = create_base_test_data(
-                session, create_test_game, create_test_act
-            )
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
             # Create a scene with events
-            scene = create_test_scene(
-                session, act_id=act.id, title="Scene with Events"
-            )
+            scene = create_test_scene(session, act_id=act.id, title="Scene with Events")
 
             # Add events to the scene using the factory
             event = create_test_event(
