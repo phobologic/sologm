@@ -461,7 +461,7 @@ def create_test_event(event_manager):
 
 # Common test objects
 @pytest.fixture
-def test_game(game_manager, db_session: Session): # Inject db_session again for refresh
+def test_game(game_manager, db_session: Session):  # Inject db_session again for refresh
     """Create a test game using the GameManager and refresh needed relationships."""
     game = game_manager.create_game("Test Game", "A test game", is_active=True)
     try:
@@ -472,7 +472,7 @@ def test_game(game_manager, db_session: Session): # Inject db_session again for 
         #     db_session.refresh(act, attribute_names=["scenes"])
     except Exception as e:
         logger.warning(f"Warning: Error refreshing relationships for test_game: {e}")
-    return game # Return the original object, now refreshed
+    return game  # Return the original object, now refreshed
 
 
 @pytest.fixture
@@ -561,7 +561,7 @@ def create_test_event(event_manager):
 
 # Common test objects
 @pytest.fixture
-def test_game(game_manager, db_session: Session): # Inject db_session again for refresh
+def test_game(game_manager, db_session: Session):  # Inject db_session again for refresh
     """Create a test game using the GameManager and refresh needed relationships."""
     game = game_manager.create_game("Test Game", "A test game", is_active=True)
     try:
@@ -572,11 +572,11 @@ def test_game(game_manager, db_session: Session): # Inject db_session again for 
         #     db_session.refresh(act, attribute_names=["scenes"])
     except Exception as e:
         logger.warning(f"Warning: Error refreshing relationships for test_game: {e}")
-    return game # Return the original object, now refreshed
+    return game  # Return the original object, now refreshed
 
 
 @pytest.fixture
-def test_act(act_manager, test_game, db_session: Session): # Inject db_session again
+def test_act(act_manager, test_game, db_session: Session):  # Inject db_session again
     """Create a test act using the ActManager and refresh needed relationships."""
     # test_game is already session-bound and potentially refreshed
     act = act_manager.create_act(
@@ -590,11 +590,11 @@ def test_act(act_manager, test_game, db_session: Session): # Inject db_session a
         db_session.refresh(act, attribute_names=["scenes", "game"])
     except Exception as e:
         logger.warning(f"Warning: Error refreshing relationships for test_act: {e}")
-    return act # Return the original object, now refreshed
+    return act  # Return the original object, now refreshed
 
 
 @pytest.fixture
-def test_scene(scene_manager, test_act, db_session: Session): # Inject db_session again
+def test_scene(scene_manager, test_act, db_session: Session):  # Inject db_session again
     """Create a test scene using the SceneManager and refresh needed relationships."""
     # test_act is already session-bound and potentially refreshed
     scene = scene_manager.create_scene(
@@ -614,11 +614,13 @@ def test_scene(scene_manager, test_act, db_session: Session): # Inject db_sessio
             db_session.refresh(scene.act, attribute_names=["game"])
     except Exception as e:
         logger.warning(f"Warning: Error refreshing relationships for test_scene: {e}")
-    return scene # Return the original object, now refreshed
+    return scene  # Return the original object, now refreshed
 
 
 @pytest.fixture
-def test_events(event_manager, test_scene, db_session: Session): # Inject db_session again
+def test_events(
+    event_manager, test_scene, db_session: Session
+):  # Inject db_session again
     """Create test events using the EventManager and refresh needed relationships."""
     # test_scene is already session-bound and refreshed
     events_data = []
@@ -634,8 +636,10 @@ def test_events(event_manager, test_scene, db_session: Session): # Inject db_ses
                 event, attribute_names=["scene", "source", "interpretation"]
             )
         except Exception as e:
-            logger.warning(f"Warning: Error refreshing relationships for event {i}: {e}")
-        events_data.append(event) # Append the refreshed object
+            logger.warning(
+                f"Warning: Error refreshing relationships for event {i}: {e}"
+            )
+        events_data.append(event)  # Append the refreshed object
     return events_data
 
 
@@ -653,13 +657,15 @@ def test_interpretation_set(
     )
     # Add directly to db_session used by the test
     db_session.add(interp_set)
-    db_session.flush() # Assign ID, keep it in the session
+    db_session.flush()  # Assign ID, keep it in the session
     # No merge/refresh needed. If relationships are needed, rely on lazy/eager loading.
     # If you MUST load relationships, use refresh carefully:
     try:
         db_session.refresh(interp_set, attribute_names=["interpretations", "scene"])
     except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_interpretation_set: {e}")
+        logger.warning(
+            f"Warning: Error refreshing relationships for test_interpretation_set: {e}"
+        )
     return interp_set
 
 
@@ -679,13 +685,15 @@ def test_interpretations(
         )
         # Add directly to db_session
         db_session.add(interp)
-        db_session.flush() # Assign ID
+        db_session.flush()  # Assign ID
         # No merge/refresh needed for the interpretation itself
         # Refresh relationships if needed for display
         try:
             db_session.refresh(interp, attribute_names=["interpretation_set"])
         except Exception as e:
-             logger.warning(f"Warning: Error refreshing relationships for interpretation {i}: {e}")
+            logger.warning(
+                f"Warning: Error refreshing relationships for interpretation {i}: {e}"
+            )
         interpretations_data.append(interp)
 
     # Refresh the parent *only if absolutely necessary* for the test setup
@@ -693,7 +701,9 @@ def test_interpretations(
     try:
         db_session.refresh(test_interpretation_set, attribute_names=["interpretations"])
     except Exception as e:
-        logger.warning(f"Warning: Error refreshing interpretation_set relationship in test_interpretations: {e}")
+        logger.warning(
+            f"Warning: Error refreshing interpretation_set relationship in test_interpretations: {e}"
+        )
 
     return interpretations_data
 
@@ -718,7 +728,9 @@ def empty_interpretation_set(
     try:
         db_session.refresh(interp_set, attribute_names=["interpretations", "scene"])
     except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for empty_interpretation_set: {e}")
+        logger.warning(
+            f"Warning: Error refreshing relationships for empty_interpretation_set: {e}"
+        )
     return interp_set
 
 
@@ -736,14 +748,16 @@ def test_dice_roll(test_scene, db_session: Session):  # Inject db_session and te
     )
     # Add directly to db_session
     db_session.add(dice_roll)
-    db_session.flush() # Assign ID
+    db_session.flush()  # Assign ID
     # No merge/refresh needed
     # Refresh relationships if needed for display
     try:
         # Refresh relationships needed by display methods (e.g., dice roll panel needs scene context)
         db_session.refresh(dice_roll, attribute_names=["scene"])
     except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_dice_roll: {e}")
+        logger.warning(
+            f"Warning: Error refreshing relationships for test_dice_roll: {e}"
+        )
     return dice_roll
 
 
@@ -875,7 +889,7 @@ def test_game_with_complete_hierarchy(
     create_test_act,
     create_test_scene,
     create_test_event,
-    initialize_event_sources, # Keep this
+    initialize_event_sources,  # Keep this
     # Remove db_session injection
 ):
     """Create a complete game hierarchy, attached to the test's session."""
