@@ -639,8 +639,9 @@ class TestActManager:
             monkeypatch.setattr(
                 managers.act, "prepare_act_data_for_summary", mock_prepare_data
             )
-            # Mock the client instance used by the manager
-            monkeypatch.setattr(managers.act, "_anthropic_client", mock_client)
+            # Mock the AnthropicClient class where it's imported in the act module
+            # When AnthropicClient() is called inside generate_act_summary, it will return our mock_client
+            monkeypatch.setattr("sologm.core.act.AnthropicClient", lambda: mock_client)
 
             # Test the method
             result = managers.act.generate_act_summary(
@@ -684,7 +685,8 @@ class TestActManager:
             monkeypatch.setattr(
                 managers.act, "prepare_act_data_for_summary", mock_prepare_data
             )
-            monkeypatch.setattr(managers.act, "_anthropic_client", mock_client)
+            # Mock the AnthropicClient class where it's imported in the act module
+            monkeypatch.setattr("sologm.core.act.AnthropicClient", lambda: mock_client)
 
             # Test the method and assert APIError is raised
             with pytest.raises(APIError, match="Failed to generate act summary"):
