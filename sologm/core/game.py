@@ -307,6 +307,9 @@ class GameManager(BaseManager[Game, Game]):
             if description is not None:
                 game.description = description
 
+            # Flush here to trigger potential IntegrityError before commit
+            session.flush()
+
             return game
 
         try:
