@@ -251,6 +251,8 @@ class GameManager(BaseManager[Game, Game]):
             )
 
             game.is_active = False
+            # Add this line to flush the change to the session's transaction state
+            session.flush()
 
             return game
 
