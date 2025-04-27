@@ -206,7 +206,7 @@ def create_test_act() -> Callable[..., "Act"]:  # Use quotes for forward referen
         if sequence is not None:
             act.sequence = sequence
             session.add(act)
-            session.flush() # Keep flush if sequence is manually set
+            session.flush()  # Keep flush if sequence is manually set
 
         # No merge needed
         # REMOVED: session.refresh call and try/except block
