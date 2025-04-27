@@ -11,8 +11,6 @@ from sologm.core.factory import create_all_managers
 from sologm.models.act import Act  # Added
 from sologm.models.event import Event
 from sologm.models.game import Game
-from sologm.models.interpretation import Interpretation  # Added
-from sologm.models.interpretation_set import InterpretationSet  # Added
 from sologm.models.scene import Scene  # Added
 from sologm.utils.errors import EventError
 

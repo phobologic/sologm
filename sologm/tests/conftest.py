@@ -1,7 +1,7 @@
 """Common test fixtures for all sologm tests."""
 
 import logging
-from typing import Any, Callable, Dict, Generator, List, Optional, Type
+from typing import Any, Callable, Dict, Generator, Optional, Type
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,11 +13,9 @@ from sologm.core.factory import create_all_managers
 from sologm.database.session import DatabaseManager, SessionContext
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.base import Base
-from sologm.models.dice import DiceRoll
 from sologm.models.event import Event  # Added Event import
 from sologm.models.event_source import EventSource
 from sologm.models.game import Game  # Added Game import
-from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene, SceneStatus  # Added Scene import
 from sologm.utils.config import Config
 
