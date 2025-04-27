@@ -9,7 +9,7 @@ from sqlalchemy.engine import Engine
 from sologm.database.session import (
     DatabaseManager,
     get_db_context,
-    get_session,
+    # get_session, # Removed in Phase 1
     initialize_database,
 )
 from sologm.utils.config import Config
@@ -60,7 +60,7 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseManager:
 
 __all__ = [
     "DatabaseManager",
-    "get_session",
+    # "get_session", # Removed in Phase 1
     "initialize_database",
     "get_db_context",
     "init_db",
