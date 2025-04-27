@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session  # Added for type hinting
 
 # Import factory and models needed for test setup
 from sologm.core.factory import create_all_managers
-from sologm.models.act import Act  # Added
+from sologm.database.session import SessionContext
+from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game
-from sologm.models.scene import Scene  # Added
+from sologm.models.scene import Scene
 from sologm.utils.errors import EventError
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ class TestEventManager:
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-    ):
+    ) -> None:
         """Test adding an event."""
         with session_context as session:  # Use fixture directly
             managers = create_all_managers(session)
