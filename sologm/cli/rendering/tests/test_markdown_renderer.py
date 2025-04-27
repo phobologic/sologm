@@ -364,28 +364,16 @@ def test_display_interpretation_set_markdown(
     test_interpretation_set.interpretations = test_interpretations
     num_interpretations = len(test_interpretations)
 
-    logger.debug("--- Starting test_display_interpretation_set_markdown ---")
-    logger.debug("Number of interpretations: %d", num_interpretations)
-
     # --- Test case 1: Show context ---
-    logger.debug("--- Testing with show_context=True ---")
     mock_console.reset_mock()  # Ensure clean state before this case
-    logger.debug("Mock reset. Call count before: %d", mock_console.print.call_count)
 
     renderer.display_interpretation_set(test_interpretation_set, show_context=True)
 
-    logger.debug(
-        "Call count after display_interpretation_set(show_context=True): %d",
-        mock_console.print.call_count,
-    )
-    logger.debug("Calls made (show_context=True):")
     for i, call in enumerate(mock_console.print.call_args_list):
         # Truncate long call args for readability in debug output
         args_repr = repr(call.args)
         if len(args_repr) > 100:
             args_repr = args_repr[:97] + "..."
-        logger.debug("  Call %d: args=%s, kwargs=%s", i + 1, args_repr, call.kwargs)
-    logger.debug("--- END DEBUG Calls (show_context=True) ---")
 
     # Expected output (simplified, relies on display_interpretation output)
     expected_context = (
@@ -396,9 +384,6 @@ def test_display_interpretation_set_markdown(
     )
     # Expected calls: context(1) + N interpretations + N blank lines + instruction(1) = 2*N + 2
     expected_call_count_true = num_interpretations * 2 + 2
-    logger.debug(
-        "Expected call count (show_context=True): %d", expected_call_count_true
-    )
     assert (
         mock_console.print.call_count == expected_call_count_true
     )  # <-- ADJUSTED EXPECTED COUNT
@@ -414,29 +399,17 @@ def test_display_interpretation_set_markdown(
     mock_console.reset_mock()
 
     # --- Test case 2: Hide context ---
-    logger.debug("--- Testing with show_context=False ---")
     mock_console.reset_mock()  # Ensure clean state before this case
-    logger.debug("Mock reset. Call count before: %d", mock_console.print.call_count)
 
     renderer.display_interpretation_set(test_interpretation_set, show_context=False)
 
-    logger.debug(
-        "Call count after display_interpretation_set(show_context=False): %d",
-        mock_console.print.call_count,
-    )
-    logger.debug("Calls made (show_context=False):")
     for i, call in enumerate(mock_console.print.call_args_list):
         args_repr = repr(call.args)
         if len(args_repr) > 100:
             args_repr = args_repr[:97] + "..."
-        logger.debug("  Call %d: args=%s, kwargs=%s", i + 1, args_repr, call.kwargs)
-    logger.debug("--- END DEBUG Calls (show_context=False) ---")
 
     # Expected calls: N interpretations + N blank lines + instruction(1) = 2*N + 1
     expected_call_count_false = num_interpretations * 2 + 1
-    logger.debug(
-        "Expected call count (show_context=False): %d", expected_call_count_false
-    )
     assert (
         mock_console.print.call_count == expected_call_count_false
     )  # <-- ADJUSTED EXPECTED COUNT
@@ -445,17 +418,10 @@ def test_display_interpretation_set_markdown(
     with pytest.raises(
         AssertionError, match="Expected call"
     ):  # Added match for clarity
-        logger.debug("Verifying context was NOT called (show_context=False)")
         mock_console.print.assert_any_call(expected_context)
-        logger.debug("Context WAS called (unexpected!)")  # Should not be reached
-    logger.debug("Context correctly NOT called (show_context=False)")
 
     # Check instruction print call again
     mock_console.print.assert_any_call(expected_instruction)
-    logger.debug("--- Finished test_display_interpretation_set_markdown ---")
-
-
-# --- Test for display_scene_info ---
 
 
 def test_display_scene_info_markdown(mock_console: MagicMock, test_scene: Scene):
