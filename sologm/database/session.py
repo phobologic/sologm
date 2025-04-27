@@ -54,7 +54,8 @@ class DatabaseManager:
 
     _instance: Optional["DatabaseManager"] = None
     engine: Engine
-    session: scoped_session
+    # Step 1.1: Change session attribute from scoped_session to sessionmaker
+    session: sessionmaker
 
     @classmethod
     def get_instance(
@@ -112,10 +113,8 @@ class DatabaseManager:
             autoflush=False,
             expire_on_commit=False,  # Prevents detached instance errors
         )
-
-        # Create scoped session
-        logger.debug("Creating scoped session")
-        self.session = scoped_session(session_factory)
+        # Step 1.1: Store the sessionmaker instance directly
+        self.session = session_factory
 
     def create_tables(self) -> None:
         """Create all tables defined in the models."""
@@ -123,18 +122,8 @@ class DatabaseManager:
         Base.metadata.create_all(self.engine)
         logger.debug("Database tables created")
 
-    def get_session(self) -> Session:
-        """Get a new session.
-        Returns:
-            A new SQLAlchemy session.
-        """
-        logger.debug("Getting new session")
-        return self.session()
-
-    def close_session(self) -> None:
-        """Close the current session."""
-        logger.debug("Removing session")
-        self.session.remove()
+    # Step 1.1: Remove get_session method
+    # Step 1.1: Remove close_session method
 
     def dispose(self) -> None:
         """Dispose of the engine and all its connections."""
@@ -185,7 +174,8 @@ class SessionContext:
     def __enter__(self) -> Session:
         """Enter context and get a session."""
         logger.debug("Entering session context")
-        self.session = self._db.get_session()
+        # Step 1.2: Create session using the sessionmaker
+        self.session = self._db.session()
         return self.session
 
     def __exit__(
@@ -203,11 +193,11 @@ class SessionContext:
             # No exception, commit
             logger.debug("Committing session")
             self.session.commit()
-
-        # Always close the session
-        logger.debug("Closing session")
-        self.session.close()
-        self._db.close_session()
+        finally:
+            # Step 1.2: Ensure session is always closed, remove call to _db.close_session()
+            if self.session:
+                logger.debug("Closing session")
+                self.session.close()
 
 
 # Convenience functions
@@ -237,13 +227,7 @@ def initialize_database(
     return db
 
 
-def get_session() -> Session:
-    """Get a database session.
-    Returns:
-        A new SQLAlchemy session.
-    """
-    logger.debug("Getting new session from singleton")
-    return DatabaseManager.get_instance().get_session()
+# Step 1.3: Remove standalone get_session() function
 
 
 def get_db_context() -> SessionContext:
