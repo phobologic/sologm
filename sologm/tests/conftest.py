@@ -529,6 +529,8 @@ def test_hybrid_property_game(
             },
         },
     }
+
+
 # The duplicate factory fixtures and object fixtures below this line have been removed
 # as part of the cleanup in Step 4.5.
 
