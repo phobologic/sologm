@@ -138,21 +138,22 @@ def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
 
 # Session context fixture
 @pytest.fixture
-def session_context() -> Callable[[], SessionContext]:
-    """Create a SessionContext for testing.
+def session_context() -> SessionContext: # Changed return type hint
+    """Provides a SessionContext instance for testing.
 
     This fixture provides the same session context that application code uses,
     ensuring tests mirror real usage patterns. Use this as the primary way to
     access the database in tests.
 
     Example:
-        def test_something(session_context):
-            with session_context as session:
+        def test_something(session_context): # Fixture name used directly
+            with session_context as session: # Used directly as context manager
                 # Test code using session
     """
-    from sologm.database.session import get_db_context
+    from sologm.database.session import SessionContext # Import the class
 
-    return get_db_context()
+    # Return an instance of the context manager
+    return SessionContext()
 
 
 # Manager fixtures
@@ -300,6 +301,91 @@ def create_test_event() -> Callable[..., Event]:
         return event
 
     return _create_event
+
+
+@pytest.fixture
+def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
+    """Factory fixture to create test interpretation sets."""
+    # Import locally
+    from sologm.models.interpretation_set import InterpretationSet
+
+    def _create_interpretation_set(
+        session: Session,
+        scene_id: str,
+        context: str = "Test Context",
+        oracle_results: str = "Test Oracle Results",
+        retry_attempt: int = 0,
+        is_current: bool = False,
+    ) -> InterpretationSet:
+        # Placeholder: Needs implementation using InterpretationSetManager if it exists,
+        # or direct model creation + session add/flush/refresh.
+        # For now, just create directly to satisfy fixture requirement.
+        managers = create_all_managers(session)
+        # Assuming InterpretationSetManager exists and has a create method
+        # If not, use InterpretationSet.create(...) and session.add/flush/refresh
+        # interp_set = managers.interpretation.create_interpretation_set(...) # Example
+        interp_set = InterpretationSet.create(
+            scene_id=scene_id,
+            context=context,
+            oracle_results=oracle_results,
+            retry_attempt=retry_attempt,
+            is_current=is_current,
+        )
+        session.add(interp_set)
+        session.flush()
+        try:
+            session.refresh(interp_set, attribute_names=["scene", "interpretations"])
+        except Exception as e:
+            logger.warning(
+                f"Warning: Error refreshing relationships in create_test_interpretation_set factory: {e}"
+            )
+        logger.warning(
+            "create_test_interpretation_set fixture is using placeholder implementation."
+        )
+        return interp_set
+
+    return _create_interpretation_set
+
+
+@pytest.fixture
+def create_test_interpretation() -> Callable[..., "Interpretation"]:
+    """Factory fixture to create test interpretations."""
+    # Import locally
+    from sologm.models.interpretation import Interpretation
+
+    def _create_interpretation(
+        session: Session,
+        set_id: str,
+        title: str = "Test Interpretation",
+        description: str = "A test interpretation.",
+        is_selected: bool = False,
+    ) -> Interpretation:
+        # Placeholder: Needs implementation using InterpretationManager if it exists,
+        # or direct model creation + session add/flush/refresh.
+        managers = create_all_managers(session)
+        # Assuming InterpretationManager exists and has a create method
+        # If not, use Interpretation.create(...) and session.add/flush/refresh
+        # interp = managers.interpretation.create_interpretation(...) # Example
+        interp = Interpretation.create(
+            set_id=set_id,
+            title=title,
+            description=description,
+            is_selected=is_selected,
+        )
+        session.add(interp)
+        session.flush()
+        try:
+            session.refresh(interp, attribute_names=["interpretation_set", "event"])
+        except Exception as e:
+            logger.warning(
+                f"Warning: Error refreshing relationships in create_test_interpretation factory: {e}"
+            )
+        logger.warning(
+            "create_test_interpretation fixture is using placeholder implementation."
+        )
+        return interp
+
+    return _create_interpretation
 
 
 # Step 4.5: Remove Object Fixtures (test_game, test_act, test_scene, test_events, etc.)

@@ -39,13 +39,13 @@ class TestEventManager:
 
     def test_add_event(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
     ):
         """Test adding an event."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -68,13 +68,13 @@ class TestEventManager:
 
     def test_add_event_with_active_scene(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
     ):
         """Test adding an event using the active scene."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             # Ensure scene is active (default in helper)
             _, _, scene = create_base_test_data(
@@ -86,9 +86,9 @@ class TestEventManager:
             assert event.scene_id == scene.id
             assert event.description == "Test event with active scene"
 
-    def test_add_event_nonexistent_scene(self, session_context: Callable):
+    def test_add_event_nonexistent_scene(self, session_context: SessionContext): # Updated type hint
         """Test adding an event to a nonexistent scene."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             with pytest.raises(EventError) as exc:
                 managers.event.add_event(
@@ -99,13 +99,13 @@ class TestEventManager:
 
     def test_list_events_empty(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
     ):
         """Test listing events when none exist."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -116,14 +116,14 @@ class TestEventManager:
 
     def test_list_events_with_active_scene(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
         create_test_event: Callable,
     ):
         """Test listing events using the active scene."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             # Ensure scene is active (default in helper)
             _, _, scene = create_base_test_data(
@@ -142,14 +142,14 @@ class TestEventManager:
 
     def test_list_events(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
         create_test_event: Callable,
     ):
         """Test listing multiple events."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -167,14 +167,14 @@ class TestEventManager:
 
     def test_list_events_with_limit(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
         create_test_event: Callable,
     ):
         """Test listing events with a limit."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -190,9 +190,9 @@ class TestEventManager:
             assert events[0].description == "Third event"
             assert events[1].description == "Second event"
 
-    def test_list_events_nonexistent_scene(self, session_context: Callable):
+    def test_list_events_nonexistent_scene(self, session_context: SessionContext): # Updated type hint
         """Test listing events for a nonexistent scene."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             with pytest.raises(EventError) as exc:
                 managers.event.list_events(scene_id="nonexistent-scene")
@@ -200,13 +200,13 @@ class TestEventManager:
 
     def test_get_active_scene_id(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
     ):
         """Test getting active scene ID."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             # Ensure scene is active (default in helper)
             _, _, scene = create_base_test_data(
@@ -216,9 +216,9 @@ class TestEventManager:
             scene_id = managers.event.get_active_scene_id()
             assert scene_id == scene.id
 
-    def test_get_active_scene_id_no_game(self, session_context: Callable):
+    def test_get_active_scene_id_no_game(self, session_context: SessionContext): # Updated type hint
         """Test getting active scene ID with no active game."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             # Deactivate all games using the test's session
             session.query(Game).update({Game.is_active: False})
@@ -237,15 +237,15 @@ class TestEventManager:
     # )
     def test_add_event_from_interpretation(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        create_test_interpretation_set: Callable,  # Assuming this exists and is refactored
-        create_test_interpretation: Callable,  # Assuming this exists and is refactored
+        create_test_interpretation_set: Callable,
+        create_test_interpretation: Callable,
     ):
         """Test adding an event from an interpretation."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -275,14 +275,14 @@ class TestEventManager:
 
     def test_get_event(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
         create_test_event: Callable,
     ):
         """Test getting an event by ID."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -309,9 +309,9 @@ class TestEventManager:
             assert retrieved_event.id == event.id
             assert retrieved_event.description == "Test event to retrieve"
 
-    def test_get_nonexistent_event(self, session_context: Callable):
+    def test_get_nonexistent_event(self, session_context: SessionContext): # Updated type hint
         """Test getting a nonexistent event."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             # Try to get a nonexistent event
             event = managers.event.get_event("nonexistent-event-id")
@@ -321,14 +321,14 @@ class TestEventManager:
 
     def test_update_event(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
         create_test_event: Callable,
     ):
         """Test updating an event's description."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -365,14 +365,14 @@ class TestEventManager:
 
     def test_update_event_with_source(
         self,
-        session_context: Callable,
+        session_context: SessionContext, # Updated type hint
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
         create_test_event: Callable,
     ):
         """Test updating an event's description and source."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -411,9 +411,9 @@ class TestEventManager:
             assert retrieved_event.description == "Updated description"
             assert retrieved_event.source.name == "oracle"
 
-    def test_update_nonexistent_event(self, session_context: Callable):
+    def test_update_nonexistent_event(self, session_context: SessionContext): # Updated type hint
         """Test updating a nonexistent event."""
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             # Try to update a nonexistent event
             with pytest.raises(EventError) as exc:
@@ -424,10 +424,10 @@ class TestEventManager:
             # Verify the correct error was raised
             assert "Event with ID 'nonexistent-event-id' not found" in str(exc.value)
 
-    def test_get_event_sources(self, session_context: Callable):
+    def test_get_event_sources(self, session_context: SessionContext): # Updated type hint
         """Test getting all event sources."""
         # Sources are initialized by the initialize_event_sources fixture in conftest
-        with session_context() as session:
+        with session_context as session: # Use fixture directly
             managers = create_all_managers(session)
             # Get all event sources
             sources = managers.event.get_event_sources()
