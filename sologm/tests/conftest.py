@@ -411,102 +411,10 @@ def test_hybrid_expressions() -> Callable[[Type[Base], str, Any, int], None]:
 
 
 # Complex test fixtures like test_game_with_scenes, test_game_with_complete_hierarchy,
-# and test_hybrid_property_game have been removed as per Phase 4, Step 4.5, Option 1.
-# Tests requiring these setups should now build them within the test function
-# using the refactored factory fixtures and the session_context.
-
-
-@pytest.fixture(autouse=True)
-def initialize_event_sources(session_context):
-    """Initialize event sources for testing."""
-    sources = ["manual", "oracle", "dice"]
-    with session_context as session:
-        for source_name in sources:
-            existing = (
-                session.query(EventSource)
-                .filter(EventSource.name == source_name)
-                .first()
-            )
-            if not existing:
-                source = EventSource.create(name=source_name)
-                session.add(source)
-        # Session is committed automatically when context exits
-
-
-# Helper fixtures for testing model properties
-@pytest.fixture
-def assert_model_properties():
-    """Helper fixture to assert model properties work correctly.
-
-    This fixture provides a function that can be used to verify that model properties
-    and hybrid properties return the expected values.
-
-    Example:
-        def test_game_properties(test_game, assert_model_properties):
-            expected = {
-                'has_acts': True,
-                'act_count': 2,
-                'has_active_act': True
-            }
-            assert_model_properties(test_game, expected)
-    """
-
-    def _assert_properties(model, expected_properties):
-        """Assert that model properties match expected values.
-
-        Args:
-            model: The model instance to check
-            expected_properties: Dict of property_name: expected_value
-        """
-        for prop_name, expected_value in expected_properties.items():
-            assert hasattr(model, prop_name), (
-                f"Model {model.__class__.__name__} has no property {prop_name}"
-            )
-            actual_value = getattr(model, prop_name)
-            assert actual_value == expected_value, (
-                f"Property {prop_name} doesn't match expected value. "
-                f"Expected: {expected_value}, Got: {actual_value}"
-            )
-
-    return _assert_properties
-
-
-@pytest.fixture
-def test_hybrid_expressions():
-    """Test fixture for SQL expressions of hybrid properties.
-
-    This fixture provides a function that can be used to verify that hybrid property
-    SQL expressions work correctly in queries.
-
-    Example:
-        def test_game_has_acts_expression(test_hybrid_expressions):
-            test_hybrid_expressions(Game, 'has_acts', True, 1)  # Expect 1 game with acts
-    """
-
-    def _test_expression(model_class, property_name, filter_condition, expected_count):
-        """Test that a hybrid property's SQL expression works correctly.
-
-        Args:
-            model_class: The model class to query
-            property_name: The name of the hybrid property
-            filter_condition: The condition to filter by (True/False)
-            expected_count: The expected count of results
-        """
-        from sologm.database.session import get_db_context
-
-        with get_db_context() as session:
-            property_expr = getattr(model_class, property_name)
-            query = session.query(model_class).filter(property_expr == filter_condition)
-            result_count = query.count()
-            assert result_count == expected_count, (
-                f"Expected {expected_count} results for {model_class.__name__}.{property_name} == {filter_condition}, "
-                f"got {result_count}"
-            )
-
-    return _test_expression
-
-
-# Complex test fixtures like test_game_with_scenes, test_game_with_complete_hierarchy,
 # and test_hybrid_property_game have been removed.
 # Tests requiring these setups should now build them within the test function
 # using the refactored factory fixtures and the session_context.
+
+
+# NOTE: The duplicate initialize_event_sources and helper fixtures below
+# seem to be artifacts from a previous merge/edit. Removing them.
