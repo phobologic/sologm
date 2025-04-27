@@ -34,40 +34,24 @@ class BaseManager(Generic[T, M]):
 
     Attributes:
         logger: Logger instance for this manager
-        _session: Optional database session (primarily for testing)
+        _session: Database session provided during initialization
     """
 
-    def __init__(self, session: Optional[Session] = None):
+    # Step 2.1: Change BaseManager.__init__ to require a session
+    def __init__(self, session: Session):
         """Initialize the base manager.
 
         Args:
-            session: Optional session for testing or CLI command injection
+            session: Active SQLAlchemy session for database operations
         """
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._session = session
+        self.logger.debug(
+            f"Initialized {self.__class__.__name__} with session ID: {id(self._session)}"
+        )
 
-    def _get_session(self) -> Tuple[Session, bool]:
-        """Get a database session.
-
-        Returns:
-            Tuple of (session, should_close)
-        """
-        if self._session is not None:
-            # Use provided session (for testing or CLI command)
-            self.logger.debug(
-                f"Using provided session ID: {id(self._session)} for {self.__class__.__name__}"
-            )
-            return self._session, False
-        else:
-            # Get a new session from the singleton
-            self.logger.debug(
-                f"Getting new session from singleton for {self.__class__.__name__}"
-            )
-            from sologm.database.session import get_session
-
-            session = get_session()
-            self.logger.debug(f"Got new session ID: {id(session)} from singleton")
-            return session, False  # Don't close here
+    # Step 2.2: Remove BaseManager._get_session
+    # The _get_session method is no longer needed as the session is injected.
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
@@ -115,30 +99,28 @@ class BaseManager(Generic[T, M]):
         Returns:
             Result of the operation
         """
-        self.logger.debug(f"Executing database operation: {operation_name}")
-        session, should_close = self._get_session()
+        # Step 2.3: Simplify _execute_db_operation
         self.logger.debug(
-            f"Got session ID: {id(session)} for operation {operation_name}, should_close={should_close}"
+            f"Executing database operation: {operation_name} with session ID: {id(self._session)}"
         )
-
+        # Use the manager's session directly, remove transaction logic
         try:
             self.logger.debug(
-                f"Calling operation {operation_name} with session ID: {id(session)}"
+                f"Calling operation {operation_name} with session ID: {id(self._session)}"
             )
-            result = operation(session, *args, **kwargs)
+            # Pass the manager's session to the operation
+            result = operation(self._session, *args, **kwargs)
             self.logger.debug(
-                f"Operation {operation_name} completed, committing transaction with session ID: {id(session)}"
+                f"Operation {operation_name} completed successfully with session ID: {id(self._session)}"
             )
-            session.commit()
-            self.logger.debug(f"Commit successful for operation {operation_name}")
+            # Commit/rollback is handled by the SessionContext caller
             return result
         except Exception as e:
-            # Only handle the transaction rollback, but re-raise the original exception
-            self.logger.debug(
-                f"Rolling back transaction for {operation_name} with session ID: {id(session)}"
+            # Log the error, but let the SessionContext handle rollback
+            self.logger.error(
+                f"Error during database operation '{operation_name}' with session ID {id(self._session)}: {str(e)}",
+                exc_info=True,  # Include traceback in log
             )
-            session.rollback()
-            self.logger.error(f"Error in {operation_name}: {str(e)}")
             raise  # Re-raise the original exception
 
     def get_entity_or_error(
@@ -241,7 +223,8 @@ class BaseManager(Generic[T, M]):
             module = importlib.import_module(module_path)
             manager_class = getattr(module, class_name)
 
-            # Pass our session to the new manager
+            # Step 2.4: Update BaseManager._lazy_init_manager
+            # Ensure the current manager's session is passed to the new manager
             kwargs["session"] = self._session
             self.logger.debug(
                 f"Lazy initializing {class_name} with session ID: {id(self._session)}"
@@ -249,10 +232,15 @@ class BaseManager(Generic[T, M]):
 
             setattr(self, attr_name, manager_class(**kwargs))
 
-            # Log the session of the newly created manager
+            # Log the session of the newly created manager to verify propagation
             new_manager = getattr(self, attr_name)
-            self.logger.debug(
-                f"Newly created {class_name} has session ID: {id(new_manager._session)}"
-            )
+            if hasattr(new_manager, "_session"):
+                self.logger.debug(
+                    f"Newly created {class_name} has session ID: {id(new_manager._session)}"
+                )
+            else:
+                self.logger.warning(
+                    f"Newly created {class_name} does not have a _session attribute."
+                )
 
         return getattr(self, attr_name)
