@@ -334,7 +334,26 @@ def test_display_interpretation_set_markdown(
     test_interpretation_set: InterpretationSet,
     test_interpretations: List[Interpretation],
 ):
-    """Test displaying an interpretation set as Markdown."""
+    """Tests the Markdown rendering of an InterpretationSet.
+
+    This test verifies that the `display_interpretation_set` method of the
+    `MarkdownRenderer` produces the correct Markdown output for an
+    `InterpretationSet` object.
+
+    It specifically checks:
+    - The rendering of the context section (header, context text, results text)
+      when `show_context` is True.
+    - That the context section is *not* rendered when `show_context` is False.
+    - The rendering of the instruction footer containing the set ID and usage hint.
+    - That the correct number of `console.print` calls are made, implying that
+      `display_interpretation` is invoked for each interpretation within the set
+      (though the exact output of `display_interpretation` is tested separately).
+
+    Args:
+        mock_console: The mocked Rich Console fixture.
+        test_interpretation_set: Fixture providing an InterpretationSet instance.
+        test_interpretations: Fixture providing a list of Interpretation instances.
+    """
     renderer = MarkdownRenderer(mock_console)
     # Ensure the set has the interpretations linked for the test
     test_interpretation_set.interpretations = test_interpretations
