@@ -414,7 +414,3 @@ def test_hybrid_expressions() -> Callable[[Type[Base], str, Any, int], None]:
 # and test_hybrid_property_game have been removed.
 # Tests requiring these setups should now build them within the test function
 # using the refactored factory fixtures and the session_context.
-
-
-# NOTE: The duplicate initialize_event_sources and helper fixtures below
-# seem to be artifacts from a previous merge/edit. Removing them.
