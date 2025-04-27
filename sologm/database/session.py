@@ -110,7 +110,7 @@ class DatabaseManager:
         session_factory = sessionmaker(
             bind=self.engine,
             autocommit=False,
-            autoflush=False,
+            autoflush=True, # <<< CHANGE THIS TO True
             expire_on_commit=False,  # Prevents detached instance errors
         )
         # Step 1.1: Store the sessionmaker instance directly
