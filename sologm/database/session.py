@@ -193,13 +193,19 @@ class SessionContext:
             else:
                 # No exception, commit *only if the transaction is still active*
                 # (i.e., hasn't been rolled back explicitly within the context)
-                is_transaction_active = self.session.transaction and self.session.transaction.is_active
-                logger.debug(f"Session active: {self.session.is_active}, Transaction active: {is_transaction_active}")
+                is_transaction_active = (
+                    self.session.transaction and self.session.transaction.is_active
+                )
+                logger.debug(
+                    f"Session active: {self.session.is_active}, Transaction active: {is_transaction_active}"
+                )
                 if self.session.is_active and is_transaction_active:
                     logger.debug("Committing session")
                     self.session.commit()
                 elif self.session.is_active:
-                    logger.debug("Transaction is not active (likely rolled back), skipping commit.")
+                    logger.debug(
+                        "Transaction is not active (likely rolled back), skipping commit."
+                    )
                 else:
                     logger.debug("Session is not active, skipping commit.")
 
