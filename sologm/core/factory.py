@@ -1,4 +1,4 @@
-features/session_management/plan.md
+features / session_management / plan.md
 """Factory functions for creating core components."""
 
 import logging
