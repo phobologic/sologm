@@ -396,6 +396,14 @@ def create_test_act(act_manager):
 
         return act
 
+    return _create_act
+
+
+@pytest.fixture
+def create_test_scene(scene_manager):
+    """Factory fixture to create test scenes using the SceneManager.
+
+    This uses the SceneManager to create scenes, which better reflects
     how the application code would create scenes.
     """
 
