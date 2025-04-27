@@ -28,12 +28,12 @@ class TestGameManager:
         assert game.modified_at is not None
         assert game.is_active is True
 
-            # Verify game was saved to database
-            db_game = session.get(Game, game.id)
-            assert db_game is not None
-            assert db_game.name == "Test Game"
-            assert db_game.description == "A test game"
-            assert db_game.is_active is True
+        # Verify game was saved to database
+        db_game = session.get(Game, game.id)
+        assert db_game is not None
+        assert db_game.name == "Test Game"
+        assert db_game.description == "A test game"
+        assert db_game.is_active is True
 
     def test_create_game_inactive(self, session_context: SessionContext) -> None:
         """Test creating a new inactive game."""
