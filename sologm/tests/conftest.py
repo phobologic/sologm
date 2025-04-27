@@ -1,13 +1,12 @@
 """Common test fixtures for all sologm tests."""
 
 import logging
-from typing import Any, List  # Added List
+from typing import Any  # Added List
 from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session  # Ensure Session is imported
-from sqlalchemy import create_engine
 
 from sologm.core.act import ActManager
 from sologm.core.dice import DiceManager
@@ -18,11 +17,7 @@ from sologm.core.scene import SceneManager
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.base import Base
 from sologm.models.dice import DiceRoll
-from sologm.models.event import Event  # Import Event model
 from sologm.models.event_source import EventSource
-from sologm.models.game import Game  # Import Game model
-from sologm.models.act import Act  # Import Act model
-from sologm.models.scene import Scene  # Import Scene model
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import SceneStatus
 from sologm.utils.config import Config
