@@ -641,7 +641,9 @@ class TestActManager:
             )
             # Mock the AnthropicClient class in its original module
             # When AnthropicClient() is called inside generate_act_summary, it will use this patched version
-            monkeypatch.setattr("sologm.integrations.anthropic.AnthropicClient", lambda: mock_client)
+            monkeypatch.setattr(
+                "sologm.integrations.anthropic.AnthropicClient", lambda: mock_client
+            )
 
             # Test the method
             result = managers.act.generate_act_summary(
@@ -686,7 +688,9 @@ class TestActManager:
                 managers.act, "prepare_act_data_for_summary", mock_prepare_data
             )
             # Mock the AnthropicClient class in its original module
-            monkeypatch.setattr("sologm.integrations.anthropic.AnthropicClient", lambda: mock_client)
+            monkeypatch.setattr(
+                "sologm.integrations.anthropic.AnthropicClient", lambda: mock_client
+            )
 
             # Test the method and assert APIError is raised
             with pytest.raises(APIError, match="Failed to generate act summary"):
