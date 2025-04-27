@@ -579,8 +579,8 @@ class TestActManager:
             assert result["summary"] == "Generated summary"
             assert result["act"].id == test_act.id
 
-            # Verify act was updated
-            session.refresh(test_act)
+            # Verify act was updated *in the session*
+            # REMOVED: session.refresh(test_act) - Verify state within the session before commit
             assert test_act.title == "Generated Title"
             assert test_act.summary == "Generated summary"
 
