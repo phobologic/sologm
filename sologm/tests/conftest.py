@@ -1,15 +1,16 @@
 """Common test fixtures for all sologm tests."""
 
 import logging
-from typing import Any, List  # Added List
+from typing import Any, Callable, Dict, Generator, List, Optional, Type
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 
 # Import the factory function
 from sologm.core.factory import create_all_managers
+from sologm.database.session import DatabaseManager, SessionContext
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.base import Base
 from sologm.models.dice import DiceRoll
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Renamed fixture, removed autouse=True and the 'with patch(...)' block
 @pytest.fixture
-def mock_config_no_api_key():
+def mock_config_no_api_key() -> MagicMock:
     """
     Creates a mock Config object that simulates the anthropic_api_key
     not being set (returns None when get() is called for that key).
@@ -56,7 +57,7 @@ def mock_config_no_api_key():
 
 # Database fixtures
 @pytest.fixture
-def db_engine():
+def db_engine() -> Generator[Engine, None, None]:
     """Create a new in-memory SQLite database for each test."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -68,7 +69,7 @@ def db_engine():
 
 
 @pytest.fixture(scope="function", autouse=True)
-def database_manager(db_engine):
+def database_manager(db_engine: Engine) -> Generator[DatabaseManager, None, None]:
     """Create a DatabaseManager instance for testing.
 
     This fixture replaces the singleton DatabaseManager instance with a test-specific
@@ -106,13 +107,13 @@ def database_manager(db_engine):
 
 # Mock fixtures
 @pytest.fixture
-def mock_anthropic_client():
+def mock_anthropic_client() -> MagicMock:
     """Create a mock Anthropic client."""
     return MagicMock(spec=AnthropicClient)
 
 
 @pytest.fixture
-def cli_test():
+def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
     """Helper for testing CLI command patterns.
 
     This fixture provides a function that executes test code within a session context,
@@ -128,7 +129,7 @@ def cli_test():
             assert game.name == "Test Game"
     """
 
-    def run_with_context(test_func):
+    def run_with_context(test_func: Callable[[Session], Any]) -> Any:
         from sologm.database.session import get_db_context
 
         with get_db_context() as session:
@@ -139,7 +140,7 @@ def cli_test():
 
 # Session context fixture
 @pytest.fixture
-def session_context():
+def session_context() -> Callable[[], SessionContext]:
     """Create a SessionContext for testing.
 
     This fixture provides the same session context that application code uses,
@@ -162,11 +163,14 @@ def session_context():
 
 # Step 4.4: Refactor Factory Fixtures (`create_test_*`)
 @pytest.fixture
-def create_test_game():
+def create_test_game() -> Callable[..., Game]:
     """Factory fixture to create test games using the GameManager."""
 
     def _create_game(
-        session: Session, name="Test Game", description="A test game", is_active=True
+        session: Session,
+        name: str = "Test Game",
+        description: str = "A test game",
+        is_active: bool = True,
     ) -> Game:
         managers = create_all_managers(session)
         game = managers.game.create_game(name, description, is_active=is_active)
@@ -184,17 +188,20 @@ def create_test_game():
 
 
 @pytest.fixture
-def create_test_act():
+def create_test_act() -> Callable[..., "Act"]:  # Use quotes for forward reference
     """Factory fixture to create test acts using the ActManager."""
+
+    # Import Act locally to avoid circular dependency issues at module level
+    from sologm.models.act import Act
 
     def _create_act(
         session: Session,
         game_id: str,
-        title="Test Act",
-        summary="A test act",
-        is_active=True,
-        sequence=None,
-    ):
+        title: Optional[str] = "Test Act",
+        summary: Optional[str] = "A test act",
+        is_active: bool = True,
+        sequence: Optional[int] = None,
+    ) -> Act:
         managers = create_all_managers(session)
         act = managers.act.create_act(
             game_id=game_id,
@@ -222,16 +229,16 @@ def create_test_act():
 
 
 @pytest.fixture
-def create_test_scene():
+def create_test_scene() -> Callable[..., Scene]:
     """Factory fixture to create test scenes using the SceneManager."""
 
     def _create_scene(
         session: Session,
         act_id: str,
-        title="Test Scene",
-        description="A test scene",
-        is_active=True,
-        status=SceneStatus.ACTIVE,
+        title: str = "Test Scene",
+        description: str = "A test scene",
+        is_active: bool = True,
+        status: SceneStatus = SceneStatus.ACTIVE,
     ) -> Scene:
         managers = create_all_managers(session)
         scene = managers.scene.create_scene(
@@ -265,15 +272,15 @@ def create_test_scene():
 
 
 @pytest.fixture
-def create_test_event():
+def create_test_event() -> Callable[..., Event]:
     """Factory fixture to create test events using the EventManager."""
 
     def _create_event(
         session: Session,
         scene_id: str,
-        description="Test event",
-        source="manual",
-        interpretation_id=None,
+        description: str = "Test event",
+        source: str = "manual",
+        interpretation_id: Optional[str] = None,
     ) -> Event:
         managers = create_all_managers(session)
         event = managers.event.add_event(
@@ -309,7 +316,7 @@ def create_test_event():
 
 # Fixtures that remain valid or are updated
 @pytest.fixture(autouse=True)
-def initialize_event_sources(session_context):
+def initialize_event_sources(session_context: Callable[[], SessionContext]) -> None:
     """Initialize event sources for testing using the session_context."""
     sources = ["manual", "oracle", "dice"]
     with session_context as session:
@@ -327,7 +334,7 @@ def initialize_event_sources(session_context):
 
 # Helper fixtures for testing model properties
 @pytest.fixture
-def assert_model_properties():
+def assert_model_properties() -> Callable[[Any, Dict[str, Any]], None]:
     """Helper fixture to assert model properties work correctly.
 
     This fixture provides a function that can be used to verify that model properties
@@ -343,7 +350,7 @@ def assert_model_properties():
             assert_model_properties(test_game, expected)
     """
 
-    def _assert_properties(model, expected_properties):
+    def _assert_properties(model: Any, expected_properties: Dict[str, Any]) -> None:
         """Assert that model properties match expected values.
 
         Args:
@@ -364,7 +371,7 @@ def assert_model_properties():
 
 
 @pytest.fixture
-def test_hybrid_expressions():
+def test_hybrid_expressions() -> Callable[[Type[Base], str, Any, int], None]:
     """Test fixture for SQL expressions of hybrid properties.
 
     This fixture provides a function that can be used to verify that hybrid property
@@ -375,7 +382,12 @@ def test_hybrid_expressions():
             test_hybrid_expressions(Game, 'has_acts', True, 1)  # Expect 1 game with acts
     """
 
-    def _test_expression(model_class, property_name, filter_condition, expected_count):
+    def _test_expression(
+        model_class: Type[Base],
+        property_name: str,
+        filter_condition: Any,
+        expected_count: int,
+    ) -> None:
         """Test that a hybrid property's SQL expression works correctly.
 
         Args:
