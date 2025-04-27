@@ -191,11 +191,20 @@ class SessionContext:
                 logger.debug(f"Exception in session context: {exc_val}. Rolling back")
                 self.session.rollback()
             else:
-                # No exception, commit
-                logger.debug("Committing session")
-                self.session.commit()
+                # No exception, commit *only if the transaction is still active*
+                # (i.e., hasn't been rolled back explicitly within the context)
+                is_transaction_active = self.session.transaction and self.session.transaction.is_active
+                logger.debug(f"Session active: {self.session.is_active}, Transaction active: {is_transaction_active}")
+                if self.session.is_active and is_transaction_active:
+                    logger.debug("Committing session")
+                    self.session.commit()
+                elif self.session.is_active:
+                    logger.debug("Transaction is not active (likely rolled back), skipping commit.")
+                else:
+                    logger.debug("Session is not active, skipping commit.")
+
         finally:
-            # Step 1.2: Ensure session is always closed, remove call to _db.close_session()
+            # Ensure session is always closed
             if self.session:
                 logger.debug("Closing session")
                 self.session.close()
