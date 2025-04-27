@@ -347,9 +347,7 @@ class TestEventManager:
                 logger.debug(f"Event source name: {event.source.name}")
 
             # Update the event
-            updated_event = managers.event.update_event(
-                event.id, "Updated description"
-            )
+            updated_event = managers.event.update_event(event.id, "Updated description")
             logger.debug(f"Updated event: {updated_event}")
             logger.debug(f"Updated event description: {updated_event.description}")
             logger.debug(f"Updated event source_id: {updated_event.source_id}")
