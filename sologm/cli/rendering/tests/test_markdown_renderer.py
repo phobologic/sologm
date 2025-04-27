@@ -520,6 +520,9 @@ def test_display_act_info_no_scenes_markdown(
     assert mock_console.print.call_count == 2
 
 
+# Import truncate_text utility
+from sologm.cli.utils.display import truncate_text
+
 # --- Test for display_interpretation_sets_table ---
 
 
@@ -542,14 +545,22 @@ def test_display_interpretation_sets_table_markdown(
 
     renderer.display_interpretation_sets_table(interp_sets)
 
+    # Use the actual values from the fixture, truncate_text handles ellipsis if needed
+    truncated_context = truncate_text(
+        test_interpretation_set.context, max_length=40
+    )
+    truncated_results = truncate_text(
+        test_interpretation_set.oracle_results, max_length=40
+    )
+
     expected_output = (
         "### Oracle Interpretation Sets\n\n"
         "| ID | Scene | Context | Oracle Results | Created | Status | Count |\n"
         "|---|---|---|---|---|---|---|\n"
         f"| `{test_interpretation_set.id}` "
         f"| {test_scene.title} "
-        f"| {test_interpretation_set.context[:40]}... "  # Assuming truncation
-        f"| {test_interpretation_set.oracle_results[:40]}... "  # Assuming truncation
+        f"| {truncated_context} "
+        f"| {truncated_results} "
         f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')} "
         f"| Resolved "
         f"| {len(test_interpretations)} |"
@@ -629,7 +640,7 @@ def test_display_act_completion_success_markdown(
         f"*   **Sequence:** Act {test_act.sequence}\n"
         f"*   **Status:** Completed\n\n"
         f"**Final Title:**\n> {test_act.title}\n\n"
-        f"**Final Summary:**\n> {test_act.summary}\n"
+        f"**Final Summary:**\n> {test_act.summary}"  # Removed trailing \n due to .strip()
     )
     mock_console.print.assert_called_once_with(expected_output)
 
@@ -666,11 +677,11 @@ def test_display_act_edited_content_preview_markdown(mock_console: MagicMock):
     renderer.display_act_edited_content_preview(edited_results)
 
     expected_output = (
-        "\n### Preview of Edited Content:\n\n"
+        "### Preview of Edited Content:\n\n"  # Removed leading \n due to .strip()
         "**Edited Title:**\n"
         "> Edited Title\n\n"
         "**Edited Summary:**\n"
-        "> Edited Summary\n"
+        "> Edited Summary"  # Removed trailing \n due to .strip()
     )
     mock_console.print.assert_called_once_with(expected_output)
 
