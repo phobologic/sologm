@@ -152,9 +152,7 @@ class TestGameManager:
         """Test creating a game with a duplicate name raises an error."""
         with session_context as session:
             managers = create_all_managers(session)
-            managers.game.create_game(
-                name="Duplicate Name", description="First game"
-            )
+            managers.game.create_game(name="Duplicate Name", description="First game")
 
             with pytest.raises(GameError) as exc:
                 managers.game.create_game(
@@ -268,9 +266,7 @@ class TestGameManager:
             active_game = managers.game.get_active_game()
             assert active_game is None
 
-    def test_deactivate_nonexistent_game(
-        self, session_context: SessionContext
-    ) -> None:
+    def test_deactivate_nonexistent_game(self, session_context: SessionContext) -> None:
         """Test deactivating a nonexistent game raises an error."""
         with session_context as session:
             managers = create_all_managers(session)
