@@ -637,7 +637,7 @@ def test_events(
 def test_interpretation_set(
     test_scene, db_session: Session
 ):  # Inject db_session and test_scene
-    """Create a test interpretation set attached to the test's session."""
+    """Create a test interpretation set attached to the test session."""
     # test_scene fixture already returns a session-bound object
     interp_set = InterpretationSet.create(
         scene_id=test_scene.id,
