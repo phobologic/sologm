@@ -411,5 +411,5 @@ class TestGameManager:
                 session.add(game2)
                 session.flush()  # Trigger the unique constraint check
                 # *** ADD ROLLBACK HERE ***
-                session.rollback() # Clean up session state after expected error
+                session.rollback()  # Clean up session state after expected error
             assert "unique constraint" in str(exc.value).lower()
