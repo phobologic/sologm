@@ -531,32 +531,31 @@ def test_display_act_info_markdown(
     # This should match the output of display_scenes_table called with the active scene
     # Determine active status based on how display_scenes_table is called
     # display_act_info finds the active scene ID and passes it.
-    active_scene_id_in_test = test_scene.id # Assuming fixture sets is_active=True
+    active_scene_id_in_test = test_scene.id  # Assuming fixture sets is_active=True
     is_active = active_scene_id_in_test and test_scene.id == active_scene_id_in_test
     active_marker = "✓" if is_active else ""
     scene_title_display = f"**{test_scene.title}**" if is_active else test_scene.title
-    scene_description = test_scene.description # display_scenes_table doesn't truncate
+    scene_description = test_scene.description  # display_scenes_table doesn't truncate
 
     expected_scenes_output = (
         "### Scenes\n\n"  # Header from display_scenes_table
-        "| ID | Title | Description | Status | Current | Sequence |\n" # Columns from display_scenes_table
+        "| ID | Title | Description | Status | Current | Sequence |\n"  # Columns from display_scenes_table
         "|---|---|---|---|---|---|\n"
         f"| `{test_scene.id}` "
-        f"| {scene_title_display} " # Correct title formatting (bold if active)
-        f"| {scene_description} "    # Correct description (no truncation)
+        f"| {scene_title_display} "  # Correct title formatting (bold if active)
+        f"| {scene_description} "  # Correct description (no truncation)
         f"| {test_scene.status.value} "
-        f"| {active_marker} "        # Correct active marker
-        f"| {test_scene.sequence} |" # Correct sequence position
+        f"| {active_marker} "  # Correct active marker
+        f"| {test_scene.sequence} |"  # Correct sequence position
     )
-
 
     # Check that both parts were printed
     # Need to check the calls in order or use assert_any_call carefully
     # The blank line print call happens between act info and scenes table
     calls = mock_console.print.call_args_list
-    assert len(calls) == 3 # Act Info, Blank Line, Scenes Table
+    assert len(calls) == 3  # Act Info, Blank Line, Scenes Table
     assert calls[0].args[0] == expected_act_output
-    assert calls[1].args[0] == "" # Check for the blank line
+    assert calls[1].args[0] == ""  # Check for the blank line
     assert calls[2].args[0] == expected_scenes_output
 
     # Alternative using assert_any_call (less strict about order/intermediate calls)
