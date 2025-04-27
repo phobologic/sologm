@@ -970,6 +970,12 @@ def test_hybrid_property_game(
     }
 
 
+# Note: The duplicate definitions of create_test_xxx fixtures have been removed
+# by applying the changes above, ensuring only the manager-based versions remain.
+# Similarly, the duplicate definitions of test_xxx object fixtures have been
+# updated to use the factories and inject db_session for refreshing.
+
+
 @pytest.fixture
 def create_test_act(act_manager):
     """Factory fixture to create test acts using the ActManager.
