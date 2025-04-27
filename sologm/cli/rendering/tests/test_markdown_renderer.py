@@ -546,9 +546,7 @@ def test_display_interpretation_sets_table_markdown(
     renderer.display_interpretation_sets_table(interp_sets)
 
     # Use the actual values from the fixture, truncate_text handles ellipsis if needed
-    truncated_context = truncate_text(
-        test_interpretation_set.context, max_length=40
-    )
+    truncated_context = truncate_text(test_interpretation_set.context, max_length=40)
     truncated_results = truncate_text(
         test_interpretation_set.oracle_results, max_length=40
     )
