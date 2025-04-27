@@ -584,14 +584,23 @@ def test_display_act_info_no_scenes_markdown(
         f"*   **Modified:** {test_act.modified_at.strftime('%Y-%m-%d')}"
     )
 
-    # Expected output for no scenes
-    expected_no_scenes_output = (
-        f"### Scenes in Act {test_act.sequence}\n\nNo scenes in this act yet."
-    )
+    # Expected outputs for the "no scenes" part (now separate)
+    expected_no_scenes_header = f"### Scenes in Act {test_act.sequence}"
+    expected_no_scenes_message = "No scenes in this act yet."
+    expected_blank_line = "" # For the blank lines printed
 
-    mock_console.print.assert_any_call(expected_act_output)
-    mock_console.print.assert_any_call(expected_no_scenes_output)
-    assert mock_console.print.call_count == 2
+    # Check the sequence of calls
+    calls = mock_console.print.call_args_list
+
+    # Expected calls: Act Info, Blank Line, Header, Blank Line, Message
+    assert len(calls) == 5
+
+    # Assert each call in the sequence
+    assert calls[0].args[0] == expected_act_output
+    assert calls[1].args[0] == expected_blank_line
+    assert calls[2].args[0] == expected_no_scenes_header
+    assert calls[3].args[0] == expected_blank_line
+    assert calls[4].args[0] == expected_no_scenes_message
 
 
 # Import truncate_text utility
