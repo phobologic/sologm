@@ -1,25 +1,23 @@
 """Common test fixtures for all sologm tests."""
 
 import logging
-from typing import Any  # Added List
+from typing import Any, List  # Added List
 from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session  # Ensure Session is imported
+from sqlalchemy.orm import Session
 
-from sologm.core.act import ActManager
-from sologm.core.dice import DiceManager
-from sologm.core.event import EventManager
-from sologm.core.game import GameManager
-from sologm.core.oracle import OracleManager
-from sologm.core.scene import SceneManager
+# Import the factory function
+from sologm.core.factory import create_all_managers
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.models.base import Base
 from sologm.models.dice import DiceRoll
+from sologm.models.event import Event  # Added Event import
 from sologm.models.event_source import EventSource
+from sologm.models.game import Game  # Added Game import
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import SceneStatus
+from sologm.models.scene import Scene, SceneStatus  # Added Scene import
 from sologm.utils.config import Config
 
 logger = logging.getLogger(__name__)
@@ -66,20 +64,7 @@ def db_engine():
     engine.dispose()
 
 
-@pytest.fixture
-def db_session(database_manager):
-    """Get a SQLAlchemy session for testing.
-
-    This is primarily used for initializing managers in tests.
-    For most test operations, prefer using session_context.
-    """
-    logger.debug("Initializing db_session")
-    session = database_manager.get_session()
-    logger.debug("Yielding db session.")
-    yield session
-    logger.debug("Closing db session.")
-    session.close()
-    database_manager.close_session()
+# Step 4.1: Remove db_session Fixture
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -172,577 +157,160 @@ def session_context():
 
 
 # Manager fixtures
-# Removed redundant setup_database_manager fixture
-# The database_manager fixture now has autouse=True
+# Step 4.2: Remove Individual Manager Fixtures
 
 
+# Step 4.4: Refactor Factory Fixtures (`create_test_*`)
 @pytest.fixture
-def game_manager(db_session):
-    """Create a GameManager with test session."""
-    return GameManager(session=db_session)
+def create_test_game():
+    """Factory fixture to create test games using the GameManager."""
 
-
-@pytest.fixture
-def act_manager(db_session, game_manager):
-    """Create an ActManager with test session."""
-    return ActManager(session=db_session, game_manager=game_manager)
-
-
-@pytest.fixture
-def scene_manager(db_session, act_manager):
-    """Create a SceneManager with test session."""
-    return SceneManager(session=db_session, act_manager=act_manager)
-
-
-@pytest.fixture
-def event_manager(db_session, scene_manager):
-    """Create an EventManager with test session."""
-    return EventManager(session=db_session, scene_manager=scene_manager)
-
-
-@pytest.fixture
-def dice_manager(db_session, scene_manager):
-    """Create a DiceManager with test session."""
-    # Corrected: Pass scene_manager to DiceManager constructor if needed,
-    # or remove if not. Assuming it might be needed for context.
-    return DiceManager(session=db_session, scene_manager=scene_manager)
-
-
-@pytest.fixture
-def oracle_manager(scene_manager, mock_anthropic_client):
-    """Create an OracleManager with a scene manager and mock client."""
-    # Note: OracleManager might need db_session too, adjust if necessary
-    # Assuming scene_manager provides the session implicitly or it's passed separately
-    return OracleManager(
-        scene_manager=scene_manager,
-        anthropic_client=mock_anthropic_client,
-        # session=db_session # Add this if OracleManager needs session directly
-    )
-
-
-# Model factory fixtures
-@pytest.fixture
-def create_test_game(game_manager, db_session: Session):  # Inject db_session
-    """Factory fixture to create test games attached to the test's session."""
-
-    def _create_game(name="Test Game", description="A test game", is_active=True):
-        game = game_manager.create_game(name, description, is_active=is_active)
-        merged_game = db_session.merge(game)
+    def _create_game(
+        session: Session, name="Test Game", description="A test game", is_active=True
+    ) -> Game:
+        managers = create_all_managers(session)
+        game = managers.game.create_game(name, description, is_active=is_active)
+        # No merge needed, object is already session-bound
         try:
-            # Eagerly load relationships commonly needed
-            db_session.refresh(merged_game, attribute_names=["acts"])
+            # Refresh relationships using the passed-in session
+            session.refresh(game, attribute_names=["acts"])
         except Exception as e:
             logger.warning(
                 f"Warning: Error refreshing relationships in create_test_game factory: {e}"
             )
-        return merged_game  # Return the merged, refreshed object
+        return game  # Return the session-bound, refreshed object
 
     return _create_game
 
 
 @pytest.fixture
-def create_test_act(act_manager, db_session: Session):  # Inject db_session
-    """Factory fixture to create test acts attached to the test's session."""
+def create_test_act():
+    """Factory fixture to create test acts using the ActManager."""
 
     def _create_act(
-        game_id,
+        session: Session,
+        game_id: str,
         title="Test Act",
         summary="A test act",
         is_active=True,
-        sequence=None,  # Add sequence parameter
+        sequence=None,
     ):
-        act = act_manager.create_act(
+        managers = create_all_managers(session)
+        act = managers.act.create_act(
             game_id=game_id,
             title=title,
             summary=summary,
             make_active=is_active,
         )
-        # If sequence was specified, update it directly before merging
+        # If sequence was specified, update it directly using the correct session
         if sequence is not None:
-            # Use the manager's session temporarily for the update before merge
-            act_manager_session = act_manager._session
             act.sequence = sequence
-            act_manager_session.add(act)
-            act_manager_session.flush()
+            session.add(act)
+            session.flush()
 
-        merged_act = db_session.merge(act)
+        # No merge needed
         try:
-            # Eagerly load relationships commonly needed
-            db_session.refresh(merged_act, attribute_names=["scenes", "game"])
+            # Refresh relationships using the passed-in session
+            session.refresh(act, attribute_names=["scenes", "game"])
         except Exception as e:
             logger.warning(
                 f"Warning: Error refreshing relationships in create_test_act factory: {e}"
             )
-        return merged_act
+        return act
 
     return _create_act
 
 
 @pytest.fixture
-def create_test_scene(scene_manager, db_session: Session):  # Inject db_session
-    """Factory fixture to create test scenes attached to the test's session."""
+def create_test_scene():
+    """Factory fixture to create test scenes using the SceneManager."""
 
     def _create_scene(
-        act_id,
+        session: Session,
+        act_id: str,
         title="Test Scene",
         description="A test scene",
         is_active=True,
         status=SceneStatus.ACTIVE,
-    ):
-        scene = scene_manager.create_scene(
+    ) -> Scene:
+        managers = create_all_managers(session)
+        scene = managers.scene.create_scene(
             act_id=act_id,
             title=title,
             description=description,
             make_active=is_active,
         )
         if status == SceneStatus.COMPLETED:
-            # Use manager's session for completion logic before merge
-            scene_manager.complete_scene(scene.id)
-            # Re-fetch the scene from manager's session to get updated state
-            scene = scene_manager.get_scene(scene.id)
+            # Use manager for completion logic (it uses the correct session)
+            managers.scene.complete_scene(scene.id)
+            # Re-fetch the scene to get updated state
+            scene = managers.scene.get_scene(scene.id)
 
-        merged_scene = db_session.merge(scene)
+        # No merge needed
         try:
-            # Eagerly load relationships commonly needed
-            db_session.refresh(
-                merged_scene,
+            # Refresh relationships using the passed-in session
+            session.refresh(
+                scene,
                 attribute_names=["act", "events", "interpretations", "dice_rolls"],
             )
-            if merged_scene.act:
-                db_session.refresh(merged_scene.act, attribute_names=["game"])
+            if scene.act:
+                session.refresh(scene.act, attribute_names=["game"])
         except Exception as e:
             logger.warning(
                 f"Warning: Error refreshing relationships in create_test_scene factory: {e}"
             )
-        return merged_scene
+        return scene
 
     return _create_scene
 
 
 @pytest.fixture
-def create_test_event(event_manager, db_session: Session):  # Inject db_session
-    """Factory fixture to create test events attached to the test's session."""
+def create_test_event():
+    """Factory fixture to create test events using the EventManager."""
 
     def _create_event(
-        scene_id, description="Test event", source="manual", interpretation_id=None
-    ):
-        event = event_manager.add_event(
+        session: Session,
+        scene_id: str,
+        description="Test event",
+        source="manual",
+        interpretation_id=None,
+    ) -> Event:
+        managers = create_all_managers(session)
+        event = managers.event.add_event(
             description=description,
             scene_id=scene_id,
             source=source,
             interpretation_id=interpretation_id,
         )
-        merged_event = db_session.merge(event)
+        # No merge needed
         try:
-            # Eagerly load relationships commonly needed
-            db_session.refresh(
-                merged_event, attribute_names=["scene", "source", "interpretation"]
+            # Refresh relationships using the passed-in session
+            session.refresh(
+                event, attribute_names=["scene", "source", "interpretation"]
             )
         except Exception as e:
             logger.warning(
                 f"Warning: Error refreshing relationships in create_test_event factory: {e}"
             )
-        return merged_event
-
-    return _create_event
-
-
-# Common test objects
-@pytest.fixture
-def test_game(game_manager, db_session: Session):  # Inject db_session
-    """Create a test game using the GameManager and refresh needed relationships."""
-    # Get the game instance from the manager (already session-bound)
-    game = game_manager.create_game("Test Game", "A test game", is_active=True)
-    # REMOVED: merged_game = db_session.merge(game)
-
-    try:
-        # Refresh relationships directly on the instance returned by the manager
-        db_session.refresh(game, attribute_names=["acts"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_game: {e}")
-
-    # Return the original object, now refreshed
-    return game
-
-
-@pytest.fixture
-def create_test_act(act_manager):
-    """Factory fixture to create test acts using the ActManager.
-
-    This uses the ActManager to create acts, which better reflects
-    how the application code would create acts.
-    """
-
-    def _create_act(
-        game_id,
-        title="Test Act",
-        summary="A test act",
-        is_active=True,
-        sequence=None,  # Add sequence parameter
-    ):
-        act = act_manager.create_act(
-            game_id=game_id,
-            title=title,
-            summary=summary,
-            make_active=is_active,
-        )
-
-        # If sequence was specified, update it directly
-        if sequence is not None:
-            session = act_manager._session
-            act.sequence = sequence
-            session.add(act)
-            session.flush()
-
-        return act
-
-    return _create_act
-
-
-@pytest.fixture
-def create_test_scene(scene_manager):
-    """Factory fixture to create test scenes using the SceneManager.
-
-    This uses the SceneManager to create scenes, which better reflects
-    how the application code would create scenes.
-    """
-
-    def _create_scene(
-        act_id,
-        title="Test Scene",
-        description="A test scene",
-        is_active=True,
-        status=SceneStatus.ACTIVE,
-    ):
-        scene = scene_manager.create_scene(
-            act_id=act_id,
-            title=title,
-            description=description,
-            make_active=is_active,
-        )
-        if status == SceneStatus.COMPLETED:
-            scene_manager.complete_scene(scene.id)
-        return scene
-
-    return _create_scene
-
-
-@pytest.fixture
-def create_test_event(event_manager):
-    """Factory fixture to create test events using the EventManager.
-
-    This uses the EventManager to create events, which better reflects
-    how the application code would create events.
-    """
-
-    def _create_event(
-        scene_id, description="Test event", source="manual", interpretation_id=None
-    ):
-        event = event_manager.add_event(
-            description=description,
-            scene_id=scene_id,
-            source=source,
-            interpretation_id=interpretation_id,
-        )
         return event
 
     return _create_event
 
 
-# Common test objects
-@pytest.fixture
-def test_game(game_manager, db_session: Session):  # Inject db_session again for refresh
-    """Create a test game using the GameManager and refresh needed relationships."""
-    game = game_manager.create_game("Test Game", "A test game", is_active=True)
-    try:
-        # Refresh relationships commonly needed for display (e.g., game info, status)
-        db_session.refresh(game, attribute_names=["acts"])
-        # You might need to cascade further depending on display needs
-        # for act in game.acts:
-        #     db_session.refresh(act, attribute_names=["scenes"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_game: {e}")
-    return game  # Return the original object, now refreshed
+# Step 4.5: Remove Object Fixtures (test_game, test_act, test_scene, test_events, etc.)
+# Tests should now create these objects directly using the refactored factory fixtures
+# within a `with session_context as session:` block.
 
 
-@pytest.fixture
-def create_test_act(act_manager):
-    """Factory fixture to create test acts using the ActManager.
-
-    This uses the ActManager to create acts, which better reflects
-    how the application code would create acts.
-    """
-
-    def _create_act(
-        game_id,
-        title="Test Act",
-        summary="A test act",
-        is_active=True,
-        sequence=None,  # Add sequence parameter
-    ):
-        act = act_manager.create_act(
-            game_id=game_id,
-            title=title,
-            summary=summary,
-            make_active=is_active,
-        )
-
-        # If sequence was specified, update it directly
-        if sequence is not None:
-            session = act_manager._session
-            act.sequence = sequence
-            session.add(act)
-            session.flush()
-
-        return act
-
-    return _create_act
+# Step 4.5: Remove Complex Fixtures (test_game_with_scenes, etc.)
+# Tests requiring complex setups should build them using the refactored factory fixtures
+# within their own `with session_context as session:` block.
 
 
-@pytest.fixture
-def create_test_scene(scene_manager):
-    """Factory fixture to create test scenes using the SceneManager.
-
-    This uses the SceneManager to create scenes, which better reflects
-    how the application code would create scenes.
-    """
-
-    def _create_scene(
-        act_id,
-        title="Test Scene",
-        description="A test scene",
-        is_active=True,
-        status=SceneStatus.ACTIVE,
-    ):
-        scene = scene_manager.create_scene(
-            act_id=act_id,
-            title=title,
-            description=description,
-            make_active=is_active,
-        )
-        if status == SceneStatus.COMPLETED:
-            scene_manager.complete_scene(scene.id)
-        return scene
-
-    return _create_scene
-
-
-@pytest.fixture
-def create_test_event(event_manager):
-    """Factory fixture to create test events using the EventManager.
-
-    This uses the EventManager to create events, which better reflects
-    how the application code would create events.
-    """
-
-    def _create_event(
-        scene_id, description="Test event", source="manual", interpretation_id=None
-    ):
-        event = event_manager.add_event(
-            description=description,
-            scene_id=scene_id,
-            source=source,
-            interpretation_id=interpretation_id,
-        )
-        return event
-
-    return _create_event
-
-
-# Common test objects
-@pytest.fixture
-def test_game(game_manager, db_session: Session):  # Inject db_session again for refresh
-    """Create a test game using the GameManager and refresh needed relationships."""
-    game = game_manager.create_game("Test Game", "A test game", is_active=True)
-    try:
-        # Refresh relationships commonly needed for display (e.g., game info, status)
-        db_session.refresh(game, attribute_names=["acts"])
-        # You might need to cascade further depending on display needs
-        # for act in game.acts:
-        #     db_session.refresh(act, attribute_names=["scenes"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_game: {e}")
-    return game  # Return the original object, now refreshed
-
-
-@pytest.fixture
-def test_act(act_manager, test_game, db_session: Session):  # Inject db_session again
-    """Create a test act using the ActManager and refresh needed relationships."""
-    # test_game is already session-bound and potentially refreshed
-    act = act_manager.create_act(
-        game_id=test_game.id,
-        title="Test Act",
-        summary="A test act",
-        make_active=True,
-    )
-    try:
-        # Refresh relationships commonly needed for display (e.g., act info, status)
-        db_session.refresh(act, attribute_names=["scenes", "game"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_act: {e}")
-    return act  # Return the original object, now refreshed
-
-
-@pytest.fixture
-def test_scene(scene_manager, test_act, db_session: Session):  # Inject db_session again
-    """Create a test scene using the SceneManager and refresh needed relationships."""
-    # test_act is already session-bound and potentially refreshed
-    scene = scene_manager.create_scene(
-        act_id=test_act.id,
-        title="Test Scene",
-        description="A test scene",
-        make_active=True,
-    )
-    try:
-        # Refresh relationships commonly needed for display (e.g., scene info, status, event table context)
-        db_session.refresh(
-            scene,
-            attribute_names=["act", "events", "interpretations", "dice_rolls"],
-        )
-        # Refresh the related act's game if needed for display context
-        if scene.act:
-            db_session.refresh(scene.act, attribute_names=["game"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_scene: {e}")
-    return scene  # Return the original object, now refreshed
-
-
-@pytest.fixture
-def test_events(
-    event_manager, test_scene, db_session: Session
-):  # Inject db_session again
-    """Create test events using the EventManager and refresh needed relationships."""
-    # test_scene is already session-bound and refreshed
-    events_data = []
-    for i in range(1, 3):
-        event = event_manager.add_event(
-            description=f"Test event {i}",
-            scene_id=test_scene.id,
-            source="manual",
-        )
-        try:
-            # Refresh relationships needed by renderers (e.g., event table needs source name)
-            db_session.refresh(
-                event, attribute_names=["scene", "source", "interpretation"]
-            )
-        except Exception as e:
-            logger.warning(
-                f"Warning: Error refreshing relationships for event {i}: {e}"
-            )
-        events_data.append(event)  # Append the refreshed object
-    return events_data
-
-
-@pytest.fixture
-def test_interpretation_set(
-    test_scene, db_session: Session
-):  # Inject db_session and test_scene
-    """Create a test interpretation set attached to the test session."""
-    # test_scene fixture already returns a session-bound object
-    interp_set = InterpretationSet.create(
-        scene_id=test_scene.id,
-        context="Test context",
-        oracle_results="Test results",
-        is_current=True,
-    )
-    # Add directly to db_session used by the test
-    db_session.add(interp_set)
-    db_session.flush() # Assign ID, keep it in the session
-    # REMOVED: merge call (wasn't present, but confirming removal)
-
-    try:
-        # Refresh relationships directly on the created instance
-        db_session.refresh(interp_set, attribute_names=["interpretations", "scene"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_interpretation_set: {e}")
-    return interp_set
-
-
-@pytest.fixture
-def test_interpretations(
-    test_interpretation_set, db_session: Session
-):  # Inject db_session and test_interpretation_set
-    """Create test interpretations attached to the test's session."""
-    # test_interpretation_set fixture already returns a session-bound object
-    interpretations_data = []
-    for i in range(1, 3):
-        interp = Interpretation.create(
-            set_id=test_interpretation_set.id,  # Use the ID from the session-bound set
-            title=f"Test Interpretation {i}",
-            description=f"Test description {i}",
-            is_selected=(i == 1),  # First one is selected
-        )
-        # Add directly to db_session
-        db_session.add(interp)
-        db_session.flush() # Assign ID
-        # REMOVED: merge call (wasn't present, but confirming removal)
-        try:
-            # Refresh relationships directly on the created instance
-            db_session.refresh(interp, attribute_names=["interpretation_set"])
-        except Exception as e:
-             logger.warning(f"Warning: Error refreshing relationships for interpretation {i}: {e}")
-        interpretations_data.append(interp)
-
-    try:
-        # Refresh the parent set's collection after adding children
-        db_session.refresh(test_interpretation_set, attribute_names=["interpretations"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing interpretation_set relationship in test_interpretations: {e}")
-
-    return interpretations_data
-
-
-@pytest.fixture
-def empty_interpretation_set(
-    test_scene, db_session: Session
-):  # Inject db_session and test_scene
-    """Create an empty interpretation set for testing, attached to the test's session."""
-    # test_scene fixture already returns a session-bound object
-    interp_set = InterpretationSet.create(
-        scene_id=test_scene.id,
-        context="Empty set context",
-        oracle_results="Empty set results",
-        is_current=True,
-    )
-    # Add directly to db_session
-    db_session.add(interp_set)
-    db_session.flush()
-    # REMOVED: merge call (wasn't present, but confirming removal)
-    try:
-        # Refresh relationships directly on the created instance
-        db_session.refresh(interp_set, attribute_names=["interpretations", "scene"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for empty_interpretation_set: {e}")
-    return interp_set
-
-
-@pytest.fixture
-def test_dice_roll(test_scene, db_session: Session):  # Inject db_session and test_scene
-    """Create a test dice roll attached to the test's session."""
-    # test_scene fixture already returns a session-bound object
-    dice_roll = DiceRoll.create(
-        notation="2d6+3",
-        individual_results=[4, 5],
-        modifier=3,
-        total=12,
-        reason="Test roll",
-        scene_id=test_scene.id,
-    )
-    # Add directly to db_session
-    db_session.add(dice_roll)
-    db_session.flush() # Assign ID
-    # REMOVED: merge call (wasn't present, but confirming removal)
-    try:
-        # Refresh relationships directly on the created instance
-        db_session.refresh(dice_roll, attribute_names=["scene"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_dice_roll: {e}")
-    return dice_roll
-
-
+# Fixtures that remain valid or are updated
 @pytest.fixture(autouse=True)
 def initialize_event_sources(session_context):
-    """Initialize event sources for testing."""
+    """Initialize event sources for testing using the session_context."""
     sources = ["manual", "oracle", "dice"]
     with session_context as session:
         for source_name in sources:
@@ -960,259 +528,8 @@ def test_hybrid_property_game(
                 "has_active_scene": True,
             },
         },
-    }
-
-
-@pytest.fixture
-def create_test_scene(scene_manager):
-    """Factory fixture to create test scenes using the SceneManager.
-
-    This uses the SceneManager to create scenes, which better reflects
-    how the application code would create scenes.
-    """
-
-    def _create_scene(
-        act_id,
-        title="Test Scene",
-        description="A test scene",
-        is_active=True,
-        status=SceneStatus.ACTIVE,
-    ):
-        scene = scene_manager.create_scene(
-            act_id=act_id,
-            title=title,
-            description=description,
-            make_active=is_active,
-        )
-        if status == SceneStatus.COMPLETED:
-            scene_manager.complete_scene(scene.id)
-        return scene
-
-    return _create_scene
-
-
-@pytest.fixture
-def create_test_event(event_manager):
-    """Factory fixture to create test events using the EventManager.
-
-    This uses the EventManager to create events, which better reflects
-    how the application code would create events.
-    """
-
-    def _create_event(
-        scene_id, description="Test event", source="manual", interpretation_id=None
-    ):
-        event = event_manager.add_event(
-            description=description,
-            scene_id=scene_id,
-            source=source,
-            interpretation_id=interpretation_id,
-        )
-        return event
-
-    return _create_event
-
-
-# Common test objects
-@pytest.fixture
-def test_game(game_manager):
-    """Create a test game using the GameManager."""
-    return game_manager.create_game("Test Game", "A test game", is_active=True)
-
-
-@pytest.fixture
-def test_act(
-    act_manager, test_game, db_session: Session
-):  # Inject db_session and test_game
-    """Create a test act using the ActManager and refresh needed relationships."""
-    # test_game is already session-bound and potentially refreshed
-    # Get the act instance from the manager (already session-bound)
-    act = act_manager.create_act(
-        game_id=test_game.id,
-        title="Test Act",
-        summary="A test act",
-        make_active=True,
-    )
-    # REMOVED: merged_act = db_session.merge(act)
-
-    try:
-        # Refresh relationships directly on the instance returned by the manager
-        db_session.refresh(act, attribute_names=["scenes", "game"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_act: {e}")
-
-    # Return the original object, now refreshed
-    return act
-
-
-@pytest.fixture
-def test_scene(
-    scene_manager, test_act, db_session: Session
-):  # Inject db_session and test_act
-    """Create a test scene using the SceneManager and refresh needed relationships."""
-    # test_act is already session-bound and potentially refreshed
-    # Get the scene instance from the manager (already session-bound)
-    scene = scene_manager.create_scene(
-        act_id=test_act.id,
-        title="Test Scene",
-        description="A test scene",
-        make_active=True,
-    )
-    # REMOVED: merged_scene = db_session.merge(scene)
-
-    try:
-        # Refresh relationships directly on the instance returned by the manager
-        db_session.refresh(
-            scene,
-            attribute_names=["act", "events", "interpretations", "dice_rolls"],
-        )
-        if scene.act:
-            db_session.refresh(scene.act, attribute_names=["game"])
-    except Exception as e:
-        logger.warning(f"Warning: Error refreshing relationships for test_scene: {e}")
-
-    # Return the original object, now refreshed
-    return scene
-
-
-@pytest.fixture
-def test_events(
-    event_manager, test_scene, db_session: Session
-):  # Inject db_session and test_scene
-    """Create test events using the EventManager and refresh needed relationships."""
-    # test_scene is already session-bound and refreshed
-    events_data = []
-    for i in range(1, 3):
-        # Get the event instance from the manager (already session-bound)
-        event = event_manager.add_event(
-            description=f"Test event {i}",
-            scene_id=test_scene.id,
-            source="manual",
-        )
-        # REMOVED: merged_event = db_session.merge(event)
-        try:
-            # Refresh relationships directly on the instance returned by the manager
-            db_session.refresh(
-                event, attribute_names=["scene", "source", "interpretation"]
-            )
-        except Exception as e:
-            logger.warning(f"Warning: Error refreshing relationships for event {i}: {e}")
-        events_data.append(event) # Append the refreshed object
-    return events_data
-
-
-@pytest.fixture
-def test_interpretation_set(
-    test_scene, db_session: Session
-):  # Inject db_session and test_scene
-    """Create a test interpretation set attached to the test's session."""
-    # test_scene fixture already returns a session-bound object
-    interp_set = InterpretationSet.create(
-        scene_id=test_scene.id,
-        context="Test context",
-        oracle_results="Test results",
-        is_current=True,
-    )
-    # Add directly to db_session used by the test
-    db_session.add(interp_set)
-    db_session.flush()  # Assign ID
-
-    try:
-        # Refresh relationships needed by display methods
-        db_session.refresh(interp_set, attribute_names=["interpretations", "scene"])
-    except Exception as e:
-        logger.warning(
-            f"Warning: Error refreshing relationships for test_interpretation_set fixture: {e}"
-        )
-
-    return interp_set
-
-
-@pytest.fixture
-def test_interpretations(
-    test_interpretation_set, db_session: Session
-):  # Inject db_session and test_interpretation_set
-    """Create test interpretations attached to the test's session."""
-    # test_interpretation_set fixture already returns a session-bound object
-    interpretations_data = []
-    for i in range(1, 3):
-        interp = Interpretation.create(
-            set_id=test_interpretation_set.id,  # Use the ID from the session-bound set
-            title=f"Test Interpretation {i}",
-            description=f"Test description {i}",
-            is_selected=(i == 1),  # First one is selected
-        )
-        # Add directly to db_session
-        db_session.add(interp)
-        db_session.flush()  # Assign ID
-        try:
-            # Refresh relationships needed by display methods
-            db_session.refresh(interp, attribute_names=["interpretation_set"])
-        except Exception as e:
-            logger.warning(
-                f"Warning: Error refreshing relationships for interpretation {i} in test_interpretations fixture: {e}"
-            )
-        interpretations_data.append(interp)
-
-    # Crucially, refresh the parent set's collection *after* adding children
-    try:
-        db_session.refresh(test_interpretation_set, attribute_names=["interpretations"])
-    except Exception as e:
-        logger.warning(
-            f"Warning: Error refreshing interpretation_set relationship in test_interpretations fixture: {e}"
-        )
-
-    return interpretations_data
-
-
-@pytest.fixture
-def empty_interpretation_set(
-    test_scene, db_session: Session
-):  # Inject db_session and test_scene
-    """Create an empty interpretation set for testing, attached to the test's session."""
-    # test_scene fixture already returns a session-bound object
-    interp_set = InterpretationSet.create(
-        scene_id=test_scene.id,
-        context="Empty set context",
-        oracle_results="Empty set results",
-        is_current=True,
-    )
-    # Add directly to db_session
-    db_session.add(interp_set)
-    db_session.flush()
-    try:
-        # Refresh relationships
-        db_session.refresh(interp_set, attribute_names=["interpretations", "scene"])
-    except Exception as e:
-        logger.warning(
-            f"Warning: Error refreshing relationships for empty_interpretation_set fixture: {e}"
-        )
-    return interp_set
-
-
-@pytest.fixture
-def test_dice_roll(test_scene, db_session: Session):  # Inject db_session and test_scene
-    """Create a test dice roll attached to the test's session."""
-    # test_scene fixture already returns a session-bound object
-    dice_roll = DiceRoll.create(
-        notation="2d6+3",
-        individual_results=[4, 5],
-        modifier=3,
-        total=12,
-        reason="Test roll",
-        scene_id=test_scene.id,
-    )
-    # Add directly to db_session
-    db_session.add(dice_roll)
-    db_session.flush()  # Assign ID
-    try:
-        # Refresh relationships needed by display_game_status (_create_dice_rolls_panel)
-        db_session.refresh(dice_roll, attribute_names=["scene"])
-    except Exception as e:
-        logger.warning(
-            f"Warning: Error refreshing relationships for test_dice_roll fixture: {e}"
-        )
-    return dice_roll
+# The duplicate factory fixtures and object fixtures below this line have been removed
+# as part of the cleanup in Step 4.5.
 
 
 @pytest.fixture(autouse=True)
@@ -1305,137 +622,7 @@ def test_hybrid_expressions():
     return _test_expression
 
 
-# Complex test fixtures
-@pytest.fixture
-def test_game_with_scenes(
-    create_test_game,
-    create_test_act,
-    create_test_scene,
-    # REMOVED: db_session: Session,
-):
-    """Create a test game with multiple scenes."""
-    # Factories/object fixtures return refreshed objects
-    game = create_test_game(
-        name="Game with Scenes", description="A test game with multiple scenes"
-    )
-    act = create_test_act(
-        game_id=game.id,
-        title="Act with Scenes",
-        summary="Test act with scenes",
-    )
-    scenes = []
-    for i in range(1, 4):
-        scene = create_test_scene(
-            act_id=act.id,
-            title=f"Scene {i}",
-            description=f"Test scene {i}",
-            is_active=(i == 2),
-        )
-        scenes.append(scene)
-
-    # REMOVED: Explicit refresh block here
-
-    return game, scenes
-
-
-@pytest.fixture
-def test_game_with_complete_hierarchy(
-    create_test_game,
-    create_test_act,
-    create_test_scene,
-    create_test_event,
-    initialize_event_sources,
-    # REMOVED: db_session: Session,
-):
-    """Create a complete game hierarchy."""
-    # Factories/object fixtures return refreshed objects
-    game = create_test_game(
-        name="Complete Game", description="A test game with complete hierarchy"
-    )
-    acts = [
-        create_test_act(
-            game_id=game.id,
-            title=f"Act {i}",
-            summary=f"Test act {i}",
-            is_active=(i == 1),
-        )
-        for i in range(1, 3)
-    ]
-
-    scenes = []
-    events = []
-    for i, act in enumerate(acts):
-        for j in range(1, 3):
-            scene = create_test_scene(
-                act_id=act.id,
-                title=f"Scene {j} in Act {i + 1}",
-                description=f"Test scene {j} in act {i + 1}",
-                status=SceneStatus.ACTIVE if j == 1 else SceneStatus.COMPLETED,
-                is_active=(j == 1),
-            )
-            scenes.append(scene)
-            for k in range(1, 3):
-                event = create_test_event(
-                    scene_id=scene.id,
-                    description=f"Event {k} in Scene {j} of Act {i + 1}",
-                    source="manual",
-                )
-                events.append(event)
-
-    # REMOVED: Explicit refresh block here
-
-    return game, acts, scenes, events
-
-
-@pytest.fixture
-def test_hybrid_property_game(
-    create_test_game,
-    create_test_act,
-    create_test_scene,
-    # REMOVED: db_session: Session,
-):
-    """Create a game for testing hybrid properties."""
-    # Factories/object fixtures return refreshed objects
-    game = create_test_game(
-        name="Hybrid Property Test Game",
-        description="Game for testing hybrid properties",
-    )
-    acts = [
-        create_test_act(
-            game_id=game.id,
-            title=f"Act {i}",
-            summary=f"Test act {i}",
-            is_active=(i == 1),
-        )
-        for i in range(1, 3)
-    ]
-    scenes = [
-        create_test_scene(
-            act_id=acts[0].id,
-            title=f"Scene {i}",
-            description=f"Test scene {i}",
-            is_active=(i == 1),
-        )
-        for i in range(1, 4)
-    ]
-
-    # REMOVED: Explicit refresh block here
-
-    # Expected properties remain the same
-    return {
-        "game": game,
-        "acts": acts,
-        "scenes": scenes,
-        "expected_properties": {
-            "game": {
-                "has_acts": True,
-                "act_count": 2,
-                "has_active_act": True,
-            },
-            "act": {
-                "has_scenes": True,
-                "scene_count": 3,
-                "has_active_scene": True,
-            },
-        },
-    }
+# Complex test fixtures like test_game_with_scenes, test_game_with_complete_hierarchy,
+# and test_hybrid_property_game have been removed.
+# Tests requiring these setups should now build them within the test function
+# using the refactored factory fixtures and the session_context.
