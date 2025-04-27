@@ -394,7 +394,9 @@ Description of second option"""
             assert interp_by_slug.id == interp1.id
 
             # Test finding by UUID
-            interp_by_id = managers.oracle.find_interpretation(interp_set.id, interp1.id)
+            interp_by_id = managers.oracle.find_interpretation(
+                interp_set.id, interp1.id
+            )
             assert interp_by_id.id == interp1.id
 
             # Test invalid identifier
@@ -719,9 +721,7 @@ It also has multiple lines."""
             assert interpretation.title in events[0].description
             assert events[0].source.name == "oracle"
 
-    def test_parse_interpretations_malformed(
-        self, session_context: SessionContext
-    ):
+    def test_parse_interpretations_malformed(self, session_context: SessionContext):
         """Test parsing malformed responses."""
         with session_context as session:
             managers = create_all_managers(session)
