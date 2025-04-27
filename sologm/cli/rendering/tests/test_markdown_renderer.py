@@ -416,7 +416,8 @@ def test_display_interpretation_set_markdown(
 
     # Ensure context was NOT printed
     with pytest.raises(
-        AssertionError, match="call not found"  # Match the actual error message
+        AssertionError,
+        match="call not found",  # Match the actual error message
     ):
         mock_console.print.assert_any_call(expected_context)
 
