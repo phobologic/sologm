@@ -12,7 +12,7 @@ from sqlalchemy.orm import (
     sessionmaker,
     Session,
 )
-from sqlalchemy.exc import DetachedInstanceError  # Or LazyInitializationError
+from sqlalchemy.orm.exc import DetachedInstanceError  # Or LazyInitializationError
 
 # --- Basic Setup ---
 logger = logging.getLogger(__name__)
@@ -312,9 +312,7 @@ def test_failure_with_intermediate_commit(
     )
     # This is where the error occurs because the intermediate commits likely expired
     # the state, and the lazy load fails on the potentially detached instance.
-    with pytest.raises(
-        (DetachedInstanceError, Exception)
-    ) as exc_info:  # Catch broader Exception initially if unsure
+    with pytest.raises(DetachedInstanceError) as exc_info:
         children_count = len(fetched_parent.children)
         logger.debug(
             f"Accessed fetched_parent.children, count = {children_count}"
@@ -324,7 +322,7 @@ def test_failure_with_intermediate_commit(
         f"Successfully caught expected error: {exc_info.type.__name__} - {exc_info.value}"
     )
     # Check if it's the specific error you expect
-    assert isinstance(exc_info.value, (DetachedInstanceError)), (
+    assert isinstance(exc_info.value, DetachedInstanceError), (
         f"Expected DetachedInstanceError, but got {exc_info.type.__name__}"
     )
 
