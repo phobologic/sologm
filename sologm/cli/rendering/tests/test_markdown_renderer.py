@@ -2,13 +2,12 @@
 Unit tests for the MarkdownRenderer class.
 """
 
+# Import the renderer and models needed for tests
+from typing import List  # <-- Added import
 from unittest.mock import MagicMock
 
 import pytest
 from rich.console import Console  # <-- Import Console
-
-# Import the renderer and models needed for tests
-from typing import List  # <-- Added import
 
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
