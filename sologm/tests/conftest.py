@@ -174,14 +174,8 @@ def create_test_game() -> Callable[..., Game]:
         managers = create_all_managers(session)
         game = managers.game.create_game(name, description, is_active=is_active)
         # No merge needed, object is already session-bound
-        try:
-            # Refresh relationships using the passed-in session
-            session.refresh(game, attribute_names=["acts"])
-        except Exception as e:
-            logger.warning(
-                f"Warning: Error refreshing relationships in create_test_game factory: {e}"
-            )
-        return game  # Return the session-bound, refreshed object
+        # REMOVED: session.refresh call and try/except block
+        return game  # Return the session-bound object
 
     return _create_game
 
@@ -212,16 +206,10 @@ def create_test_act() -> Callable[..., "Act"]:  # Use quotes for forward referen
         if sequence is not None:
             act.sequence = sequence
             session.add(act)
-            session.flush()
+            session.flush() # Keep flush if sequence is manually set
 
         # No merge needed
-        try:
-            # Refresh relationships using the passed-in session
-            session.refresh(act, attribute_names=["scenes", "game"])
-        except Exception as e:
-            logger.warning(
-                f"Warning: Error refreshing relationships in create_test_act factory: {e}"
-            )
+        # REMOVED: session.refresh call and try/except block
         return act
 
     return _create_act
