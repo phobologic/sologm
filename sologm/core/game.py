@@ -344,6 +344,8 @@ class GameManager(BaseManager[Game, Game]):
                 return False
 
             session.delete(game)
+            # Add this line to flush the deletion to the transaction state
+            session.flush()
             return True
 
         result = self._execute_db_operation("delete game", _delete_game)
