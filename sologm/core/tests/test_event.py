@@ -52,9 +52,27 @@ class TestEventManager:
                 session, create_test_game, create_test_act, create_test_scene
             )
 
+            # <<< Add Diagnostic Check >>>
+            logger.info(f"Checking for scene {scene.id} immediately after creation using session {id(session)}")
+            # Use session.get() first as it primarily checks the identity map
+            found_scene_immediately = session.get(Scene, scene.id)
+            if found_scene_immediately:
+                logger.info(f"Scene {scene.id} FOUND immediately via session.get(). Object ID: {id(found_scene_immediately)}")
+                # Optional: Double-check with a query
+                # found_scene_query = session.query(Scene).filter(Scene.id == scene.id).first()
+                # logger.info(f"Scene {scene.id} found via query: {found_scene_query is not None}")
+            else:
+                logger.error(f"Scene {scene.id} NOT FOUND immediately via session.get().")
+                # If session.get fails, query likely will too, but let's check
+                found_scene_query = session.query(Scene).filter(Scene.id == scene.id).first()
+                logger.error(f"Scene {scene.id} found via query: {found_scene_query is not None}")
+                # Optionally raise here to make the failure point clearer if this is the issue
+                # pytest.fail(f"Scene {scene.id} not found in session immediately after creation")
+            # <<< End Diagnostic Check >>>
+
             event = managers.event.add_event(
                 description="Test event",
-                scene_id=scene.id,
+                scene_id=scene.id, # Pass the ID of the scene just created
                 source="manual",
             )
 
