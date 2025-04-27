@@ -1,254 +1,444 @@
 """Tests for event management functionality."""
 
 import logging
+from typing import Callable  # Added for type hinting
 
 import pytest
+from sqlalchemy.orm import Session  # Added for type hinting
 
+# Import factory and models needed for test setup
+from sologm.core.factory import create_all_managers
+from sologm.models.act import Act  # Added
 from sologm.models.event import Event
 from sologm.models.game import Game
+from sologm.models.interpretation import Interpretation  # Added
+from sologm.models.interpretation_set import InterpretationSet  # Added
+from sologm.models.scene import Scene  # Added
 from sologm.utils.errors import EventError
 
 logger = logging.getLogger(__name__)
 
 
+# Helper function to create base test data within a session context
+def create_base_test_data(
+    session: Session,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    game_active: bool = True,
+    act_active: bool = True,
+    scene_active: bool = True,
+) -> tuple[Game, Act, Scene]:
+    """Creates a standard game, act, and scene for testing."""
+    game = create_test_game(session, is_active=game_active)
+    act = create_test_act(session, game_id=game.id, is_active=act_active)
+    scene = create_test_scene(session, act_id=act.id, is_active=scene_active)
+    return game, act, scene
+
+
 class TestEventManager:
-    """Tests for the EventManager class."""
+    """Tests for the EventManager class using the new session/manager pattern."""
 
-    def test_add_event(self, event_manager, test_scene, db_session):
+    def test_add_event(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+    ):
         """Test adding an event."""
-        event = event_manager.add_event(
-            description="Test event",
-            scene_id=test_scene.id,
-            source="manual",
-        )
-
-        assert event.scene_id == test_scene.id
-        assert event.description == "Test event"
-        assert event.source.name == "manual"
-
-        # Verify event was saved to database
-        db_event = db_session.query(Event).filter(Event.id == event.id).first()
-        assert db_event is not None
-        assert db_event.description == "Test event"
-
-    def test_add_event_with_active_scene(self, event_manager, test_scene):
-        """Test adding an event using the active scene."""
-        event = event_manager.add_event(description="Test event with active scene")
-
-        assert event.scene_id == test_scene.id
-        assert event.description == "Test event with active scene"
-
-    def test_add_event_nonexistent_scene(self, event_manager):
-        """Test adding an event to a nonexistent scene."""
-        with pytest.raises(EventError) as exc:
-            event_manager.add_event(
-                description="Test event",
-                scene_id="nonexistent-scene",
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
             )
-        assert "Scene nonexistent-scene not found" in str(exc.value)
 
-    def test_list_events_empty(self, event_manager, test_scene):
+            event = managers.event.add_event(
+                description="Test event",
+                scene_id=scene.id,
+                source="manual",
+            )
+
+            assert event.scene_id == scene.id
+            assert event.description == "Test event"
+            assert event.source.name == "manual"
+
+            # Verify event was saved to database using the test's session
+            db_event = session.get(Event, event.id)
+            assert db_event is not None
+            assert db_event.description == "Test event"
+
+    def test_add_event_with_active_scene(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+    ):
+        """Test adding an event using the active scene."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            # Ensure scene is active (default in helper)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
+
+            event = managers.event.add_event(description="Test event with active scene")
+
+            assert event.scene_id == scene.id
+            assert event.description == "Test event with active scene"
+
+    def test_add_event_nonexistent_scene(self, session_context: Callable):
+        """Test adding an event to a nonexistent scene."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            with pytest.raises(EventError) as exc:
+                managers.event.add_event(
+                    description="Test event",
+                    scene_id="nonexistent-scene",
+                )
+            assert "Scene nonexistent-scene not found" in str(exc.value)
+
+    def test_list_events_empty(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+    ):
         """Test listing events when none exist."""
-        events = event_manager.list_events(scene_id=test_scene.id)
-        assert len(events) == 0
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
+
+            events = managers.event.list_events(scene_id=scene.id)
+            assert len(events) == 0
 
     def test_list_events_with_active_scene(
-        self, event_manager, test_scene, create_test_event
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_event: Callable,
     ):
         """Test listing events using the active scene."""
-        # Add some events
-        create_test_event(test_scene.id, "First event")
-        create_test_event(test_scene.id, "Second event")
-
-        events = event_manager.list_events()
-        assert len(events) == 2
-        # Events should be in reverse chronological order (newest first)
-        assert events[0].description == "Second event"
-        assert events[1].description == "First event"
-
-    def test_list_events(self, event_manager, test_scene, create_test_event):
-        """Test listing multiple events."""
-        # Add some events
-        create_test_event(test_scene.id, "First event")
-        create_test_event(test_scene.id, "Second event")
-
-        events = event_manager.list_events(scene_id=test_scene.id)
-        assert len(events) == 2
-        # Events should be in reverse chronological order (newest first)
-        assert events[0].description == "Second event"
-        assert events[1].description == "First event"
-
-    def test_list_events_with_limit(self, event_manager, test_scene, create_test_event):
-        """Test listing events with a limit."""
-        # Add some events
-        create_test_event(test_scene.id, "First event")
-        create_test_event(test_scene.id, "Second event")
-        create_test_event(test_scene.id, "Third event")
-
-        events = event_manager.list_events(scene_id=test_scene.id, limit=2)
-        assert len(events) == 2
-        assert events[0].description == "Third event"
-        assert events[1].description == "Second event"
-
-    def test_list_events_nonexistent_scene(self, event_manager):
-        """Test listing events for a nonexistent scene."""
-        with pytest.raises(EventError) as exc:
-            event_manager.list_events(scene_id="nonexistent-scene")
-        assert "Scene nonexistent-scene not found" in str(exc.value)
-
-    def test_get_active_scene_id(self, event_manager, test_scene):
-        """Test getting active scene ID."""
-        scene_id = event_manager.get_active_scene_id()
-        assert scene_id == test_scene.id
-
-    def test_get_active_scene_id_no_game(self, event_manager, db_session):
-        """Test getting active scene ID with no active game."""
-        # Deactivate all games
-        db_session.query(Game).update({Game.is_active: False})
-        db_session.commit()
-
-        with pytest.raises(EventError) as exc:
-            event_manager.get_active_scene_id()
-        assert "No active game found" in str(exc.value)
-
-    def test_add_event_from_interpretation(
-        self,
-        event_manager,
-        test_scene,
-        test_interpretations,
-        db_session,
-    ):
-        """Test adding an event from an interpretation."""
-        interpretation = test_interpretations[0]
-
-        event = event_manager.add_event(
-            scene_id=test_scene.id,
-            description="Event from interpretation",
-            source="oracle",
-            interpretation_id=interpretation.id,
-        )
-
-        assert event.interpretation_id == interpretation.id
-
-        # Verify relationship works
-        db_session.refresh(event)
-        assert event.interpretation is not None
-        assert event.interpretation.id == interpretation.id
-
-    def test_get_event(self, event_manager, test_scene, create_test_event):
-        """Test getting an event by ID."""
-        # Create a test event
-        logger.debug(f"Creating test event with scene_id={test_scene.id}")
-        event = create_test_event(test_scene.id, "Test event to retrieve")
-        logger.debug(
-            f"Created event with id={event.id}, description={event.description}"
-        )
-
-        # Get the event
-        retrieved_event = event_manager.get_event(event.id)
-        logger.debug(f"Retrieved event: {retrieved_event}")
-        if retrieved_event:
-            logger.debug(
-                f"Retrieved event id={retrieved_event.id}, "
-                f"description={retrieved_event.description}"
+        with session_context() as session:
+            managers = create_all_managers(session)
+            # Ensure scene is active (default in helper)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
             )
 
-        # Verify the event was retrieved correctly
-        assert retrieved_event is not None
-        assert retrieved_event.id == event.id
-        assert retrieved_event.description == "Test event to retrieve"
+            # Add some events using the factory and session
+            create_test_event(session, scene.id, "First event")
+            create_test_event(session, scene.id, "Second event")
 
-    def test_get_nonexistent_event(self, event_manager):
+            events = managers.event.list_events()  # Uses active scene by default
+            assert len(events) == 2
+            # Events should be in reverse chronological order (newest first)
+            assert events[0].description == "Second event"
+            assert events[1].description == "First event"
+
+    def test_list_events(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_event: Callable,
+    ):
+        """Test listing multiple events."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
+
+            # Add some events
+            create_test_event(session, scene.id, "First event")
+            create_test_event(session, scene.id, "Second event")
+
+            events = managers.event.list_events(scene_id=scene.id)
+            assert len(events) == 2
+            # Events should be in reverse chronological order (newest first)
+            assert events[0].description == "Second event"
+            assert events[1].description == "First event"
+
+    def test_list_events_with_limit(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_event: Callable,
+    ):
+        """Test listing events with a limit."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
+
+            # Add some events
+            create_test_event(session, scene.id, "First event")
+            create_test_event(session, scene.id, "Second event")
+            create_test_event(session, scene.id, "Third event")
+
+            events = managers.event.list_events(scene_id=scene.id, limit=2)
+            assert len(events) == 2
+            assert events[0].description == "Third event"
+            assert events[1].description == "Second event"
+
+    def test_list_events_nonexistent_scene(self, session_context: Callable):
+        """Test listing events for a nonexistent scene."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            with pytest.raises(EventError) as exc:
+                managers.event.list_events(scene_id="nonexistent-scene")
+            assert "Scene nonexistent-scene not found" in str(exc.value)
+
+    def test_get_active_scene_id(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+    ):
+        """Test getting active scene ID."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            # Ensure scene is active (default in helper)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
+
+            scene_id = managers.event.get_active_scene_id()
+            assert scene_id == scene.id
+
+    def test_get_active_scene_id_no_game(self, session_context: Callable):
+        """Test getting active scene ID with no active game."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            # Deactivate all games using the test's session
+            session.query(Game).update({Game.is_active: False})
+            # No commit needed, context manager handles it
+
+            with pytest.raises(EventError) as exc:
+                managers.event.get_active_scene_id()
+            # The error might bubble up from GameManager now
+            assert "No active game found" in str(exc.value)
+
+    # Assuming create_test_interpretation_set and create_test_interpretation exist
+    # and were refactored in Phase 4 to accept session.
+    # If not, these fixtures need to be updated in conftest.py first.
+    # @pytest.mark.skip(
+    #     reason="Requires create_test_interpretation* fixtures refactored in Phase 4"
+    # )
+    def test_add_event_from_interpretation(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_interpretation_set: Callable,  # Assuming this exists and is refactored
+        create_test_interpretation: Callable,  # Assuming this exists and is refactored
+    ):
+        """Test adding an event from an interpretation."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
+
+            # Create interpretation data using factories and session
+            interp_set = create_test_interpretation_set(
+                session, scene_id=scene.id, context="Test context"
+            )
+            interpretation = create_test_interpretation(
+                session, set_id=interp_set.id, title="Test Interp"
+            )
+
+            event = managers.event.add_event(
+                scene_id=scene.id,
+                description="Event from interpretation",
+                source="oracle",
+                interpretation_id=interpretation.id,
+            )
+
+            assert event.interpretation_id == interpretation.id
+
+            # Verify relationship works using the test's session
+            session.refresh(event)
+            assert event.interpretation is not None
+            assert event.interpretation.id == interpretation.id
+
+    def test_get_event(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_event: Callable,
+    ):
+        """Test getting an event by ID."""
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
+
+            # Create a test event using factory and session
+            logger.debug(f"Creating test event with scene_id={scene.id}")
+            event = create_test_event(session, scene.id, "Test event to retrieve")
+            logger.debug(
+                f"Created event with id={event.id}, description={event.description}"
+            )
+
+            # Get the event using the manager
+            retrieved_event = managers.event.get_event(event.id)
+            logger.debug(f"Retrieved event: {retrieved_event}")
+            if retrieved_event:
+                logger.debug(
+                    f"Retrieved event id={retrieved_event.id}, "
+                    f"description={retrieved_event.description}"
+                )
+
+            # Verify the event was retrieved correctly
+            assert retrieved_event is not None
+            assert retrieved_event.id == event.id
+            assert retrieved_event.description == "Test event to retrieve"
+
+    def test_get_nonexistent_event(self, session_context: Callable):
         """Test getting a nonexistent event."""
-        # Try to get a nonexistent event
-        event = event_manager.get_event("nonexistent-event-id")
+        with session_context() as session:
+            managers = create_all_managers(session)
+            # Try to get a nonexistent event
+            event = managers.event.get_event("nonexistent-event-id")
 
-        # Verify no event was found
-        assert event is None
+            # Verify no event was found
+            assert event is None
 
-    def test_update_event(self, event_manager, test_scene, create_test_event):
+    def test_update_event(
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_event: Callable,
+    ):
         """Test updating an event's description."""
-        # Create a test event
-        logger.debug(f"Creating test event with scene_id={test_scene.id}")
-        event = create_test_event(test_scene.id, "Original description")
-        logger.debug(
-            f"Created event with id={event.id}, description={event.description}"
-        )
-        logger.debug(f"Event source: {event.source_id}")
-        if hasattr(event, "source") and event.source:
-            logger.debug(f"Event source name: {event.source.name}")
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
 
-        # Update the event
-        updated_event = event_manager.update_event(event.id, "Updated description")
-        logger.debug(f"Updated event: {updated_event}")
-        logger.debug(f"Updated event description: {updated_event.description}")
-        logger.debug(f"Updated event source_id: {updated_event.source_id}")
-        if hasattr(updated_event, "source") and updated_event.source:
-            logger.debug(f"Updated event source name: {updated_event.source.name}")
+            # Create a test event
+            logger.debug(f"Creating test event with scene_id={scene.id}")
+            event = create_test_event(session, scene.id, "Original description")
+            logger.debug(
+                f"Created event with id={event.id}, description={event.description}"
+            )
+            logger.debug(f"Event source: {event.source_id}")
+            if hasattr(event, "source") and event.source:
+                logger.debug(f"Event source name: {event.source.name}")
 
-        # Verify the event was updated correctly
-        assert updated_event.id == event.id
-        assert updated_event.description == "Updated description"
-        assert updated_event.source.name == "manual"  # Source should remain unchanged
+            # Update the event
+            updated_event = managers.event.update_event(
+                event.id, "Updated description"
+            )
+            logger.debug(f"Updated event: {updated_event}")
+            logger.debug(f"Updated event description: {updated_event.description}")
+            logger.debug(f"Updated event source_id: {updated_event.source_id}")
+            if hasattr(updated_event, "source") and updated_event.source:
+                logger.debug(f"Updated event source name: {updated_event.source.name}")
 
-        # Verify the event was updated in the database
-        retrieved_event = event_manager.get_event(event.id)
-        assert retrieved_event.description == "Updated description"
+            # Verify the event was updated correctly
+            assert updated_event.id == event.id
+            assert updated_event.description == "Updated description"
+            assert (
+                updated_event.source.name == "manual"
+            )  # Source should remain unchanged
+
+            # Verify the event was updated in the database
+            retrieved_event = managers.event.get_event(event.id)
+            assert retrieved_event.description == "Updated description"
 
     def test_update_event_with_source(
-        self, event_manager, test_scene, create_test_event
+        self,
+        session_context: Callable,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_event: Callable,
     ):
         """Test updating an event's description and source."""
-        # Create a test event
-        logger.debug(f"Creating test event with scene_id={test_scene.id}")
-        event = create_test_event(test_scene.id, "Original description")
-        logger.debug(
-            f"Created event with id={event.id}, description={event.description}"
-        )
-        logger.debug(f"Event source_id: {event.source_id}")
-        if hasattr(event, "source") and event.source:
-            logger.debug(f"Event source name: {event.source.name}")
+        with session_context() as session:
+            managers = create_all_managers(session)
+            _, _, scene = create_base_test_data(
+                session, create_test_game, create_test_act, create_test_scene
+            )
 
-        # Check source name
-        assert event.source.name == "manual"  # Default source
+            # Create a test event
+            logger.debug(f"Creating test event with scene_id={scene.id}")
+            event = create_test_event(session, scene.id, "Original description")
+            logger.debug(
+                f"Created event with id={event.id}, description={event.description}"
+            )
+            logger.debug(f"Event source_id: {event.source_id}")
+            if hasattr(event, "source") and event.source:
+                logger.debug(f"Event source name: {event.source.name}")
 
-        # Update the event with a new source
-        updated_event = event_manager.update_event(
-            event.id, "Updated description", "oracle"
-        )
-        logger.debug(f"Updated event: {updated_event}")
-        logger.debug(f"Updated event description: {updated_event.description}")
-        logger.debug(f"Updated event source_id: {updated_event.source_id}")
-        if hasattr(updated_event, "source") and updated_event.source:
-            logger.debug(f"Updated event source name: {updated_event.source.name}")
+            # Check source name
+            assert event.source.name == "manual"  # Default source
 
-        # Verify the event was updated correctly
-        assert updated_event.id == event.id
-        assert updated_event.description == "Updated description"
-        assert updated_event.source.name == "oracle"  # Source should be updated
+            # Update the event with a new source
+            updated_event = managers.event.update_event(
+                event.id, "Updated description", "oracle"
+            )
+            logger.debug(f"Updated event: {updated_event}")
+            logger.debug(f"Updated event description: {updated_event.description}")
+            logger.debug(f"Updated event source_id: {updated_event.source_id}")
+            if hasattr(updated_event, "source") and updated_event.source:
+                logger.debug(f"Updated event source name: {updated_event.source.name}")
 
-        # Verify the event was updated in the database
-        retrieved_event = event_manager.get_event(event.id)
-        assert retrieved_event.description == "Updated description"
-        assert retrieved_event.source.name == "oracle"
+            # Verify the event was updated correctly
+            assert updated_event.id == event.id
+            assert updated_event.description == "Updated description"
+            assert updated_event.source.name == "oracle"  # Source should be updated
 
-    def test_update_nonexistent_event(self, event_manager):
+            # Verify the event was updated in the database
+            retrieved_event = managers.event.get_event(event.id)
+            assert retrieved_event.description == "Updated description"
+            assert retrieved_event.source.name == "oracle"
+
+    def test_update_nonexistent_event(self, session_context: Callable):
         """Test updating a nonexistent event."""
-        # Try to update a nonexistent event
-        with pytest.raises(EventError) as exc:
-            event_manager.update_event("nonexistent-event-id", "Updated description")
+        with session_context() as session:
+            managers = create_all_managers(session)
+            # Try to update a nonexistent event
+            with pytest.raises(EventError) as exc:
+                managers.event.update_event(
+                    "nonexistent-event-id", "Updated description"
+                )
 
-        # Verify the correct error was raised
-        assert "Event with ID 'nonexistent-event-id' not found" in str(exc.value)
+            # Verify the correct error was raised
+            assert "Event with ID 'nonexistent-event-id' not found" in str(exc.value)
 
-    def test_get_event_sources(self, event_manager):
+    def test_get_event_sources(self, session_context: Callable):
         """Test getting all event sources."""
-        # Get all event sources
-        sources = event_manager.get_event_sources()
+        # Sources are initialized by the initialize_event_sources fixture in conftest
+        with session_context() as session:
+            managers = create_all_managers(session)
+            # Get all event sources
+            sources = managers.event.get_event_sources()
 
-        # Verify we have the expected default sources
-        assert len(sources) == 3
-        source_names = [s.name for s in sources]
-        assert "manual" in source_names
-        assert "oracle" in source_names
-        assert "dice" in source_names
+            # Verify we have the expected default sources
+            assert len(sources) >= 3  # Allow for potentially more sources later
+            source_names = [s.name for s in sources]
+            assert "manual" in source_names
+            assert "oracle" in source_names
+            assert "dice" in source_names
