@@ -587,7 +587,7 @@ def test_display_act_info_no_scenes_markdown(
     # Expected outputs for the "no scenes" part (now separate)
     expected_no_scenes_header = f"### Scenes in Act {test_act.sequence}"
     expected_no_scenes_message = "No scenes in this act yet."
-    expected_blank_line = "" # For the blank lines printed
+    expected_blank_line = ""  # For the blank lines printed
 
     # Check the sequence of calls
     calls = mock_console.print.call_args_list
