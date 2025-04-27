@@ -138,7 +138,7 @@ def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
 
 # Session context fixture
 @pytest.fixture
-def session_context() -> SessionContext: # Changed return type hint
+def session_context() -> SessionContext:  # Changed return type hint
     """Provides a SessionContext instance for testing.
 
     This fixture provides the same session context that application code uses,
@@ -150,7 +150,7 @@ def session_context() -> SessionContext: # Changed return type hint
             with session_context as session: # Used directly as context manager
                 # Test code using session
     """
-    from sologm.database.session import SessionContext # Import the class
+    from sologm.database.session import SessionContext  # Import the class
 
     # Return an instance of the context manager
     return SessionContext()
