@@ -53,10 +53,20 @@ class TestEventManager:
             )
 
             # <<< Add Diagnostic Check >>>
+            from sqlalchemy import inspect # Import inspect
+
             logger.info(
-                f"Checking for scene {scene.id} immediately after creation using session {id(session)}"
+                f"Checking for scene {scene.id} (obj ID: {id(scene)}) immediately after creation using session {id(session)}"
             )
+
+            # Inspect the state of the scene object returned by the factory
+            scene_state = inspect(scene)
+            logger.info(f"Scene object state: transient={scene_state.transient}, pending={scene_state.pending}, persistent={scene_state.persistent}, detached={scene_state.detached}")
+            logger.info(f"Scene object session_id: {scene_state.session_id}")
+            logger.info(f"Is scene in session identity map? {scene in session.identity_map.values()}")
+
             # Use session.get() first as it primarily checks the identity map
+            logger.info(f"Attempting session.get(Scene, {scene.id})")
             found_scene_immediately = session.get(Scene, scene.id)
             if found_scene_immediately:
                 logger.info(
@@ -70,6 +80,7 @@ class TestEventManager:
                     f"Scene {scene.id} NOT FOUND immediately via session.get()."
                 )
                 # If session.get fails, query likely will too, but let's check
+                logger.info(f"Attempting session.query(Scene).filter(Scene.id == {scene.id}).first()")
                 found_scene_query = (
                     session.query(Scene).filter(Scene.id == scene.id).first()
                 )
