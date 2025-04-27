@@ -312,12 +312,19 @@ class GameManager(BaseManager[Game, Game]):
 
             return game
 
+        # Wrap the operation call to catch IntegrityError specifically
         try:
             game = self._execute_db_operation("update game", _update_game)
             logger.debug(f"Updated game: {game.id}")
             return game
         except IntegrityError as e:
+            # Rollback the session state before handling the error
+            self._session.rollback()
+            # Pass the name we attempted to set, if any.
+            # _handle_integrity_error will figure out if it was name or slug.
             self._handle_integrity_error(e, "update", name or "")
+        # Note: The base _execute_db_operation might still catch other exceptions,
+        # but IntegrityError needs specific handling here to raise GameError.
 
     def delete_game(self, game_id: str) -> bool:
         """Delete a game.
