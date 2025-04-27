@@ -185,14 +185,15 @@ class SessionContext:
         exc_tb: Optional[Any],
     ) -> None:
         """Exit context and close session."""
-        if exc_type is not None:
-            # An exception occurred, rollback
-            logger.debug(f"Exception in session context: {exc_val}. Rolling back")
-            self.session.rollback()
-        else:
-            # No exception, commit
-            logger.debug("Committing session")
-            self.session.commit()
+        try:
+            if exc_type is not None:
+                # An exception occurred, rollback
+                logger.debug(f"Exception in session context: {exc_val}. Rolling back")
+                self.session.rollback()
+            else:
+                # No exception, commit
+                logger.debug("Committing session")
+                self.session.commit()
         finally:
             # Step 1.2: Ensure session is always closed, remove call to _db.close_session()
             if self.session:
