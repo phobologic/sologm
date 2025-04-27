@@ -2,6 +2,7 @@
 Unit tests for the MarkdownRenderer class.
 """
 
+import logging
 # Import the renderer and models needed for tests
 from typing import List  # <-- Added import
 from unittest.mock import MagicMock
@@ -17,6 +18,9 @@ from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene, SceneStatus
+
+# Set up logging for tests
+logger = logging.getLogger(__name__)
 
 
 # Fixture for mock console (can be shared or defined here)
