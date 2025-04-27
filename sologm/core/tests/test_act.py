@@ -171,9 +171,7 @@ class TestActManager:
             assert acts[1].id == second_act.id
 
             # Test listing acts with active game (requires mocking)
-            with patch.object(
-                managers.game, "get_active_game", return_value=test_game
-            ):
+            with patch.object(managers.game, "get_active_game", return_value=test_game):
                 acts = managers.act.list_acts()
                 assert len(acts) == 2
                 assert acts[0].id == test_act.id
@@ -226,9 +224,7 @@ class TestActManager:
             assert active_act.id == test_act.id
 
             # Test getting active act with active game (requires mocking)
-            with patch.object(
-                managers.game, "get_active_game", return_value=test_game
-            ):
+            with patch.object(managers.game, "get_active_game", return_value=test_game):
                 active_act = managers.act.get_active_act()
                 assert active_act is not None
                 assert active_act.id == test_act.id
@@ -455,9 +451,7 @@ class TestActManager:
             assert act.id == test_act.id
 
             # Test validating with active game (requires mocking)
-            with patch.object(
-                managers.game, "get_active_game", return_value=test_game
-            ):
+            with patch.object(managers.game, "get_active_game", return_value=test_game):
                 act = managers.act.validate_active_act()
                 assert act.id == test_act.id
 
@@ -658,9 +652,7 @@ class TestActManager:
             assert result["summary"] == "Test summary paragraph."
 
             # Verify mocks were called correctly
-            mock_prepare_data.assert_called_once_with(
-                test_act.id, "Additional context"
-            )
+            mock_prepare_data.assert_called_once_with(test_act.id, "Additional context")
             mock_client.send_message.assert_called_once()
 
     def test_generate_act_summary_api_error(
