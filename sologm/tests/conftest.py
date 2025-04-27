@@ -424,6 +424,14 @@ def create_test_scene(scene_manager):
             scene_manager.complete_scene(scene.id)
         return scene
 
+    return _create_scene
+
+
+@pytest.fixture
+def create_test_event(event_manager):
+    """Factory fixture to create test events using the EventManager.
+
+    This uses the EventManager to create events, which better reflects
     how the application code would create events.
     """
 
