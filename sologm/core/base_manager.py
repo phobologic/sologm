@@ -24,34 +24,34 @@ M = TypeVar("M")  # Database model type
 
 
 class BaseManager(Generic[T, M]):
-    """Base manager class with database support.
+    """Base manager class providing common database operations.
 
-    This class provides common functionality for all managers, including:
-    - Database session management
-    - Error handling
-    - Model conversion
-    - Common utility methods for entity operations
+    This class provides common functionality for all managers that interact
+    with the database. It requires an active SQLAlchemy session to be passed
+    during initialization and uses that session for all database operations.
+    It does NOT manage the session lifecycle (commit, rollback, close); that
+    is the responsibility of the caller (typically using SessionContext).
+
+    Subclasses should implement domain-specific logic using the provided
+    session and helper methods.
 
     Attributes:
-        logger: Logger instance for this manager
-        _session: Database session provided during initialization
+        logger: Logger instance specific to the subclass.
+        _session: The SQLAlchemy session provided during initialization.
     """
 
-    # Step 2.1: Change BaseManager.__init__ to require a session
     def __init__(self, session: Session):
-        """Initialize the base manager.
+        """Initialize the BaseManager with an active database session.
 
         Args:
-            session: Active SQLAlchemy session for database operations
+            session: The SQLAlchemy Session instance to use for all database
+                     operations performed by this manager instance.
         """
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._session = session
         self.logger.debug(
             f"Initialized {self.__class__.__name__} with session ID: {id(self._session)}"
         )
-
-    # Step 2.2: Remove BaseManager._get_session
-    # The _get_session method is no longer needed as the session is injected.
 
     def _convert_to_domain(self, db_model: M) -> T:
         """Convert database model to domain model.
@@ -85,43 +85,40 @@ class BaseManager(Generic[T, M]):
     def _execute_db_operation(
         self, operation_name: str, operation: Callable, *args: Any, **kwargs: Any
     ) -> Any:
-        """Execute a database operation with proper session handling.
+        """Execute a database operation using the manager's session.
 
-        This method ensures proper transaction management but preserves
-        original exceptions.
+        This method wraps the actual database logic function (`operation`)
+        with logging and basic error handling. It uses the session (`self._session`)
+        that was provided when the manager was initialized.
+
+        IMPORTANT: This method does NOT handle transactions (commit/rollback).
+        Transaction management should be handled externally, typically by the
+        `SessionContext` that created the session.
 
         Args:
-            operation_name: Name of the operation (for logging)
-            operation: Callable that performs the database operation
-            *args: Arguments to pass to the operation
-            **kwargs: Keyword arguments to pass to the operation
+            operation_name: A descriptive name for the operation (for logging).
+            operation: The function to execute. It MUST accept the SQLAlchemy
+                       session as its first argument.
+            *args: Positional arguments to pass to the `operation` function
+                   (after the session).
+            **kwargs: Keyword arguments to pass to the `operation` function.
 
         Returns:
-            Result of the operation
+            The result returned by the `operation` function.
+
+        Raises:
+            Exception: Re-raises any exception caught during the `operation`.
         """
-        # Step 2.3: Simplify _execute_db_operation
-        self.logger.debug(
-            f"Executing database operation: {operation_name} with session ID: {id(self._session)}"
-        )
-        # Use the manager's session directly, remove transaction logic
+        self.logger.debug(f"Executing DB operation: {operation_name}")
         try:
-            self.logger.debug(
-                f"Calling operation {operation_name} with session ID: {id(self._session)}"
-            )
-            # Pass the manager's session to the operation
+            # Pass the manager's session to the operation function
             result = operation(self._session, *args, **kwargs)
-            self.logger.debug(
-                f"Operation {operation_name} completed successfully with session ID: {id(self._session)}"
-            )
-            # Commit/rollback is handled by the SessionContext caller
+            self.logger.debug(f"DB operation '{operation_name}' successful")
             return result
         except Exception as e:
-            # Log the error, but let the SessionContext handle rollback
-            self.logger.error(
-                f"Error during database operation '{operation_name}' with session ID {id(self._session)}: {str(e)}",
-                exc_info=True,  # Include traceback in log
-            )
-            raise  # Re-raise the original exception
+            # Log the error but let the SessionContext handle rollback
+            self.logger.error(f"Error during DB operation '{operation_name}': {e}")
+            raise
 
     def get_entity_or_error(
         self,
@@ -223,11 +220,10 @@ class BaseManager(Generic[T, M]):
             module = importlib.import_module(module_path)
             manager_class = getattr(module, class_name)
 
-            # Step 2.4: Update BaseManager._lazy_init_manager
             # Ensure the current manager's session is passed to the new manager
             kwargs["session"] = self._session
             self.logger.debug(
-                f"Lazy initializing {class_name} with session ID: {id(self._session)}"
+                f"Lazy initializing {class_name} with session ID: {id(kwargs['session'])}"
             )
 
             setattr(self, attr_name, manager_class(**kwargs))
