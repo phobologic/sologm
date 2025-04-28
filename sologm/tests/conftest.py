@@ -238,12 +238,30 @@ def create_test_scene() -> Callable[..., Scene]:
             # Use manager for completion logic (it uses the correct session)
             managers.scene.complete_scene(scene.id)
             # Re-fetch the scene to get updated state
-            # Re-fetch the scene to get updated state
             scene = managers.scene.get_scene(scene.id)
+            # Ensure the re-fetched scene is not None
+            if scene is None:
+                 # Should not happen if complete_scene/get_scene work, but defensive check
+                 raise RuntimeError("Failed to re-fetch scene after completion in factory")
+
+
+        # Add a refresh call here before returning, similar to create_test_event
+        # This helps ensure relationships are loaded while the object is known
+        # to be persistent within this session context.
+        try:
+            # Refresh common relationships that might be needed immediately after creation
+            # Adjust attribute_names based on typical usage patterns
+            session.refresh(scene, attribute_names=["act"])
+        except Exception as e:
+            logger.warning(
+                f"Warning: Error refreshing relationships in create_test_scene factory: {e}"
+            )
+            # Decide if this should be a hard failure or just a warning
+            # For now, log and continue, but this might hide issues
 
         # No merge needed
-        # REMOVED: session.refresh call and try/except block
-        return scene
+        # REMOVED: session.refresh call and try/except block (was already removed)
+        return scene # Return the potentially refreshed, session-bound object
 
     return _create_scene
 
