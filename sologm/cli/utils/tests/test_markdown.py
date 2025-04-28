@@ -124,13 +124,9 @@ def test_generate_act_markdown(
         act = create_test_act(session, game_id=game.id)
         # Add scenes to test their inclusion
         # REMOVED sequence=1 argument
-        scene1 = create_test_scene(
-            session, act_id=act.id, title="First Scene"
-        )
+        scene1 = create_test_scene(session, act_id=act.id, title="First Scene")
         # REMOVED sequence=2 argument
-        scene2 = create_test_scene(
-            session, act_id=act.id, title="Second Scene"
-        )
+        scene2 = create_test_scene(session, act_id=act.id, title="Second Scene")
 
         # Test basic act markdown
         result = generate_act_markdown(
