@@ -4,34 +4,37 @@ import logging
 from typing import TYPE_CHECKING
 
 import typer
-from rich.console import Console
-
-if TYPE_CHECKING:
-    from typer import Typer
-
-    app: Typer
-from sologm.cli.utils.display import display_scene_info
+# Console import removed
+# display_scene_info import removed
 from sologm.core.scene import SceneManager
 from sologm.database.session import get_db_context
 from sologm.utils.errors import ActError, GameError, SceneError
 
+if TYPE_CHECKING:
+    from typer import Typer
+    from rich.console import Console
+    from sologm.cli.rendering.base import Renderer
+
+    app: Typer
+
+
 # Create scene subcommand
 scene_app = typer.Typer(help="Scene management commands")
 
-# Create console for rich output
-console = Console()
+# console instance removed
 logger = logging.getLogger(__name__)
 
 
 @scene_app.command("add")
 def add_scene(
+    ctx: typer.Context,
     title: str = typer.Option(..., "--title", "-t", help="Title of the scene"),
     description: str = typer.Option(
         ..., "--description", "-d", help="Description of the scene"
     ),
 ) -> None:
     """Add a new scene to the active act."""
-
+    renderer: "Renderer" = ctx.obj["renderer"]
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
@@ -64,18 +67,18 @@ def add_scene(
                 description=description,
             )
 
-            console.print("[bold green]Scene added successfully![/]")
-            display_scene_info(console, scene)
+            renderer.display_success("Scene added successfully!")
+            renderer.display_scene_info(scene)
     except (GameError, SceneError, ActError) as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @scene_app.command("list")
-def list_scenes() -> None:
+def list_scenes(ctx: typer.Context) -> None:
     """List all scenes in the active act."""
-    from sologm.cli.utils.display import display_scenes_table
-
+    # display_scenes_table import removed
+    renderer: "Renderer" = ctx.obj["renderer"]
     with get_db_context() as session:
         scene_manager = SceneManager(session=session)
 
@@ -101,70 +104,71 @@ def list_scenes() -> None:
         # Get scenes
         scenes = scene_manager.list_scenes(act_id)
 
-        # Use the display helper function - session still open for lazy loading
-        display_scenes_table(console, scenes, active_scene_id)
+        # Use the renderer - session still open for lazy loading
+        renderer.display_scenes_table(scenes, active_scene_id)
 
 
 @scene_app.command("info")
 def scene_info(
+    ctx: typer.Context,
     show_events: bool = typer.Option(
         True, "--events/--no-events", help="Show events associated with this scene"
     ),
 ) -> None:
     """Show information about the active scene and its events."""
-
+    renderer: "Renderer" = ctx.obj["renderer"]
     try:
         with get_db_context() as session:
             scene_manager = SceneManager(session=session)
 
             _, active_scene = scene_manager.validate_active_context()
 
-            # Display scene information
-            display_scene_info(console, active_scene)
+            # Display scene information using renderer
+            renderer.display_scene_info(active_scene)
 
             # If show_events is True, fetch and display events
             if show_events:
-                from sologm.cli.utils.display import display_events_table
+                # display_events_table import removed
 
                 # Access event_manager through scene_manager instead of creating a new instance
                 event_manager = scene_manager.event_manager
                 events = event_manager.list_events(scene_id=active_scene.id)
 
-                # Display events table - decide whether to truncate based on number of events
+                # Display events table using renderer
                 truncate_descriptions = (
                     len(events) > 3
                 )  # Truncate if more than 3 events
-                console.print()  # Add a blank line for separation
-                display_events_table(
-                    console,
+                renderer.display_message("") # Add a blank line for separation
+                renderer.display_events_table(
                     events,
                     active_scene,
                     truncate_descriptions=truncate_descriptions,
                 )
 
     except (SceneError, ActError) as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
 
 
 @scene_app.command("complete")
-def complete_scene() -> None:
+def complete_scene(ctx: typer.Context) -> None:
     """Complete the active scene."""
-
+    renderer: "Renderer" = ctx.obj["renderer"]
     try:
         with get_db_context() as session:
             scene_manager = SceneManager(session=session)
 
             _, active_scene = scene_manager.validate_active_context()
             completed_scene = scene_manager.complete_scene(active_scene.id)
-            console.print("[bold green]Scene completed successfully![/]")
-            display_scene_info(console, completed_scene)
+            renderer.display_success("Scene completed successfully!")
+            renderer.display_scene_info(completed_scene)
     except (SceneError, ActError) as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @scene_app.command("edit")
 def edit_scene(
+    ctx: typer.Context,
     scene_id: str = typer.Option(
         None, "--id", help="ID of the scene to edit (defaults to active scene)"
     ),
@@ -176,7 +180,8 @@ def edit_scene(
         StructuredEditorConfig,
         edit_structured_data,
     )
-
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"] # Needed for editor
     try:
         with get_db_context() as session:
             # Initialize the scene_manager with the session
@@ -192,7 +197,7 @@ def edit_scene(
             # Get the scene to edit
             scene = scene_manager.get_scene(scene_id)
             if not scene:
-                console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
+                renderer.display_error(f"Scene '{scene_id}' not found.")
                 raise typer.Exit(1)
 
             # Prepare the data for editing
@@ -244,20 +249,25 @@ def edit_scene(
                     description=edited_data["description"],
                 )
 
-                console.print("[bold green]Scene updated successfully![/]")
-                display_scene_info(console, updated_scene)
+                renderer.display_success("Scene updated successfully!")
+                renderer.display_scene_info(updated_scene)
+            else:
+                # User cancelled the editor
+                renderer.display_warning("Scene edit cancelled.")
+
 
     except (SceneError, ActError) as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @scene_app.command("set-current")
 def set_current_scene(
+    ctx: typer.Context,
     scene_id: str = typer.Option(..., "--id", help="ID of the scene to make current"),
 ) -> None:
     """Set which scene is currently being played."""
-
+    renderer: "Renderer" = ctx.obj["renderer"]
     try:
         with get_db_context() as session:
             scene_manager = SceneManager(session=session)
@@ -286,16 +296,16 @@ def set_current_scene(
 
             # Check if scene_id exists before trying to set it
             if scene_id not in scene_ids:
-                console.print(f"[bold red]Error:[/] Scene '{scene_id}' not found.")
-                console.print("\nValid scene IDs:")
+                renderer.display_error(f"Scene '{scene_id}' not found.")
+                renderer.display_message("\nValid scene IDs:")
                 for sid in scene_ids:
-                    console.print(f"  {sid}")
-                return
+                    renderer.display_message(f"  {sid}")
+                raise typer.Exit(1) # Exit after showing valid IDs
 
             # Set the current scene
             new_current = scene_manager.set_current_scene(scene_id)
-            console.print("[bold green]Current scene updated successfully![/]")
-            display_scene_info(console, new_current)
+            renderer.display_success("Current scene updated successfully!")
+            renderer.display_scene_info(new_current)
     except (GameError, SceneError, ActError) as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
