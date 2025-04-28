@@ -72,7 +72,8 @@ class MarkdownRenderer(Renderer):
     ) -> None:
         """Displays a single oracle interpretation as Markdown."""
         logger.debug(
-            f"Displaying interpretation as Markdown: {interp.id} (selected: {selected}, sequence: {sequence})"
+            f"Displaying interpretation as Markdown: {interp.id} (selected: "
+            f"{selected}, sequence: {sequence})"
         )
 
         # Build the title
@@ -99,7 +100,8 @@ class MarkdownRenderer(Renderer):
     def display_events_table(self, events: List[Event], scene: Scene) -> None:
         """Displays a list of events as a Markdown table."""
         logger.debug(
-            f"Displaying events table as Markdown for scene '{scene.title}' with {len(events)} events"
+            f"Displaying events table as Markdown for scene '{scene.title}' "
+            f"with {len(events)} events"
         )
 
         if not events:
@@ -265,7 +267,8 @@ class MarkdownRenderer(Renderer):
     ) -> None:
         """Displays a set of oracle interpretations as Markdown."""
         logger.debug(
-            f"Displaying interpretation set as Markdown: {interp_set.id} (show_context: {show_context})"
+            f"Displaying interpretation set as Markdown: {interp_set.id} "
+            f"(show_context: {show_context})"
         )
         output_lines = []
 
@@ -295,14 +298,16 @@ class MarkdownRenderer(Renderer):
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene as Markdown."""
         logger.debug(
-            f"Displaying scene info as Markdown for {scene.id} (status: {scene.status.value})"
+            f"Displaying scene info as Markdown for {scene.id} (status: "
+            f"{scene.status.value})"
         )
         output_lines = []
 
         # Header with status indicator
         status_indicator = " ✓" if scene.status == SceneStatus.COMPLETED else ""
         output_lines.append(
-            f"### Scene {scene.sequence}: {scene.title}{status_indicator} (`{scene.id}`)"
+            f"### Scene {scene.sequence}: {scene.title}{status_indicator} "
+            f"(`{scene.id}`)"
         )
         output_lines.append("")
 
@@ -363,13 +368,13 @@ class MarkdownRenderer(Renderer):
             act_title = latest_act.title or "*Untitled Act*"
             output_lines.append(f"**Title:** {act_title} (Act {latest_act.sequence})")
             status = "**Active**" if is_act_active else "Inactive"
-           output_lines.append(f"**Status:** {status}")
-           if latest_act.summary:
-               # Use full summary
-               summary_preview = latest_act.summary
-               output_lines.append(f"**Summary:** {summary_preview}")
-       else:
-           output_lines.append("*No acts found in this game.*")
+            output_lines.append(f"**Status:** {status}")
+            if latest_act.summary:
+                # Use full summary
+                summary_preview = latest_act.summary
+                output_lines.append(f"**Summary:** {summary_preview}")
+        else:
+            output_lines.append("*No acts found in this game.*")
         output_lines.append("---")
 
         # Scene Context (Latest & Previous)
@@ -385,13 +390,13 @@ class MarkdownRenderer(Renderer):
                 status = "**Active**"
             else:
                 status = "Inactive"
-           output_lines.append(f"**Status:** {status}")
-           if latest_scene.description:
-               # Use full description
-               desc_preview = latest_scene.description
-               output_lines.append(f"**Description:** {desc_preview}")
+            output_lines.append(f"**Status:** {status}")
+            if latest_scene.description:
+                # Use full description
+                desc_preview = latest_scene.description
+                output_lines.append(f"**Description:** {desc_preview}")
 
-           prev_scene = None
+            prev_scene = None
             if scene_manager:
                 try:
                     prev_scene = scene_manager.get_previous_scene(latest_scene.id)
@@ -402,7 +407,8 @@ class MarkdownRenderer(Renderer):
             if prev_scene:
                 prev_title = prev_scene.title or "*Untitled Scene*"
                 output_lines.append(
-                    f"- {prev_title} (Scene {prev_scene.sequence}) - Status: {prev_scene.status.value}"
+                    f"- {prev_title} (Scene {prev_scene.sequence}) - Status: "
+                    f"{prev_scene.status.value}"
                 )
             else:
                 output_lines.append("- *No previous scene found or accessible.*")
@@ -415,17 +421,19 @@ class MarkdownRenderer(Renderer):
         output_lines.append("### Recent Events")
         if recent_events:
             max_events_to_show = 5
-           max_events_to_show = 5  # Keep limiting the *number* shown for brevity
-           for event in recent_events[:max_events_to_show]:
-               source_name = event.source_name
-               timestamp = event.created_at.strftime("%Y-%m-%d %H:%M")
-               # Use full description here too, but escape pipes
-               desc = event.description.replace("|", "\\|")
-               output_lines.append(f"*   `{timestamp}` ({source_name}): {desc}")
-           if len(recent_events) > max_events_to_show:
-               output_lines.append(
-                    f"*   ... ({len(recent_events) - max_events_to_show} more not shown)"
-                )
+            max_events_to_show = 5  # Keep limiting the *number* shown
+                                   # for brevity
+            for event in recent_events[:max_events_to_show]:
+                source_name = event.source_name
+                timestamp = event.created_at.strftime("%Y-%m-%d %H:%M")
+                # Use full description here too, but escape pipes
+                desc = event.description.replace("|", "\\|")
+                output_lines.append(f"*   `{timestamp}` ({source_name}): {desc}")
+            if len(recent_events) > max_events_to_show:
+                output_lines.append(
+                     f"*   ... ({len(recent_events) - max_events_to_show} "
+                    "more not shown)"
+                 )
         else:
             output_lines.append("*No recent events.*")
         output_lines.append("---")
@@ -450,23 +458,23 @@ class MarkdownRenderer(Renderer):
             except Exception as e:
                 logger.warning(f"Could not retrieve oracle status: {e}")
 
-       if pending_interp_set:
-           output_lines.append("**Pending Decision:**")
-           # Use full context
-           output_lines.append(f"*   Context: {pending_interp_set.context}")
-           output_lines.append(
-               f"*   Options: {len(pending_interp_set.interpretations)}"
-            )
+        if pending_interp_set:
+            output_lines.append("**Pending Decision:**")
+            # Use full context
+            output_lines.append(f"*   Context: {pending_interp_set.context}")
+            output_lines.append(
+                f"*   Options: {len(pending_interp_set.interpretations)}"
+             )
             output_lines.append("*   Use `sologm oracle select` to choose.")
         elif recent_interp_tuple:
-           interp_set, selected_interp = recent_interp_tuple
-           output_lines.append("**Last Decision:**")
-           # Use full context
-           output_lines.append(f"*   Context: {interp_set.context}")
-           # Use full title
-           output_lines.append(f"*   Selected: {selected_interp.title}")
-       else:
-           output_lines.append("*No pending or recent oracle interpretations.*")
+            interp_set, selected_interp = recent_interp_tuple
+            output_lines.append("**Last Decision:**")
+            # Use full context
+            output_lines.append(f"*   Context: {interp_set.context}")
+            # Use full title
+            output_lines.append(f"*   Selected: {selected_interp.title}")
+        else:
+            output_lines.append("*No pending or recent oracle interpretations.*")
         output_lines.append("---")
 
         # Recent Dice Rolls
