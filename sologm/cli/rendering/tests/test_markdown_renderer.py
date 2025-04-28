@@ -499,12 +499,15 @@ def test_display_scene_info_markdown(
         # REMOVED: Refresh scene to load act relationship
         # session.refresh(test_scene, attribute_names=["act"]) # <- Remove this line
 
+        # --- Add this line ---
+        session.flush() # Ensure timestamps and relationships are loaded before display
+        # --- End of added line ---
+
         renderer.display_scene_info(test_scene)
 
         # The rest of the assertions remain the same...
-        act_title = (
-            test_scene.act.title or "Untitled Act"
-        )  # Accessing .act here will trigger lazy load
+        # Accessing .act here might trigger lazy load if not flushed, but flush is safer
+        act_title = test_scene.act.title or "Untitled Act"
         act_info = f"Act {test_scene.act.sequence}: {act_title}"
         status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
 
@@ -513,8 +516,9 @@ def test_display_scene_info_markdown(
             f"{test_scene.description}\n\n"
             f"*   **Status:** {test_scene.status.value}\n"
             f"*   **Act:** {act_info}\n"
-            f"*   **Created:** {test_scene.created_at.strftime('%Y-%m-%d')}\n"
-            f"*   **Modified:** {test_scene.modified_at.strftime('%Y-%m-%d')}"
+            # Ensure created_at and modified_at are not None before formatting
+            f"*   **Created:** {test_scene.created_at.strftime('%Y-%m-%d') if test_scene.created_at else 'N/A'}\n"
+            f"*   **Modified:** {test_scene.modified_at.strftime('%Y-%m-%d') if test_scene.modified_at else 'N/A'}"
         )
         mock_console.print.assert_called_once_with(expected_output)
 
