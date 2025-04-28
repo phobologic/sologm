@@ -123,11 +123,13 @@ def test_generate_act_markdown(
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         # Add scenes to test their inclusion
+        # REMOVED sequence=1 argument
         scene1 = create_test_scene(
-            session, act_id=act.id, sequence=1, title="First Scene"
+            session, act_id=act.id, title="First Scene"
         )
+        # REMOVED sequence=2 argument
         scene2 = create_test_scene(
-            session, act_id=act.id, sequence=2, title="Second Scene"
+            session, act_id=act.id, title="Second Scene"
         )
 
         # Test basic act markdown
@@ -137,7 +139,10 @@ def test_generate_act_markdown(
         assert isinstance(result, list)
         assert any(f"## Act {act.sequence}: {act.title}" in line for line in result)
         assert any(act.summary in line for line in result)
-        # Check if scenes are included
+        # Check if scenes are included (sequence will be assigned automatically)
+        # Refresh scene objects to ensure sequence numbers are loaded if needed for assertion
+        session.refresh(scene1)
+        session.refresh(scene2)
         assert any(
             f"### Scene {scene1.sequence}: {scene1.title}" in line for line in result
         )
