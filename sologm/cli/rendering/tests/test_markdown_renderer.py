@@ -714,13 +714,13 @@ def test_display_interpretation_sets_table_markdown(
 
         interp_sets = [test_interpretation_set]
 
-       renderer.display_interpretation_sets_table(interp_sets)
+        renderer.display_interpretation_sets_table(interp_sets)
 
-       # Use full context and results, but escape pipes for the expected output
-       full_context = test_interpretation_set.context.replace("|", "\\|")
-       full_results = test_interpretation_set.oracle_results.replace("|", "\\|")
-       status = (
-           "Resolved"
+        # Use full context and results, but escape pipes for the expected output
+        full_context = test_interpretation_set.context.replace("|", "\\|")
+        full_results = test_interpretation_set.oracle_results.replace("|", "\\|")
+        status = (
+            "Resolved"
            if any(i.is_selected for i in test_interpretations)
             else "Pending"
         )
