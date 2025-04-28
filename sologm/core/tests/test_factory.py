@@ -3,8 +3,6 @@
 import logging
 from types import SimpleNamespace
 
-import pytest
-
 from sologm.core.act import ActManager
 from sologm.core.dice import DiceManager
 from sologm.core.event import EventManager
@@ -85,20 +83,3 @@ def test_create_all_managers(session_context):
         logger.debug("Manager dependencies correctly wired")
 
         logger.debug("Finished test_create_all_managers successfully")
-
-
-# Example of how to use the factory in another test (for illustration)
-# This doesn't need to be run as part of the factory test itself.
-@pytest.mark.skip(reason="Illustrative example, not a direct test of the factory")
-def test_example_usage_in_other_tests(session_context, create_test_game):
-    """Illustrates how the factory might be used in other tests."""
-    with session_context as session:
-        managers = create_all_managers(session)
-
-        # Now use the managers to interact with the system
-        game = managers.game.create_game(name="Example Game", description="...")
-        assert game.name == "Example Game"
-
-        # Or use factory fixtures that now accept the session
-        # game_from_fixture = create_test_game(session, name="Fixture Game")
-        # assert game_from_fixture.name == "Fixture Game"
