@@ -500,7 +500,7 @@ def test_display_scene_info_markdown(
         # session.refresh(test_scene, attribute_names=["act"]) # <- Remove this line
 
         # --- Add this line ---
-        session.flush() # Ensure timestamps and relationships are loaded before display
+        session.flush()  # Ensure timestamps and relationships are loaded before display
         # --- End of added line ---
 
         renderer.display_scene_info(test_scene)
