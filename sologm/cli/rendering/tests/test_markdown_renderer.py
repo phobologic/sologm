@@ -497,8 +497,7 @@ def test_display_scene_info_markdown(
             description="Scene Description.",
             status=SceneStatus.ACTIVE,
         )
-        # Refresh scene to load act relationship
-        session.refresh(test_scene, attribute_names=["act"])
+        # No refresh needed here, relationship is loaded via act_id
 
         renderer.display_scene_info(test_scene)
 
