@@ -496,12 +496,13 @@ def test_display_scene_info_markdown(
             description="Scene Description.",
             status=SceneStatus.ACTIVE,
         )
-        # Refresh scene to load act relationship
-        session.refresh(test_scene, attribute_names=["act"])
+        # REMOVED: Refresh scene to load act relationship
+        # session.refresh(test_scene, attribute_names=["act"]) # <- Remove this line
 
         renderer.display_scene_info(test_scene)
 
-        act_title = test_scene.act.title or "Untitled Act"
+        # The rest of the assertions remain the same...
+        act_title = test_scene.act.title or "Untitled Act" # Accessing .act here will trigger lazy load
         act_info = f"Act {test_scene.act.sequence}: {act_title}"
         status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
 
