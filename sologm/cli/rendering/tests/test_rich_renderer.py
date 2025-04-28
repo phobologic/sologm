@@ -140,17 +140,6 @@ def test_display_game_status_full(
 
     # Assertions remain the same
     assert mock_console.print.called
-        latest_scene=scene,
-        recent_events=events,
-        scene_manager=mock_scene_manager,
-        oracle_manager=mock_oracle_manager,
-        recent_rolls=rolls,
-        is_act_active=True,
-        is_scene_active=True,
-    )
-
-    # Assertions remain the same
-    assert mock_console.print.called
 
 
 def test_display_game_status_no_scene(
@@ -178,17 +167,6 @@ def test_display_game_status_no_scene(
             is_act_active=True,
             is_scene_active=False,
         )
-
-    # Assertions will run after implementation
-    assert mock_console.print.called
-        latest_scene=None,
-        recent_events=[],
-        scene_manager=None,  # No scene manager needed if no scene
-        oracle_manager=mock_oracle_manager,
-        recent_rolls=None,
-        is_act_active=True,
-        is_scene_active=False,
-    )
 
     # Assertions will run after implementation
     assert mock_console.print.called
@@ -225,17 +203,6 @@ def test_display_game_status_no_events(
 
     # Assertions will run after implementation
     assert mock_console.print.called
-        latest_scene=scene,
-        recent_events=[],
-        scene_manager=mock_scene_manager,
-        oracle_manager=mock_oracle_manager,
-        recent_rolls=None,
-        is_act_active=True,
-        is_scene_active=True,
-    )
-
-    # Assertions will run after implementation
-    assert mock_console.print.called
 
 
 def test_display_game_status_no_interpretation(
@@ -268,17 +235,6 @@ def test_display_game_status_no_interpretation(
             is_act_active=True,
             is_scene_active=True,
         )
-
-    # Assertions will run after implementation
-    assert mock_console.print.called
-        latest_scene=scene,
-        recent_events=events,
-        scene_manager=mock_scene_manager,
-        oracle_manager=None,  # No oracle manager
-        recent_rolls=None,
-        is_act_active=True,
-        is_scene_active=True,
-    )
 
     # Assertions will run after implementation
     assert mock_console.print.called
@@ -339,17 +295,6 @@ def test_display_game_status_selected_interpretation(
             is_act_active=True,
             is_scene_active=True,
         )
-
-    # Assertions will run after implementation
-    assert mock_console.print.called
-        latest_scene=scene,
-        recent_events=events,
-        scene_manager=mock_scene_manager,
-        oracle_manager=mock_oracle_manager,
-        recent_rolls=None,
-        is_act_active=True,
-        is_scene_active=True,
-    )
 
     # Assertions will run after implementation
     assert mock_console.print.called
