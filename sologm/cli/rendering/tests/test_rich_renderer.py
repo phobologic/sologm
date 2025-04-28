@@ -420,20 +420,33 @@ def test_create_scene_panels_grid(
         assert grid is not None
 
 
-def test_create_events_panel(mock_console: MagicMock, test_events: List[Event]):
+def test_create_events_panel(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_event: Callable[..., Event],
+):
     """Test creating the events panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
-    # Test with events
-    panel = renderer._create_events_panel(test_events, 60)
-    assert panel is not None
-    assert "Recent Events" in panel.title
-    assert panel.border_style == BORDER_STYLES["success"]
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        event = create_test_event(session, scene_id=scene.id)
+        events = [event]
 
-    # Test with no events
-    panel = renderer._create_events_panel([], 60)
-    assert panel is not None
-    assert "Recent Events" in panel.title
+        # Test with events
+        panel = renderer._create_events_panel(events, 60)
+        assert panel is not None
+        assert "Recent Events" in panel.title
+        assert panel.border_style == BORDER_STYLES["success"]
+
+        # Test with no events
+        panel = renderer._create_events_panel([], 60)
+        assert panel is not None
+        assert "Recent Events" in panel.title
 
 
 def test_create_oracle_panel(
@@ -794,15 +807,24 @@ def test_display_events_table_with_truncation(
         assert isinstance(args2[0], Panel)
 
 
-def test_display_events_table_no_events(mock_console: MagicMock, test_scene: Scene):
+def test_display_events_table_no_events(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+):
     """Test displaying events table with no events using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_events_table([], test_scene)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id, title="Empty Scene")
 
-    # Assertions will run after implementation
+    renderer.display_events_table([], scene)
+
     mock_console.print.assert_called_once_with(
-        f"\nNo events in scene '{test_scene.title}'"
+        f"\nNo events in scene '{scene.title}'"
     )
 
 
