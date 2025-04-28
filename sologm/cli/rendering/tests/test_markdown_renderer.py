@@ -166,34 +166,22 @@ def test_display_events_table_markdown(
         mock_console.print.assert_called_with(expected_output)
         mock_console.reset_mock()
 
-        # Test with truncation enabled explicitly
-        short_len = 10
-        renderer.display_events_table(
-            test_events, scene, max_description_length=short_len
+        # Test with pipe character escaping
+        event_with_pipe = create_test_event(
+            session,
+            scene_id=scene.id,
+            description="Event | with pipe",
+            source="manual",
         )
-        truncated_desc1 = truncate_text(event1.description, short_len)
-        truncated_desc2 = truncate_text(event2.description, short_len)
-        expected_output_truncated = (
+        renderer.display_events_table([event_with_pipe], scene)
+        # Expected output should have the pipe escaped
+        expected_output_pipe = (
             f"### Events in Scene: {scene.title}\n\n"
             f"| ID | Time | Source | Description |\n"
             f"|---|---|---|---|\n"
-            f"| `{event1.id}` | {event1.created_at.strftime('%Y-%m-%d %H:%M')} | {event1.source_name} | {truncated_desc1} |\n"
-            f"| `{event2.id}` | {event2.created_at.strftime('%Y-%m-%d %H:%M')} | {event2.source_name} | {truncated_desc2} |"
+            f"| `{event_with_pipe.id}` | {event_with_pipe.created_at.strftime('%Y-%m-%d %H:%M')} | {event_with_pipe.source_name} | Event \\| with pipe |"
         )
-        mock_console.print.assert_called_with(expected_output_truncated)
-        mock_console.reset_mock()
-
-        # Test with truncation disabled
-        renderer.display_events_table(test_events, scene, truncate_descriptions=False)
-        # Expected output should be the same as the first case if descriptions are short
-        expected_output_no_trunc = (
-            f"### Events in Scene: {scene.title}\n\n"
-            f"| ID | Time | Source | Description |\n"
-            f"|---|---|---|---|\n"
-            f"| `{event1.id}` | {event1.created_at.strftime('%Y-%m-%d %H:%M')} | {event1.source_name} | {event1.description} |\n"
-            f"| `{event2.id}` | {event2.created_at.strftime('%Y-%m-%d %H:%M')} | {event2.source_name} | {event2.description} |"
-        )
-        mock_console.print.assert_called_with(expected_output_no_trunc)
+        mock_console.print.assert_called_with(expected_output_pipe)
         mock_console.reset_mock()
 
 
