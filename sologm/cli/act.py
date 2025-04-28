@@ -79,7 +79,8 @@ def create_act(
         $ sologm act create -t "The Journey Begins"
     """
     logger.debug("Creating new act")
-
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"] # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -88,10 +89,10 @@ def create_act(
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
     if not active_game:
-        console.print("[red]Error:[/] No active game. Activate a game first.")
+        renderer.display_error("No active game. Activate a game first.")
         raise typer.Exit(1)
 
-    # ActManager will validate if we can create a new act
+    # ActManager will validate if we can create a new act (inside create_act method)
 
     # If title and summary are not provided, open editor
     if title is None or summary is None:
@@ -189,7 +190,7 @@ def list_acts(ctx: typer.Context) -> None:
         $ sologm act list
     """
     logger.debug("Listing acts")
-
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -198,7 +199,7 @@ def list_acts(ctx: typer.Context) -> None:
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
         if not active_game:
-            console.print("[red]Error:[/] No active game. Activate a game first.")
+            renderer.display_error("No active game. Activate a game first.")
             raise typer.Exit(1)
 
         # Get all acts for the game
@@ -225,7 +226,7 @@ def act_info(ctx: typer.Context) -> None:
         $ sologm act info
     """
     logger.debug("Showing act info")
-
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -234,23 +235,20 @@ def act_info(ctx: typer.Context) -> None:
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
         if not active_game:
-            console.print("[red]Error:[/] No active game. Activate a game first.")
+            renderer.display_error("No active game. Activate a game first.")
             raise typer.Exit(1)
 
         # Get the active act
         active_act = game_manager.act_manager.get_active_act(active_game.id)
         if not active_act:
-            console.print(f"[red]Error:[/] No active act in game '{active_game.name}'.")
-            console.print("Create one with 'sologm act create'.")
+            renderer.display_error(f"No active act in game '{active_game.name}'.")
+            renderer.display_message("Create one with 'sologm act create'.")
             raise typer.Exit(1)
 
-        # Display compact game header first
-        from sologm.cli.utils.display import _create_game_header_panel
-
-        console.print(_create_game_header_panel(active_game, console))
-
-        # Display act info
-        display_act_info(console, active_act, active_game.name)
+        # Display act info using the renderer
+        # The renderer's display_act_info should handle displaying
+        # the game header internally if needed (RichRenderer does).
+        renderer.display_act_info(active_act, active_game.name)
 
 
 @act_app.command("edit")
@@ -287,7 +285,8 @@ def edit_act(
         $ sologm act edit --id abc123 -t "New Title" -s "New summary of the act"
     """
     logger.debug("Editing act")
-
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"] # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -296,7 +295,7 @@ def edit_act(
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
         if not active_game:
-            console.print("[red]Error:[/] No active game. Activate a game first.")
+            renderer.display_error("No active game. Activate a game first.")
             raise typer.Exit(1)
 
         # Get the act to edit
@@ -874,8 +873,8 @@ def _handle_user_feedback_loop(
                 results = new_results
 
             except APIError as e:
-                console.print(f"[red]AI Error:[/] {str(e)}")
-                console.print("[yellow]Returning to previous content.[/yellow]")
+                renderer.display_error(f"AI Error: {str(e)}")
+                renderer.display_warning("Returning to previous content.")
                 continue
 
 
@@ -1097,7 +1096,8 @@ def complete_act(
         $ sologm act complete --ai --force
     """
     logger.debug("Completing act")
-
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"] # Needed for editor/prompts
     # Main command flow
     from sologm.database.session import get_db_context
 
@@ -1111,45 +1111,50 @@ def complete_act(
             # Validate active game and act
             active_game = game_manager.get_active_game()
             if not active_game:
-                console.print("[red]Error:[/] No active game. Activate a game first.")
+                renderer.display_error("No active game. Activate a game first.")
                 raise typer.Exit(1)
 
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
-                console.print(
-                    f"[red]Error:[/] No active act in game '{active_game.name}'."
+                renderer.display_error(
+                    f"No active act in game '{active_game.name}'."
                 )
-                console.print("Create one with 'sologm act create'.")
+                renderer.display_message("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
 
             completed_act: Optional[Act] = None
             if ai:
                 # Handle AI path
                 completed_act = _handle_ai_completion(
-                    act_manager, active_act, active_game, console, context, force
+                    act_manager,
+                    active_act,
+                    active_game,
+                    console,
+                    renderer,
+                    context,
+                    force,
                 )
                 # If AI fails or is cancelled, completed_act will be None
-            # REMOVED: elif title is not None or summary is not None: block
             else:
                 # Handle manual editor path (this is now the default if
                 # --ai is not used)
                 logger.debug("Handling manual completion via editor")
                 completed_act = _handle_manual_completion(
-                    act_manager, active_act, active_game, console
+                    act_manager, active_act, active_game, console, renderer
                 )
                 # If manual edit is cancelled, completed_act will be None
 
             # Display success only if completion happened successfully
             if completed_act:
-                display_act_completion_success(console, completed_act)
+                renderer.display_act_completion_success(completed_act)
             else:
                 logger.debug(
                     "Act completion did not finish successfully or was cancelled."
                 )
                 # Optionally, add a message here if needed, e.g.:
-                # console.print("[yellow]Act completion process ended.[/yellow]")
+                # renderer.display_warning("Act completion process ended.")
 
         except GameError as e:
             # Catch errors from validation or manual completion
-            console.print(f"[red]Error:[/] {str(e)}")
+            renderer.display_error(f"Error: {str(e)}")
             raise typer.Exit(1) from e
