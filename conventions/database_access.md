@@ -35,10 +35,10 @@ def command_name():
 See [examples/database_access.md](examples/database_access.md) for operation examples.
 
 ## Transaction Management
-- Let `_execute_db_operation` handle transaction boundaries
-- Don't use `session.commit()` or `session.rollback()` directly
-- Use `session.flush()` to execute SQL without committing
-- Group atomic operations in single inner functions
+- Let the `SessionContext` (obtained via `get_db_context()`) handle transaction boundaries (commit/rollback) automatically upon exiting the `with` block.
+- Managers (and `_execute_db_operation`) **do not** handle commits or rollbacks.
+- Use `session.flush()` within manager operations if you need to execute SQL and get generated IDs (like primary keys) *before* the transaction is committed by the context manager.
+- Group related database modifications within a single `with get_db_context() as session:` block to ensure they are part of the same atomic transaction.
 
 ## Query Patterns
 - Single item: `session.query(Model).filter(conditions).first()`
