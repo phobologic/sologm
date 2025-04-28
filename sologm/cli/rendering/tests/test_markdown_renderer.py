@@ -945,65 +945,6 @@ def test_display_error_markdown(mock_console: MagicMock):
 
 
 # --- Add other tests below ---
-        act = create_test_act(session, game_id=game.id)
-        scene = create_test_scene(session, act_id=act.id)
-        test_interpretation_set = create_test_interpretation_set(
-            session,
-            scene_id=scene.id,
-            context="Test Context",
-            oracle_results="Test Results",
-        )
-        interp1 = create_test_interpretation(
-            session, set_id=test_interpretation_set.id, title="Interp 1"
-        )
-        interp2 = create_test_interpretation(
-            session, set_id=test_interpretation_set.id, title="Interp 2"
-        )
-        test_interpretations = [interp1, interp2]
-
-        # Refresh the set to load interpretations relationship
-        session.refresh(
-            test_interpretation_set, attribute_names=["interpretations"]
-        )
-        num_interpretations = len(test_interpretations)
-
-        # --- Test case 1: Show context ---
-        mock_console.reset_mock()
-        renderer.display_interpretation_set(
-            test_interpretation_set, show_context=True
-        )
-
-        expected_context = (
-            f"### Oracle Interpretations\n\n"
-            f"**Context:** {test_interpretation_set.context}\n"
-            f"**Results:** {test_interpretation_set.oracle_results}\n\n"
-            f"---"
-        )
-        expected_instruction = (
-            f"Interpretation Set ID: `{test_interpretation_set.id}`\n"
-            f"(Use 'sologm oracle select' to choose)"
-        )
-        # Expected calls: context(1) + N interpretations + N blank lines + instruction(1) = 2*N + 2
-        expected_call_count_true = num_interpretations * 2 + 2
-        assert mock_console.print.call_count == expected_call_count_true
-        mock_console.print.assert_any_call(expected_context)
-        mock_console.print.assert_any_call(expected_instruction)
-        # We don't assert the exact interpretation calls here, as that's tested elsewhere
-
-        # --- Test case 2: Hide context ---
-        mock_console.reset_mock()
-        renderer.display_interpretation_set(
-            test_interpretation_set, show_context=False
-        )
-
-        # Expected calls: N interpretations + N blank lines + instruction(1) = 2*N + 1
-        expected_call_count_false = num_interpretations * 2 + 1
-        assert mock_console.print.call_count == expected_call_count_false
-        # Ensure context was NOT printed
-        printed_calls = [call.args[0] for call in mock_console.print.call_args_list]
-        assert expected_context not in printed_calls
-        # Check instruction print call again
-        mock_console.print.assert_any_call(expected_instruction)
 
 
 def test_display_scene_info_markdown(
