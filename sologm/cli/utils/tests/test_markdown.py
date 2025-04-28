@@ -182,18 +182,14 @@ def test_generate_game_markdown_with_hierarchy(
             sequence=2,
             is_active=False,  # Ensure this act isn't set active during creation
         )
-        scene1_1 = create_test_scene(
-            session, act_id=act1.id, title="Opening Scene"
-        )
+        scene1_1 = create_test_scene(session, act_id=act1.id, title="Opening Scene")
         scene1_2 = create_test_scene(
             session,
             act_id=act1.id,
             title="Completed Scene",
             status=SceneStatus.COMPLETED,
         )
-        scene2_1 = create_test_scene(
-            session, act_id=act2.id, title="Another Scene"
-        )
+        scene2_1 = create_test_scene(session, act_id=act2.id, title="Another Scene")
         event1 = create_test_event(
             session, scene_id=scene1_1.id, description="First event happens."
         )
