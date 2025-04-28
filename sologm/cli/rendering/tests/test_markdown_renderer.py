@@ -3,7 +3,7 @@ Unit tests for the MarkdownRenderer class.
 """
 
 import logging
-from datetime import datetime  # Import datetime for DiceRoll creation
+from datetime import UTC, datetime  # Import datetime and UTC for DiceRoll creation
 from typing import Callable, List  # Import Callable for factory types
 from unittest.mock import MagicMock
 
@@ -59,8 +59,8 @@ def test_display_dice_roll_markdown(mock_console: MagicMock):
         modifier=1,
         total=8,
         reason="Test Roll",
-        created_at=datetime.utcnow(),
-        modified_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        modified_at=datetime.now(UTC),
         # scene_id=None # Optional, not needed for this display method
     )
 
