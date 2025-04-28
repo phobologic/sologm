@@ -287,7 +287,7 @@ class RichRenderer(Renderer):
         for game in games:
             # --- MODIFIED: Use hybrid properties for counts ---
             act_count = game.act_count  # Use hybrid property
-            scene_count = game.scene_count # Use hybrid property
+            scene_count = game.scene_count  # Use hybrid property
             # --- END MODIFICATION ---
 
             is_active = active_game and game.id == active_game.id
@@ -300,8 +300,8 @@ class RichRenderer(Renderer):
                 game.id,
                 game_name,
                 game.description,
-                str(act_count), # Use count from hybrid property
-                str(scene_count), # Use count from hybrid property
+                str(act_count),  # Use count from hybrid property
+                str(scene_count),  # Use count from hybrid property
                 active_marker,
             )
 
@@ -901,7 +901,9 @@ class RichRenderer(Renderer):
                 "Status": status_string,
                 "Sequence": latest_scene.sequence,
                 # --- MODIFIED: Add check for created_at ---
-                "Created": latest_scene.created_at.strftime("%Y-%m-%d") if latest_scene.created_at else "N/A",
+                "Created": latest_scene.created_at.strftime("%Y-%m-%d")
+                if latest_scene.created_at
+                else "N/A",
                 # --- END MODIFICATION ---
             }
             scenes_content.append("\n")
