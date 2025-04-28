@@ -3,12 +3,12 @@ Renderer implementation for generating Markdown output.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from rich.console import Console
 
-# Import base class
-from .base import Renderer
+# Import utilities
+from sologm.cli.utils.display import truncate_text
 
 # Import necessary models for type hinting
 from sologm.models.act import Act
@@ -16,10 +16,10 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene
+from sologm.models.scene import Scene, SceneStatus
 
-# Import utilities
-from sologm.cli.utils.display import truncate_text
+# Import base class
+from .base import Renderer
 
 if TYPE_CHECKING:
     # Assuming managers are in sologm.core.<manager_name>
