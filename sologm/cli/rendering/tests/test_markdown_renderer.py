@@ -945,31 +945,6 @@ def test_display_error_markdown(mock_console: MagicMock):
 
 
 # --- Add other tests below ---
-    `MarkdownRenderer` produces the correct Markdown output for an
-    `InterpretationSet` object.
-
-    It specifically checks:
-    - The rendering of the context section (header, context text, results text)
-      when `show_context` is True.
-    - That the context section is *not* rendered when `show_context` is False.
-    - The rendering of the instruction footer containing the set ID and usage hint.
-    - That the correct number of `console.print` calls are made, implying that
-      `display_interpretation` is invoked for each interpretation within the set
-      (though the exact output of `display_interpretation` is tested separately).
-
-    Args:
-        mock_console: The mocked Rich Console fixture.
-        session_context: Fixture providing a database session context.
-        create_test_game: Factory fixture for creating Game instances.
-        create_test_act: Factory fixture for creating Act instances.
-        create_test_scene: Factory fixture for creating Scene instances.
-        create_test_interpretation_set: Factory fixture for InterpretationSet.
-        create_test_interpretation: Factory fixture for Interpretation.
-    """
-    renderer = MarkdownRenderer(mock_console)
-
-    with session_context as session:
-        game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         test_interpretation_set = create_test_interpretation_set(
