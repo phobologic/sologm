@@ -390,12 +390,12 @@ class MarkdownRenderer(Renderer):
                 status = "**Active**"
             else:
                 status = "Inactive"
-            output_lines.append(f"*   Status: {status}") # Use list item
+            output_lines.append(f"*   Status: {status}")  # Use list item
 
             if latest_scene.description:
                 # Use full description for latest scene
                 desc_preview = latest_scene.description
-                output_lines.append(f"*   Description: {desc_preview}") # Use list item
+                output_lines.append(f"*   Description: {desc_preview}")  # Use list item
 
             # Previous Scene Logic
             prev_scene = None
@@ -407,14 +407,20 @@ class MarkdownRenderer(Renderer):
 
             # Only add previous scene info if it exists
             if prev_scene:
-                output_lines.append("\n**Previous Scene:**") # Header for previous
+                output_lines.append("\n**Previous Scene:**")  # Header for previous
                 prev_title = prev_scene.title or "*Untitled Scene*"
-                output_lines.append(f"*   Title: {prev_title} (Scene {prev_scene.sequence})") # Use list item
-                output_lines.append(f"*   Status: {prev_scene.status.value}") # Use list item
+                output_lines.append(
+                    f"*   Title: {prev_title} (Scene {prev_scene.sequence})"
+                )  # Use list item
+                output_lines.append(
+                    f"*   Status: {prev_scene.status.value}"
+                )  # Use list item
                 if prev_scene.description:
                     # Use full description for previous scene
                     prev_desc_preview = prev_scene.description
-                    output_lines.append(f"*   Description: {prev_desc_preview}") # Use list item
+                    output_lines.append(
+                        f"*   Description: {prev_desc_preview}"
+                    )  # Use list item
             # No "else" needed here, just don't print anything if no previous scene
 
         else:
