@@ -167,7 +167,7 @@ def retry_interpretation(
             if was_modified:
                 context = edited_data["context"]
 
-        console.print("\nGenerating new interpretations...", style="bold blue")
+        renderer.display_message("\nGenerating new interpretations...", style="bold blue")
         new_interp_set = oracle_manager.get_interpretations(
             scene.id,
             context,  # Use the potentially updated context
