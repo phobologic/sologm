@@ -251,7 +251,7 @@ def create_test_scene() -> Callable[..., Scene]:
         # to be persistent within this session context. Flushing ensures the object
         # state is synchronized with the DB before refresh.
         try:
-            session.flush() # Flush *before* refresh to ensure state is synchronized
+            session.flush()  # Flush *before* refresh to ensure state is synchronized
             # Refresh common relationships that might be needed immediately after creation
             # Adjust attribute_names based on typical usage patterns
             session.refresh(scene, attribute_names=["act"])
