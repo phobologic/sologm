@@ -9,8 +9,9 @@ import logging
 from typing import Dict, Optional, TYPE_CHECKING
 
 import typer
+
 # Console import removed, will get from ctx
-from rich.prompt import Confirm # Keep Confirm for interactive input
+from rich.prompt import Confirm  # Keep Confirm for interactive input
 
 # Display function imports removed, will use renderer
 from sologm.cli.utils.structured_editor import (
@@ -80,7 +81,7 @@ def create_act(
     """
     logger.debug("Creating new act")
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor
+    console: "Console" = ctx.obj["console"]  # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -286,7 +287,7 @@ def edit_act(
     """
     logger.debug("Editing act")
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor
+    console: "Console" = ctx.obj["console"]  # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -318,9 +319,7 @@ def edit_act(
             # Get the active act
             act_to_edit = act_manager.get_active_act(active_game.id)
             if not act_to_edit:
-                renderer.display_error(
-                    f"No active act in game '{active_game.name}'."
-                )
+                renderer.display_error(f"No active act in game '{active_game.name}'.")
                 renderer.display_message("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
 
@@ -333,7 +332,7 @@ def edit_act(
                         name="title",
                         display_name="Title",
                         help_text="Title of the act (can be left empty for "
-                                  "untitled acts)",
+                        "untitled acts)",
                         required=False,
                     ),
                     FieldConfig(
@@ -417,9 +416,7 @@ def edit_act(
 # --- Helper Functions for complete_act (pass renderer/console where needed) ---
 
 
-def _check_existing_content(
-    act: Act, force: bool, renderer: "Renderer"
-) -> bool:
+def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool:
     """Check if act has existing content and confirm replacement if needed.
 
     Args:
@@ -480,7 +477,7 @@ def _collect_user_context(
                 name="context",
                 display_name="Additional Context",
                 help_text="Provide any additional context or guidance for "
-                          "the AI summary generation",
+                "the AI summary generation",
                 multiline=True,
                 required=False,
             ),
@@ -643,7 +640,7 @@ def _collect_regeneration_feedback(
         context_info=context_info,
         editor_config=EditorConfig(
             edit_message="Edit your regeneration feedback below (or leave "
-                         "empty for a new attempt):",
+            "empty for a new attempt):",
             success_message="Feedback collected successfully.",
             cancel_message="Regeneration cancelled.",
             error_message="Could not open editor. Please try again.",
@@ -811,8 +808,8 @@ def _handle_user_feedback_loop(
 
         # Handle potential None choice if prompt is cancelled in renderer
         if choice is None:
-             logger.debug("User cancelled feedback prompt")
-             return None
+            logger.debug("User cancelled feedback prompt")
+            return None
 
         if choice == "A":  # Accept
             logger.debug("User accepted the generated content")
@@ -840,13 +837,13 @@ def _handle_user_feedback_loop(
             )
 
             if not feedback_data:
-                renderer.display_warning(
-                    "Regeneration cancelled. Returning to prompt."
-                )
+                renderer.display_warning("Regeneration cancelled. Returning to prompt.")
                 continue
 
             try:
-                renderer.display_message("Regenerating summary with AI...", style="yellow")
+                renderer.display_message(
+                    "Regenerating summary with AI...", style="yellow"
+                )
 
                 # Generate new content with feedback
                 if feedback_data.get("feedback") or feedback_data.get("context"):
@@ -918,9 +915,7 @@ def _handle_ai_completion(
     # 2. Collect context if needed
     original_context = context  # Keep track for regeneration feedback
     if not context:
-        context = _collect_user_context(
-            active_act, active_game.name, console, renderer
-        )
+        context = _collect_user_context(active_act, active_game.name, console, renderer)
         # User might cancel context collection, context will be None which
         # is handled by generate_act_summary
 
@@ -1066,7 +1061,7 @@ def complete_act(
         "--force",
         # UPDATED help text for --force
         help="Force AI generation even if title/summary already exist "
-             "(overwrites existing)",
+        "(overwrites existing)",
     ),
 ) -> None:
     """[bold]Complete the current active act.[/bold]
@@ -1097,7 +1092,7 @@ def complete_act(
     """
     logger.debug("Completing act")
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor/prompts
+    console: "Console" = ctx.obj["console"]  # Needed for editor/prompts
     # Main command flow
     from sologm.database.session import get_db_context
 
@@ -1116,9 +1111,7 @@ def complete_act(
 
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
-                renderer.display_error(
-                    f"No active act in game '{active_game.name}'."
-                )
+                renderer.display_error(f"No active act in game '{active_game.name}'.")
                 renderer.display_message("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
 
