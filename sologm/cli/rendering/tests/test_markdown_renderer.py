@@ -64,9 +64,10 @@ def test_display_dice_roll_markdown(mock_console: MagicMock):
         "*   Modifier: `+1`"
     )
 
-    # Assert that console.print was called with the expected string
-    # Using assert_called_once_with checks for exact match including newlines
-    mock_console.print.assert_called_once_with(expected_output)
+    # Assert that console.print was called with the expected string and flags
+    mock_console.print.assert_called_once_with(
+        expected_output, highlight=False, markup=False
+    )
 
 
 # --- Test for display_interpretation ---
@@ -103,7 +104,9 @@ def test_display_interpretation_markdown(
             f"{interp.description}\n\n"
             f"*ID: {interp.id} / {interp.slug}*"
         )
-    mock_console.print.assert_called_with(expected_output_basic)
+    mock_console.print.assert_called_with(
+        expected_output_basic, highlight=False, markup=False
+    )
     mock_console.reset_mock()
 
     # Test case 2: Selected interpretation with sequence
@@ -163,7 +166,9 @@ def test_display_events_table_markdown(
             f"| `{event1.id}` | {event1.created_at.strftime('%Y-%m-%d %H:%M')} | {event1.source_name} | {event1.description} |\n"
             f"| `{event2.id}` | {event2.created_at.strftime('%Y-%m-%d %H:%M')} | {event2.source_name} | {event2.description} |"
         )
-        mock_console.print.assert_called_with(expected_output)
+        mock_console.print.assert_called_with(
+            expected_output, highlight=False, markup=False
+        )
         mock_console.reset_mock()
 
         # Test with pipe character escaping
@@ -181,7 +186,9 @@ def test_display_events_table_markdown(
             f"|---|---|---|---|\n"
             f"| `{event_with_pipe.id}` | {event_with_pipe.created_at.strftime('%Y-%m-%d %H:%M')} | {event_with_pipe.source_name} | Event \\| with pipe |"
         )
-        mock_console.print.assert_called_with(expected_output_pipe)
+        mock_console.print.assert_called_with(
+            expected_output_pipe, highlight=False, markup=False
+        )
         mock_console.reset_mock()
 
 
@@ -200,7 +207,9 @@ def test_display_events_table_no_events_markdown(
         scene = create_test_scene(session, act_id=act.id, title="Empty Scene")
         renderer.display_events_table([], scene)
         expected_output = f"\nNo events in scene '{scene.title}'"
-        mock_console.print.assert_called_with(expected_output)
+        mock_console.print.assert_called_with(
+            expected_output, highlight=False, markup=False
+        )
 
 
 # --- Test for display_games_table ---
@@ -239,7 +248,9 @@ def test_display_games_table_markdown(
             f"| `{test_game.id}` | **{test_game.name}** | {test_game.description} | 0 | 0 | ✓ |\n"
             f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
         )
-    mock_console.print.assert_called_with(expected_output_active)
+    mock_console.print.assert_called_with(
+        expected_output_active, highlight=False, markup=False
+    )
     mock_console.reset_mock()
 
     # Test case 2: Without an active game
@@ -260,7 +271,9 @@ def test_display_games_table_no_games_markdown(mock_console: MagicMock):
     renderer = MarkdownRenderer(mock_console)
     renderer.display_games_table([], active_game=None)
     expected_output = "No games found. Create one with 'sologm game create'."
-    mock_console.print.assert_called_with(expected_output)
+    mock_console.print.assert_called_with(
+        expected_output, highlight=False, markup=False
+    )
 
 
 # --- Test for display_scenes_table ---
@@ -309,7 +322,9 @@ def test_display_scenes_table_markdown(
             f"| `{test_scene.id}` | **{test_scene.title}** | {test_scene.description} | {test_scene.status.value} | ✓ | {test_scene.sequence} |\n"
             f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
         )
-    mock_console.print.assert_called_with(expected_output_active)
+    mock_console.print.assert_called_with(
+        expected_output_active, highlight=False, markup=False
+    )
     mock_console.reset_mock()
 
     # Test case 2: Without an active scene ID
@@ -330,7 +345,9 @@ def test_display_scenes_table_no_scenes_markdown(mock_console: MagicMock):
     renderer = MarkdownRenderer(mock_console)
     renderer.display_scenes_table([], active_scene_id=None)
     expected_output = "No scenes found. Create one with 'sologm scene create'."
-    mock_console.print.assert_called_with(expected_output)
+    mock_console.print.assert_called_with(
+        expected_output, highlight=False, markup=False
+    )
 
 
 # --- Test for display_game_info ---
@@ -366,7 +383,9 @@ def test_display_game_info_markdown(
             f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}\n"  # Use calculated property
             f"*   **Active Scene:** {test_scene.title}"
         )
-        mock_console.print.assert_called_with(expected_output_active)
+        mock_console.print.assert_called_with(
+            expected_output_active, highlight=False, markup=False
+        )
         mock_console.reset_mock()
 
         # Test case 2: Without active scene
@@ -380,7 +399,9 @@ def test_display_game_info_markdown(
             f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}"
             # No Active Scene line
         )
-        mock_console.print.assert_called_with(expected_output_no_active)
+        mock_console.print.assert_called_with(
+            expected_output_no_active, highlight=False, markup=False
+        )
 
 
 # --- Test for display_interpretation_set ---
@@ -437,8 +458,12 @@ def test_display_interpretation_set_markdown(
         # Expected calls: context(1) + N interpretations + N blank lines + instruction(1) = 2*N + 2
         expected_call_count_true = num_interpretations * 2 + 2
         assert mock_console.print.call_count == expected_call_count_true
-        mock_console.print.assert_any_call(expected_context)
-        mock_console.print.assert_any_call(expected_instruction)
+        mock_console.print.assert_any_call(
+            expected_context, highlight=False, markup=False
+        )
+        mock_console.print.assert_any_call(
+            expected_instruction, highlight=False, markup=False
+        )
         # We don't assert the exact interpretation calls here, as that's tested elsewhere
 
         # --- Test case 2: Hide context ---
@@ -449,10 +474,14 @@ def test_display_interpretation_set_markdown(
         expected_call_count_false = num_interpretations * 2 + 1
         assert mock_console.print.call_count == expected_call_count_false
         # Ensure context was NOT printed
-        printed_calls = [call.args[0] for call in mock_console.print.call_args_list]
-        assert expected_context not in printed_calls
+        printed_call_args = [call.args for call in mock_console.print.call_args_list]
+        assert (expected_context, {"highlight": False, "markup": False}) not in [
+            (args[0], kwargs) for args, kwargs in printed_call_args if args
+        ]
         # Check instruction print call again
-        mock_console.print.assert_any_call(expected_instruction)
+        mock_console.print.assert_any_call(
+            expected_instruction, highlight=False, markup=False
+        )
 
 
 def test_display_scene_info_markdown(
@@ -499,7 +528,9 @@ def test_display_scene_info_markdown(
             f"*   **Created:** {test_scene.created_at.strftime('%Y-%m-%d') if test_scene.created_at else 'N/A'}\n"
             f"*   **Modified:** {test_scene.modified_at.strftime('%Y-%m-%d') if test_scene.modified_at else 'N/A'}"
         )
-        mock_console.print.assert_called_once_with(expected_output)
+        mock_console.print.assert_called_once_with(
+            expected_output, highlight=False, markup=False
+        )
 
 
 # --- Test for display_acts_table ---
@@ -541,7 +572,9 @@ def test_display_acts_table_markdown(
             f"| `{test_act.id}` | {test_act.sequence} | **{test_act.title}** | {test_act.summary} | ✓ |\n"
             f"| `{other_act.id}` | {other_act.sequence} | {other_act.title} | {other_act.summary} |  |"
         )
-        mock_console.print.assert_called_with(expected_output_active)
+        mock_console.print.assert_called_with(
+            expected_output_active, highlight=False, markup=False
+        )
         mock_console.reset_mock()
 
         # Test case 2: Without an active act ID
@@ -553,7 +586,9 @@ def test_display_acts_table_markdown(
             f"| `{test_act.id}` | {test_act.sequence} | {test_act.title} | {test_act.summary} |  |\n"
             f"| `{other_act.id}` | {other_act.sequence} | {other_act.title} | {other_act.summary} |  |"
         )
-        mock_console.print.assert_called_with(expected_output_no_active)
+        mock_console.print.assert_called_with(
+            expected_output_no_active, highlight=False, markup=False
+        )
 
 
 def test_display_acts_table_no_acts_markdown(mock_console: MagicMock):
@@ -561,7 +596,9 @@ def test_display_acts_table_no_acts_markdown(mock_console: MagicMock):
     renderer = MarkdownRenderer(mock_console)
     renderer.display_acts_table([], active_act_id=None)
     expected_output = "No acts found. Create one with 'sologm act create'."
-    mock_console.print.assert_called_with(expected_output)
+    mock_console.print.assert_called_with(
+        expected_output, highlight=False, markup=False
+    )
 
 
 # --- Test for display_act_info ---
@@ -623,12 +660,21 @@ def test_display_act_info_markdown(
             f"| {test_scene.sequence} |"
         )
 
-        # Check that both parts were printed in order with a blank line
+        # Check that both parts were printed in order with a blank line, and with correct flags
         calls = mock_console.print.call_args_list
         assert len(calls) == 3  # Act Info, Blank Line, Scenes Table
+
+        # Check Act Info call
         assert calls[0].args[0] == expected_act_output
-        assert calls[1].args[0] == ""  # Check for the blank line
+        assert calls[0].kwargs == {"highlight": False, "markup": False}
+
+        # Check Blank Line call
+        assert calls[1].args[0] == ""
+        assert calls[1].kwargs == {"highlight": False, "markup": False}
+
+        # Check Scenes Table call
         assert calls[2].args[0] == expected_scenes_output
+        assert calls[2].kwargs == {"highlight": False, "markup": False}
 
 
 def test_display_act_info_no_scenes_markdown(
@@ -664,14 +710,26 @@ def test_display_act_info_no_scenes_markdown(
         expected_no_scenes_message = "No scenes in this act yet."
         expected_blank_line = ""
 
-        # Check the sequence of calls
+        # Check the sequence of calls and flags
         calls = mock_console.print.call_args_list
         assert len(calls) == 5  # Act Info, Blank Line, Header, Blank Line, Message
+
+        expected_kwargs = {"highlight": False, "markup": False}
+
         assert calls[0].args[0] == expected_act_output
+        assert calls[0].kwargs == expected_kwargs
+
         assert calls[1].args[0] == expected_blank_line
+        assert calls[1].kwargs == expected_kwargs
+
         assert calls[2].args[0] == expected_no_scenes_header
+        assert calls[2].kwargs == expected_kwargs
+
         assert calls[3].args[0] == expected_blank_line
+        assert calls[3].kwargs == expected_kwargs
+
         assert calls[4].args[0] == expected_no_scenes_message
+        assert calls[4].kwargs == expected_kwargs
 
 
 # --- Test for display_interpretation_sets_table ---
@@ -737,7 +795,9 @@ def test_display_interpretation_sets_table_markdown(
             f"| {status} "
             f"| {len(test_interpretations)} |"
         )
-        mock_console.print.assert_called_once_with(expected_output)
+        mock_console.print.assert_called_once_with(
+            expected_output, highlight=False, markup=False
+        )
 
 
 # --- Test for display_interpretation_status ---
@@ -786,7 +846,9 @@ def test_display_interpretation_status_markdown(
             f"*   **Retry Count:** {test_interpretation_set.retry_attempt}\n"
             f"*   **Resolved:** {is_resolved}"
         )
-        mock_console.print.assert_called_once_with(expected_output)
+        mock_console.print.assert_called_once_with(
+            expected_output, highlight=False, markup=False
+        )
 
 
 # --- Test for display_act_ai_generation_results ---
@@ -825,7 +887,9 @@ def test_display_act_ai_generation_results_markdown(
             "**Current Summary:**\n"
             f"> {test_act.summary}\n"
         )
-        mock_console.print.assert_called_once_with(expected_output)
+        mock_console.print.assert_called_once_with(
+            expected_output, highlight=False, markup=False
+        )
 
 
 # --- Test for display_act_completion_success ---
@@ -862,7 +926,9 @@ def test_display_act_completion_success_markdown(
             f"**Final Title:**\n> {test_act.title}\n\n"
             f"**Final Summary:**\n> {test_act.summary}"
         )
-        mock_console.print.assert_called_once_with(expected_output)
+        mock_console.print.assert_called_once_with(
+            expected_output, highlight=False, markup=False
+        )
 
 
 # --- Test for display_act_ai_feedback_prompt ---
@@ -883,7 +949,9 @@ def test_display_act_ai_feedback_prompt_markdown(mock_console: MagicMock):
         "*   To **regenerate** it, run: `sologm act generate --retry`\n"
         "---"
     )
-    mock_console.print.assert_called_once_with(expected_output)
+    mock_console.print.assert_called_once_with(
+        expected_output, highlight=False, markup=False
+    )
 
 
 # --- Test for display_act_edited_content_preview ---
@@ -903,7 +971,9 @@ def test_display_act_edited_content_preview_markdown(mock_console: MagicMock):
         "**Edited Summary:**\n"
         "> Edited Summary"
     )
-    mock_console.print.assert_called_once_with(expected_output)
+    mock_console.print.assert_called_once_with(
+        expected_output, highlight=False, markup=False
+    )
 
 
 # --- Test for display_error ---
@@ -916,7 +986,9 @@ def test_display_error_markdown(mock_console: MagicMock):
     renderer.display_error(error_message)
 
     expected_output = f"> **Error:** {error_message}"
-    mock_console.print.assert_called_once_with(expected_output)
+    mock_console.print.assert_called_once_with(
+        expected_output, highlight=False, markup=False
+    )
 
 
 # --- Add other tests below ---

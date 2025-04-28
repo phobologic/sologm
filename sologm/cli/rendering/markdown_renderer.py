@@ -43,6 +43,10 @@ class MarkdownRenderer(Renderer):
         # No specific MarkdownRenderer initialization needed yet
         logger.debug("MarkdownRenderer initialized")
 
+    def _print_markdown(self, text: str) -> None:
+        """Prints text to the console without Rich highlighting or markup."""
+        self.console.print(text, highlight=False, markup=False)
+
     # --- Abstract Method Implementations (to be added incrementally via TDD) ---
 
     def display_dice_roll(self, roll: DiceRoll) -> None:
@@ -62,7 +66,7 @@ class MarkdownRenderer(Renderer):
 
         output = f"{title}\n\n" + "\n".join(details)
 
-        self.console.print(output)
+        self._print_markdown(output)
 
     def display_interpretation(
         self,
@@ -95,7 +99,7 @@ class MarkdownRenderer(Renderer):
         # Combine parts
         output = f"{title}\n\n{body}\n\n{footer}"
 
-        self.console.print(output)
+        self._print_markdown(output)
 
     def display_events_table(self, events: List[Event], scene: Scene) -> None:
         """Displays a list of events as a Markdown table."""
@@ -106,7 +110,7 @@ class MarkdownRenderer(Renderer):
 
         if not events:
             logger.debug(f"No events to display for scene '{scene.title}'")
-            self.console.print(f"\nNo events in scene '{scene.title}'")
+            self._print_markdown(f"\nNo events in scene '{scene.title}'")
             return
 
         output_lines = []
@@ -131,7 +135,7 @@ class MarkdownRenderer(Renderer):
             )
             output_lines.append(row)
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_games_table(
         self, games: List[Game], active_game: Optional[Game] = None
@@ -142,7 +146,7 @@ class MarkdownRenderer(Renderer):
 
         if not games:
             logger.debug("No games found to display")
-            self.console.print("No games found. Create one with 'sologm game create'.")
+            self._print_markdown("No games found. Create one with 'sologm game create'.")
             return
 
         output_lines = []
@@ -177,7 +181,7 @@ class MarkdownRenderer(Renderer):
             )
             output_lines.append(row)
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_scenes_table(
         self, scenes: List[Scene], active_scene_id: Optional[str] = None
@@ -190,7 +194,7 @@ class MarkdownRenderer(Renderer):
 
         if not scenes:
             logger.debug("No scenes found to display")
-            self.console.print(
+            self._print_markdown(
                 "No scenes found. Create one with 'sologm scene create'."
             )
             return
@@ -221,7 +225,7 @@ class MarkdownRenderer(Renderer):
             )
             output_lines.append(row)
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_game_info(
         self, game: Game, active_scene: Optional[Scene] = None
@@ -260,7 +264,7 @@ class MarkdownRenderer(Renderer):
         if active_scene:
             output_lines.append(f"*   **Active Scene:** {active_scene.title}")
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_interpretation_set(
         self, interp_set: InterpretationSet, show_context: bool = True
@@ -279,21 +283,21 @@ class MarkdownRenderer(Renderer):
             output_lines.append(f"**Results:** {interp_set.oracle_results}")
             output_lines.append("")
             output_lines.append("---")
-            self.console.print("\n".join(output_lines))
+            self._print_markdown("\n".join(output_lines))
             output_lines = []  # Reset for interpretations
 
         # Display each interpretation
         for i, interp in enumerate(interp_set.interpretations, 1):
             # Call self.display_interpretation which handles its own printing
             self.display_interpretation(interp, sequence=i)
-            self.console.print("")  # Add a newline between interpretations
+            self._print_markdown("")  # Add a newline between interpretations
 
         # Display instruction footer
         instruction = (
             f"Interpretation Set ID: `{interp_set.id}`\n"
             f"(Use 'sologm oracle select' to choose)"
         )
-        self.console.print(instruction)
+        self._print_markdown(instruction)
 
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene as Markdown."""
@@ -328,7 +332,7 @@ class MarkdownRenderer(Renderer):
             f"*   **Modified:** {scene.modified_at.strftime('%Y-%m-%d')}"
         )
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_game_status(
         self,
@@ -508,7 +512,7 @@ class MarkdownRenderer(Renderer):
             output_lines.append("*No recent dice rolls.*")
 
         # Print final output
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_acts_table(
         self, acts: List[Act], active_act_id: Optional[str] = None
@@ -519,7 +523,7 @@ class MarkdownRenderer(Renderer):
 
         if not acts:
             logger.debug("No acts found to display")
-            self.console.print("No acts found. Create one with 'sologm act create'.")
+            self._print_markdown("No acts found. Create one with 'sologm act create'.")
             return
 
         output_lines = []
@@ -544,7 +548,7 @@ class MarkdownRenderer(Renderer):
             )
             output_lines.append(row)
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_act_info(self, act: Act, game_name: str) -> None:
         """Displays detailed information about a specific act as Markdown."""
@@ -579,9 +583,9 @@ class MarkdownRenderer(Renderer):
             self.display_scenes_table(sorted_scenes, active_scene_id=active_scene_id)
         else:
             # Print a specific message if no scenes exist
-            self.console.print(f"### Scenes in Act {act.sequence}")
-            self.console.print("")
-            self.console.print("No scenes in this act yet.")
+            self._print_markdown(f"### Scenes in Act {act.sequence}")
+            self._print_markdown("")
+            self._print_markdown("No scenes in this act yet.")
 
     def display_interpretation_sets_table(
         self, interp_sets: List[InterpretationSet]
@@ -592,7 +596,7 @@ class MarkdownRenderer(Renderer):
         )
 
         if not interp_sets:
-            self.console.print("No interpretation sets found.")
+            self._print_markdown("No interpretation sets found.")
             return
 
         output_lines = []
@@ -631,7 +635,7 @@ class MarkdownRenderer(Renderer):
             )
             output_lines.append(row)
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_interpretation_status(self, interp_set: InterpretationSet) -> None:
         """Displays the status of an interpretation set as Markdown."""
@@ -650,7 +654,7 @@ class MarkdownRenderer(Renderer):
         resolved = any(interp.is_selected for interp in interp_set.interpretations)
         output_lines.append(f"*   **Resolved:** {resolved}")
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_act_ai_generation_results(
         self, results: Dict[str, str], act: Act
@@ -684,7 +688,7 @@ class MarkdownRenderer(Renderer):
                     output_lines.append(f"> {line}")
                 output_lines.append("")
 
-        self.console.print("\n".join(output_lines))
+        self._print_markdown("\n".join(output_lines))
 
     def display_act_completion_success(self, completed_act: Act) -> None:
         """Displays a success message upon act completion as Markdown."""
@@ -715,7 +719,7 @@ class MarkdownRenderer(Renderer):
                 output_lines.append(f"> {line}")
             output_lines.append("")
 
-        self.console.print(
+        self._print_markdown(
             "\n".join(output_lines).strip()
         )  # Remove trailing newline if summary was last
 
@@ -732,7 +736,7 @@ class MarkdownRenderer(Renderer):
             "*   To **regenerate** it, run: `sologm act generate --retry`\n"
             "---"
         )
-        self.console.print(output)
+        self._print_markdown(output)
 
     def display_act_edited_content_preview(
         self, edited_results: Dict[str, str]
@@ -753,23 +757,23 @@ class MarkdownRenderer(Renderer):
                 output_lines.append(f"> {line}")
             output_lines.append("")
 
-        self.console.print("\n".join(output_lines).strip())
+        self._print_markdown("\n".join(output_lines).strip())
 
     def display_error(self, message: str) -> None:
         """Displays an error message to the user as a Markdown blockquote."""
         logger.error(f"Displaying error as Markdown: {message}")
         # Use blockquote for errors
-        self.console.print(f"> **Error:** {message}")
+        self._print_markdown(f"> **Error:** {message}")
 
     def display_success(self, message: str) -> None:
         """Displays a success message as Markdown."""
         logger.debug(f"Displaying success as Markdown: {message}")
-        self.console.print(f"**Success:** {message}")
+        self._print_markdown(f"**Success:** {message}")
 
     def display_warning(self, message: str) -> None:
         """Displays a warning message as Markdown."""
         logger.debug(f"Displaying warning as Markdown: {message}")
-        self.console.print(f"**Warning:** {message}")
+        self._print_markdown(f"**Warning:** {message}")
 
     def display_message(self, message: str, style: Optional[str] = None) -> None:
         """Displays a simple informational message as plain text (Markdown)."""
@@ -777,4 +781,4 @@ class MarkdownRenderer(Renderer):
         logger.debug(
             f"Displaying message as Markdown: {message} (style: {style} - ignored)"
         )
-        self.console.print(message)
+        self._print_markdown(message)
