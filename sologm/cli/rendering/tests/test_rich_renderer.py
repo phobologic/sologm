@@ -113,7 +113,11 @@ def test_display_game_status_full(
         event1 = create_test_event(session, scene_id=scene.id, description="Event 1")
         event2 = create_test_event(session, scene_id=scene.id, description="Event 2")
         dice_roll = DiceRoll.create(
-            notation="1d10", individual_results=[7], modifier=0, total=7, scene_id=scene.id
+            notation="1d10",
+            individual_results=[7],
+            modifier=0,
+            total=7,
+            scene_id=scene.id,
         )
         session.add(dice_roll)
         session.flush()
@@ -273,7 +277,9 @@ def test_display_game_status_selected_interpretation(
             interpretations=[selected_interp],
         )
         # Mock the methods on the mock_oracle_manager instance directly
-        mock_oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
+        mock_oracle_manager.get_current_interpretation_set = MagicMock(
+            return_value=None
+        )
         mock_oracle_manager.get_most_recent_interpretation = MagicMock(
             return_value=(interp_set, selected_interp)
         )
@@ -471,8 +477,12 @@ def test_create_oracle_panel(
 
         # Test with oracle manager (mock behavior as needed)
         # Mock the methods on the mock_oracle_manager instance directly
-        mock_oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
-        mock_oracle_manager.get_most_recent_interpretation = MagicMock(return_value=None)
+        mock_oracle_manager.get_current_interpretation_set = MagicMock(
+            return_value=None
+        )
+        mock_oracle_manager.get_most_recent_interpretation = MagicMock(
+            return_value=None
+        )
 
         panel = renderer._create_oracle_panel(game, scene, mock_oracle_manager, 60)
         assert panel is not None  # Should return empty panel in this case
@@ -503,7 +513,11 @@ def test_create_dice_rolls_panel(
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         dice_roll = DiceRoll.create(
-            notation="3d6", individual_results=[1, 2, 3], modifier=0, total=6, scene_id=scene.id
+            notation="3d6",
+            individual_results=[1, 2, 3],
+            modifier=0,
+            total=6,
+            scene_id=scene.id,
         )
         session.add(dice_roll)
         session.flush()
@@ -545,8 +559,12 @@ def test_display_interpretation_set(
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         interp_set = create_test_interpretation_set(session, scene_id=scene.id)
-        interp1 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 1")
-        interp2 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 2")
+        interp1 = create_test_interpretation(
+            session, set_id=interp_set.id, title="Interp 1"
+        )
+        interp2 = create_test_interpretation(
+            session, set_id=interp_set.id, title="Interp 2"
+        )
         # Refresh the set to load interpretations relationship
         session.refresh(interp_set, attribute_names=["interpretations"])
 
@@ -573,8 +591,12 @@ def test_display_interpretation_set_no_context(
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         interp_set = create_test_interpretation_set(session, scene_id=scene.id)
-        interp1 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 1")
-        interp2 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 2")
+        interp1 = create_test_interpretation(
+            session, set_id=interp_set.id, title="Interp 1"
+        )
+        interp2 = create_test_interpretation(
+            session, set_id=interp_set.id, title="Interp 2"
+        )
         # Refresh the set to load interpretations relationship
         session.refresh(interp_set, attribute_names=["interpretations"])
 
@@ -641,8 +663,12 @@ def test_display_interpretation_sets_table(
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
-        interp_set1 = create_test_interpretation_set(session, scene_id=scene.id, retry_attempt=0)
-        interp_set2 = create_test_interpretation_set(session, scene_id=scene.id, retry_attempt=1)
+        interp_set1 = create_test_interpretation_set(
+            session, scene_id=scene.id, retry_attempt=0
+        )
+        interp_set2 = create_test_interpretation_set(
+            session, scene_id=scene.id, retry_attempt=1
+        )
         interp_sets = [interp_set1, interp_set2]
 
     renderer.display_interpretation_sets_table(interp_sets)
@@ -712,8 +738,12 @@ def test_display_scenes_table_with_scenes(
     with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
-        scene1 = create_test_scene(session, act_id=act.id, title="Scene 1", is_active=False)
-        scene2 = create_test_scene(session, act_id=act.id, title="Scene 2", is_active=True)
+        scene1 = create_test_scene(
+            session, act_id=act.id, title="Scene 1", is_active=False
+        )
+        scene2 = create_test_scene(
+            session, act_id=act.id, title="Scene 2", is_active=True
+        )
         scenes = [scene1, scene2]
         active_scene_id = scene2.id
 
@@ -823,9 +853,7 @@ def test_display_events_table_no_events(
 
     renderer.display_events_table([], scene)
 
-    mock_console.print.assert_called_once_with(
-        f"\nNo events in scene '{scene.title}'"
-    )
+    mock_console.print.assert_called_once_with(f"\nNo events in scene '{scene.title}'")
 
 
 # --- End Tests for display_events_table ---
@@ -915,7 +943,10 @@ def test_display_act_ai_generation_results(
         act = create_test_act(session, game_id=game.id)
 
         # Test with both title and summary
-        results_both = {"title": "AI Generated Title", "summary": "AI Generated Summary"}
+        results_both = {
+            "title": "AI Generated Title",
+            "summary": "AI Generated Summary",
+        }
         renderer.display_act_ai_generation_results(results_both, act)
         assert mock_console.print.call_count >= 2  # At least title and summary panels
         mock_console.reset_mock()
@@ -944,7 +975,10 @@ def test_display_act_ai_generation_results(
         act.summary = "Existing Summary"
         session.add(act)
         session.flush()
-        results_compare = {"title": "AI Generated Title", "summary": "AI Generated Summary"}
+        results_compare = {
+            "title": "AI Generated Title",
+            "summary": "AI Generated Summary",
+        }
         renderer.display_act_ai_generation_results(results_compare, act)
         # Expect 4 panels: AI title, existing title, AI summary, existing summary
         assert mock_console.print.call_count == 4
@@ -976,7 +1010,9 @@ def test_display_act_completion_success(
             session, game_id=game.id, title="Completed Act", summary="It is done."
         )
         renderer.display_act_completion_success(act_with_title)
-        assert mock_console.print.call_count >= 3  # Title message, metadata, title, summary
+        assert (
+            mock_console.print.call_count >= 3
+        )  # Title message, metadata, title, summary
         mock_console.reset_mock()
 
         # Test with untitled act
@@ -1095,7 +1131,7 @@ def test_display_act_info(
     session_context: SessionContext,
     create_test_game: Callable[..., Game],
     create_test_act: Callable[..., Act],
-    create_test_scene: Callable[..., Scene], # Needed to test scene display within act
+    create_test_scene: Callable[..., Scene],  # Needed to test scene display within act
 ):
     """Test displaying act info using RichRenderer."""
     renderer = RichRenderer(mock_console)
@@ -1104,7 +1140,7 @@ def test_display_act_info(
         act = create_test_act(session, game_id=game.id)
         # Add a scene to test the scene listing part
         create_test_scene(session, act_id=act.id)
-        session.refresh(act, attribute_names=["scenes"]) # Load scenes relationship
+        session.refresh(act, attribute_names=["scenes"])  # Load scenes relationship
 
     renderer.display_act_info(act, game.name)
 
@@ -1167,7 +1203,7 @@ def test_display_scene_info(
     create_test_game: Callable[..., Game],
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
-    create_test_event: Callable[..., Event], # Needed to test event display
+    create_test_event: Callable[..., Event],  # Needed to test event display
 ):
     """Test displaying scene info using RichRenderer."""
     renderer = RichRenderer(mock_console)
@@ -1177,7 +1213,7 @@ def test_display_scene_info(
         scene = create_test_scene(session, act_id=act.id)
         # Add an event to test event listing
         create_test_event(session, scene_id=scene.id)
-        session.refresh(scene, attribute_names=["events"]) # Load events relationship
+        session.refresh(scene, attribute_names=["events"])  # Load events relationship
 
     renderer.display_scene_info(scene)
 
