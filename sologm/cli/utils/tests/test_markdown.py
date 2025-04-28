@@ -176,7 +176,11 @@ def test_generate_game_markdown_with_hierarchy(
             session, game_id=game.id, title="The First Act", sequence=1
         )
         act2 = create_test_act(
-            session, game_id=game.id, title="The Second Act", sequence=2
+            session,
+            game_id=game.id,
+            title="The Second Act",
+            sequence=2,
+            is_active=False,  # Ensure this act isn't set active during creation
         )
         scene1_1 = create_test_scene(
             session, act_id=act1.id, title="Opening Scene", sequence=1
