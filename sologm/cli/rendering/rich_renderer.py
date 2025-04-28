@@ -1754,6 +1754,7 @@ class RichRenderer(Renderer):
         if style:
             # Ensure Text is imported if not already
             from rich.text import Text
+
             self.console.print(Text(message, style=style))
         else:
             # Default style or just plain text

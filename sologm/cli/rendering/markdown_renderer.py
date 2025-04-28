@@ -768,5 +768,7 @@ class MarkdownRenderer(Renderer):
     def display_message(self, message: str, style: Optional[str] = None) -> None:
         """Displays a simple informational message as plain text (Markdown)."""
         # Style parameter is generally ignored in Markdown mode
-        logger.debug(f"Displaying message as Markdown: {message} (style: {style} - ignored)")
+        logger.debug(
+            f"Displaying message as Markdown: {message} (style: {style} - ignored)"
+        )
         self.console.print(message)
