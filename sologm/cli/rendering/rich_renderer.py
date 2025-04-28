@@ -285,13 +285,10 @@ class RichRenderer(Renderer):
 
         # Add rows with consistent formatting
         for game in games:
-            # Get acts and scenes count
-            act_count = len(game.acts) if hasattr(game, "acts") else 0
-            scene_count = (
-                sum(len(act.scenes) for act in game.acts)
-                if hasattr(game, "acts")
-                else len(game.scenes)
-            )
+            # --- MODIFIED: Use hybrid properties for counts ---
+            act_count = game.act_count  # Use hybrid property
+            scene_count = game.scene_count # Use hybrid property
+            # --- END MODIFICATION ---
 
             is_active = active_game and game.id == active_game.id
             active_marker = "✓" if is_active else ""
@@ -303,8 +300,8 @@ class RichRenderer(Renderer):
                 game.id,
                 game_name,
                 game.description,
-                str(act_count),
-                str(scene_count),
+                str(act_count), # Use count from hybrid property
+                str(scene_count), # Use count from hybrid property
                 active_marker,
             )
 
@@ -903,7 +900,9 @@ class RichRenderer(Renderer):
             metadata = {
                 "Status": status_string,
                 "Sequence": latest_scene.sequence,
-                "Created": latest_scene.created_at.strftime("%Y-%m-%d"),
+                # --- MODIFIED: Add check for created_at ---
+                "Created": latest_scene.created_at.strftime("%Y-%m-%d") if latest_scene.created_at else "N/A",
+                # --- END MODIFICATION ---
             }
             scenes_content.append("\n")
             scenes_content.append(st.format_metadata(metadata))
@@ -1734,8 +1733,9 @@ class RichRenderer(Renderer):
         """Displays an error message to the user using Rich."""
         logger.error(f"Displaying error: {message}")
         # Use self.console to print the error message with red styling
-        # Consider using a Panel for consistency if desired, but simple red text is often fine.
-        self.console.print(StyledText.error(f"Error: {message}"))
+        # --- MODIFIED: Use simple red text formatting ---
+        self.console.print(f"[red]Error: {message}[/red]")
+        # --- END MODIFICATION ---
 
     def display_success(self, message: str) -> None:
         """Displays a success message using Rich."""
