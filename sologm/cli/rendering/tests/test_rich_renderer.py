@@ -1,7 +1,7 @@
 """Tests for the RichRenderer class."""
 
 # Add necessary imports
-from typing import Any, Callable, List, Optional  # Added Optional, Callable, Any
+from typing import Callable  # Added Optional, Callable, Any
 from unittest.mock import MagicMock, patch  # Added patch
 
 import pytest
@@ -9,20 +9,20 @@ from rich.console import Console
 from rich.panel import Panel  # Import Panel for assertion
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
+
+# Import BORDER_STYLES for assertions if needed
+from sologm.cli.utils.styled_text import BORDER_STYLES
+
+# Import manager types for mocking/type hinting if needed by tests
+from sologm.core.oracle import OracleManager
+from sologm.core.scene import SceneManager
 from sologm.database.session import SessionContext  # <-- Added import
 from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus
-
-# Import manager types for mocking/type hinting if needed by tests
-from sologm.core.oracle import OracleManager
-from sologm.core.scene import SceneManager
-
-# Import BORDER_STYLES for assertions if needed
-from sologm.cli.utils.styled_text import BORDER_STYLES
+from sologm.models.scene import Scene
 
 
 # Add mock_console fixture if not already present globally
@@ -1075,7 +1075,6 @@ def test_display_act_completion_success(
 
 # --- Tests for display_act_ai_feedback_prompt (Moved & Adapted) ---
 
-from unittest.mock import patch  # Import patch
 
 
 @patch("rich.prompt.Prompt.ask")  # Patch Prompt.ask

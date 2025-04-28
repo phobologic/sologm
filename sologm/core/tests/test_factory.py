@@ -4,7 +4,6 @@ import logging
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy.orm import Session
 
 from sologm.core.act import ActManager
 from sologm.core.dice import DiceManager

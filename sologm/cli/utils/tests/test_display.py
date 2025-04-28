@@ -1,6 +1,5 @@
 """Tests for display helper functions."""
 
-import pytest
 from rich.text import Text
 
 from sologm.cli.utils.display import (
@@ -9,7 +8,6 @@ from sologm.cli.utils.display import (
     truncate_text,
 )
 from sologm.cli.utils.styled_text import StyledText
-
 
 # --- test_display_dice_roll removed, moved to test_rich_renderer.py ---
 

@@ -3,8 +3,8 @@
 # Add necessary imports for models and factory fixtures
 from sologm.models.act import Act
 from sologm.models.event import Event
-from sologm.models.scene import Scene
 from sologm.models.game import Game  # Import Game model
+from sologm.models.scene import Scene
 
 
 def test_cascade_delete_game(

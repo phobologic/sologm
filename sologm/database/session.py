@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Type, TypeVar
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, scoped_session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from sologm.models.base import Base

@@ -2,9 +2,6 @@
 
 from unittest.mock import MagicMock
 
-# Import factory function
-from sologm.core.factory import create_all_managers
-
 # Import markdown functions
 from sologm.cli.utils.markdown import (
     generate_act_markdown,
@@ -13,6 +10,9 @@ from sologm.cli.utils.markdown import (
     generate_game_markdown,
     generate_scene_markdown,
 )
+
+# Import factory function
+from sologm.core.factory import create_all_managers
 from sologm.models.scene import SceneStatus
 
 

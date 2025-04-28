@@ -4,11 +4,11 @@ import logging
 import logging.handlers  # Import handlers
 import os
 import sys
-from typing import Optional
 from pathlib import Path  # Use pathlib for paths
+from typing import Optional
 
 # Import get_config here
-from sologm.utils.config import get_config, ConfigError
+from sologm.utils.config import ConfigError, get_config
 
 # Define application name for potential use
 APP_NAME = "sologm"

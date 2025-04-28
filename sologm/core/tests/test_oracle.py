@@ -11,8 +11,6 @@ from sqlalchemy.orm import Session  # Added for type hinting
 from sologm.core.factory import create_all_managers
 from sologm.database.session import SessionContext
 
-import pytest
-
 # Create a dedicated logger for the test module
 logger = logging.getLogger(__name__)
 

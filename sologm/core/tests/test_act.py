@@ -4,14 +4,12 @@ from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy.orm import Session
 
 from sologm.core.act import ActManager
 from sologm.core.factory import create_all_managers
 from sologm.core.game import GameManager
 from sologm.core.scene import SceneManager
 from sologm.database.session import SessionContext
-from sologm.models.game import Game
 from sologm.utils.errors import APIError, GameError
 
 

@@ -7,10 +7,10 @@ from sqlalchemy import ForeignKey, String, create_engine
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
+    Session,
     mapped_column,
     relationship,
     sessionmaker,
-    Session,
 )
 from sqlalchemy.orm.exc import DetachedInstanceError  # Or LazyInitializationError
 
@@ -90,7 +90,7 @@ class SimpleManager:
                 f"[Problematic] Commit finished for session ID: {id(session)}"
             )
             return result
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 f"[Problematic] Error in {operation_name}, rolling back session ID: {id(session)}",
                 exc_info=True,
@@ -130,7 +130,7 @@ class SimpleManager:
                     f"[Fixed] Flush finished for session ID: {id(session)}"
                 )
             return result
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 f"[Fixed] Error in {operation_name}, rolling back session ID: {id(session)}",
                 exc_info=True,
