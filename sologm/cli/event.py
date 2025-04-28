@@ -4,6 +4,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import typer
+
 # Console import removed
 # display_events_table import removed
 from sologm.core.event import EventManager
@@ -40,7 +41,7 @@ def add_event(
     If no description is provided, opens an editor to create the event.
     """
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor
+    console: "Console" = ctx.obj["console"]  # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -170,7 +171,7 @@ def edit_event(
     If no event ID is provided, edits the most recent event in the current scene.
     """
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor
+    console: "Console" = ctx.obj["console"]  # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
