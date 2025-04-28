@@ -116,7 +116,9 @@ def test_display_interpretation_markdown(
         f"{interp.description}\n\n"
         f"*ID: {interp.id} / {interp.slug}*"
     )
-    mock_console.print.assert_called_with(expected_output_selected)
+    mock_console.print.assert_called_with(
+        expected_output_selected, highlight=False, markup=False
+    )
     mock_console.reset_mock()
 
     # Test case 3: Interpretation with sequence but not selected
@@ -126,7 +128,9 @@ def test_display_interpretation_markdown(
         f"{interp.description}\n\n"
         f"*ID: {interp.id} / {interp.slug}*"
     )
-    mock_console.print.assert_called_with(expected_output_sequence)
+    mock_console.print.assert_called_with(
+        expected_output_sequence, highlight=False, markup=False
+    )
 
 
 # --- Test for display_events_table ---
@@ -262,7 +266,9 @@ def test_display_games_table_markdown(
         f"| `{test_game.id}` | {test_game.name} | {test_game.description} | 0 | 0 |  |\n"
         f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
     )
-    mock_console.print.assert_called_with(expected_output_no_active)
+    mock_console.print.assert_called_with(
+        expected_output_no_active, highlight=False, markup=False
+    )
     mock_console.reset_mock()
 
 
@@ -336,7 +342,9 @@ def test_display_scenes_table_markdown(
         f"| `{test_scene.id}` | {test_scene.title} | {test_scene.description} | {test_scene.status.value} |  | {test_scene.sequence} |\n"
         f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
     )
-    mock_console.print.assert_called_with(expected_output_no_active)
+    mock_console.print.assert_called_with(
+        expected_output_no_active, highlight=False, markup=False
+    )
     mock_console.reset_mock()
 
 
