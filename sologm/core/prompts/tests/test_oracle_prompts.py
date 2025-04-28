@@ -1,6 +1,14 @@
 """Tests for oracle prompt templates."""
 
-from sologm.core.prompts.oracle import OraclePrompts
+from typing import Callable  # Import Callable for type hinting factory fixtures
+
+# Import necessary model types for type hinting if needed
+from sologm.database.session import SessionContext  # Import SessionContext type hint
+from sologm.models.act import Act
+from sologm.models.event import Event
+from sologm.models.game import Game
+from sologm.models.scene import Scene
+from sologm.core.prompts.oracle import OraclePrompts  # Import the class being tested
 
 
 class TestOraclePrompts:
@@ -61,28 +69,64 @@ class TestOraclePrompts:
         result = OraclePrompts._get_retry_text(0)
         assert result == ""
 
-    def test_build_interpretation_prompt(self, test_scene, test_events):
+    # Corrected test signature and implementation - NO fixture imports needed
+    def test_build_interpretation_prompt(
+        self,
+        session_context: SessionContext,  # Request the fixture directly
+        create_test_game: Callable[..., Game],  # Request the fixture directly
+        create_test_act: Callable[..., Act],  # Request the fixture directly
+        create_test_scene: Callable[..., Scene],  # Request the fixture directly
+        create_test_event: Callable[..., Event],  # Request the fixture directly
+    ):
         """Test building the complete interpretation prompt."""
-        result = OraclePrompts.build_interpretation_prompt(
-            test_scene,
-            "What happens next?",
-            "Mystery, Danger",
-            3,
-        )
+        with session_context as session:
+            # Create necessary data within the session context
+            game = create_test_game(
+                session, name="Test Game", description="Test Game Description"
+            )
+            act = create_test_act(
+                session, game_id=game.id, title="Test Act", summary="Test Act Summary"
+            )
+            scene = create_test_scene(
+                session,
+                act_id=act.id,
+                title="Test Scene",
+                description="Test Scene Description",
+            )
+            event1 = create_test_event(
+                session, scene_id=scene.id, description="Event 1 Description"
+            )
 
-        # Check that all components are included
-        assert "You are interpreting oracle results for a solo RPG player" in result
-        assert f"Game: {test_scene.act.game.description}" in result
-        assert f"Act: {test_scene.act.summary}" in result
-        assert f"Current Scene: {test_scene.description}" in result
-        # Check for events if they exist in the fixture
-        if test_scene.events:
-            assert test_scene.events[0].description in result
-        assert "Player's Question/Context: What happens next?" in result
-        assert "Oracle Results: Mystery, Danger" in result
-        assert "Please provide 3 different interpretations" in result
+            # Refresh relationships if needed for nested access in the prompt generation
+            session.refresh(scene, attribute_names=["act", "events"])
+            session.refresh(act, attribute_names=["game"])
 
-    def test_build_interpretation_prompt_with_retry(self, test_scene):
+            # Call the method under test with the created data
+            result = OraclePrompts.build_interpretation_prompt(
+                scene,  # Use the created scene object
+                "What happens next?",
+                "Mystery, Danger",
+                3,
+            )
+
+            # Check that all components are included using the created data
+            assert "You are interpreting oracle results for a solo RPG player" in result
+            assert f"Game: {game.description}" in result
+            assert f"Act: {act.summary}" in result
+            assert f"Current Scene: {scene.description}" in result
+            assert event1.description in result
+            assert "Player's Question/Context: What happens next?" in result
+            assert "Oracle Results: Mystery, Danger" in result
+            assert "Please provide 3 different interpretations" in result
+
+    # Corrected test signature - NO fixture imports needed
+    def test_build_interpretation_prompt_with_retry(
+        self,
+        session_context: SessionContext,  # Request the fixture directly
+        create_test_game: Callable[..., Game],  # Request the fixture directly
+        create_test_act: Callable[..., Act],  # Request the fixture directly
+        create_test_scene: Callable[..., Scene],  # Request the fixture directly
+    ):
         """Test building the prompt with retry information."""
         previous_interpretations = [
             {"title": "Previous Title", "description": "Previous Description"},
@@ -94,11 +138,29 @@ class TestOraclePrompts:
             "Mystery, Danger",
             3,
             previous_interpretations=previous_interpretations,
-            retry_attempt=1,
-        )
+        ]
+        with session_context as session:
+            # Create necessary data
+            game = create_test_game(session)
+            act = create_test_act(session, game_id=game.id)
+            scene = create_test_scene(session, act_id=act.id)
+            # Refresh if needed for nested access
+            session.refresh(scene, attribute_names=["act"])
+            session.refresh(act, attribute_names=["game"])
 
-        assert "=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===" in result
-        assert "## Previous Title" in result
-        assert "Previous Description" in result
-        assert "retry attempt #2" in result
-        assert "COMPLETELY DIFFERENT" in result
+            # Call the method under test
+            result = OraclePrompts.build_interpretation_prompt(
+                scene,  # Use the created scene
+                "What happens next?",
+                "Mystery, Danger",
+                3,
+                previous_interpretations=previous_interpretations,
+                retry_attempt=1,
+            )
+
+            # Assertions
+            assert "=== PREVIOUS INTERPRETATIONS (DO NOT REPEAT THESE) ===" in result
+            assert "## Previous Title" in result
+            assert "Previous Description" in result
+            assert "retry attempt #2" in result
+            assert "COMPLETELY DIFFERENT" in result
