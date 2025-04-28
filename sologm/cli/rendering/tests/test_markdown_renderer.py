@@ -502,7 +502,9 @@ def test_display_scene_info_markdown(
         renderer.display_scene_info(test_scene)
 
         # The rest of the assertions remain the same...
-        act_title = test_scene.act.title or "Untitled Act" # Accessing .act here will trigger lazy load
+        act_title = (
+            test_scene.act.title or "Untitled Act"
+        )  # Accessing .act here will trigger lazy load
         act_info = f"Act {test_scene.act.sequence}: {act_title}"
         status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
 
