@@ -646,7 +646,7 @@ class TestSceneManager:
                 session,
                 act_id=act.id,
                 title="Second Scene",
-                make_active=False,
+                is_active=False,  # Use the correct factory fixture parameter name
             )
 
             # Verify scene1 is still active
