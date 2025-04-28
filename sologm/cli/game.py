@@ -1,36 +1,38 @@
 """Game management commands for Solo RPG Helper."""
 
 import logging
+from typing import TYPE_CHECKING
 
 import typer
-from rich.console import Console
-
-from sologm.cli.utils.display import (
-    display_game_info,
-    display_game_status,
-    display_games_table,
-)
+# Console import removed
+# Display function imports removed
 from sologm.cli.utils.markdown import generate_game_markdown
 from sologm.core.game import GameManager
 from sologm.utils.errors import GameError
+
+if TYPE_CHECKING:
+    from rich.console import Console
+    from sologm.cli.rendering.base import Renderer
+
 
 logger = logging.getLogger(__name__)
 
 # Create game subcommand
 game_app = typer.Typer(help="Game management commands")
 
-# Create console for rich output
-console = Console()
+# console instance removed
 
 
 @game_app.command("create")
 def create_game(
+    ctx: typer.Context,
     name: str = typer.Option(..., "--name", "-n", help="Name of the game"),
     description: str = typer.Option(
         ..., "--description", "-d", help="Description of the game"
     ),
 ) -> None:
     """Create a new game."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     try:
@@ -39,16 +41,18 @@ def create_game(
             game_manager = GameManager(session=session)
             game = game_manager.create_game(name=name, description=description)
 
-            console.print("[bold green]Game created successfully![/]")
-            console.print(f"Name: {game.name} ({game.id})")
-            console.print(f"Description: {game.description}")
+            renderer.display_success("Game created successfully!")
+            renderer.display_message(f"Name: {game.name} ({game.id})")
+            renderer.display_message(f"Description: {game.description}")
     except GameError as e:
-        console.print(f"[red]Error creating game: {str(e)}[/red]")
+        renderer.display_error(f"Error creating game: {str(e)}")
+        # Consider adding raise typer.Exit(1) from e
 
 
 @game_app.command("list")
-def list_games() -> None:
+def list_games(ctx: typer.Context) -> None:
     """List all games."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     try:
@@ -57,16 +61,19 @@ def list_games() -> None:
             game_manager = GameManager(session=session)
             games = game_manager.list_games()
             active_game = game_manager.get_active_game()
-            display_games_table(console, games, active_game)
+            renderer.display_games_table(games, active_game)
     except GameError as e:
-        console.print(f"[red]Error listing games: {str(e)}[/red]")
+        renderer.display_error(f"Error listing games: {str(e)}")
+        # Consider adding raise typer.Exit(1) from e
 
 
 @game_app.command("activate")
 def activate_game(
+    ctx: typer.Context,
     game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
 ) -> None:
     """Activate a game."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     try:
@@ -75,16 +82,18 @@ def activate_game(
             game_manager = GameManager(session=session)
             game = game_manager.activate_game(game_id)
 
-            console.print("[bold green]Game activated successfully![/]")
-            console.print(f"Name: {game.name} ({game.id})")
-            console.print(f"Description: {game.description}")
+            renderer.display_success("Game activated successfully!")
+            renderer.display_message(f"Name: {game.name} ({game.id})")
+            renderer.display_message(f"Description: {game.description}")
     except GameError as e:
-        console.print(f"[red]Error activating game: {str(e)}[/red]")
+        renderer.display_error(f"Error activating game: {str(e)}")
+        # Consider adding raise typer.Exit(1) from e
 
 
 @game_app.command("info")
-def game_info() -> None:
+def game_info(ctx: typer.Context) -> None:
     """Show basic information about the active game (or latest context if none active)."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     try:
@@ -97,8 +106,8 @@ def game_info() -> None:
             game = context_status["game"]
 
             if not game:
-                console.print("No active game. Use 'sologm game activate' to set one.")
-                return
+                renderer.display_warning("No active game. Use 'sologm game activate' to set one.")
+                raise typer.Exit(0) # Exit cleanly if no game context
 
             # Extract the latest scene (might be None if no acts/scenes exist)
             latest_scene = context_status["latest_scene"]
@@ -108,20 +117,23 @@ def game_info() -> None:
                 f"latest scene: {latest_scene.id if latest_scene else 'None'}"
             )
             # Pass the potentially None latest_scene to the display function
-            display_game_info(console, game, latest_scene)
+            renderer.display_game_info(game, latest_scene)
 
     except GameError as e:
         # Keep the specific GameError catch
-        console.print(f"[red]Error getting game info: {str(e)}[/red]")
+        renderer.display_error(f"Error getting game info: {str(e)}")
+        raise typer.Exit(1) from e
     except Exception as e:
         # Add a general exception catch like in game_status for robustness
         logger.exception("An unexpected error occurred during game info retrieval.")
-        console.print(f"[red]An unexpected error occurred: {str(e)}[/red]")
+        renderer.display_error(f"An unexpected error occurred: {str(e)}")
+        raise typer.Exit(1) from e
 
 
 @game_app.command("status")
-def game_status() -> None:
+def game_status(ctx: typer.Context) -> None:
     """Show detailed status of the active game including recent events and dice rolls."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
     # SceneError import likely not needed here anymore
 
@@ -135,8 +147,8 @@ def game_status() -> None:
             game = context_status["game"]
 
             if not game:  # Check if game retrieval failed within the method
-                console.print("No active game. Use 'sologm game activate' to set one.")
-                return
+                renderer.display_warning("No active game. Use 'sologm game activate' to set one.")
+                raise typer.Exit(0) # Exit cleanly if no game context
 
             # Access managers through the chain (still needed for events/rolls/oracle)
             # Note: These managers are initialized within get_latest_context_status if needed,
@@ -194,20 +206,25 @@ def game_status() -> None:
             )
     # Keep the original GameError catch block
     except GameError as e:
-        console.print(f"[red]Error getting game status: {str(e)}[/red]")
+        renderer.display_error(f"Error getting game status: {str(e)}")
+        raise typer.Exit(1) from e
     # Add a catch block for other potential errors during fallback
     except Exception as e:
         logger.exception("An unexpected error occurred during game status retrieval.")
-        console.print(f"[red]An unexpected error occurred: {str(e)}[/red]")
+        renderer.display_error(f"An unexpected error occurred: {str(e)}")
+        raise typer.Exit(1) from e
 
 
 @game_app.command("edit")
 def edit_game(
+    ctx: typer.Context,
     game_id: str = typer.Option(
         None, "--id", help="ID of the game to edit (defaults to active game)"
     ),
 ) -> None:
     """Edit the name and description of a game."""
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"] # Needed for editor
     from sologm.database.session import get_db_context
 
     try:
@@ -219,14 +236,13 @@ def edit_game(
             if game_id:
                 game = game_manager.get_game(game_id)
                 if not game:
-                    console.print(f"[red]Game with ID {game_id} not found[/red]")
+                    renderer.display_error(f"Game with ID {game_id} not found")
                     raise typer.Exit(1)
             else:
                 game = game_manager.get_active_game()
                 if not game:
-                    console.print(
-                        "[red]No active game. Specify a game ID or activate a "
-                        "game first.[/red]"
+                    renderer.display_warning(
+                        "No active game. Specify a game ID or activate a game first."
                     )
                     raise typer.Exit(1)
 
@@ -297,6 +313,7 @@ def edit_game(
 
 @game_app.command("dump")
 def dump_game(
+    ctx: typer.Context, # Add context for consistency, though renderer isn't used for main output
     game_id: str = typer.Option(
         None, "--id", "-i", help="ID of the game to dump (defaults to active game)"
     ),
@@ -311,6 +328,7 @@ def dump_game(
     ),
 ) -> None:
     """Export a game with all scenes and events as a markdown document to stdout."""
+    renderer: "Renderer" = ctx.obj["renderer"] # Get renderer for potential errors
     from sologm.database.session import get_db_context
 
     try:
@@ -322,14 +340,13 @@ def dump_game(
             if game_id:
                 game = game_manager.get_game(game_id)
                 if not game:
-                    console.print(f"[red]Game with ID {game_id} not found[/red]")
+                    renderer.display_error(f"Game with ID {game_id} not found")
                     raise typer.Exit(1)
             else:
                 game = game_manager.get_active_game()
                 if not game:
-                    console.print(
-                        "[red]No active game. Specify a game ID or activate a "
-                        "game first.[/red]"
+                    renderer.display_warning(
+                        "No active game. Specify a game ID or activate a game first."
                     )
                     raise typer.Exit(1)
 
@@ -350,5 +367,5 @@ def dump_game(
             print(markdown_content)
 
     except Exception as e:
-        console.print(f"[red]Error exporting game: {str(e)}[/red]")
+        renderer.display_error(f"Error exporting game: {str(e)}")
         raise typer.Exit(1) from e
