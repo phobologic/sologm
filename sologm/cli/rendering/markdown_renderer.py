@@ -7,9 +7,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from rich.console import Console
 
-# Import utilities
-from sologm.cli.utils.display import truncate_text
-
 # Import necessary models for type hinting
 from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
@@ -99,13 +96,7 @@ class MarkdownRenderer(Renderer):
 
         self.console.print(output)
 
-    def display_events_table(
-        self,
-        events: List[Event],
-        scene: Scene,
-        truncate_descriptions: bool = True,
-        max_description_length: int = 80,
-    ) -> None:
+    def display_events_table(self, events: List[Event], scene: Scene) -> None:
         """Displays a list of events as a Markdown table."""
         logger.debug(
             f"Displaying events table as Markdown for scene '{scene.title}' with {len(events)} events"
@@ -123,11 +114,8 @@ class MarkdownRenderer(Renderer):
         output_lines.append("|---|---|---|---|")
 
         for event in events:
+            # Use the full description directly
             description = event.description
-            if truncate_descriptions and len(description) > max_description_length:
-                description = truncate_text(
-                    description, max_length=max_description_length
-                )
 
             # Escape pipe characters within the description to avoid breaking the table
             description = description.replace("|", "\\|")
@@ -375,12 +363,13 @@ class MarkdownRenderer(Renderer):
             act_title = latest_act.title or "*Untitled Act*"
             output_lines.append(f"**Title:** {act_title} (Act {latest_act.sequence})")
             status = "**Active**" if is_act_active else "Inactive"
-            output_lines.append(f"**Status:** {status}")
-            if latest_act.summary:
-                summary_preview = truncate_text(latest_act.summary, max_length=100)
-                output_lines.append(f"**Summary:** {summary_preview}")
-        else:
-            output_lines.append("*No acts found in this game.*")
+           output_lines.append(f"**Status:** {status}")
+           if latest_act.summary:
+               # Use full summary
+               summary_preview = latest_act.summary
+               output_lines.append(f"**Summary:** {summary_preview}")
+       else:
+           output_lines.append("*No acts found in this game.*")
         output_lines.append("---")
 
         # Scene Context (Latest & Previous)
@@ -396,12 +385,13 @@ class MarkdownRenderer(Renderer):
                 status = "**Active**"
             else:
                 status = "Inactive"
-            output_lines.append(f"**Status:** {status}")
-            if latest_scene.description:
-                desc_preview = truncate_text(latest_scene.description, max_length=100)
-                output_lines.append(f"**Description:** {desc_preview}")
+           output_lines.append(f"**Status:** {status}")
+           if latest_scene.description:
+               # Use full description
+               desc_preview = latest_scene.description
+               output_lines.append(f"**Description:** {desc_preview}")
 
-            prev_scene = None
+           prev_scene = None
             if scene_manager:
                 try:
                     prev_scene = scene_manager.get_previous_scene(latest_scene.id)

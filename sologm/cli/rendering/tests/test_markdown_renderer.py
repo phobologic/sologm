@@ -13,9 +13,6 @@ from sqlalchemy.orm import Session  # Import Session for type hinting
 
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
-
-# Import truncate_text utility
-from sologm.cli.utils.display import truncate_text
 from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
