@@ -286,8 +286,9 @@ class RichRenderer(Renderer):
         # Add rows with consistent formatting
         for game in games:
             # --- MODIFIED: Use hybrid properties for counts ---
-            act_count = game.act_count  # Use hybrid property
-            scene_count = game.scene_count  # Use hybrid property
+            act_count = game.act_count  # Use game's hybrid property
+            # Calculate scene count by summing the scene_count of each act
+            scene_count = sum(act.scene_count for act in game.acts) # Use act's hybrid property
             # --- END MODIFICATION ---
 
             is_active = active_game and game.id == active_game.id
