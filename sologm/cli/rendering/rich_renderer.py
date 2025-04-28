@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Prompt  # Added Prompt import
 from rich.table import Table
 from rich.text import Text
 
@@ -27,8 +28,6 @@ from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
 
 # Corrected import based on file structure from Phase 1
 from .base import Renderer
-
-from rich.prompt import Prompt  # Added Prompt import
 
 # Use TYPE_CHECKING for manager imports to avoid circular dependencies
 if TYPE_CHECKING:
