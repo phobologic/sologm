@@ -12,8 +12,9 @@ from sologm.database.session import get_db_context
 from sologm.utils.errors import ActError, GameError, SceneError
 
 if TYPE_CHECKING:
-    from typer import Typer
     from rich.console import Console
+    from typer import Typer
+
     from sologm.cli.rendering.base import Renderer
 
     app: Typer
@@ -45,19 +46,19 @@ def add_scene(
             # Get active game and act context through scene_manager
             try:
                 act_id, _ = scene_manager.validate_active_context()
-            except SceneError:
+            except SceneError as e:
                 # If there's no active scene, we still need the active act
                 active_game = scene_manager.game_manager.get_active_game()
                 if not active_game:
                     raise GameError(
                         "No active game. Use 'sologm game activate' to set one."
-                    )
+                    ) from e
 
                 active_act = scene_manager.act_manager.get_active_act(active_game.id)
                 if not active_act:
                     raise ActError(
                         "No active act. Create one with 'sologm act create'."
-                    )
+                    ) from e
 
                 act_id = active_act.id
 
@@ -87,17 +88,18 @@ def list_scenes(ctx: typer.Context) -> None:
             # Get active game and act context through scene_manager
             act_id, active_scene = scene_manager.validate_active_context()
             active_scene_id = active_scene.id if active_scene else None
-        except SceneError:
+        except SceneError as e:
             # If there's no active scene, we still need the active act
             active_game = scene_manager.game_manager.get_active_game()
             if not active_game:
                 raise GameError(
                     "No active game. Use 'sologm game activate' to set one."
-                )
+                ) from e
 
             active_act = scene_manager.act_manager.get_active_act(active_game.id)
             if not active_act:
-                raise ActError("No active act. Create one with 'sologm act create'.")
+                raise ActError("No active act. Create one with 'sologm "
+                               "act create'.") from e
 
             act_id = active_act.id
             active_scene_id = None
@@ -131,7 +133,8 @@ def scene_info(
             if show_events:
                 # display_events_table import removed
 
-                # Access event_manager through scene_manager instead of creating a new instance
+                # Access event_manager through scene_manager instead of
+                # creating a new instance
                 event_manager = scene_manager.event_manager
                 events = event_manager.list_events(scene_id=active_scene.id)
 
@@ -275,19 +278,19 @@ def set_current_scene(
 
             try:
                 act_id, _ = scene_manager.validate_active_context()
-            except SceneError:
+            except SceneError as e:
                 # If there's no active scene, we still need the active act
                 active_game = scene_manager.game_manager.get_active_game()
                 if not active_game:
                     raise GameError(
                         "No active game. Use 'sologm game activate' to set one."
-                    )
+                    ) from e
 
                 active_act = scene_manager.act_manager.get_active_act(active_game.id)
                 if not active_act:
                     raise ActError(
                         "No active act. Create one with 'sologm act create'."
-                    )
+                    ) from e
 
                 act_id = active_act.id
 

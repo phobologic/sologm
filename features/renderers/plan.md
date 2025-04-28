@@ -80,20 +80,12 @@ Follow these steps in order. Test frequently after each major step, especially d
 
 **(Goal: Modify all commands to use the injected renderer)**
 
-*   **Action:** Perform the following sub-steps **iteratively** for each command file listed below:
-    *   **Files to Refactor:**
-        *   `sologm/cli/game.py`
-        *   `sologm/cli/act.py`
-        *   `sologm/cli/scene.py`
-        *   `sologm/cli/event.py`
-        *   `sologm/cli/oracle.py`
-        *   `sologm/cli/dice.py`
-        *   *(Add any other files in `sologm/cli/` that define Typer commands and produce user output, excluding `main.py`)*
+*   **Action:** Perform the following sub-steps **iteratively** for each file provided.
 
     *   **Sub-steps for *each* command function within the current file:**
         1.  **Add Context Parameter:** Add `ctx: typer.Context` as the first parameter.
         2.  **Remove Old Imports:** Remove imports from `sologm.cli.utils.display` and direct `Console` imports if applicable.
-        3.  **Get Renderer:** Add `renderer = ctx.obj.renderer` (adjust if using dict).
+        3.  **Get Renderer:** Add `renderer = ctx.obj["renderer"]` (adjust if using dict).
         4.  **Replace Display Calls:** Replace old `display_*()` calls with `renderer.display_*()` calls, passing data arguments.
         5.  **Replace Direct Prints:** Replace `console.print("[style]...")` for success, error, warning with `renderer.display_success()`, `renderer.display_error()`, `renderer.display_warning()`. Use `renderer.display_message()` for simple info.
         6.  **Error Handling:** Ensure `renderer.display_error()` is called in `except` blocks, followed by `raise typer.Exit(code=1)`.

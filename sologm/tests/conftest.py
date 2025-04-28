@@ -285,7 +285,7 @@ def create_test_event() -> Callable[..., Event]:
 def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
     """Factory fixture to create test interpretation sets."""
     # Import locally
-    from sologm.models.interpretation_set import InterpretationSet
+    from sologm.models.oracle import InterpretationSet
 
     def _create_interpretation_set(
         session: Session,
@@ -329,7 +329,7 @@ def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
 def create_test_interpretation() -> Callable[..., "Interpretation"]:
     """Factory fixture to create test interpretations."""
     # Import locally
-    from sologm.models.interpretation import Interpretation
+    from sologm.models.oracle import Interpretation
 
     def _create_interpretation(
         session: Session,

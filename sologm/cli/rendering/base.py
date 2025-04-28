@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from rich.console import Console
 

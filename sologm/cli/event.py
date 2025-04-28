@@ -1,7 +1,7 @@
 """Event tracking commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import typer
 
@@ -12,6 +12,7 @@ from sologm.utils.errors import EventError
 
 if TYPE_CHECKING:
     from rich.console import Console
+
     from sologm.cli.rendering.base import Renderer
 
 
@@ -33,7 +34,8 @@ def add_event(
         "manual",
         "--source",
         "-s",
-        help="Source of the event (use 'sologm event sources' to see available options)",
+        help="Source of the event (use 'sologm event sources' to see "
+             "available options)",
     ),
 ) -> None:
     """Add a new event to the current scene.

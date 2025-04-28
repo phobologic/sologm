@@ -3,22 +3,10 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.text import Text
-
-from sologm.cli.utils.styled_text import BORDER_STYLES, StyledText
-from sologm.core.event import Event
-from sologm.core.game import Game
-from sologm.core.oracle import Interpretation, InterpretationSet
-from sologm.core.scene import Scene, SceneManager
-from sologm.models.act import Act
-from sologm.models.dice import DiceRoll
-from sologm.models.scene import SceneStatus
+from sologm.cli.utils.styled_text import StyledText
 
 if TYPE_CHECKING:
-    from sologm.core.oracle import OracleManager
+    pass
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 """Dice rolling commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import typer
 

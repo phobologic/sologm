@@ -6,7 +6,7 @@ or problems that unfold through multiple connected Scenes.
 """
 
 import logging
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional
 
 import typer
 
@@ -28,6 +28,7 @@ from sologm.utils.errors import APIError, GameError
 
 if TYPE_CHECKING:
     from rich.console import Console
+
     from sologm.cli.rendering.base import Renderer
 
 
@@ -406,14 +407,12 @@ def edit_act(
                 renderer.display_message(f"Title: {updated_act.title}")
             if updated_act.summary:
                 renderer.display_message(f"Summary: {updated_act.summary}")
-            # Consider adding a dedicated renderer.display_act_details(updated_act) method later
+            # Consider adding a dedicated
+            # renderer.display_act_details(updated_act) method later
 
         except GameError as e:
             renderer.display_error(f"Error: {str(e)}")
             raise typer.Exit(1) from e
-
-
-# --- Helper Functions for complete_act (pass renderer/console where needed) ---
 
 
 def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool:

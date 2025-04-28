@@ -1,23 +1,21 @@
 """Oracle interpretation commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import typer
 
-# Console import removed
-# display import removed
 from sologm.core.oracle import OracleManager
 from sologm.utils.errors import OracleError
 
 if TYPE_CHECKING:
     from rich.console import Console
+
     from sologm.cli.rendering.base import Renderer
 
 
 logger = logging.getLogger(__name__)
 oracle_app = typer.Typer(help="Oracle interpretation commands")
-# console instance removed
 
 
 @oracle_app.command("interpret")

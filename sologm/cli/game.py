@@ -13,6 +13,7 @@ from sologm.utils.errors import GameError
 
 if TYPE_CHECKING:
     from rich.console import Console
+
     from sologm.cli.rendering.base import Renderer
 
 
@@ -93,7 +94,8 @@ def activate_game(
 
 @game_app.command("info")
 def game_info(ctx: typer.Context) -> None:
-    """Show basic information about the active game (or latest context if none active)."""
+    """Show basic information about the active game (or latest context
+    if none active)."""
     renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
@@ -135,7 +137,8 @@ def game_info(ctx: typer.Context) -> None:
 
 @game_app.command("status")
 def game_status(ctx: typer.Context) -> None:
-    """Show detailed status of the active game including recent events and dice rolls."""
+    """Show detailed status of the active game including recent events and
+    dice rolls."""
     renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
     # SceneError import likely not needed here anymore
@@ -156,7 +159,8 @@ def game_status(ctx: typer.Context) -> None:
                 raise typer.Exit(0)  # Exit cleanly if no game context
 
             # Access managers through the chain (still needed for events/rolls/oracle)
-            # Note: These managers are initialized within get_latest_context_status if needed,
+            # Note: These managers are initialized within
+            # get_latest_context_status if needed,
             # but we might need them directly here too.
             act_manager = game_manager.act_manager
             scene_manager = act_manager.scene_manager
@@ -170,12 +174,14 @@ def game_status(ctx: typer.Context) -> None:
             is_act_active = context_status["is_act_active"]
             is_scene_active = context_status["is_scene_active"]
 
-            # Fetch recent events and rolls based on the determined scene (active or most recent)
+            # Fetch recent events and rolls based on the determined scene
+            # (active or most recent)
             recent_events = []
             recent_rolls = []
             if latest_scene:
                 logger.debug(
-                    f"Getting recent events and dice rolls for latest scene {latest_scene.id}"
+                    f"Getting recent events and dice rolls for latest "
+                    f"scene {latest_scene.id}"
                 )
                 recent_events = event_manager.list_events(
                     scene_id=latest_scene.id, limit=5
@@ -320,7 +326,7 @@ def edit_game(
 
 @game_app.command("dump")
 def dump_game(
-    ctx: typer.Context,  # Add context for consistency, though renderer isn't used for main output
+    ctx: typer.Context,  # Add context for consistency, though renderer isn't used
     game_id: str = typer.Option(
         None, "--id", "-i", help="ID of the game to dump (defaults to active game)"
     ),
