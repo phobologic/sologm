@@ -479,14 +479,14 @@ class MarkdownRenderer(Renderer):
 
         # Recent Dice Rolls
         output_lines.append("### Recent Dice Rolls")
-       if recent_rolls:
-           max_rolls_to_show = 3  # Keep limiting the *number* shown for brevity
-           for roll in recent_rolls[:max_rolls_to_show]:
-               # Use full reason
-               reason_text = f" (Reason: {roll.reason})" if roll.reason else ""
-               timestamp = roll.created_at.strftime("%Y-%m-%d %H:%M")
-               output_lines.append(
-                   f"*   `{timestamp}`: {roll.notation} = **{roll.total}**{reason_text}"
+        if recent_rolls:
+            max_rolls_to_show = 3  # Keep limiting the *number* shown for brevity
+            for roll in recent_rolls[:max_rolls_to_show]:
+                # Use full reason
+                reason_text = f" (Reason: {roll.reason})" if roll.reason else ""
+                timestamp = roll.created_at.strftime("%Y-%m-%d %H:%M")
+                output_lines.append(
+                    f"*   `{timestamp}`: {roll.notation} = **{roll.total}**{reason_text}"
                 )
             if len(recent_rolls) > max_rolls_to_show:
                 output_lines.append(
