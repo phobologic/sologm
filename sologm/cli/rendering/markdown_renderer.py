@@ -570,8 +570,8 @@ class MarkdownRenderer(Renderer):
         output_lines.append(f"*   **Created:** {act.created_at.strftime('%Y-%m-%d')}")
         output_lines.append(f"*   **Modified:** {act.modified_at.strftime('%Y-%m-%d')}")
 
-        self.console.print("\n".join(output_lines))
-        self.console.print("")  # Add a blank line before scenes
+        self._print_markdown("\n".join(output_lines))
+        self._print_markdown("")  # Add a blank line before scenes
 
         # Display scenes in this act
         if hasattr(act, "scenes") and act.scenes:
