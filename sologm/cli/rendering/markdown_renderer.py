@@ -595,15 +595,15 @@ class MarkdownRenderer(Renderer):
             scene_title = (
                 interp_set.scene.title
                 if hasattr(interp_set, "scene") and interp_set.scene
-               else "Unknown"
-           )
-           # Use full context, escape pipes
-           context = interp_set.context.replace("|", "\\|")
-           # Use full oracle results, escape pipes
-           oracle_results = interp_set.oracle_results.replace("|", "\\|")
-           created_at = interp_set.created_at.strftime("%Y-%m-%d %H:%M")
-           has_selection = any(
-               interp.is_selected for interp in interp_set.interpretations
+                else "Unknown"
+            )
+            # Use full context, escape pipes
+            context = interp_set.context.replace("|", "\\|")
+            # Use full oracle results, escape pipes
+            oracle_results = interp_set.oracle_results.replace("|", "\\|")
+            created_at = interp_set.created_at.strftime("%Y-%m-%d %H:%M")
+            has_selection = any(
+                interp.is_selected for interp in interp_set.interpretations
             )
             status = "Resolved" if has_selection else "Pending"
             interp_count = len(interp_set.interpretations)
