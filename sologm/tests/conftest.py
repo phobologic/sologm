@@ -241,9 +241,10 @@ def create_test_scene() -> Callable[..., Scene]:
             scene = managers.scene.get_scene(scene.id)
             # Ensure the re-fetched scene is not None
             if scene is None:
-                 # Should not happen if complete_scene/get_scene work, but defensive check
-                 raise RuntimeError("Failed to re-fetch scene after completion in factory")
-
+                # Should not happen if complete_scene/get_scene work, but defensive check
+                raise RuntimeError(
+                    "Failed to re-fetch scene after completion in factory"
+                )
 
         # Add a refresh call here before returning, similar to create_test_event
         # This helps ensure relationships are loaded while the object is known
@@ -261,7 +262,7 @@ def create_test_scene() -> Callable[..., Scene]:
 
         # No merge needed
         # REMOVED: session.refresh call and try/except block (was already removed)
-        return scene # Return the potentially refreshed, session-bound object
+        return scene  # Return the potentially refreshed, session-bound object
 
     return _create_scene
 
