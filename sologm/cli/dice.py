@@ -4,6 +4,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import typer
+
 # Console import removed
 from sqlalchemy.orm import Session
 
@@ -85,9 +86,7 @@ def roll_dice_command(
                 renderer.display_warning(f"Scene {scene_id} not found.")
             else:
                 renderer.display_warning("No current active scene found.")
-            renderer.display_warning(
-                "Dice roll will not be associated with any scene."
-            )
+            renderer.display_warning("Dice roll will not be associated with any scene.")
 
         logger.debug(
             f"Rolling dice with notation: {notation}, reason: "
