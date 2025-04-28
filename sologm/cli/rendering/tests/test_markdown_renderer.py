@@ -110,9 +110,9 @@ def test_display_interpretation_markdown(
         renderer.display_interpretation(interp)
         expected_output_basic = (
             f"#### {interp.title}\n\n"
-        f"{interp.description}\n\n"
-        f"*ID: {interp.id} / {interp.slug}*"
-    )
+            f"{interp.description}\n\n"
+            f"*ID: {interp.id} / {interp.slug}*"
+        )
     mock_console.print.assert_called_with(expected_output_basic)
     mock_console.reset_mock()
 
@@ -257,10 +257,10 @@ def test_display_games_table_markdown(
         expected_output_active = (
             "### Games\n\n"
             "| ID | Name | Description | Acts | Scenes | Current |\n"
-        "|---|---|---|---|---|---|\n"
-        f"| `{test_game.id}` | **{test_game.name}** | {test_game.description} | 0 | 0 | ✓ |\n"
-        f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
-    )
+            "|---|---|---|---|---|---|\n"
+            f"| `{test_game.id}` | **{test_game.name}** | {test_game.description} | 0 | 0 | ✓ |\n"
+            f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
+        )
     mock_console.print.assert_called_with(expected_output_active)
     mock_console.reset_mock()
 
@@ -327,10 +327,10 @@ def test_display_scenes_table_markdown(
         expected_output_active = (
             "### Scenes\n\n"
             "| ID | Title | Description | Status | Current | Sequence |\n"
-        "|---|---|---|---|---|---|\n"
-        f"| `{test_scene.id}` | **{test_scene.title}** | {test_scene.description} | {test_scene.status.value} | ✓ | {test_scene.sequence} |\n"
-        f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
-    )
+            "|---|---|---|---|---|---|\n"
+            f"| `{test_scene.id}` | **{test_scene.title}** | {test_scene.description} | {test_scene.status.value} | ✓ | {test_scene.sequence} |\n"
+            f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
+        )
     mock_console.print.assert_called_with(expected_output_active)
     mock_console.reset_mock()
 
@@ -385,7 +385,7 @@ def test_display_game_info_markdown(
             f"*   **Created:** {test_game.created_at.strftime('%Y-%m-%d')}\n"
             f"*   **Modified:** {test_game.modified_at.strftime('%Y-%m-%d')}\n"
             f"*   **Acts:** {len(test_game.acts)}\n"  # Use calculated property
-            f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}\n" # Use calculated property
+            f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}\n"  # Use calculated property
             f"*   **Active Scene:** {test_scene.title}"
         )
         mock_console.print.assert_called_with(expected_output_active)
@@ -439,16 +439,12 @@ def test_display_interpretation_set_markdown(
         test_interpretations = [interp1, interp2]
 
         # Refresh the set to load interpretations relationship
-        session.refresh(
-            test_interpretation_set, attribute_names=["interpretations"]
-        )
+        session.refresh(test_interpretation_set, attribute_names=["interpretations"])
         num_interpretations = len(test_interpretations)
 
         # --- Test case 1: Show context ---
         mock_console.reset_mock()
-        renderer.display_interpretation_set(
-            test_interpretation_set, show_context=True
-        )
+        renderer.display_interpretation_set(test_interpretation_set, show_context=True)
 
         expected_context = (
             f"### Oracle Interpretations\n\n"
@@ -469,9 +465,7 @@ def test_display_interpretation_set_markdown(
 
         # --- Test case 2: Hide context ---
         mock_console.reset_mock()
-        renderer.display_interpretation_set(
-            test_interpretation_set, show_context=False
-        )
+        renderer.display_interpretation_set(test_interpretation_set, show_context=False)
 
         # Expected calls: N interpretations + N blank lines + instruction(1) = 2*N + 1
         expected_call_count_false = num_interpretations * 2 + 1
@@ -510,9 +504,7 @@ def test_display_scene_info_markdown(
 
         act_title = test_scene.act.title or "Untitled Act"
         act_info = f"Act {test_scene.act.sequence}: {act_title}"
-        status_indicator = (
-            " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
-        )
+        status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
 
         expected_output = (
             f"### Scene {test_scene.sequence}: {test_scene.title}{status_indicator} (`{test_scene.id}`)\n\n"
@@ -669,7 +661,7 @@ def test_display_act_info_no_scenes_markdown(
             session, game_id=test_game.id, title="Act Without Scene", sequence=1
         )
         # Ensure no scenes are associated (factory default)
-        session.refresh(test_act, attribute_names=["scenes"]) # Should be empty
+        session.refresh(test_act, attribute_names=["scenes"])  # Should be empty
 
         renderer.display_act_info(test_act, test_game.name)
 
@@ -689,7 +681,7 @@ def test_display_act_info_no_scenes_markdown(
 
         # Check the sequence of calls
         calls = mock_console.print.call_args_list
-        assert len(calls) == 5 # Act Info, Blank Line, Header, Blank Line, Message
+        assert len(calls) == 5  # Act Info, Blank Line, Header, Blank Line, Message
         assert calls[0].args[0] == expected_act_output
         assert calls[1].args[0] == expected_blank_line
         assert calls[2].args[0] == expected_no_scenes_header
@@ -727,7 +719,7 @@ def test_display_interpretation_sets_table_markdown(
         )
         interp1 = create_test_interpretation(
             session, set_id=test_interpretation_set.id, is_selected=True
-        ) # Mark one as selected
+        )  # Mark one as selected
         interp2 = create_test_interpretation(
             session, set_id=test_interpretation_set.id, is_selected=False
         )
@@ -748,7 +740,11 @@ def test_display_interpretation_sets_table_markdown(
         truncated_results = truncate_text(
             test_interpretation_set.oracle_results, max_length=40
         )
-        status = "Resolved" if any(i.is_selected for i in test_interpretations) else "Pending"
+        status = (
+            "Resolved"
+            if any(i.is_selected for i in test_interpretations)
+            else "Pending"
+        )
 
         expected_output = (
             "### Oracle Interpretation Sets\n\n"
@@ -795,13 +791,13 @@ def test_display_interpretation_status_markdown(
             session, set_id=test_interpretation_set.id, is_selected=True
         )
         # Refresh set to load interpretations
-        session.refresh(
-            test_interpretation_set, attribute_names=["interpretations"]
-        )
+        session.refresh(test_interpretation_set, attribute_names=["interpretations"])
 
         renderer.display_interpretation_status(test_interpretation_set)
 
-        is_resolved = any(i.is_selected for i in test_interpretation_set.interpretations)
+        is_resolved = any(
+            i.is_selected for i in test_interpretation_set.interpretations
+        )
 
         expected_output = (
             f"### Current Oracle Interpretation Status\n\n"
@@ -883,7 +879,7 @@ def test_display_act_completion_success_markdown(
             f"## Act '{test_act.title}' Completed Successfully!\n\n"
             f"*   **ID:** `{test_act.id}`\n"
             f"*   **Sequence:** Act {test_act.sequence}\n"
-            f"*   **Status:** Completed\n\n" # Assumes display method implies completion
+            f"*   **Status:** Completed\n\n"  # Assumes display method implies completion
             f"**Final Title:**\n> {test_act.title}\n\n"
             f"**Final Summary:**\n> {test_act.summary}"
         )
@@ -974,9 +970,7 @@ def test_display_scene_info_markdown(
 
         act_title = test_scene.act.title or "Untitled Act"
         act_info = f"Act {test_scene.act.sequence}: {act_title}"
-        status_indicator = (
-            " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
-        )
+        status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
 
         expected_output = (
             f"### Scene {test_scene.sequence}: {test_scene.title}{status_indicator} (`{test_scene.id}`)\n\n"
@@ -1133,7 +1127,7 @@ def test_display_act_info_no_scenes_markdown(
             session, game_id=test_game.id, title="Act Without Scene", sequence=1
         )
         # Ensure no scenes are associated (factory default)
-        session.refresh(test_act, attribute_names=["scenes"]) # Should be empty
+        session.refresh(test_act, attribute_names=["scenes"])  # Should be empty
 
         renderer.display_act_info(test_act, test_game.name)
 
@@ -1153,7 +1147,7 @@ def test_display_act_info_no_scenes_markdown(
 
         # Check the sequence of calls
         calls = mock_console.print.call_args_list
-        assert len(calls) == 5 # Act Info, Blank Line, Header, Blank Line, Message
+        assert len(calls) == 5  # Act Info, Blank Line, Header, Blank Line, Message
         assert calls[0].args[0] == expected_act_output
         assert calls[1].args[0] == expected_blank_line
         assert calls[2].args[0] == expected_no_scenes_header
@@ -1188,7 +1182,7 @@ def test_display_interpretation_sets_table_markdown(
         )
         interp1 = create_test_interpretation(
             session, set_id=test_interpretation_set.id, is_selected=True
-        ) # Mark one as selected
+        )  # Mark one as selected
         interp2 = create_test_interpretation(
             session, set_id=test_interpretation_set.id, is_selected=False
         )
@@ -1209,7 +1203,11 @@ def test_display_interpretation_sets_table_markdown(
         truncated_results = truncate_text(
             test_interpretation_set.oracle_results, max_length=40
         )
-        status = "Resolved" if any(i.is_selected for i in test_interpretations) else "Pending"
+        status = (
+            "Resolved"
+            if any(i.is_selected for i in test_interpretations)
+            else "Pending"
+        )
 
         expected_output = (
             "### Oracle Interpretation Sets\n\n"
@@ -1256,13 +1254,13 @@ def test_display_interpretation_status_markdown(
             session, set_id=test_interpretation_set.id, is_selected=True
         )
         # Refresh set to load interpretations
-        session.refresh(
-            test_interpretation_set, attribute_names=["interpretations"]
-        )
+        session.refresh(test_interpretation_set, attribute_names=["interpretations"])
 
         renderer.display_interpretation_status(test_interpretation_set)
 
-        is_resolved = any(i.is_selected for i in test_interpretation_set.interpretations)
+        is_resolved = any(
+            i.is_selected for i in test_interpretation_set.interpretations
+        )
 
         expected_output = (
             f"### Current Oracle Interpretation Status\n\n"
@@ -1344,7 +1342,7 @@ def test_display_act_completion_success_markdown(
             f"## Act '{test_act.title}' Completed Successfully!\n\n"
             f"*   **ID:** `{test_act.id}`\n"
             f"*   **Sequence:** Act {test_act.sequence}\n"
-            f"*   **Status:** Completed\n\n" # Assumes display method implies completion
+            f"*   **Status:** Completed\n\n"  # Assumes display method implies completion
             f"**Final Title:**\n> {test_act.title}\n\n"
             f"**Final Summary:**\n> {test_act.summary}"
         )
