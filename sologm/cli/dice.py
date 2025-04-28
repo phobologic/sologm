@@ -1,21 +1,25 @@
 """Dice rolling commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import typer
-from rich.console import Console
+# Console import removed
 from sqlalchemy.orm import Session
 
-from sologm.cli.utils import display
+# display import removed
 from sologm.core.dice import DiceManager
 from sologm.database.session import get_db_context
 from sologm.models.scene import Scene
 from sologm.utils.errors import DiceError, SceneError
 
+if TYPE_CHECKING:
+    from sologm.cli.rendering.base import Renderer
+
+
 logger = logging.getLogger(__name__)
 dice_app = typer.Typer(help="Dice rolling commands")
-console = Console()
+# console instance removed
 
 
 def resolve_scene_id(session: Session, scene_id: Optional[str]) -> Optional[Scene]:
@@ -51,6 +55,7 @@ def resolve_scene_id(session: Session, scene_id: Optional[str]) -> Optional[Scen
 
 @dice_app.command("roll")
 def roll_dice_command(
+    ctx: typer.Context,
     notation: str = typer.Argument(..., help="Dice notation (e.g., 2d6+3)"),
     reason: Optional[str] = typer.Option(
         None, "--reason", "-r", help="Reason for the roll"
@@ -66,6 +71,7 @@ def roll_dice_command(
         2d6+3   Roll two 6-sided dice and add 3
         3d8-1   Roll three 8-sided dice and subtract 1
     """
+    renderer: "Renderer" = ctx.obj["renderer"]
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
@@ -76,11 +82,11 @@ def roll_dice_command(
             scene = resolve_scene_id(session, scene_id)
         if scene is None:
             if scene_id:
-                console.print(f"Scene {scene_id} not found.", style="yellow")
+                renderer.display_warning(f"Scene {scene_id} not found.")
             else:
-                console.print("No current active scene found.", style="yellow")
-            console.print(
-                "Dice roll will not be associated with any scene.", style="yellow"
+                renderer.display_warning("No current active scene found.")
+            renderer.display_warning(
+                "Dice roll will not be associated with any scene."
             )
 
         logger.debug(
@@ -89,21 +95,23 @@ def roll_dice_command(
         )
 
         result = dice_manager.roll(notation, reason, scene)
-        display.display_dice_roll(console, result)
+        renderer.display_dice_roll(result)
 
     except DiceError as e:
-        console.print(f"Error: {str(e)}", style="bold red")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @dice_app.command("history")
 def dice_history_command(
+    ctx: typer.Context,
     limit: int = typer.Option(5, "--limit", "-l", help="Number of rolls to show"),
     scene_id: Optional[str] = typer.Option(
         None, "--scene-id", "-s", help="Filter by scene ID"
     ),
 ) -> None:
     """Show recent dice roll history."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     try:
         # Use a single session for the entire command
         with get_db_context() as session:
@@ -117,13 +125,13 @@ def dice_history_command(
         rolls = dice_manager.get_recent_rolls(scene=scene, limit=limit)
 
         if not rolls:
-            console.print("No dice rolls found.", style="yellow")
+            renderer.display_warning("No dice rolls found.")
             return
 
-        console.print("Recent dice rolls:", style="bold")
+        renderer.display_message("Recent dice rolls:", style="bold")
         for roll in rolls:
-            display.display_dice_roll(console, roll)
+            renderer.display_dice_roll(roll)
 
     except DiceError as e:
-        console.print(f"Error: {str(e)}", style="bold red")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
