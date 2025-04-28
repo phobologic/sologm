@@ -216,16 +216,15 @@ def test_display_game_status_no_events(
     # Create a mock interpretation set with string context and empty interpretations list
     mock_interp_set = MagicMock(spec=InterpretationSet)
     mock_interp_set.id = "mock-set-pending"
-    mock_interp_set.context = "Mock pending context." # Ensure context is a string
+    mock_interp_set.context = "Mock pending context."  # Ensure context is a string
     mock_interp_set.oracle_results = "Mock pending results."
-    mock_interp_set.interpretations = [] # Empty list for no selection path
+    mock_interp_set.interpretations = []  # Empty list for no selection path
     mock_interp_set.retry_attempt = 0
 
     # Configure the mock manager's methods for the pending scenario
     mock_oracle_manager.get_current_interpretation_set.return_value = mock_interp_set
     mock_oracle_manager.get_most_recent_interpretation.return_value = None
     # --- End Oracle Mock Setup ---
-
 
     with session_context as session:
         game = create_test_game(session)
@@ -238,7 +237,7 @@ def test_display_game_status_no_events(
             latest_scene=scene,
             recent_events=[],
             scene_manager=mock_scene_manager,
-            oracle_manager=mock_oracle_manager, # Pass the configured mock
+            oracle_manager=mock_oracle_manager,  # Pass the configured mock
             recent_rolls=None,
             is_act_active=True,
             is_scene_active=True,
