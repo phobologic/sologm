@@ -4,12 +4,12 @@
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.scene import Scene
-from sologm.models.game import Game # Import Game model
+from sologm.models.game import Game  # Import Game model
 
 
 def test_cascade_delete_game(
-    session_context, # Use session_context fixture
-    create_test_game, # Use factory fixtures
+    session_context,  # Use session_context fixture
+    create_test_game,  # Use factory fixtures
     create_test_act,
     create_test_scene,
     create_test_event,
@@ -24,12 +24,18 @@ def test_cascade_delete_game(
         scene1_1 = create_test_scene(session, act_id=act1.id, title="Scene 1.1")
         scene1_2 = create_test_scene(session, act_id=act1.id, title="Scene 1.2")
         scene2_1 = create_test_scene(session, act_id=act2.id, title="Scene 2.1")
-        event1_1_1 = create_test_event(session, scene_id=scene1_1.id, description="Event 1.1.1")
-        event1_2_1 = create_test_event(session, scene_id=scene1_2.id, description="Event 1.2.1")
-        event2_1_1 = create_test_event(session, scene_id=scene2_1.id, description="Event 2.1.1")
+        event1_1_1 = create_test_event(
+            session, scene_id=scene1_1.id, description="Event 1.1.1"
+        )
+        event1_2_1 = create_test_event(
+            session, scene_id=scene1_2.id, description="Event 1.2.1"
+        )
+        event2_1_1 = create_test_event(
+            session, scene_id=scene2_1.id, description="Event 2.1.1"
+        )
 
         # Store IDs for verification after deletion
-        game_id = game.id # Store game_id as well
+        game_id = game.id  # Store game_id as well
         act_ids = [act1.id, act2.id]
         scene_ids = [scene1_1.id, scene1_2.id, scene2_1.id]
         event_ids = [event1_1_1.id, event1_2_1.id, event2_1_1.id]
