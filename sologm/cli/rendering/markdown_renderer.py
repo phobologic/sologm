@@ -422,7 +422,7 @@ class MarkdownRenderer(Renderer):
         if recent_events:
             max_events_to_show = 5
             max_events_to_show = 5  # Keep limiting the *number* shown
-                                   # for brevity
+            # for brevity
             for event in recent_events[:max_events_to_show]:
                 source_name = event.source_name
                 timestamp = event.created_at.strftime("%Y-%m-%d %H:%M")
@@ -431,9 +431,9 @@ class MarkdownRenderer(Renderer):
                 output_lines.append(f"*   `{timestamp}` ({source_name}): {desc}")
             if len(recent_events) > max_events_to_show:
                 output_lines.append(
-                     f"*   ... ({len(recent_events) - max_events_to_show} "
+                    f"*   ... ({len(recent_events) - max_events_to_show} "
                     "more not shown)"
-                 )
+                )
         else:
             output_lines.append("*No recent events.*")
         output_lines.append("---")
@@ -464,7 +464,7 @@ class MarkdownRenderer(Renderer):
             output_lines.append(f"*   Context: {pending_interp_set.context}")
             output_lines.append(
                 f"*   Options: {len(pending_interp_set.interpretations)}"
-             )
+            )
             output_lines.append("*   Use `sologm oracle select` to choose.")
         elif recent_interp_tuple:
             interp_set, selected_interp = recent_interp_tuple
