@@ -12,10 +12,10 @@ from sologm.cli.dice import dice_app
 from sologm.cli.event import event_app
 from sologm.cli.game import game_app
 from sologm.cli.oracle import oracle_app
-from sologm.cli.scene import scene_app
 
 # --- Added Placeholder Import ---
 from sologm.cli.rendering.base import Renderer  # Placeholder imports below
+from sologm.cli.scene import scene_app
 
 # --- End Added Placeholder Import ---
 from sologm.utils.logger import setup_root_logger
