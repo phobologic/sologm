@@ -726,31 +726,28 @@ def test_display_interpretation_sets_table_markdown(
 
         interp_sets = [test_interpretation_set]
 
-        renderer.display_interpretation_sets_table(interp_sets)
+       renderer.display_interpretation_sets_table(interp_sets)
 
-        truncated_context = truncate_text(
-            test_interpretation_set.context, max_length=40
-        )
-        truncated_results = truncate_text(
-            test_interpretation_set.oracle_results, max_length=40
-        )
-        status = (
-            "Resolved"
-            if any(i.is_selected for i in test_interpretations)
+       # Use full context and results, but escape pipes for the expected output
+       full_context = test_interpretation_set.context.replace("|", "\\|")
+       full_results = test_interpretation_set.oracle_results.replace("|", "\\|")
+       status = (
+           "Resolved"
+           if any(i.is_selected for i in test_interpretations)
             else "Pending"
         )
 
         expected_output = (
             "### Oracle Interpretation Sets\n\n"
             "| ID | Scene | Context | Oracle Results | Created | Status | Count |\n"
-            "|---|---|---|---|---|---|---|\n"
-            f"| `{test_interpretation_set.id}` "
-            f"| {test_scene.title} "
-            f"| {truncated_context} "
-            f"| {truncated_results} "
-            f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')} "
-            f"| {status} "
-            f"| {len(test_interpretations)} |"
+           "|---|---|---|---|---|---|---|\n"
+           f"| `{test_interpretation_set.id}` "
+           f"| {test_scene.title} "
+           f"| {full_context} "
+           f"| {full_results} "
+           f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')} "
+           f"| {status} "
+           f"| {len(test_interpretations)} |"
         )
         mock_console.print.assert_called_once_with(expected_output)
 

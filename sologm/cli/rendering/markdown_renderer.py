@@ -415,13 +415,15 @@ class MarkdownRenderer(Renderer):
         output_lines.append("### Recent Events")
         if recent_events:
             max_events_to_show = 5
-            for event in recent_events[:max_events_to_show]:
-                source_name = event.source_name
-                timestamp = event.created_at.strftime("%Y-%m-%d %H:%M")
-                desc = truncate_text(event.description, max_length=70)
-                output_lines.append(f"*   `{timestamp}` ({source_name}): {desc}")
-            if len(recent_events) > max_events_to_show:
-                output_lines.append(
+           max_events_to_show = 5  # Keep limiting the *number* shown for brevity
+           for event in recent_events[:max_events_to_show]:
+               source_name = event.source_name
+               timestamp = event.created_at.strftime("%Y-%m-%d %H:%M")
+               # Use full description here too, but escape pipes
+               desc = event.description.replace("|", "\\|")
+               output_lines.append(f"*   `{timestamp}` ({source_name}): {desc}")
+           if len(recent_events) > max_events_to_show:
+               output_lines.append(
                     f"*   ... ({len(recent_events) - max_events_to_show} more not shown)"
                 )
         else:
@@ -448,39 +450,35 @@ class MarkdownRenderer(Renderer):
             except Exception as e:
                 logger.warning(f"Could not retrieve oracle status: {e}")
 
-        if pending_interp_set:
-            output_lines.append("**Pending Decision:**")
-            output_lines.append(
-                f"*   Context: {truncate_text(pending_interp_set.context, 60)}"
-            )
-            output_lines.append(
-                f"*   Options: {len(pending_interp_set.interpretations)}"
+       if pending_interp_set:
+           output_lines.append("**Pending Decision:**")
+           # Use full context
+           output_lines.append(f"*   Context: {pending_interp_set.context}")
+           output_lines.append(
+               f"*   Options: {len(pending_interp_set.interpretations)}"
             )
             output_lines.append("*   Use `sologm oracle select` to choose.")
         elif recent_interp_tuple:
-            interp_set, selected_interp = recent_interp_tuple
-            output_lines.append("**Last Decision:**")
-            output_lines.append(f"*   Context: {truncate_text(interp_set.context, 60)}")
-            output_lines.append(
-                f"*   Selected: {truncate_text(selected_interp.title, 60)}"
-            )
-        else:
-            output_lines.append("*No pending or recent oracle interpretations.*")
+           interp_set, selected_interp = recent_interp_tuple
+           output_lines.append("**Last Decision:**")
+           # Use full context
+           output_lines.append(f"*   Context: {interp_set.context}")
+           # Use full title
+           output_lines.append(f"*   Selected: {selected_interp.title}")
+       else:
+           output_lines.append("*No pending or recent oracle interpretations.*")
         output_lines.append("---")
 
         # Recent Dice Rolls
         output_lines.append("### Recent Dice Rolls")
-        if recent_rolls:
-            max_rolls_to_show = 3
-            for roll in recent_rolls[:max_rolls_to_show]:
-                reason_text = (
-                    f" (Reason: {truncate_text(roll.reason, 40)})"
-                    if roll.reason
-                    else ""
-                )
-                timestamp = roll.created_at.strftime("%Y-%m-%d %H:%M")
-                output_lines.append(
-                    f"*   `{timestamp}`: {roll.notation} = **{roll.total}**{reason_text}"
+       if recent_rolls:
+           max_rolls_to_show = 3  # Keep limiting the *number* shown for brevity
+           for roll in recent_rolls[:max_rolls_to_show]:
+               # Use full reason
+               reason_text = f" (Reason: {roll.reason})" if roll.reason else ""
+               timestamp = roll.created_at.strftime("%Y-%m-%d %H:%M")
+               output_lines.append(
+                   f"*   `{timestamp}`: {roll.notation} = **{roll.total}**{reason_text}"
                 )
             if len(recent_rolls) > max_rolls_to_show:
                 output_lines.append(
@@ -589,17 +587,15 @@ class MarkdownRenderer(Renderer):
             scene_title = (
                 interp_set.scene.title
                 if hasattr(interp_set, "scene") and interp_set.scene
-                else "Unknown"
-            )
-            context = truncate_text(interp_set.context, max_length=40).replace(
-                "|", "\\|"
-            )
-            oracle_results = truncate_text(
-                interp_set.oracle_results, max_length=40
-            ).replace("|", "\\|")
-            created_at = interp_set.created_at.strftime("%Y-%m-%d %H:%M")
-            has_selection = any(
-                interp.is_selected for interp in interp_set.interpretations
+               else "Unknown"
+           )
+           # Use full context, escape pipes
+           context = interp_set.context.replace("|", "\\|")
+           # Use full oracle results, escape pipes
+           oracle_results = interp_set.oracle_results.replace("|", "\\|")
+           created_at = interp_set.created_at.strftime("%Y-%m-%d %H:%M")
+           has_selection = any(
+               interp.is_selected for interp in interp_set.interpretations
             )
             status = "Resolved" if has_selection else "Pending"
             interp_count = len(interp_set.interpretations)
