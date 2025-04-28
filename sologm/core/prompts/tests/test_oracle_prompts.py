@@ -131,14 +131,6 @@ class TestOraclePrompts:
         previous_interpretations = [
             {"title": "Previous Title", "description": "Previous Description"},
         ]
-
-        result = OraclePrompts.build_interpretation_prompt(
-            test_scene,
-            "What happens next?",
-            "Mystery, Danger",
-            3,
-            previous_interpretations=previous_interpretations,
-        ]
         with session_context as session:
             # Create necessary data
             game = create_test_game(session)
