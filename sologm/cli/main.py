@@ -94,35 +94,27 @@ def main(
         Config.get_instance(Path(config_path))
 
     # --- Added Renderer Selection Logic ---
-    selected_renderer: Optional[Renderer] = None  # Local variable
-    if no_ui:
-        # from sologm.cli.rendering.markdown_renderer import MarkdownRenderer # Placeholder
-        # selected_renderer = MarkdownRenderer(console, markdown_mode=True) # Placeholder
-        logger.debug("MarkdownRenderer selected (placeholder implementation)")
-        pass  # Replace with actual instantiation later
-    else:
-        # from sologm.cli.rendering.rich_renderer import RichRenderer # Placeholder
-        # selected_renderer = RichRenderer(console, markdown_mode=False) # Placeholder
-        logger.debug("RichRenderer selected (placeholder implementation)")
-        pass  # Replace with actual instantiation later
+    # Import renderers here to avoid potential circular imports if they import main
+    from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
+    from sologm.cli.rendering.rich_renderer import RichRenderer
 
-    if selected_renderer is None:
-        # This check ensures we don't proceed if instantiation fails later
-        # NOTE: In this phase, this will *always* trigger until placeholders are replaced
-        logger.critical(
-            "Renderer could not be instantiated (placeholder logic active)!"
-        )
-        raise typer.Exit(code=1)
+    selected_renderer: Renderer  # Define type hint
+    if no_ui:
+        selected_renderer = MarkdownRenderer(console=console)
+        logger.debug("MarkdownRenderer selected and instantiated")
+    else:
+        selected_renderer = RichRenderer(console=console)
+        logger.debug("RichRenderer selected and instantiated")
 
     # Store renderer and console on context object
     if ctx.obj is None:
         ctx.obj = {}
-    ctx.obj["renderer"] = selected_renderer  # Store the (placeholder) renderer
+    ctx.obj["renderer"] = selected_renderer  # Store the instantiated renderer
     ctx.obj["console"] = console  # Store the console instance
     logger.debug("Renderer and console stored in Typer context.")
     # --- End Added Renderer Selection Logic ---
 
-    # Initialize database
+    # Initialize database (now uses the renderer for errors)
     try:
         from sologm.database import init_db
 
@@ -130,12 +122,18 @@ def main(
         _ = init_db()  # Returns a session, but not needed here.
 
     except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        console.print("[bold red]Database initialization failed.[/bold red]")
-        console.print(f"Error: {e}")
-        console.print("\nPlease configure a database URL using one of these methods:")
-        console.print("1. Set the SOLOGM_DATABASE_URL environment variable")
-        console.print("2. Add 'database_url' to your config file")
+        # Use the selected renderer to display the error
+        error_message = f"Database initialization failed: {e}"
+        logger.error(error_message)
+        # Access renderer from ctx.obj which should be populated by now
+        renderer: Renderer = ctx.obj["renderer"]
+        renderer.display_error(error_message)
+        # Optionally add more guidance using the renderer
+        renderer.display_message(
+            "\nPlease configure a database URL using one of these methods:\n"
+            "1. Set the SOLOGM_DATABASE_URL environment variable\n"
+            "2. Add 'database_url' to your config file"
+        )
         raise typer.Exit(code=1) from e
 
     logger.debug("Exiting main without errors.")
