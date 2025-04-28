@@ -1111,9 +1111,10 @@ def test_display_game_info_no_scene(
     renderer = RichRenderer(mock_console)
     with session_context as session:
         game = create_test_game(session)
+        # Call the renderer *inside* the session context
+        renderer.display_game_info(game, None)
 
-    renderer.display_game_info(game, None)
-
+    # Assertions remain outside the context
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
