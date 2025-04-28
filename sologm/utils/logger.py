@@ -1,17 +1,18 @@
 """Logging utilities for Solo RPG Helper."""
 
 import logging
-import logging.handlers # Import handlers
+import logging.handlers  # Import handlers
 import os
 import sys
 from typing import Optional
-from pathlib import Path # Use pathlib for paths
+from pathlib import Path  # Use pathlib for paths
 
 # Import get_config here
 from sologm.utils.config import get_config, ConfigError
 
 # Define application name for potential use
 APP_NAME = "sologm"
+
 
 def setup_root_logger(debug: Optional[bool] = None) -> None:
     """Configure the root logger for the application.
@@ -39,15 +40,15 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
         handler.setFormatter(formatter)
         # Avoid adding duplicate handlers if this somehow runs multiple times on failure
         if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-             logger.addHandler(handler)
-        return # Stop further setup
+            logger.addHandler(handler)
+        return  # Stop further setup
 
     # Determine debug status (using config safely now)
     debug_env = os.environ.get("SOLOGM_DEBUG")
     if debug_env is not None:
         debug = debug_env.lower() in ("1", "true", "yes")
     elif debug is None:
-        debug = config.get("debug", False) # Default to False if key missing
+        debug = config.get("debug", False)  # Default to False if key missing
 
     # Get the root logger for the application package
     logger = logging.getLogger("sologm")
@@ -55,7 +56,7 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
     # Remove any existing handlers to prevent duplicates and ensure clean setup
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
-        handler.close() # Close handlers before removing
+        handler.close()  # Close handlers before removing
 
     if debug:
         # --- Debug Mode: Log DEBUG+ to stdout ---
@@ -67,14 +68,16 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
         )
     else:
         # --- Non-Debug Mode: Log INFO+ to rotating file ---
-        logger.setLevel(logging.INFO) # Default file level
+        logger.setLevel(logging.INFO)  # Default file level
 
         # --- Get logging config with defaults ---
         # Use config.base_dir for the default path calculation
-        default_log_path = config.base_dir / f"{APP_NAME}.log" # Calculate default path
-        log_file_path_str = config.get("log_file_path", str(default_log_path)) # Use flat key
-        log_max_bytes = config.get("log_max_bytes", 5 * 1024 * 1024) # Use flat key
-        log_backup_count = config.get("log_backup_count", 1) # Use flat key
+        default_log_path = config.base_dir / f"{APP_NAME}.log"  # Calculate default path
+        log_file_path_str = config.get(
+            "log_file_path", str(default_log_path)
+        )  # Use flat key
+        log_max_bytes = config.get("log_max_bytes", 5 * 1024 * 1024)  # Use flat key
+        log_backup_count = config.get("log_backup_count", 1)  # Use flat key
 
         # --- Determine final log file path ---
         log_file_path = Path(log_file_path_str)
@@ -88,7 +91,9 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
         try:
             log_file_path.parent.mkdir(parents=True, exist_ok=True)
         except OSError as e:
-            sys.stderr.write(f"Warning: Could not create log directory {log_file_path.parent}. Logging to stderr instead. Error: {e}\n")
+            sys.stderr.write(
+                f"Warning: Could not create log directory {log_file_path.parent}. Logging to stderr instead. Error: {e}\n"
+            )
             # Fallback to basic stderr logging for errors only
             logger.setLevel(logging.ERROR)
             handler = logging.StreamHandler(sys.stderr)
@@ -96,22 +101,27 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
             formatter = logging.Formatter("%(levelname)s: %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
-            return # Exit setup early
+            return  # Exit setup early
 
         # Create the rotating file handler using configured values
         try:
             handler = logging.handlers.RotatingFileHandler(
                 filename=log_file_path,
-                maxBytes=int(log_max_bytes), # Ensure integer
-                backupCount=int(log_backup_count), # Ensure integer
-                encoding='utf-8'
+                maxBytes=int(log_max_bytes),  # Ensure integer
+                backupCount=int(log_backup_count),  # Ensure integer
+                encoding="utf-8",
             )
-            handler.setLevel(logging.INFO) # Use INFO level for file handler
+            handler.setLevel(logging.INFO)  # Use INFO level for file handler
             formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
-        except (ValueError, OSError) as e: # Catch potential errors during handler creation/config parsing
-            sys.stderr.write(f"Warning: Could not create log file handler for {log_file_path} (maxBytes={log_max_bytes}, backupCount={log_backup_count}). Logging to stderr instead. Error: {e}\n")
+        except (
+            ValueError,
+            OSError,
+        ) as e:  # Catch potential errors during handler creation/config parsing
+            sys.stderr.write(
+                f"Warning: Could not create log file handler for {log_file_path} (maxBytes={log_max_bytes}, backupCount={log_backup_count}). Logging to stderr instead. Error: {e}\n"
+            )
             # Fallback to basic stderr logging for errors only
             logger.setLevel(logging.ERROR)
             handler = logging.StreamHandler(sys.stderr)
@@ -125,6 +135,8 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
     # Optional: Log the mode for clarity, especially in the log file
     if not debug:
         # Use the resolved log_file_path here
-        logger.info(f"--- Starting sologm session (Log Level: INFO, File: {log_file_path}, MaxBytes: {log_max_bytes}, Backups: {log_backup_count}) ---")
+        logger.info(
+            f"--- Starting sologm session (Log Level: INFO, File: {log_file_path}, MaxBytes: {log_max_bytes}, Backups: {log_backup_count}) ---"
+        )
     # else: # Debug logging already goes to stdout
     #     logger.debug("--- Starting sologm session (Log Level: DEBUG, Output: stdout) ---")

@@ -35,7 +35,7 @@ def add_event(
         "--source",
         "-s",
         help="Source of the event (use 'sologm event sources' to see "
-             "available options)",
+        "available options)",
     ),
 ) -> None:
     """Add a new event to the current scene.

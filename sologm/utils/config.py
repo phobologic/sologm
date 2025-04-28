@@ -100,7 +100,7 @@ class Config:
             "debug": False,
             "database_url": default_db_url,
             # --- Add logging config defaults (flat keys) ---
-            "log_file_path": str(default_log_file_path), # Store as string
+            "log_file_path": str(default_log_file_path),  # Store as string
             "log_max_bytes": default_log_max_bytes,
             "log_backup_count": default_log_backup_count,
         }
@@ -132,8 +132,8 @@ class Config:
             # Attempt to convert common types from env vars
             if env_value.isdigit():
                 return int(env_value)
-            if env_value.lower() in ['true', 'false']:
-                return env_value.lower() == 'true'
+            if env_value.lower() in ["true", "false"]:
+                return env_value.lower() == "true"
             return env_value
 
         # Special case for API keys (remains the same)
@@ -154,7 +154,9 @@ class Config:
         if key in self._config:
             logger.debug(f"Using config file value for key: {key}={log_value}")
         else:
-            logger.debug(f"Key '{key}' not found in config file, using default: {log_value}")
+            logger.debug(
+                f"Key '{key}' not found in config file, using default: {log_value}"
+            )
             return default
         return value
 

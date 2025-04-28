@@ -2,13 +2,14 @@
 
 from typing import Callable  # Import Callable for type hinting factory fixtures
 
+from sologm.core.prompts.oracle import OraclePrompts  # Import the class being tested
+
 # Import necessary model types for type hinting if needed
 from sologm.database.session import SessionContext  # Import SessionContext type hint
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.scene import Scene
-from sologm.core.prompts.oracle import OraclePrompts  # Import the class being tested
 
 
 class TestOraclePrompts:

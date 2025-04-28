@@ -98,8 +98,9 @@ def list_scenes(ctx: typer.Context) -> None:
 
             active_act = scene_manager.act_manager.get_active_act(active_game.id)
             if not active_act:
-                raise ActError("No active act. Create one with 'sologm "
-                               "act create'.") from e
+                raise ActError(
+                    "No active act. Create one with 'sologm act create'."
+                ) from e
 
             act_id = active_act.id
             active_scene_id = None
