@@ -106,6 +106,34 @@ def test_display_game_status_full(
     mock_scene_manager = MagicMock(spec=SceneManager)
     mock_oracle_manager = MagicMock(spec=OracleManager)
 
+    # --- Setup Mocks for Oracle ---
+    # Create mock interpretations with string attributes
+    mock_interp1 = MagicMock(spec=Interpretation)
+    mock_interp1.id = "mock-interp-1"
+    mock_interp1.title = "Mock Interpretation 1"
+    mock_interp1.description = "Description for mock 1."
+    mock_interp1.is_selected = False
+
+    mock_interp2 = MagicMock(spec=Interpretation)
+    mock_interp2.id = "mock-interp-2"
+    mock_interp2.title = "Mock Interpretation 2"
+    mock_interp2.description = "Description for mock 2."
+    mock_interp2.is_selected = False
+
+    # Create a mock interpretation set with string context and list of mock interpretations
+    mock_interp_set = MagicMock(spec=InterpretationSet)
+    mock_interp_set.id = "mock-set-1"
+    mock_interp_set.context = "This is the mock context."  # Ensure context is a string
+    mock_interp_set.oracle_results = "Mock oracle results."
+    mock_interp_set.interpretations = [mock_interp1, mock_interp2]
+    mock_interp_set.retry_attempt = 0
+
+    # Configure the mock manager's methods
+    # For this test, assume there's a pending set and no recent selected one
+    mock_oracle_manager.get_current_interpretation_set.return_value = mock_interp_set
+    mock_oracle_manager.get_most_recent_interpretation.return_value = None
+    # --- End Oracle Mock Setup ---
+
     with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
