@@ -4,7 +4,7 @@ Unit tests for the MarkdownRenderer class.
 
 import logging
 from datetime import UTC, datetime  # Import datetime and UTC for DiceRoll creation
-from typing import Callable, List  # Import Callable for factory types
+from typing import Callable  # Import Callable for factory types
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,12 +13,6 @@ from sqlalchemy.orm import Session  # Import Session for type hinting
 
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
-from sologm.models.act import Act
-from sologm.models.dice import DiceRoll
-from sologm.models.event import Event
-from sologm.models.game import Game
-from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus
 
 # Import factory fixtures types if needed for hinting (Optional but good practice)
 # from sologm.tests.conftest import ( # Example if you need explicit types
@@ -26,9 +20,14 @@ from sologm.models.scene import Scene, SceneStatus
 #     create_test_act,
 #     # ... other factories
 # )
-
 # Import truncate_text utility
 from sologm.cli.utils.display import truncate_text
+from sologm.models.act import Act
+from sologm.models.dice import DiceRoll
+from sologm.models.event import Event
+from sologm.models.game import Game
+from sologm.models.oracle import Interpretation, InterpretationSet
+from sologm.models.scene import Scene, SceneStatus
 
 # Set up logging for tests
 logger = logging.getLogger(__name__)
@@ -689,7 +688,6 @@ def test_display_act_info_no_scenes_markdown(
 
 
 # Import truncate_text utility
-from sologm.cli.utils.display import truncate_text
 
 # --- Test for display_interpretation_sets_table ---
 
