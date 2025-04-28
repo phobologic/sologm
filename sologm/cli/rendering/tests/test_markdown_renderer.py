@@ -721,21 +721,21 @@ def test_display_interpretation_sets_table_markdown(
         full_results = test_interpretation_set.oracle_results.replace("|", "\\|")
         status = (
             "Resolved"
-           if any(i.is_selected for i in test_interpretations)
+            if any(i.is_selected for i in test_interpretations)
             else "Pending"
         )
 
         expected_output = (
             "### Oracle Interpretation Sets\n\n"
             "| ID | Scene | Context | Oracle Results | Created | Status | Count |\n"
-           "|---|---|---|---|---|---|---|\n"
-           f"| `{test_interpretation_set.id}` "
-           f"| {test_scene.title} "
-           f"| {full_context} "
-           f"| {full_results} "
-           f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')} "
-           f"| {status} "
-           f"| {len(test_interpretations)} |"
+            "|---|---|---|---|---|---|---|\n"
+            f"| `{test_interpretation_set.id}` "
+            f"| {test_scene.title} "
+            f"| {full_context} "
+            f"| {full_results} "
+            f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')} "
+            f"| {status} "
+            f"| {len(test_interpretations)} |"
         )
         mock_console.print.assert_called_once_with(expected_output)
 
