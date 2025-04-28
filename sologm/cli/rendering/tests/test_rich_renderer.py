@@ -1,7 +1,7 @@
 """Tests for the RichRenderer class."""
 
 # Add necessary imports
-from typing import List, Optional  # Added Optional
+from typing import Any, Callable, List, Optional  # Added Optional, Callable, Any
 from unittest.mock import MagicMock, patch  # Added patch
 
 import pytest
@@ -9,13 +9,13 @@ from rich.console import Console
 from rich.panel import Panel  # Import Panel for assertion
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
-from sologm.models.act import Act  # <-- Added import
+from sologm.database.session import SessionContext  # <-- Added import
+from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
-from sologm.models.event import Event  # <-- Added import
+from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene, SceneStatus
-# from sqlalchemy.orm import Session # No longer needed directly in test_display_game_status_full
 
 # Import manager types for mocking/type hinting if needed by tests
 from sologm.core.oracle import OracleManager
@@ -35,14 +35,34 @@ def mock_console() -> MagicMock:
     return console
 
 
-# --- Adapted Test (Red Phase - Expecting Failure) ---
-def test_display_dice_roll(mock_console: MagicMock, test_dice_roll: DiceRoll):
+# --- Adapted Test ---
+def test_display_dice_roll(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+):
     """Test displaying a dice roll using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call will raise NotImplementedError initially, causing the test to fail.
-    renderer.display_dice_roll(test_dice_roll)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        dice_roll = DiceRoll.create(
+            notation="2d6+1",
+            individual_results=[4, 5],
+            modifier=1,
+            total=10,
+            reason="Test roll",
+            scene_id=scene.id,
+        )
+        session.add(dice_roll)
+        session.flush()
+        session.refresh(dice_roll)
 
-    # This assertion will only be reached once the implementation is added (Green Phase).
+    renderer.display_dice_roll(dice_roll)
+
     mock_console.print.assert_called()
     # Verify that a Panel object was printed
     args, kwargs = mock_console.print.call_args
@@ -75,30 +95,41 @@ def test_display_error(mock_console: MagicMock):
 
 def test_display_game_status_full(
     mock_console: MagicMock,
-    # db_session: Session, # No longer needed directly
-    test_game: Game,  # Fixture now provides session-bound object
-    test_act: Act,  # Fixture now provides session-bound object
-    test_scene: Scene,  # Fixture now provides session-bound object
-    test_events: List[Event],  # Fixture now provides session-bound objects
-    scene_manager: MagicMock,
-    oracle_manager: MagicMock,
-    test_dice_roll: DiceRoll,  # Fixture now provides session-bound object
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_event: Callable[..., Event],
 ):
     """Test displaying full game status with all components using RichRenderer."""
     renderer = RichRenderer(mock_console)
+    mock_scene_manager = MagicMock(spec=SceneManager)
+    mock_oracle_manager = MagicMock(spec=OracleManager)
 
-    # --- REMOVE the manual merge/refresh block ---
-    # The fixtures now handle attaching objects to the session and loading relationships
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        event1 = create_test_event(session, scene_id=scene.id, description="Event 1")
+        event2 = create_test_event(session, scene_id=scene.id, description="Event 2")
+        dice_roll = DiceRoll.create(
+            notation="1d10", individual_results=[7], modifier=0, total=7, scene_id=scene.id
+        )
+        session.add(dice_roll)
+        session.flush()
+        session.refresh(dice_roll)
+        events = [event1, event2]
+        rolls = [dice_roll]
 
-    # Call the renderer method with the objects directly from fixtures
+    # Call the renderer method with the created objects and mocks
     renderer.display_game_status(
-        game=test_game,
-        latest_act=test_act,
-        latest_scene=test_scene,
-        recent_events=test_events,
-        scene_manager=scene_manager,
-        oracle_manager=oracle_manager,
-        recent_rolls=[test_dice_roll],
+        game=game,
+        latest_act=act,
+        latest_scene=scene,
+        recent_events=events,
+        scene_manager=mock_scene_manager,
+        oracle_manager=mock_oracle_manager,
+        recent_rolls=rolls,
         is_act_active=True,
         is_scene_active=True,
     )
@@ -109,20 +140,25 @@ def test_display_game_status_full(
 
 def test_display_game_status_no_scene(
     mock_console: MagicMock,
-    test_game: Game,
-    test_act: Act,
-    oracle_manager: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
 ):
     """Test displaying game status without an active scene using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
+    mock_oracle_manager = MagicMock(spec=OracleManager)
+
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+
     renderer.display_game_status(
-        game=test_game,
-        latest_act=test_act,
+        game=game,
+        latest_act=act,
         latest_scene=None,
         recent_events=[],
-        scene_manager=None,
-        oracle_manager=oracle_manager,
+        scene_manager=None,  # No scene manager needed if no scene
+        oracle_manager=mock_oracle_manager,
         recent_rolls=None,
         is_act_active=True,
         is_scene_active=False,
@@ -134,22 +170,28 @@ def test_display_game_status_no_scene(
 
 def test_display_game_status_no_events(
     mock_console: MagicMock,
-    test_game: Game,
-    test_act: Act,
-    test_scene: Scene,
-    scene_manager: MagicMock,
-    oracle_manager: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
 ):
     """Test displaying game status without any events using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
+    mock_scene_manager = MagicMock(spec=SceneManager)
+    mock_oracle_manager = MagicMock(spec=OracleManager)
+
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+
     renderer.display_game_status(
-        game=test_game,
-        latest_act=test_act,
-        latest_scene=test_scene,
+        game=game,
+        latest_act=act,
+        latest_scene=scene,
         recent_events=[],
-        scene_manager=scene_manager,
-        oracle_manager=oracle_manager,
+        scene_manager=mock_scene_manager,
+        oracle_manager=mock_oracle_manager,
         recent_rolls=None,
         is_act_active=True,
         is_scene_active=True,
@@ -161,21 +203,29 @@ def test_display_game_status_no_events(
 
 def test_display_game_status_no_interpretation(
     mock_console: MagicMock,
-    test_game: Game,
-    test_act: Act,
-    test_scene: Scene,
-    test_events: List[Event],
-    scene_manager: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_event: Callable[..., Event],
 ):
     """Test displaying game status without oracle manager using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
+    mock_scene_manager = MagicMock(spec=SceneManager)
+
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        event = create_test_event(session, scene_id=scene.id)
+        events = [event]
+
     renderer.display_game_status(
-        game=test_game,
-        latest_act=test_act,
-        latest_scene=test_scene,
-        recent_events=test_events,
-        scene_manager=scene_manager,
+        game=game,
+        latest_act=act,
+        latest_scene=scene,
+        recent_events=events,
+        scene_manager=mock_scene_manager,
         oracle_manager=None,  # No oracle manager
         recent_rolls=None,
         is_act_active=True,
@@ -188,46 +238,53 @@ def test_display_game_status_no_interpretation(
 
 def test_display_game_status_selected_interpretation(
     mock_console: MagicMock,
-    test_game: Game,
-    test_act: Act,
-    test_scene: Scene,
-    test_events: List[Event],
-    scene_manager: MagicMock,
-    oracle_manager: MagicMock,  # Assuming oracle_manager fixture is available
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_event: Callable[..., Event],
+    # Interpretation/Set are created manually for mock setup
 ):
     """Test displaying game status with a selected interpretation using RichRenderer."""
-    # Setup: Ensure oracle_manager returns a selected interpretation
-    selected_interp = Interpretation(
-        id="interp-selected",
-        set_id="set-1",
-        title="Selected Interp",
-        description="This was chosen.",
-        is_selected=True,
-    )
-    interp_set = InterpretationSet(
-        id="set-1",
-        scene_id=test_scene.id,
-        context="Test Context",
-        oracle_results="Test Results",
-        interpretations=[selected_interp],
-    )
-    # --- MODIFIED LINES START ---
-    # Mock the methods on the oracle_manager instance directly
-    oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
-    oracle_manager.get_most_recent_interpretation = MagicMock(
-        return_value=(interp_set, selected_interp)
-    )
-    # --- MODIFIED LINES END ---
-
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
+    mock_scene_manager = MagicMock(spec=SceneManager)
+    mock_oracle_manager = MagicMock(spec=OracleManager)
+
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        event = create_test_event(session, scene_id=scene.id)
+        events = [event]
+
+        # Setup: Create interpretation data and configure mock oracle_manager
+        selected_interp = Interpretation(
+            id="interp-selected",
+            set_id="set-1",
+            title="Selected Interp",
+            description="This was chosen.",
+            is_selected=True,
+        )
+        interp_set = InterpretationSet(
+            id="set-1",
+            scene_id=scene.id,
+            context="Test Context",
+            oracle_results="Test Results",
+            interpretations=[selected_interp],
+        )
+        # Mock the methods on the mock_oracle_manager instance directly
+        mock_oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
+        mock_oracle_manager.get_most_recent_interpretation = MagicMock(
+            return_value=(interp_set, selected_interp)
+        )
+
     renderer.display_game_status(
-        game=test_game,
-        latest_act=test_act,
-        latest_scene=test_scene,
-        recent_events=test_events,
-        scene_manager=scene_manager,
-        oracle_manager=oracle_manager,
+        game=game,
+        latest_act=act,
+        latest_scene=scene,
+        recent_events=events,
+        scene_manager=mock_scene_manager,
+        oracle_manager=mock_oracle_manager,
         recent_rolls=None,
         is_act_active=True,
         is_scene_active=True,
@@ -268,45 +325,61 @@ def test_calculate_truncation_length(mock_console: MagicMock):
     assert result == 40
 
 
-def test_create_act_panel(mock_console: MagicMock, test_game: Game, test_act: Act):
+def test_create_act_panel(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+):
     """Test creating the act panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
-    # Test with active act (using default truncation)
-    panel_active = renderer._create_act_panel(test_game, test_act, is_act_active=True)
-    assert panel_active is not None
-    assert panel_active.title is not None
-    assert panel_active.border_style == BORDER_STYLES["current"]
-    # Check if summary is present (might be truncated)
-    assert test_act.summary[:10] in panel_active.renderable  # Check start of summary
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id, summary="Default summary.")
 
-    # Test with inactive act and specific truncation
-    test_act.summary = "This is a very long summary that definitely needs to be truncated for the test."
-    panel_inactive_truncated = renderer._create_act_panel(
-        test_game, test_act, is_act_active=False, truncation_length=20
-    )
-    assert panel_inactive_truncated is not None
-    assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
-    # Check if the summary is truncated (20 * 1.5 = 30 chars max)
-    assert "This is a very long summary..." in panel_inactive_truncated.renderable
-    assert (
-        "truncated for the test." not in panel_inactive_truncated.renderable
-    )  # End should be cut off
+        # Test with active act (using default truncation)
+        panel_active = renderer._create_act_panel(game, act, is_act_active=True)
+        assert panel_active is not None
+        assert panel_active.title is not None
+        assert panel_active.border_style == BORDER_STYLES["current"]
+        # Check if summary is present (might be truncated)
+        assert act.summary[:10] in panel_active.renderable  # Check start of summary
 
-    # Test with no active act
-    panel_no_act = renderer._create_act_panel(test_game, None)
-    assert panel_no_act is not None
-    assert panel_no_act.title is not None
-    assert panel_no_act.border_style == BORDER_STYLES["neutral"]
+        # Test with inactive act and specific truncation
+        act.summary = "This is a very long summary that definitely needs to be truncated for the test."
+        session.add(act)
+        session.flush()
+        panel_inactive_truncated = renderer._create_act_panel(
+            game, act, is_act_active=False, truncation_length=20
+        )
+        assert panel_inactive_truncated is not None
+        assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
+        # Check if the summary is truncated (20 * 1.5 = 30 chars max)
+        assert "This is a very long summary..." in panel_inactive_truncated.renderable
+        assert (
+            "truncated for the test." not in panel_inactive_truncated.renderable
+        )  # End should be cut off
+
+        # Test with no active act
+        panel_no_act = renderer._create_act_panel(game, None)
+        assert panel_no_act is not None
+        assert panel_no_act.title is not None
+        assert panel_no_act.border_style == BORDER_STYLES["neutral"]
     # Check for the updated message when no act is provided
     assert "No acts found in this game." in panel_no_act.renderable
 
 
-def test_create_game_header_panel(mock_console: MagicMock, test_game: Game):
+def test_create_game_header_panel(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+):
     """Test creating the game header panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
-    panel = renderer._create_game_header_panel(test_game)
+    with session_context as session:
+        game = create_test_game(session)
+
+    panel = renderer._create_game_header_panel(game)
     assert panel is not None
     assert panel.title is not None
     assert panel.border_style == BORDER_STYLES["game_info"]
@@ -314,30 +387,37 @@ def test_create_game_header_panel(mock_console: MagicMock, test_game: Game):
 
 def test_create_scene_panels_grid(
     mock_console: MagicMock,
-    test_game: Game,
-    test_scene: Scene,
-    scene_manager: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
 ):
     """Test creating the scene panels grid using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
-    # Test with active scene and scene manager
-    grid = renderer._create_scene_panels_grid(
-        test_game, test_scene, scene_manager, is_scene_active=True
-    )
-    assert grid is not None
+    mock_scene_manager = MagicMock(spec=SceneManager)
 
-    # Test with active scene but no scene manager
-    grid = renderer._create_scene_panels_grid(
-        test_game, test_scene, None, is_scene_active=True
-    )
-    assert grid is not None
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
 
-    # Test with no active scene
-    grid = renderer._create_scene_panels_grid(
-        test_game, None, None, is_scene_active=False
-    )
-    assert grid is not None
+        # Test with active scene and scene manager
+        grid = renderer._create_scene_panels_grid(
+            game, scene, mock_scene_manager, is_scene_active=True
+        )
+        assert grid is not None
+
+        # Test with active scene but no scene manager
+        grid = renderer._create_scene_panels_grid(
+            game, scene, None, is_scene_active=True
+        )
+        assert grid is not None
+
+        # Test with no active scene
+        grid = renderer._create_scene_panels_grid(
+            game, None, None, is_scene_active=False
+        )
+        assert grid is not None
 
 
 def test_create_events_panel(mock_console: MagicMock, test_events: List[Event]):
@@ -358,26 +438,32 @@ def test_create_events_panel(mock_console: MagicMock, test_events: List[Event]):
 
 def test_create_oracle_panel(
     mock_console: MagicMock,
-    test_game: Game,
-    test_scene: Scene,
-    oracle_manager: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
 ):
     """Test creating the oracle panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
-    # Test with no oracle manager
-    panel = renderer._create_oracle_panel(test_game, test_scene, None, 60)
-    assert panel is None
+    mock_oracle_manager = MagicMock(spec=OracleManager)
 
-    # Test with oracle manager (mock behavior as needed)
-    # --- MODIFIED LINES START ---
-    # Mock the methods on the oracle_manager instance directly
-    oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
-    oracle_manager.get_most_recent_interpretation = MagicMock(return_value=None)
-    # --- MODIFIED LINES END ---
-    panel = renderer._create_oracle_panel(test_game, test_scene, oracle_manager, 60)
-    assert panel is not None  # Should return empty panel in this case
-    assert "No oracle interpretations yet." in panel.renderable
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+
+        # Test with no oracle manager
+        panel = renderer._create_oracle_panel(game, scene, None, 60)
+        assert panel is None
+
+        # Test with oracle manager (mock behavior as needed)
+        # Mock the methods on the mock_oracle_manager instance directly
+        mock_oracle_manager.get_current_interpretation_set = MagicMock(return_value=None)
+        mock_oracle_manager.get_most_recent_interpretation = MagicMock(return_value=None)
+
+        panel = renderer._create_oracle_panel(game, scene, mock_oracle_manager, 60)
+        assert panel is not None  # Should return empty panel in this case
+        assert "No oracle interpretations yet." in panel.renderable
 
 
 def test_create_empty_oracle_panel(mock_console: MagicMock):
@@ -390,76 +476,130 @@ def test_create_empty_oracle_panel(mock_console: MagicMock):
     assert panel.border_style == BORDER_STYLES["neutral"]
 
 
-def test_create_dice_rolls_panel(mock_console: MagicMock, test_dice_roll: DiceRoll):
+def test_create_dice_rolls_panel(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+):
     """Test creating the dice rolls panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
-    # Test with no rolls
-    panel = renderer._create_dice_rolls_panel([])
-    assert panel is not None
-    assert "Recent Rolls" in panel.title
-    assert "No recent dice rolls" in panel.renderable
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        dice_roll = DiceRoll.create(
+            notation="3d6", individual_results=[1, 2, 3], modifier=0, total=6, scene_id=scene.id
+        )
+        session.add(dice_roll)
+        session.flush()
+        session.refresh(dice_roll)
+        rolls = [dice_roll]
 
-    # Test with rolls
-    panel = renderer._create_dice_rolls_panel([test_dice_roll])
-    assert panel is not None
-    assert "Recent Rolls" in panel.title
-    assert test_dice_roll.notation in panel.renderable
+        # Test with no rolls
+        panel = renderer._create_dice_rolls_panel([])
+        assert panel is not None
+        assert "Recent Rolls" in panel.title
+        assert "No recent dice rolls" in panel.renderable
+
+        # Test with rolls
+        panel = renderer._create_dice_rolls_panel(rolls)
+        assert panel is not None
+        assert "Recent Rolls" in panel.title
+        assert dice_roll.notation in panel.renderable
 
 
 # --- End Tests for display_game_status Helpers ---
 
 
-# --- Tests for display_interpretation_set (Moved & Adapted) ---
+# --- Tests for display_interpretation_set ---
 
 
 def test_display_interpretation_set(
-    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_interpretation_set: Callable[..., InterpretationSet],
+    create_test_interpretation: Callable[..., Interpretation],
 ):
     """Test displaying an interpretation set using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_interpretation_set(test_interpretation_set)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        interp_set = create_test_interpretation_set(session, scene_id=scene.id)
+        interp1 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 1")
+        interp2 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 2")
+        # Refresh the set to load interpretations relationship
+        session.refresh(interp_set, attribute_names=["interpretations"])
+
+    renderer.display_interpretation_set(interp_set)
 
     # Assertions will run after implementation
     # Expect calls for context panel (if show_context=True), each interpretation, and instruction panel
-    assert (
-        mock_console.print.call_count
-        >= len(test_interpretation_set.interpretations) + 2
-    )
+    assert mock_console.print.call_count >= len(interp_set.interpretations) + 2
 
 
 def test_display_interpretation_set_no_context(
-    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_interpretation_set: Callable[..., InterpretationSet],
+    create_test_interpretation: Callable[..., Interpretation],
 ):
     """Test displaying an interpretation set without context using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_interpretation_set(test_interpretation_set, show_context=False)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        interp_set = create_test_interpretation_set(session, scene_id=scene.id)
+        interp1 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 1")
+        interp2 = create_test_interpretation(session, set_id=interp_set.id, title="Interp 2")
+        # Refresh the set to load interpretations relationship
+        session.refresh(interp_set, attribute_names=["interpretations"])
+
+    renderer.display_interpretation_set(interp_set, show_context=False)
 
     # Assertions will run after implementation
     # Expect calls for each interpretation and instruction panel
-    assert (
-        mock_console.print.call_count
-        == len(test_interpretation_set.interpretations) + 1
-    )
+    assert mock_console.print.call_count == len(interp_set.interpretations) + 1
 
 
 # --- End Tests for display_interpretation_set ---
 
 
-# --- Tests for display_interpretation_status (Moved & Adapted) ---
+# --- Tests for display_interpretation_status ---
 
 
 def test_display_interpretation_status(
-    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_interpretation_set: Callable[..., InterpretationSet],
+    create_test_interpretation: Callable[..., Interpretation],
 ):
     """Test displaying interpretation status using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_interpretation_status(test_interpretation_set)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        interp_set = create_test_interpretation_set(session, scene_id=scene.id)
+        # Add interpretations if needed by the display logic
+        create_test_interpretation(session, set_id=interp_set.id)
+        session.refresh(interp_set, attribute_names=["interpretations"])
 
-    # Assertions will run after implementation
+    renderer.display_interpretation_status(interp_set)
+
     # Expecting two prints: one for the panel, one for the trailing newline
     assert mock_console.print.call_count == 2
     args1, _ = mock_console.print.call_args_list[0]
@@ -471,21 +611,29 @@ def test_display_interpretation_status(
 # --- End Tests for display_interpretation_status ---
 
 
-# --- Tests for display_interpretation_sets_table (Moved & Adapted) ---
+# --- Tests for display_interpretation_sets_table ---
 
 
 def test_display_interpretation_sets_table(
-    mock_console: MagicMock, test_interpretation_set: InterpretationSet
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_interpretation_set: Callable[..., InterpretationSet],
 ):
     """Test displaying interpretation sets table using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # Create a list with just the test interpretation set
-    interp_sets = [test_interpretation_set]
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        interp_set1 = create_test_interpretation_set(session, scene_id=scene.id, retry_attempt=0)
+        interp_set2 = create_test_interpretation_set(session, scene_id=scene.id, retry_attempt=1)
+        interp_sets = [interp_set1, interp_set2]
 
-    # This call should fail with NotImplementedError initially
     renderer.display_interpretation_sets_table(interp_sets)
 
-    # Assertions will run after implementation
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -495,16 +643,26 @@ def test_display_interpretation_sets_table(
 # --- End Tests for display_interpretation_sets_table ---
 
 
-# --- Tests for display_acts_table (Moved & Adapted) ---
+# --- Tests for display_acts_table ---
 
 
-def test_display_acts_table_with_acts(mock_console: MagicMock, test_act: Act):
+def test_display_acts_table_with_acts(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+):
     """Test displaying acts table with acts using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_acts_table([test_act], test_act.id)
+    with session_context as session:
+        game = create_test_game(session)
+        act1 = create_test_act(session, game_id=game.id, title="Act 1", is_active=False)
+        act2 = create_test_act(session, game_id=game.id, title="Act 2", is_active=True)
+        acts = [act1, act2]
+        active_act_id = act2.id
 
-    # Assertions will run after implementation
+    renderer.display_acts_table(acts, active_act_id)
+
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -526,16 +684,28 @@ def test_display_acts_table_no_acts(mock_console: MagicMock):
 # --- End Tests for display_acts_table ---
 
 
-# --- Tests for display_scenes_table (Moved & Adapted) ---
+# --- Tests for display_scenes_table ---
 
 
-def test_display_scenes_table_with_scenes(mock_console: MagicMock, test_scene: Scene):
+def test_display_scenes_table_with_scenes(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+):
     """Test displaying scenes table with scenes using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_scenes_table([test_scene], test_scene.id)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene1 = create_test_scene(session, act_id=act.id, title="Scene 1", is_active=False)
+        scene2 = create_test_scene(session, act_id=act.id, title="Scene 2", is_active=True)
+        scenes = [scene1, scene2]
+        active_scene_id = scene2.id
 
-    # Assertions will run after implementation
+    renderer.display_scenes_table(scenes, active_scene_id)
+
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -557,18 +727,29 @@ def test_display_scenes_table_no_scenes(mock_console: MagicMock):
 # --- End Tests for display_scenes_table ---
 
 
-# --- Tests for display_events_table (Moved & Adapted) ---
+# --- Tests for display_events_table ---
 
 
 def test_display_events_table_with_events(
-    mock_console: MagicMock, test_events: List[Event], test_scene: Scene
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_event: Callable[..., Event],
 ):
     """Test displaying events table with events using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_events_table(test_events, test_scene)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        event1 = create_test_event(session, scene_id=scene.id, description="Event 1")
+        event2 = create_test_event(session, scene_id=scene.id, description="Event 2")
+        events = [event1, event2]
 
-    # Assertions will run after implementation
+    renderer.display_events_table(events, scene)
+
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -576,25 +757,41 @@ def test_display_events_table_with_events(
 
 
 def test_display_events_table_with_truncation(
-    mock_console: MagicMock, test_events: List[Event], test_scene: Scene
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_event: Callable[..., Event],
 ):
     """Test displaying events table with truncated descriptions using RichRenderer."""
     renderer = RichRenderer(mock_console)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        event1 = create_test_event(
+            session, scene_id=scene.id, description="This is a long event description."
+        )
+        event2 = create_test_event(
+            session, scene_id=scene.id, description="Another long event description."
+        )
+        events = [event1, event2]
 
-    # Test with truncation enabled (default)
-    renderer.display_events_table(
-        test_events, test_scene, max_description_length=20
-    )  # Pass max_length
-    mock_console.print.assert_called_once()
-    args1, _ = mock_console.print.call_args
-    assert isinstance(args1[0], Panel)
-    mock_console.reset_mock()  # Reset for the next call
+        # Test with truncation enabled (default)
+        renderer.display_events_table(
+            events, scene, max_description_length=20
+        )  # Pass max_length
+        mock_console.print.assert_called_once()
+        args1, _ = mock_console.print.call_args
+        assert isinstance(args1[0], Panel)
+        mock_console.reset_mock()  # Reset for the next call
 
-    # Test with truncation disabled
-    renderer.display_events_table(test_events, test_scene, truncate_descriptions=False)
-    mock_console.print.assert_called_once()
-    args2, _ = mock_console.print.call_args
-    assert isinstance(args2[0], Panel)
+        # Test with truncation disabled
+        renderer.display_events_table(events, scene, truncate_descriptions=False)
+        mock_console.print.assert_called_once()
+        args2, _ = mock_console.print.call_args
+        assert isinstance(args2[0], Panel)
 
 
 def test_display_events_table_no_events(mock_console: MagicMock, test_scene: Scene):
@@ -612,18 +809,31 @@ def test_display_events_table_no_events(mock_console: MagicMock, test_scene: Sce
 # --- End Tests for display_events_table ---
 
 
-# --- Tests for display_interpretation (Moved & Adapted) ---
+# --- Tests for display_interpretation ---
 
 
 def test_display_interpretation(
-    mock_console: MagicMock, test_interpretations: List[Interpretation]
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_interpretation_set: Callable[..., InterpretationSet],
+    create_test_interpretation: Callable[..., Interpretation],
 ):
     """Test displaying an interpretation using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_interpretation(test_interpretations[0])
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        interp_set = create_test_interpretation_set(session, scene_id=scene.id)
+        interpretation = create_test_interpretation(
+            session, set_id=interp_set.id, title="Test Interp"
+        )
 
-    # Assertions will run after implementation
+    renderer.display_interpretation(interpretation)
+
     mock_console.print.assert_called()
     args, kwargs = mock_console.print.call_args_list[0]  # Check first call
     assert len(args) == 1
@@ -634,14 +844,27 @@ def test_display_interpretation(
 
 
 def test_display_interpretation_selected(
-    mock_console: MagicMock, test_interpretations: List[Interpretation]
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_interpretation_set: Callable[..., InterpretationSet],
+    create_test_interpretation: Callable[..., Interpretation],
 ):
     """Test displaying a selected interpretation using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_interpretation(test_interpretations[0], selected=True)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        interp_set = create_test_interpretation_set(session, scene_id=scene.id)
+        interpretation = create_test_interpretation(
+            session, set_id=interp_set.id, title="Selected Interp", is_selected=True
+        )
 
-    # Assertions will run after implementation
+    renderer.display_interpretation(interpretation, selected=True)
+
     mock_console.print.assert_called()
     args, kwargs = mock_console.print.call_args_list[0]  # Check first call
     assert len(args) == 1
@@ -654,48 +877,56 @@ def test_display_interpretation_selected(
 # --- Add other tests below ---
 
 
-# --- Tests for display_act_ai_generation_results (Moved & Adapted) ---
+# --- Tests for display_act_ai_generation_results ---
 
 
-def test_display_act_ai_generation_results(mock_console: MagicMock, test_act: Act):
+def test_display_act_ai_generation_results(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+):
     """Test displaying AI generation results for an act using RichRenderer."""
     renderer = RichRenderer(mock_console)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
 
-    # Test with both title and summary
-    results_both = {"title": "AI Generated Title", "summary": "AI Generated Summary"}
-    # This call should fail with NotImplementedError initially
-    renderer.display_act_ai_generation_results(results_both, test_act)
-    # Assertions will run after implementation
-    assert mock_console.print.call_count >= 2  # At least title and summary panels
-    mock_console.reset_mock()
+        # Test with both title and summary
+        results_both = {"title": "AI Generated Title", "summary": "AI Generated Summary"}
+        renderer.display_act_ai_generation_results(results_both, act)
+        assert mock_console.print.call_count >= 2  # At least title and summary panels
+        mock_console.reset_mock()
 
-    # Test with only title
-    results_title = {"title": "AI Generated Title"}
-    renderer.display_act_ai_generation_results(results_title, test_act)
-    assert mock_console.print.call_count >= 1  # At least title panel
-    mock_console.reset_mock()
+        # Test with only title
+        results_title = {"title": "AI Generated Title"}
+        renderer.display_act_ai_generation_results(results_title, act)
+        assert mock_console.print.call_count >= 1  # At least title panel
+        mock_console.reset_mock()
 
-    # Test with only summary
-    results_summary = {"summary": "AI Generated Summary"}
-    renderer.display_act_ai_generation_results(results_summary, test_act)
-    assert mock_console.print.call_count >= 1  # At least summary panel
-    mock_console.reset_mock()
+        # Test with only summary
+        results_summary = {"summary": "AI Generated Summary"}
+        renderer.display_act_ai_generation_results(results_summary, act)
+        assert mock_console.print.call_count >= 1  # At least summary panel
+        mock_console.reset_mock()
 
-    # Test with empty results
-    results_empty = {}
-    renderer.display_act_ai_generation_results(results_empty, test_act)
-    # No panels should be printed if results are empty
-    assert mock_console.print.call_count == 0
-    mock_console.reset_mock()
+        # Test with empty results
+        results_empty = {}
+        renderer.display_act_ai_generation_results(results_empty, act)
+        # No panels should be printed if results are empty
+        assert mock_console.print.call_count == 0
+        mock_console.reset_mock()
 
-    # Test with existing content for comparison
-    test_act.title = "Existing Title"
-    test_act.summary = "Existing Summary"
-    results_compare = {"title": "AI Generated Title", "summary": "AI Generated Summary"}
-    renderer.display_act_ai_generation_results(results_compare, test_act)
-    # Expect 4 panels: AI title, existing title, AI summary, existing summary
-    assert mock_console.print.call_count == 4
-    args_list = mock_console.print.call_args_list
+        # Test with existing content for comparison
+        act.title = "Existing Title"
+        act.summary = "Existing Summary"
+        session.add(act)
+        session.flush()
+        results_compare = {"title": "AI Generated Title", "summary": "AI Generated Summary"}
+        renderer.display_act_ai_generation_results(results_compare, act)
+        # Expect 4 panels: AI title, existing title, AI summary, existing summary
+        assert mock_console.print.call_count == 4
+        args_list = mock_console.print.call_args_list
     assert isinstance(args_list[0][0][0], Panel)  # AI Title
     assert isinstance(args_list[1][0][0], Panel)  # Existing Title
     assert isinstance(args_list[2][0][0], Panel)  # AI Summary
@@ -705,36 +936,35 @@ def test_display_act_ai_generation_results(mock_console: MagicMock, test_act: Ac
 # --- End Tests for display_act_ai_generation_results ---
 
 
-# --- Tests for display_act_completion_success (Moved & Adapted) ---
+# --- Tests for display_act_completion_success ---
 
 
-def test_display_act_completion_success(mock_console: MagicMock, test_act: Act):
+def test_display_act_completion_success(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+):
     """Test displaying act completion success using RichRenderer."""
     renderer = RichRenderer(mock_console)
+    with session_context as session:
+        game = create_test_game(session)
+        # Test with title and summary
+        act_with_title = create_test_act(
+            session, game_id=game.id, title="Completed Act", summary="It is done."
+        )
+        renderer.display_act_completion_success(act_with_title)
+        assert mock_console.print.call_count >= 3  # Title message, metadata, title, summary
+        mock_console.reset_mock()
 
-    # Test with title and summary
-    # This call should fail with NotImplementedError initially
-    renderer.display_act_completion_success(test_act)
-    # Assertions will run after implementation
-    assert mock_console.print.call_count >= 3  # Title message, metadata, title, summary
-
-    mock_console.reset_mock()
-    # Test with untitled act
-    test_act_untitled = Act(
-        id="act-untitled",
-        game_id=test_act.game_id,
-        sequence=test_act.sequence,
-        title=None,  # No title
-        summary="Summary only",
-        is_active=False,
-        # Add created_at and modified_at if needed by the method
-        created_at=test_act.created_at,
-        modified_at=test_act.modified_at,
-    )
-    renderer.display_act_completion_success(test_act_untitled)
-    assert (
-        mock_console.print.call_count >= 2
-    )  # Title message, metadata, summary (no title print)
+        # Test with untitled act
+        act_untitled = create_test_act(
+            session, game_id=game.id, title=None, summary="Summary only"
+        )
+        renderer.display_act_completion_success(act_untitled)
+        assert (
+            mock_console.print.call_count >= 2
+        )  # Title message, metadata, summary (no title print)
 
 
 # --- End Tests for display_act_completion_success ---
@@ -790,27 +1020,42 @@ def test_display_act_edited_content_preview(mock_console: MagicMock):
 # --- End Tests for display_act_edited_content_preview ---
 
 
-# --- Tests for display_game_info (Moved & Adapted) ---
+# --- Tests for display_game_info ---
 
 
-def test_display_game_info(mock_console: MagicMock, test_game: Game, test_scene: Scene):
+def test_display_game_info(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+):
     """Test displaying game info using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # No merge/refresh needed here, test_game and test_scene come from fixtures
-    renderer.display_game_info(test_game, test_scene)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+
+    renderer.display_game_info(game, scene)
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
     assert isinstance(args[0], Panel)
 
 
-def test_display_game_info_no_scene(mock_console: MagicMock, test_game: Game):
+def test_display_game_info_no_scene(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+):
     """Test displaying game info without active scene using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_game_info(test_game, None)
+    with session_context as session:
+        game = create_test_game(session)
 
-    # Assertions will run after implementation
+    renderer.display_game_info(game, None)
+
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -820,16 +1065,27 @@ def test_display_game_info_no_scene(mock_console: MagicMock, test_game: Game):
 # --- End Tests for display_game_info ---
 
 
-# --- Tests for display_act_info (Moved & Adapted) ---
+# --- Tests for display_act_info ---
 
 
-def test_display_act_info(mock_console: MagicMock, test_act: Act, test_game: Game):
+def test_display_act_info(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene], # Needed to test scene display within act
+):
     """Test displaying act info using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_act_info(test_act, test_game.name)
+    with session_context as session:
+        game = create_test_game(session, name="My Game")
+        act = create_test_act(session, game_id=game.id)
+        # Add a scene to test the scene listing part
+        create_test_scene(session, act_id=act.id)
+        session.refresh(act, attribute_names=["scenes"]) # Load scenes relationship
 
-    # Assertions will run after implementation
+    renderer.display_act_info(act, game.name)
+
     # Expecting two prints: one for the main act panel, one for the scenes panel/table
     assert mock_console.print.call_count == 2
     args1, _ = mock_console.print.call_args_list[0]
@@ -841,16 +1097,24 @@ def test_display_act_info(mock_console: MagicMock, test_act: Act, test_game: Gam
 # --- End Tests for display_act_info ---
 
 
-# --- Tests for display_games_table (Moved & Adapted) ---
+# --- Tests for display_games_table ---
 
 
-def test_display_games_table_with_games(mock_console: MagicMock, test_game: Game):
+def test_display_games_table_with_games(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+):
     """Test displaying games table with games using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_games_table([test_game], test_game)
+    with session_context as session:
+        game1 = create_test_game(session, name="Game 1", is_active=False)
+        game2 = create_test_game(session, name="Game 2", is_active=True)
+        games = [game1, game2]
+        active_game = game2
 
-    # Assertions will run after implementation
+    renderer.display_games_table(games, active_game)
+
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -872,16 +1136,29 @@ def test_display_games_table_no_games(mock_console: MagicMock):
 # --- End Tests for display_games_table ---
 
 
-# --- Tests for display_scene_info (Moved & Adapted) ---
+# --- Tests for display_scene_info ---
 
 
-def test_display_scene_info(mock_console: MagicMock, test_scene: Scene):
+def test_display_scene_info(
+    mock_console: MagicMock,
+    session_context: SessionContext,
+    create_test_game: Callable[..., Game],
+    create_test_act: Callable[..., Act],
+    create_test_scene: Callable[..., Scene],
+    create_test_event: Callable[..., Event], # Needed to test event display
+):
     """Test displaying scene info using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
-    renderer.display_scene_info(test_scene)
+    with session_context as session:
+        game = create_test_game(session)
+        act = create_test_act(session, game_id=game.id)
+        scene = create_test_scene(session, act_id=act.id)
+        # Add an event to test event listing
+        create_test_event(session, scene_id=scene.id)
+        session.refresh(scene, attribute_names=["events"]) # Load events relationship
 
-    # Assertions will run after implementation
+    renderer.display_scene_info(scene)
+
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
