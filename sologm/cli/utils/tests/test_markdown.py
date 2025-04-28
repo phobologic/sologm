@@ -46,7 +46,7 @@ def test_generate_event_markdown():
     assert "🔮" in result[0]
     # Check multiline indentation with source indicator
     assert "- 🔮: Line 1" in result[0]
-    assert "     Line 2" in result[1] # 2 spaces + 3 for indicator + 1 space
+    assert "     Line 2" in result[1]  # 2 spaces + 3 for indicator + 1 space
     assert "     Line 3" in result[2]
 
     # Test with dice source
@@ -59,10 +59,9 @@ def test_generate_event_markdown():
     assert "     Line 2" in result[1]
     assert "     Line 3" in result[2]
 
-
     # Test with metadata
     event.source = "dice"
-    event.source_name = "dice" # Ensure source_name is set
+    event.source_name = "dice"  # Ensure source_name is set
     result = generate_event_markdown(event, include_metadata=True)
     # Metadata should be indented under the list item
     assert any("  - Source: dice" in line for line in result)
@@ -86,7 +85,7 @@ def test_generate_scene_markdown(
             f"### Scene {scene.sequence}: {scene.title}" in line for line in result
         )
         assert any(scene.description in line for line in result)
-        assert not any("### Events" in line for line in result) # No events yet
+        assert not any("### Events" in line for line in result)  # No events yet
 
         # Test with metadata
         result = generate_scene_markdown(scene, managers.event, include_metadata=True)
@@ -97,7 +96,7 @@ def test_generate_scene_markdown(
         event = managers.event.add_event(
             description="Test event for markdown", scene_id=scene.id, source="manual"
         )
-        session.flush() # Ensure event is persisted before querying again
+        session.flush()  # Ensure event is persisted before querying again
 
         # Test scene with events
         result = generate_scene_markdown(scene, managers.event, include_metadata=False)
@@ -124,8 +123,12 @@ def test_generate_act_markdown(
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         # Add scenes to test their inclusion
-        scene1 = create_test_scene(session, act_id=act.id, sequence=1, title="First Scene")
-        scene2 = create_test_scene(session, act_id=act.id, sequence=2, title="Second Scene")
+        scene1 = create_test_scene(
+            session, act_id=act.id, sequence=1, title="First Scene"
+        )
+        scene2 = create_test_scene(
+            session, act_id=act.id, sequence=2, title="Second Scene"
+        )
 
         # Test basic act markdown
         result = generate_act_markdown(
@@ -135,9 +138,12 @@ def test_generate_act_markdown(
         assert any(f"## Act {act.sequence}: {act.title}" in line for line in result)
         assert any(act.summary in line for line in result)
         # Check if scenes are included
-        assert any(f"### Scene {scene1.sequence}: {scene1.title}" in line for line in result)
-        assert any(f"### Scene {scene2.sequence}: {scene2.title}" in line for line in result)
-
+        assert any(
+            f"### Scene {scene1.sequence}: {scene1.title}" in line for line in result
+        )
+        assert any(
+            f"### Scene {scene2.sequence}: {scene2.title}" in line for line in result
+        )
 
         # Test with metadata
         result = generate_act_markdown(
@@ -162,15 +168,43 @@ def test_generate_game_markdown_with_hierarchy(
         managers = create_all_managers(session)
 
         # Build the hierarchy using factory fixtures
-        game = create_test_game(session, name="Hierarchy Test Game", description="Full test game.")
-        act1 = create_test_act(session, game_id=game.id, title="The First Act", sequence=1)
-        act2 = create_test_act(session, game_id=game.id, title="The Second Act", sequence=2)
-        scene1_1 = create_test_scene(session, act_id=act1.id, title="Opening Scene", sequence=1)
-        scene1_2 = create_test_scene(session, act_id=act1.id, title="Completed Scene", sequence=2, status=SceneStatus.COMPLETED)
-        scene2_1 = create_test_scene(session, act_id=act2.id, title="Another Scene", sequence=1)
-        event1 = create_test_event(session, scene_id=scene1_1.id, description="First event happens.")
-        event2 = create_test_event(session, scene_id=scene1_2.id, description="Second event (oracle).", source="oracle")
-        event3 = create_test_event(session, scene_id=scene2_1.id, description="Third event (dice).", source="dice")
+        game = create_test_game(
+            session, name="Hierarchy Test Game", description="Full test game."
+        )
+        act1 = create_test_act(
+            session, game_id=game.id, title="The First Act", sequence=1
+        )
+        act2 = create_test_act(
+            session, game_id=game.id, title="The Second Act", sequence=2
+        )
+        scene1_1 = create_test_scene(
+            session, act_id=act1.id, title="Opening Scene", sequence=1
+        )
+        scene1_2 = create_test_scene(
+            session,
+            act_id=act1.id,
+            title="Completed Scene",
+            sequence=2,
+            status=SceneStatus.COMPLETED,
+        )
+        scene2_1 = create_test_scene(
+            session, act_id=act2.id, title="Another Scene", sequence=1
+        )
+        event1 = create_test_event(
+            session, scene_id=scene1_1.id, description="First event happens."
+        )
+        event2 = create_test_event(
+            session,
+            scene_id=scene1_2.id,
+            description="Second event (oracle).",
+            source="oracle",
+        )
+        event3 = create_test_event(
+            session,
+            scene_id=scene2_1.id,
+            description="Third event (dice).",
+            source="dice",
+        )
 
         # Store for easier assertion checks
         acts = [act1, act2]
@@ -199,7 +233,7 @@ def test_generate_game_markdown_with_hierarchy(
     # Check that all events are included (simple check)
     for event in events:
         # Check only the first line of the event description for simplicity
-        first_line_desc = event.description.split('\n')[0]
+        first_line_desc = event.description.split("\n")[0]
         assert first_line_desc in result_str
         # Check source indicators
         if event.source == "oracle":
@@ -207,9 +241,8 @@ def test_generate_game_markdown_with_hierarchy(
         elif event.source == "dice":
             assert f"🎲: {first_line_desc}" in result_str
 
-
     # Test with metadata
-    with session_context as session: # Re-enter context if needed for managers
+    with session_context as session:  # Re-enter context if needed for managers
         managers = create_all_managers(session)
         # Re-fetch game if necessary, though it should still be in scope
         game = session.get(type(game), game.id)
@@ -239,7 +272,9 @@ def test_generate_game_markdown_empty(session_context, create_test_game):
     with session_context as session:
         managers = create_all_managers(session)
         # Create an empty game using the factory
-        empty_game = create_test_game(session, name="Empty Game", description="Game with no acts")
+        empty_game = create_test_game(
+            session, name="Empty Game", description="Game with no acts"
+        )
 
         # Test basic game markdown with no acts
         result = generate_game_markdown(
@@ -279,7 +314,9 @@ def test_game_markdown_with_concepts(session_context, create_test_game):
     with session_context as session:
         managers = create_all_managers(session)
         # Create a game using the factory
-        game = create_test_game(session, name="Test Game", description="Game with concepts header")
+        game = create_test_game(
+            session, name="Test Game", description="Game with concepts header"
+        )
 
         # Generate markdown with concepts header
         result = generate_game_markdown(
@@ -292,11 +329,11 @@ def test_game_markdown_with_concepts(session_context, create_test_game):
 
     # Check that concepts header is included
     assert "# Game Structure Guide" in result
-    assert "## Game" in result # Concept header section
-    assert "## Acts" in result # Concept header section
-    assert "## Scenes" in result # Concept header section
-    assert "## Events" in result # Concept header section
+    assert "## Game" in result  # Concept header section
+    assert "## Acts" in result  # Concept header section
+    assert "## Scenes" in result  # Concept header section
+    assert "## Events" in result  # Concept header section
 
     # Check that game content follows the concepts header
-    assert "# Test Game" in result # Actual game title
-    assert "Game with concepts header" in result # Actual game description
+    assert "# Test Game" in result  # Actual game title
+    assert "Game with concepts header" in result  # Actual game description
