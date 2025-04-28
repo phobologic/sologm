@@ -754,3 +754,19 @@ class MarkdownRenderer(Renderer):
         logger.error(f"Displaying error as Markdown: {message}")
         # Use blockquote for errors
         self.console.print(f"> **Error:** {message}")
+
+    def display_success(self, message: str) -> None:
+        """Displays a success message as Markdown."""
+        logger.debug(f"Displaying success as Markdown: {message}")
+        self.console.print(f"**Success:** {message}")
+
+    def display_warning(self, message: str) -> None:
+        """Displays a warning message as Markdown."""
+        logger.debug(f"Displaying warning as Markdown: {message}")
+        self.console.print(f"**Warning:** {message}")
+
+    def display_message(self, message: str, style: Optional[str] = None) -> None:
+        """Displays a simple informational message as plain text (Markdown)."""
+        # Style parameter is generally ignored in Markdown mode
+        logger.debug(f"Displaying message as Markdown: {message} (style: {style} - ignored)")
+        self.console.print(message)

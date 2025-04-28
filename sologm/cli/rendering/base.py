@@ -165,3 +165,18 @@ class Renderer(abc.ABC):
     def display_error(self, message: str) -> None:
         """Displays an error message to the user."""
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def display_success(self, message: str) -> None:
+        """Displays a success message."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def display_warning(self, message: str) -> None:
+        """Displays a warning message."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def display_message(self, message: str, style: Optional[str] = None) -> None:
+        """Displays a simple informational message, optionally styled."""
+        raise NotImplementedError

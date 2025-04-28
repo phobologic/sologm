@@ -1734,4 +1734,27 @@ class RichRenderer(Renderer):
         """Displays an error message to the user using Rich."""
         logger.error(f"Displaying error: {message}")
         # Use self.console to print the error message with red styling
-        self.console.print(f"[red]Error: {message}[/red]")
+        # Consider using a Panel for consistency if desired, but simple red text is often fine.
+        self.console.print(StyledText.error(f"Error: {message}"))
+
+    def display_success(self, message: str) -> None:
+        """Displays a success message using Rich."""
+        logger.debug(f"Displaying success: {message}")
+        # Use a consistent success style
+        self.console.print(StyledText.success(f"Success: {message}"))
+
+    def display_warning(self, message: str) -> None:
+        """Displays a warning message using Rich."""
+        logger.debug(f"Displaying warning: {message}")
+        self.console.print(StyledText.warning(f"Warning: {message}"))
+
+    def display_message(self, message: str, style: Optional[str] = None) -> None:
+        """Displays a simple informational message using Rich, optionally styled."""
+        logger.debug(f"Displaying message: {message} (style: {style})")
+        if style:
+            # Ensure Text is imported if not already
+            from rich.text import Text
+            self.console.print(Text(message, style=style))
+        else:
+            # Default style or just plain text
+            self.console.print(message)
