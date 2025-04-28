@@ -438,7 +438,7 @@ class MarkdownRenderer(Renderer):
                 timestamp = event.created_at.strftime("%Y-%m-%d %H:%M")
                 # Use full description here too, but escape pipes
                 desc = event.description.replace("|", "\\|")
-                output_lines.append(f"*   `{timestamp}` ({source_name}): {desc}")
+                output_lines.append(f"*   `{timestamp}` (source: {source_name}): {desc}")
             if len(recent_events) > max_events_to_show:
                 output_lines.append(
                     f"*   ... ({len(recent_events) - max_events_to_show} "
