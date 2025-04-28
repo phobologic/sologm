@@ -192,8 +192,7 @@ def game_status(ctx: typer.Context) -> None:
                 logger.debug("No latest scene found to fetch events/rolls from.")
 
             logger.debug("Calling display_game_status with latest context info")
-            display_game_status(
-                console,
+            renderer.display_game_status(
                 game,
                 latest_act,  # Pass latest act
                 latest_scene,  # Pass latest scene
@@ -303,11 +302,14 @@ def edit_game(
                     description=edited_data["description"],
                 )
 
-                console.print("[bold green]Game updated successfully![/]")
-                display_game_info(console, updated_game)
+                renderer.display_success("Game updated successfully!")
+                renderer.display_game_info(updated_game)
+            else:
+                # User cancelled the editor
+                renderer.display_warning("Game edit cancelled.")
 
     except GameError as e:
-        console.print(f"[bold red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
