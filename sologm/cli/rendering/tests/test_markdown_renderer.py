@@ -14,12 +14,6 @@ from sqlalchemy.orm import Session  # Import Session for type hinting
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
 
-# Import factory fixtures types if needed for hinting (Optional but good practice)
-# from sologm.tests.conftest import ( # Example if you need explicit types
-#     create_test_game,
-#     create_test_act,
-#     # ... other factories
-# )
 # Import truncate_text utility
 from sologm.cli.utils.display import truncate_text
 from sologm.models.act import Act
