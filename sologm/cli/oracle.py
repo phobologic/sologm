@@ -4,6 +4,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import typer
+
 # Console import removed
 # display import removed
 from sologm.core.oracle import OracleManager
@@ -39,7 +40,7 @@ def interpret_oracle(
 ) -> None:
     """Get interpretations for oracle results."""
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for prompt display
+    console: "Console" = ctx.obj["console"]  # Needed for prompt display
     from sologm.database.session import get_db_context
 
     try:
@@ -60,8 +61,10 @@ def interpret_oracle(
                 context, results, count
             )
             # Use renderer for message display
-            renderer.display_message("\nPrompt that would be sent to AI:", style="bold blue")
-            renderer.display_message(prompt) # Display prompt as plain text
+            renderer.display_message(
+                "\nPrompt that would be sent to AI:", style="bold blue"
+            )
+            renderer.display_message(prompt)  # Display prompt as plain text
             return
 
         scene, act, game = oracle_manager.get_active_context()
@@ -91,7 +94,7 @@ def retry_interpretation(
 ) -> None:
     """Request new interpretations using current context and results."""
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor/confirm
+    console: "Console" = ctx.obj["console"]  # Needed for editor/confirm
     from sologm.database.session import get_db_context
 
     try:
@@ -167,7 +170,9 @@ def retry_interpretation(
             if was_modified:
                 context = edited_data["context"]
 
-        renderer.display_message("\nGenerating new interpretations...", style="bold blue")
+        renderer.display_message(
+            "\nGenerating new interpretations...", style="bold blue"
+        )
         new_interp_set = oracle_manager.get_interpretations(
             scene.id,
             context,  # Use the potentially updated context
@@ -218,9 +223,7 @@ def list_interpretation_sets(
                     act_id = active_act.id
                 except OracleError as e:
                     renderer.display_error(f"Error: {str(e)}")
-                    renderer.display_warning(
-                        "Please specify --scene-id or --act-id"
-                    )
+                    renderer.display_warning("Please specify --scene-id or --act-id")
                     raise typer.Exit(1) from e
 
             # Get interpretation sets
@@ -297,9 +300,7 @@ def show_interpretation_status(ctx: typer.Context) -> None:
         renderer.display_interpretation_status(current_interp_set)
 
         # Display the interpretation set using the renderer
-        renderer.display_interpretation_set(
-            current_interp_set, show_context=False
-        )
+        renderer.display_interpretation_set(current_interp_set, show_context=False)
 
     except OracleError as e:
         logger.error(f"Failed to show interpretation status: {e}")
@@ -337,7 +338,7 @@ def select_interpretation(
     - The full UUID
     """
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor/confirm
+    console: "Console" = ctx.obj["console"]  # Needed for editor/confirm
     from sologm.database.session import get_db_context
 
     try:
