@@ -478,6 +478,10 @@ def test_display_interpretation_set_markdown(
         mock_console.reset_mock()
         renderer.display_interpretation_set(test_interpretation_set, show_context=False)
 
+        # --- DEBUGGING PRINT ---
+        print(f"\nDEBUG: call_args_list for hide_context=False:\n{mock_console.print.call_args_list}\n")
+        # --- END DEBUGGING PRINT ---
+
         # Expected calls: N interpretations + N blank lines + instruction(1) = 2*N + 1
         expected_call_count_false = num_interpretations * 2 + 1
         assert mock_console.print.call_count == expected_call_count_false
