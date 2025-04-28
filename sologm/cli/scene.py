@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import typer
+
 # Console import removed
 # display_scene_info import removed
 from sologm.core.scene import SceneManager
@@ -138,7 +139,7 @@ def scene_info(
                 truncate_descriptions = (
                     len(events) > 3
                 )  # Truncate if more than 3 events
-                renderer.display_message("") # Add a blank line for separation
+                renderer.display_message("")  # Add a blank line for separation
                 renderer.display_events_table(
                     events,
                     active_scene,
@@ -180,8 +181,9 @@ def edit_scene(
         StructuredEditorConfig,
         edit_structured_data,
     )
+
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor
+    console: "Console" = ctx.obj["console"]  # Needed for editor
     try:
         with get_db_context() as session:
             # Initialize the scene_manager with the session
@@ -255,7 +257,6 @@ def edit_scene(
                 # User cancelled the editor
                 renderer.display_warning("Scene edit cancelled.")
 
-
     except (SceneError, ActError) as e:
         renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
@@ -300,7 +301,7 @@ def set_current_scene(
                 renderer.display_message("\nValid scene IDs:")
                 for sid in scene_ids:
                     renderer.display_message(f"  {sid}")
-                raise typer.Exit(1) # Exit after showing valid IDs
+                raise typer.Exit(1)  # Exit after showing valid IDs
 
             # Set the current scene
             new_current = scene_manager.set_current_scene(scene_id)
