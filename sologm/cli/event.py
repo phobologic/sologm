@@ -1,22 +1,27 @@
 """Event tracking commands for Solo RPG Helper."""
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import typer
-from rich.console import Console
-
-from sologm.cli.utils.display import display_events_table
+# Console import removed
+# display_events_table import removed
 from sologm.core.event import EventManager
 from sologm.utils.errors import EventError
 
+if TYPE_CHECKING:
+    from rich.console import Console
+    from sologm.cli.rendering.base import Renderer
+
+
 logger = logging.getLogger(__name__)
-console = Console()
+# console instance removed
 event_app = typer.Typer(help="Event tracking commands")
 
 
 @event_app.command("add")
 def add_event(
+    ctx: typer.Context,
     description: Optional[str] = typer.Option(
         None,
         "--description",
@@ -34,6 +39,8 @@ def add_event(
 
     If no description is provided, opens an editor to create the event.
     """
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"] # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -140,19 +147,20 @@ def add_event(
         )
 
         logger.debug(f"Added event {event.id}")
-        console.print("[bold green]Event added successfully![/]")
+        renderer.display_success("Event added successfully!")
 
-        # Display the event in a more consistent way
+        # Display the event using the renderer
         events = [event]  # Create a list with just this event
-        display_events_table(console, events, scene)
+        renderer.display_events_table(events, scene)
 
     except EventError as e:
-        console.print(f"[red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @event_app.command("edit")
 def edit_event(
+    ctx: typer.Context,
     event_id: Optional[str] = typer.Option(
         None, "--id", help="ID of the event to edit (defaults to most recent event)"
     ),
@@ -161,6 +169,8 @@ def edit_event(
 
     If no event ID is provided, edits the most recent event in the current scene.
     """
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"] # Needed for editor
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -183,26 +193,26 @@ def edit_event(
             recent_events = event_manager.list_events(scene_id=scene_id, limit=1)
 
             if not recent_events:
-                console.print(
-                    "[red]Error:[/] No events found in the current scene. "
+                renderer.display_error(
+                    "No events found in the current scene. "
                     "Please provide an event ID with --id."
                 )
                 raise typer.Exit(1)
 
             event = recent_events[0]
             event_id = event.id
-            console.print(f"Editing most recent event (ID: {event_id})")
+            renderer.display_message(f"Editing most recent event (ID: {event_id})")
         else:
             # Get the specified event
             event = event_manager.get_event(event_id)
             if not event:
-                console.print(f"[red]Error:[/] Event with ID '{event_id}' not found")
+                renderer.display_error(f"Event with ID '{event_id}' not found")
                 raise typer.Exit(1)
 
         # Check if event belongs to current scene
         if event.scene_id != scene_id:
-            console.print(
-                f"[red]Error:[/] Event '{event_id}' does not belong to the current scene"
+            renderer.display_error(
+                f"Event '{event_id}' does not belong to the current scene"
             )
             raise typer.Exit(1)
 
@@ -291,20 +301,21 @@ def edit_event(
             updated_event = event_manager.update_event(
                 event_id, edited_data["description"], source
             )
-            console.print("[bold green]Event updated successfully![/]")
+            renderer.display_success("Event updated successfully!")
 
-            # Display the updated event in a more consistent way
+            # Display the updated event using the renderer
             events = [updated_event]  # Create a list with just this event
-            display_events_table(console, events, scene)
+            renderer.display_events_table(events, scene)
 
     except EventError as e:
-        console.print(f"[red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @event_app.command("sources")
-def list_event_sources() -> None:
+def list_event_sources(ctx: typer.Context) -> None:
     """List all available event sources."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -315,17 +326,18 @@ def list_event_sources() -> None:
     try:
         sources = event_manager.get_event_sources()
 
-        console.print("\n[bold]Available Event Sources:[/bold]")
+        renderer.display_message("\nAvailable Event Sources:", style="bold")
         for source in sources:
-            console.print(f"- {source.name}")
+            renderer.display_message(f"- {source.name}")
 
     except EventError as e:
-        console.print(f"[red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @event_app.command("list")
 def list_events(
+    ctx: typer.Context,
     limit: int = typer.Option(5, "--limit", "-l", help="Number of events to show"),
     scene_id: Optional[str] = typer.Option(
         None,
@@ -335,6 +347,7 @@ def list_events(
     ),
 ) -> None:
     """List events in the current scene or a specified scene."""
+    renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
@@ -351,14 +364,14 @@ def list_events(
         # Get the scene to display its title
         scene = event_manager.scene_manager.get_scene(target_scene_id)
         if not scene:
-            console.print(f"[red]Error:[/] Scene with ID '{target_scene_id}' not found")
+            renderer.display_error(f"Scene with ID '{target_scene_id}' not found")
             raise typer.Exit(1)
 
         events = event_manager.list_events(scene_id=target_scene_id, limit=limit)
 
         logger.debug(f"Found {len(events)} events")
-        display_events_table(console, events, scene)
+        renderer.display_events_table(events, scene)
 
     except EventError as e:
-        console.print(f"[red]Error:[/] {str(e)}")
+        renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e
