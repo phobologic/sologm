@@ -20,7 +20,8 @@ def test_cascade_delete_game(
         # Create the test data within the session context
         game = create_test_game(session, name="Cascade Test Game")
         act1 = create_test_act(session, game_id=game.id, title="Act 1")
-        act2 = create_test_act(session, game_id=game.id, title="Act 2")
+        # Explicitly set is_active=False for the second act
+        act2 = create_test_act(session, game_id=game.id, title="Act 2", is_active=False)
         scene1_1 = create_test_scene(session, act_id=act1.id, title="Scene 1.1")
         scene1_2 = create_test_scene(session, act_id=act1.id, title="Scene 1.2")
         scene2_1 = create_test_scene(session, act_id=act2.id, title="Scene 2.1")
