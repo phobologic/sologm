@@ -354,10 +354,16 @@ class MarkdownRenderer(Renderer):
         output_lines = []
 
         # Game Header
-        output_lines.append(f"## Game Status: {game.name} (`{game.slug}` / `{game.id}`)")
+        output_lines.append(
+            f"## Game Status: {game.name} (`{game.slug}` / `{game.id}`)"
+        )
         output_lines.append("")
         act_count = len(game.acts) if hasattr(game, "acts") else 0
-        scene_count = sum(len(act.scenes) for act in game.acts) if hasattr(game, "acts") and game.acts else 0
+        scene_count = (
+            sum(len(act.scenes) for act in game.acts)
+            if hasattr(game, "acts") and game.acts
+            else 0
+        )
         output_lines.append(f"*   **Acts:** {act_count}")
         output_lines.append(f"*   **Scenes:** {scene_count}")
         output_lines.append(f"*   **Created:** {game.created_at.strftime('%Y-%m-%d')}")
@@ -381,7 +387,9 @@ class MarkdownRenderer(Renderer):
         output_lines.append("### Scene Context")
         if latest_scene:
             scene_title = latest_scene.title or "*Untitled Scene*"
-            output_lines.append(f"**Latest Scene:** {scene_title} (Scene {latest_scene.sequence})")
+            output_lines.append(
+                f"**Latest Scene:** {scene_title} (Scene {latest_scene.sequence})"
+            )
             if latest_scene.status == SceneStatus.COMPLETED:
                 status = "Completed"
             elif is_scene_active:
@@ -398,12 +406,14 @@ class MarkdownRenderer(Renderer):
                 try:
                     prev_scene = scene_manager.get_previous_scene(latest_scene.id)
                 except Exception as e:
-                     logger.warning(f"Could not retrieve previous scene: {e}")
+                    logger.warning(f"Could not retrieve previous scene: {e}")
 
             output_lines.append("\n**Previous Scene:**")
             if prev_scene:
                 prev_title = prev_scene.title or "*Untitled Scene*"
-                output_lines.append(f"- {prev_title} (Scene {prev_scene.sequence}) - Status: {prev_scene.status.value}")
+                output_lines.append(
+                    f"- {prev_title} (Scene {prev_scene.sequence}) - Status: {prev_scene.status.value}"
+                )
             else:
                 output_lines.append("- *No previous scene found or accessible.*")
 
@@ -417,11 +427,13 @@ class MarkdownRenderer(Renderer):
             max_events_to_show = 5
             for event in recent_events[:max_events_to_show]:
                 source_name = event.source_name
-                timestamp = event.created_at.strftime('%Y-%m-%d %H:%M')
+                timestamp = event.created_at.strftime("%Y-%m-%d %H:%M")
                 desc = truncate_text(event.description, max_length=70)
                 output_lines.append(f"*   `{timestamp}` ({source_name}): {desc}")
             if len(recent_events) > max_events_to_show:
-                output_lines.append(f"*   ... ({len(recent_events) - max_events_to_show} more not shown)")
+                output_lines.append(
+                    f"*   ... ({len(recent_events) - max_events_to_show} more not shown)"
+                )
         else:
             output_lines.append("*No recent events.*")
         output_lines.append("---")
@@ -432,24 +444,36 @@ class MarkdownRenderer(Renderer):
         recent_interp_tuple = None
         if oracle_manager and latest_scene:
             try:
-                current_set = oracle_manager.get_current_interpretation_set(latest_scene.id)
-                if current_set and not any(i.is_selected for i in current_set.interpretations):
+                current_set = oracle_manager.get_current_interpretation_set(
+                    latest_scene.id
+                )
+                if current_set and not any(
+                    i.is_selected for i in current_set.interpretations
+                ):
                     pending_interp_set = current_set
                 else:
-                    recent_interp_tuple = oracle_manager.get_most_recent_interpretation(latest_scene.id)
+                    recent_interp_tuple = oracle_manager.get_most_recent_interpretation(
+                        latest_scene.id
+                    )
             except Exception as e:
                 logger.warning(f"Could not retrieve oracle status: {e}")
 
         if pending_interp_set:
             output_lines.append("**Pending Decision:**")
-            output_lines.append(f"*   Context: {truncate_text(pending_interp_set.context, 60)}")
-            output_lines.append(f"*   Options: {len(pending_interp_set.interpretations)}")
+            output_lines.append(
+                f"*   Context: {truncate_text(pending_interp_set.context, 60)}"
+            )
+            output_lines.append(
+                f"*   Options: {len(pending_interp_set.interpretations)}"
+            )
             output_lines.append("*   Use `sologm oracle select` to choose.")
         elif recent_interp_tuple:
             interp_set, selected_interp = recent_interp_tuple
             output_lines.append("**Last Decision:**")
             output_lines.append(f"*   Context: {truncate_text(interp_set.context, 60)}")
-            output_lines.append(f"*   Selected: {truncate_text(selected_interp.title, 60)}")
+            output_lines.append(
+                f"*   Selected: {truncate_text(selected_interp.title, 60)}"
+            )
         else:
             output_lines.append("*No pending or recent oracle interpretations.*")
         output_lines.append("---")
@@ -459,17 +483,24 @@ class MarkdownRenderer(Renderer):
         if recent_rolls:
             max_rolls_to_show = 3
             for roll in recent_rolls[:max_rolls_to_show]:
-                reason_text = f" (Reason: {truncate_text(roll.reason, 40)})" if roll.reason else ""
-                timestamp = roll.created_at.strftime('%Y-%m-%d %H:%M')
-                output_lines.append(f"*   `{timestamp}`: {roll.notation} = **{roll.total}**{reason_text}")
+                reason_text = (
+                    f" (Reason: {truncate_text(roll.reason, 40)})"
+                    if roll.reason
+                    else ""
+                )
+                timestamp = roll.created_at.strftime("%Y-%m-%d %H:%M")
+                output_lines.append(
+                    f"*   `{timestamp}`: {roll.notation} = **{roll.total}**{reason_text}"
+                )
             if len(recent_rolls) > max_rolls_to_show:
-                output_lines.append(f"*   ... ({len(recent_rolls) - max_rolls_to_show} more not shown)")
+                output_lines.append(
+                    f"*   ... ({len(recent_rolls) - max_rolls_to_show} more not shown)"
+                )
         else:
             output_lines.append("*No recent dice rolls.*")
 
         # Print final output
         self.console.print("\n".join(output_lines))
-
 
     def display_acts_table(
         self, acts: List[Act], active_act_id: Optional[str] = None
