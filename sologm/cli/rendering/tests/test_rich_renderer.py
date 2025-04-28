@@ -125,10 +125,21 @@ def test_display_game_status_full(
         events = [event1, event2]
         rolls = [dice_roll]
 
-    # Call the renderer method with the created objects and mocks
-    renderer.display_game_status(
-        game=game,
-        latest_act=act,
+        # Call the renderer method with the created objects and mocks
+        renderer.display_game_status(
+            game=game,
+            latest_act=act,
+            latest_scene=scene,
+            recent_events=events,
+            scene_manager=mock_scene_manager,
+            oracle_manager=mock_oracle_manager,
+            recent_rolls=rolls,
+            is_act_active=True,
+            is_scene_active=True,
+        )
+
+    # Assertions remain the same
+    assert mock_console.print.called
         latest_scene=scene,
         recent_events=events,
         scene_manager=mock_scene_manager,
@@ -156,9 +167,20 @@ def test_display_game_status_no_scene(
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
 
-    renderer.display_game_status(
-        game=game,
-        latest_act=act,
+        renderer.display_game_status(
+            game=game,
+            latest_act=act,
+            latest_scene=None,
+            recent_events=[],
+            scene_manager=None,  # No scene manager needed if no scene
+            oracle_manager=mock_oracle_manager,
+            recent_rolls=None,
+            is_act_active=True,
+            is_scene_active=False,
+        )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
         latest_scene=None,
         recent_events=[],
         scene_manager=None,  # No scene manager needed if no scene
@@ -189,9 +211,20 @@ def test_display_game_status_no_events(
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
 
-    renderer.display_game_status(
-        game=game,
-        latest_act=act,
+        renderer.display_game_status(
+            game=game,
+            latest_act=act,
+            latest_scene=scene,
+            recent_events=[],
+            scene_manager=mock_scene_manager,
+            oracle_manager=mock_oracle_manager,
+            recent_rolls=None,
+            is_act_active=True,
+            is_scene_active=True,
+        )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
         latest_scene=scene,
         recent_events=[],
         scene_manager=mock_scene_manager,
@@ -224,9 +257,20 @@ def test_display_game_status_no_interpretation(
         event = create_test_event(session, scene_id=scene.id)
         events = [event]
 
-    renderer.display_game_status(
-        game=game,
-        latest_act=act,
+        renderer.display_game_status(
+            game=game,
+            latest_act=act,
+            latest_scene=scene,
+            recent_events=events,
+            scene_manager=mock_scene_manager,
+            oracle_manager=None,  # No oracle manager
+            recent_rolls=None,
+            is_act_active=True,
+            is_scene_active=True,
+        )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
         latest_scene=scene,
         recent_events=events,
         scene_manager=mock_scene_manager,
@@ -284,9 +328,20 @@ def test_display_game_status_selected_interpretation(
             return_value=(interp_set, selected_interp)
         )
 
-    renderer.display_game_status(
-        game=game,
-        latest_act=act,
+        renderer.display_game_status(
+            game=game,
+            latest_act=act,
+            latest_scene=scene,
+            recent_events=events,
+            scene_manager=mock_scene_manager,
+            oracle_manager=mock_oracle_manager,
+            recent_rolls=None,
+            is_act_active=True,
+            is_scene_active=True,
+        )
+
+    # Assertions will run after implementation
+    assert mock_console.print.called
         latest_scene=scene,
         recent_events=events,
         scene_manager=mock_scene_manager,
@@ -384,8 +439,8 @@ def test_create_game_header_panel(
     renderer = RichRenderer(mock_console)
     with session_context as session:
         game = create_test_game(session)
+        panel = renderer._create_game_header_panel(game)
 
-    panel = renderer._create_game_header_panel(game)
     assert panel is not None
     assert panel.title is not None
     assert panel.border_style == BORDER_STYLES["game_info"]
@@ -603,8 +658,8 @@ def test_display_interpretation_set_no_context(
     renderer.display_interpretation_set(interp_set, show_context=False)
 
     # Assertions will run after implementation
-    # Expect calls for each interpretation and instruction panel
-    assert mock_console.print.call_count == len(interp_set.interpretations) + 1
+    # Expect calls for each interpretation (panel + newline) and instruction panel
+    assert mock_console.print.call_count == len(interp_set.interpretations) * 2 + 1
 
 
 # --- End Tests for display_interpretation_set ---
@@ -790,8 +845,7 @@ def test_display_events_table_with_events(
         event1 = create_test_event(session, scene_id=scene.id, description="Event 1")
         event2 = create_test_event(session, scene_id=scene.id, description="Event 2")
         events = [event1, event2]
-
-    renderer.display_events_table(events, scene)
+        renderer.display_events_table(events, scene)
 
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
@@ -1005,9 +1059,13 @@ def test_display_act_completion_success(
     renderer = RichRenderer(mock_console)
     with session_context as session:
         game = create_test_game(session)
-        # Test with title and summary
+        # Test with title and summary - make it inactive initially to allow creating the next one
         act_with_title = create_test_act(
-            session, game_id=game.id, title="Completed Act", summary="It is done."
+            session,
+            game_id=game.id,
+            title="Completed Act",
+            summary="It is done.",
+            is_active=False,  # Ensure this doesn't block the next create
         )
         renderer.display_act_completion_success(act_with_title)
         assert (
@@ -1094,8 +1152,8 @@ def test_display_game_info(
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
+        renderer.display_game_info(game, scene)
 
-    renderer.display_game_info(game, scene)
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -1171,8 +1229,7 @@ def test_display_games_table_with_games(
         game2 = create_test_game(session, name="Game 2", is_active=True)
         games = [game1, game2]
         active_game = game2
-
-    renderer.display_games_table(games, active_game)
+        renderer.display_games_table(games, active_game)
 
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
@@ -1214,9 +1271,8 @@ def test_display_scene_info(
         scene = create_test_scene(session, act_id=act.id)
         # Add an event to test event listing
         create_test_event(session, scene_id=scene.id)
-        session.refresh(scene, attribute_names=["events"])  # Load events relationship
-
-    renderer.display_scene_info(scene)
+        session.refresh(scene, attribute_names=["events", "act"])  # Load relationships
+        renderer.display_scene_info(scene)
 
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
