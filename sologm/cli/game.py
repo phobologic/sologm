@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import typer
+
 # Console import removed
 # Display function imports removed
 from sologm.cli.utils.markdown import generate_game_markdown
@@ -106,8 +107,10 @@ def game_info(ctx: typer.Context) -> None:
             game = context_status["game"]
 
             if not game:
-                renderer.display_warning("No active game. Use 'sologm game activate' to set one.")
-                raise typer.Exit(0) # Exit cleanly if no game context
+                renderer.display_warning(
+                    "No active game. Use 'sologm game activate' to set one."
+                )
+                raise typer.Exit(0)  # Exit cleanly if no game context
 
             # Extract the latest scene (might be None if no acts/scenes exist)
             latest_scene = context_status["latest_scene"]
@@ -147,8 +150,10 @@ def game_status(ctx: typer.Context) -> None:
             game = context_status["game"]
 
             if not game:  # Check if game retrieval failed within the method
-                renderer.display_warning("No active game. Use 'sologm game activate' to set one.")
-                raise typer.Exit(0) # Exit cleanly if no game context
+                renderer.display_warning(
+                    "No active game. Use 'sologm game activate' to set one."
+                )
+                raise typer.Exit(0)  # Exit cleanly if no game context
 
             # Access managers through the chain (still needed for events/rolls/oracle)
             # Note: These managers are initialized within get_latest_context_status if needed,
@@ -223,7 +228,7 @@ def edit_game(
 ) -> None:
     """Edit the name and description of a game."""
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"] # Needed for editor
+    console: "Console" = ctx.obj["console"]  # Needed for editor
     from sologm.database.session import get_db_context
 
     try:
@@ -315,7 +320,7 @@ def edit_game(
 
 @game_app.command("dump")
 def dump_game(
-    ctx: typer.Context, # Add context for consistency, though renderer isn't used for main output
+    ctx: typer.Context,  # Add context for consistency, though renderer isn't used for main output
     game_id: str = typer.Option(
         None, "--id", "-i", help="ID of the game to dump (defaults to active game)"
     ),
@@ -330,7 +335,7 @@ def dump_game(
     ),
 ) -> None:
     """Export a game with all scenes and events as a markdown document to stdout."""
-    renderer: "Renderer" = ctx.obj["renderer"] # Get renderer for potential errors
+    renderer: "Renderer" = ctx.obj["renderer"]  # Get renderer for potential errors
     from sologm.database.session import get_db_context
 
     try:
