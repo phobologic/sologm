@@ -3,13 +3,13 @@ Unit tests for the MarkdownRenderer class.
 """
 
 import logging
-
-# Import the renderer and models needed for tests
-from typing import List  # <-- Added import
+from datetime import datetime  # Import datetime for DiceRoll creation
+from typing import Callable, List  # Import Callable for factory types
 from unittest.mock import MagicMock
 
 import pytest
-from rich.console import Console  # <-- Import Console
+from rich.console import Console
+from sqlalchemy.orm import Session  # Import Session for type hinting
 
 # Import the renderer and models needed for tests
 from sologm.cli.rendering.markdown_renderer import MarkdownRenderer
@@ -19,6 +19,16 @@ from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene, SceneStatus
+
+# Import factory fixtures types if needed for hinting (Optional but good practice)
+# from sologm.tests.conftest import ( # Example if you need explicit types
+#     create_test_game,
+#     create_test_act,
+#     # ... other factories
+# )
+
+# Import truncate_text utility
+from sologm.cli.utils.display import truncate_text
 
 # Set up logging for tests
 logger = logging.getLogger(__name__)
