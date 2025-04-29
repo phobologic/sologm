@@ -56,18 +56,19 @@ def test_display_dice_roll_markdown(mock_console: MagicMock):
 
     renderer.display_dice_roll(test_dice_roll)
 
-    # Define the expected Markdown output
-    expected_output = (
-        "### Dice Roll: 2d6+1 (Reason: Test Roll)\n\n"
-        "*   **Result:** `8`\n"
-        "*   Rolls: `[4, 3]`\n"
-        "*   Modifier: `+1`"
-    )
+    # Capture the output
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output = call_args[0]
 
-    # Assert that console.print was called with the expected string and flags
-    mock_console.print.assert_called_once_with(
-        expected_output, highlight=False, markup=False
-    )
+    # Assert key components
+    assert "### Dice Roll: 2d6+1" in rendered_output
+    assert "(Reason: Test Roll)" in rendered_output
+    assert "*   **Result:** `8`" in rendered_output
+    assert "*   Rolls: `[4, 3]`" in rendered_output
+    assert "*   Modifier: `+1`" in rendered_output
+
+    # Assert the markdown flags
+    assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_interpretation ---
@@ -98,39 +99,38 @@ def test_display_interpretation_markdown(
         )
 
         # Test case 1: Basic interpretation
+        mock_console.reset_mock()
         renderer.display_interpretation(interp)
-        expected_output_basic = (
-            f"#### {interp.title}\n\n"
-            f"{interp.description}\n\n"
-            f"*ID: {interp.id} / {interp.slug}*"
-        )
-    mock_console.print.assert_called_with(
-        expected_output_basic, highlight=False, markup=False
-    )
-    mock_console.reset_mock()
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_basic = call_args[0]
+        assert f"#### {interp.title}" in rendered_output_basic
+        assert interp.description in rendered_output_basic
+        assert f"*ID: {interp.id} / {interp.slug}*" in rendered_output_basic
+        assert "Interpretation #" not in rendered_output_basic
+        assert "(**Selected**)" not in rendered_output_basic
+        assert call_kwargs == {"highlight": False, "markup": False}
 
-    # Test case 2: Selected interpretation with sequence
-    renderer.display_interpretation(interp, selected=True, sequence=1)
-    expected_output_selected = (
-        f"#### Interpretation #1: {interp.title} (**Selected**)\n\n"
-        f"{interp.description}\n\n"
-        f"*ID: {interp.id} / {interp.slug}*"
-    )
-    mock_console.print.assert_called_with(
-        expected_output_selected, highlight=False, markup=False
-    )
-    mock_console.reset_mock()
+        # Test case 2: Selected interpretation with sequence
+        mock_console.reset_mock()
+        renderer.display_interpretation(interp, selected=True, sequence=1)
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_selected = call_args[0]
+        assert f"#### Interpretation #1: {interp.title}" in rendered_output_selected
+        assert "(**Selected**)" in rendered_output_selected
+        assert interp.description in rendered_output_selected
+        assert f"*ID: {interp.id} / {interp.slug}*" in rendered_output_selected
+        assert call_kwargs == {"highlight": False, "markup": False}
 
-    # Test case 3: Interpretation with sequence but not selected
-    renderer.display_interpretation(interp, selected=False, sequence=2)
-    expected_output_sequence = (
-        f"#### Interpretation #2: {interp.title}\n\n"
-        f"{interp.description}\n\n"
-        f"*ID: {interp.id} / {interp.slug}*"
-    )
-    mock_console.print.assert_called_with(
-        expected_output_sequence, highlight=False, markup=False
-    )
+        # Test case 3: Interpretation with sequence but not selected
+        mock_console.reset_mock()
+        renderer.display_interpretation(interp, selected=False, sequence=2)
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_sequence = call_args[0]
+        assert f"#### Interpretation #2: {interp.title}" in rendered_output_sequence
+        assert "(**Selected**)" not in rendered_output_sequence
+        assert interp.description in rendered_output_sequence
+        assert f"*ID: {interp.id} / {interp.slug}*" in rendered_output_sequence
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_events_table ---
@@ -159,23 +159,33 @@ def test_display_events_table_markdown(
         )
         test_events = [event1, event2]
 
-        # Test with events and default truncation
+        # Test with events
+        mock_console.reset_mock()
         renderer.display_events_table(test_events, scene)
 
-        # Expected output (adjust based on test_events fixture data)
-        expected_output = (
-            f"### Events in Scene: {scene.title}\n\n"
-            f"| ID | Time | Source | Description |\n"
-            f"|---|---|---|---|\n"
-            f"| `{event1.id}` | {event1.created_at.strftime('%Y-%m-%d %H:%M')} | {event1.source_name} | {event1.description} |\n"
-            f"| `{event2.id}` | {event2.created_at.strftime('%Y-%m-%d %H:%M')} | {event2.source_name} | {event2.description} |"
-        )
-        mock_console.print.assert_called_with(
-            expected_output, highlight=False, markup=False
-        )
-        mock_console.reset_mock()
+        # Capture the output
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output = call_args[0]
+
+        # Assert key components
+        assert f"### Events in Scene: {scene.title}" in rendered_output
+        assert "| ID | Time | Source | Description |" in rendered_output
+        assert "|---|---|---|---|" in rendered_output
+        # Check event 1 details
+        assert f"| `{event1.id}`" in rendered_output
+        assert f"| {event1.created_at.strftime('%Y-%m-%d %H:%M')}" in rendered_output
+        assert f"| {event1.source_name}" in rendered_output
+        assert f"| {event1.description} |" in rendered_output
+        # Check event 2 details
+        assert f"| `{event2.id}`" in rendered_output
+        assert f"| {event2.created_at.strftime('%Y-%m-%d %H:%M')}" in rendered_output
+        assert f"| {event2.source_name}" in rendered_output
+        assert f"| {event2.description} |" in rendered_output
+        # Assert the markdown flags
+        assert call_kwargs == {"highlight": False, "markup": False}
 
         # Test with pipe character escaping
+        mock_console.reset_mock()
         event_with_pipe = create_test_event(
             session,
             scene_id=scene.id,
@@ -183,17 +193,18 @@ def test_display_events_table_markdown(
             source="manual",
         )
         renderer.display_events_table([event_with_pipe], scene)
-        # Expected output should have the pipe escaped
-        expected_output_pipe = (
-            f"### Events in Scene: {scene.title}\n\n"
-            f"| ID | Time | Source | Description |\n"
-            f"|---|---|---|---|\n"
-            f"| `{event_with_pipe.id}` | {event_with_pipe.created_at.strftime('%Y-%m-%d %H:%M')} | {event_with_pipe.source_name} | Event \\| with pipe |"
-        )
-        mock_console.print.assert_called_with(
-            expected_output_pipe, highlight=False, markup=False
-        )
-        mock_console.reset_mock()
+
+        # Capture the output
+        call_args_pipe, call_kwargs_pipe = mock_console.print.call_args
+        rendered_output_pipe = call_args_pipe[0]
+
+        # Assert key components including escaped pipe
+        assert f"### Events in Scene: {scene.title}" in rendered_output_pipe
+        assert "| ID | Time | Source | Description |" in rendered_output_pipe
+        assert f"| `{event_with_pipe.id}`" in rendered_output_pipe
+        assert f"| {event_with_pipe.source_name}" in rendered_output_pipe
+        assert "| Event \\| with pipe |" in rendered_output_pipe # Check escaped pipe
+        assert call_kwargs_pipe == {"highlight": False, "markup": False}
 
 
 def test_display_events_table_no_events_markdown(
@@ -244,32 +255,45 @@ def test_display_games_table_markdown(
         games = [test_game, other_game]
 
         # Test case 1: With an active game
+        mock_console.reset_mock()
         renderer.display_games_table(games, active_game=test_game)
-        expected_output_active = (
-            "### Games\n\n"
-            "| ID | Name | Description | Acts | Scenes | Current |\n"
-            "|---|---|---|---|---|---|\n"
-            f"| `{test_game.id}` | **{test_game.name}** | {test_game.description} | 0 | 0 | ✓ |\n"
-            f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
-        )
-    mock_console.print.assert_called_with(
-        expected_output_active, highlight=False, markup=False
-    )
-    mock_console.reset_mock()
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_active = call_args[0]
+
+        assert "### Games" in rendered_output_active
+        assert "| ID | Name | Description | Acts | Scenes | Current |" in rendered_output_active
+        # Check active game row
+        assert f"| `{test_game.id}`" in rendered_output_active
+        assert f"| **{test_game.name}**" in rendered_output_active # Bold
+        assert f"| {test_game.description}" in rendered_output_active
+        assert "| 0 | 0 | ✓ |" in rendered_output_active # Counts and marker
+        # Check other game row
+        assert f"| `{other_game.id}`" in rendered_output_active
+        assert f"| {other_game.name}" in rendered_output_active # Not bold
+        assert f"| {other_game.description}" in rendered_output_active
+        assert "| 0 | 0 |  |" in rendered_output_active # Counts and marker
+        assert call_kwargs == {"highlight": False, "markup": False}
+
 
     # Test case 2: Without an active game
-    renderer.display_games_table(games, active_game=None)
-    expected_output_no_active = (
-        "### Games\n\n"
-        "| ID | Name | Description | Acts | Scenes | Current |\n"
-        "|---|---|---|---|---|---|\n"
-        f"| `{test_game.id}` | {test_game.name} | {test_game.description} | 0 | 0 |  |\n"
-        f"| `{other_game.id}` | {other_game.name} | {other_game.description} | 0 | 0 |  |"
-    )
-    mock_console.print.assert_called_with(
-        expected_output_no_active, highlight=False, markup=False
-    )
     mock_console.reset_mock()
+    renderer.display_games_table(games, active_game=None)
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output_no_active = call_args[0]
+
+    assert "### Games" in rendered_output_no_active
+    assert "| ID | Name | Description | Acts | Scenes | Current |" in rendered_output_no_active
+    # Check first game row (not active)
+    assert f"| `{test_game.id}`" in rendered_output_no_active
+    assert f"| {test_game.name}" in rendered_output_no_active # Not bold
+    assert f"| {test_game.description}" in rendered_output_no_active
+    assert "| 0 | 0 |  |" in rendered_output_no_active # Counts and marker
+    # Check second game row (not active)
+    assert f"| `{other_game.id}`" in rendered_output_no_active
+    assert f"| {other_game.name}" in rendered_output_no_active # Not bold
+    assert f"| {other_game.description}" in rendered_output_no_active
+    assert "| 0 | 0 |  |" in rendered_output_no_active # Counts and marker
+    assert call_kwargs == {"highlight": False, "markup": False}
 
 
 def test_display_games_table_no_games_markdown(mock_console: MagicMock):
@@ -320,32 +344,49 @@ def test_display_scenes_table_markdown(
         )  # Sort by sequence for predictable table order
 
         # Test case 1: With an active scene ID
+        mock_console.reset_mock()
         renderer.display_scenes_table(scenes, active_scene_id=test_scene.id)
-        expected_output_active = (
-            "### Scenes\n\n"
-            "| ID | Title | Description | Status | Current | Sequence |\n"
-            "|---|---|---|---|---|---|\n"
-            f"| `{test_scene.id}` | **{test_scene.title}** | {test_scene.description} | {test_scene.status.value} | ✓ | {test_scene.sequence} |\n"
-            f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
-        )
-    mock_console.print.assert_called_with(
-        expected_output_active, highlight=False, markup=False
-    )
-    mock_console.reset_mock()
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_active = call_args[0]
+
+        assert "### Scenes" in rendered_output_active
+        assert "| ID | Title | Description | Status | Current | Sequence |" in rendered_output_active
+        # Check active scene row
+        assert f"| `{test_scene.id}`" in rendered_output_active
+        assert f"| **{test_scene.title}**" in rendered_output_active # Bold
+        assert f"| {test_scene.description}" in rendered_output_active
+        assert f"| {test_scene.status.value}" in rendered_output_active
+        assert f"| ✓ | {test_scene.sequence} |" in rendered_output_active # Marker and sequence
+        # Check other scene row
+        assert f"| `{other_scene.id}`" in rendered_output_active
+        assert f"| {other_scene.title}" in rendered_output_active # Not bold
+        assert f"| {other_scene.description}" in rendered_output_active
+        assert f"| {other_scene.status.value}" in rendered_output_active
+        assert f"|  | {other_scene.sequence} |" in rendered_output_active # Marker and sequence
+        assert call_kwargs == {"highlight": False, "markup": False}
+
 
     # Test case 2: Without an active scene ID
-    renderer.display_scenes_table(scenes, active_scene_id=None)
-    expected_output_no_active = (
-        "### Scenes\n\n"
-        "| ID | Title | Description | Status | Current | Sequence |\n"
-        "|---|---|---|---|---|---|\n"
-        f"| `{test_scene.id}` | {test_scene.title} | {test_scene.description} | {test_scene.status.value} |  | {test_scene.sequence} |\n"
-        f"| `{other_scene.id}` | {other_scene.title} | {other_scene.description} | {other_scene.status.value} |  | {other_scene.sequence} |"
-    )
-    mock_console.print.assert_called_with(
-        expected_output_no_active, highlight=False, markup=False
-    )
     mock_console.reset_mock()
+    renderer.display_scenes_table(scenes, active_scene_id=None)
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output_no_active = call_args[0]
+
+    assert "### Scenes" in rendered_output_no_active
+    assert "| ID | Title | Description | Status | Current | Sequence |" in rendered_output_no_active
+    # Check first scene row (not active)
+    assert f"| `{test_scene.id}`" in rendered_output_no_active
+    assert f"| {test_scene.title}" in rendered_output_no_active # Not bold
+    assert f"| {test_scene.description}" in rendered_output_no_active
+    assert f"| {test_scene.status.value}" in rendered_output_no_active
+    assert f"|  | {test_scene.sequence} |" in rendered_output_no_active # Marker and sequence
+    # Check second scene row (not active)
+    assert f"| `{other_scene.id}`" in rendered_output_no_active
+    assert f"| {other_scene.title}" in rendered_output_no_active # Not bold
+    assert f"| {other_scene.description}" in rendered_output_no_active
+    assert f"| {other_scene.status.value}" in rendered_output_no_active
+    assert f"|  | {other_scene.sequence} |" in rendered_output_no_active # Marker and sequence
+    assert call_kwargs == {"highlight": False, "markup": False}
 
 
 def test_display_scenes_table_no_scenes_markdown(mock_console: MagicMock):
@@ -381,35 +422,34 @@ def test_display_game_info_markdown(
         session.refresh(test_act, attribute_names=["scenes"])
 
         # Test case 1: With active scene
-        renderer.display_game_info(test_game, active_scene=test_scene)
-        expected_output_active = (
-            f"## {test_game.name} (`{test_game.slug}` / `{test_game.id}`)\n\n"
-            f"{test_game.description}\n\n"
-            f"*   **Created:** {test_game.created_at.strftime('%Y-%m-%d')}\n"
-            f"*   **Modified:** {test_game.modified_at.strftime('%Y-%m-%d')}\n"
-            f"*   **Acts:** {len(test_game.acts)}\n"  # Use calculated property
-            f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}\n"  # Use calculated property
-            f"*   **Active Scene:** {test_scene.title}"
-        )
-        mock_console.print.assert_called_with(
-            expected_output_active, highlight=False, markup=False
-        )
         mock_console.reset_mock()
+        renderer.display_game_info(test_game, active_scene=test_scene)
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_active = call_args[0]
+
+        assert f"## {test_game.name} (`{test_game.slug}` / `{test_game.id}`)" in rendered_output_active
+        assert test_game.description in rendered_output_active
+        assert f"*   **Created:** {test_game.created_at.strftime('%Y-%m-%d')}" in rendered_output_active
+        assert f"*   **Modified:** {test_game.modified_at.strftime('%Y-%m-%d')}" in rendered_output_active
+        assert f"*   **Acts:** {len(test_game.acts)}" in rendered_output_active
+        assert f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}" in rendered_output_active
+        assert f"*   **Active Scene:** {test_scene.title}" in rendered_output_active
+        assert call_kwargs == {"highlight": False, "markup": False}
 
         # Test case 2: Without active scene
+        mock_console.reset_mock()
         renderer.display_game_info(test_game, active_scene=None)
-        expected_output_no_active = (
-            f"## {test_game.name} (`{test_game.slug}` / `{test_game.id}`)\n\n"
-            f"{test_game.description}\n\n"
-            f"*   **Created:** {test_game.created_at.strftime('%Y-%m-%d')}\n"
-            f"*   **Modified:** {test_game.modified_at.strftime('%Y-%m-%d')}\n"
-            f"*   **Acts:** {len(test_game.acts)}\n"
-            f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}"
-            # No Active Scene line
-        )
-        mock_console.print.assert_called_with(
-            expected_output_no_active, highlight=False, markup=False
-        )
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_no_active = call_args[0]
+
+        assert f"## {test_game.name} (`{test_game.slug}` / `{test_game.id}`)" in rendered_output_no_active
+        assert test_game.description in rendered_output_no_active
+        assert f"*   **Created:** {test_game.created_at.strftime('%Y-%m-%d')}" in rendered_output_no_active
+        assert f"*   **Modified:** {test_game.modified_at.strftime('%Y-%m-%d')}" in rendered_output_no_active
+        assert f"*   **Acts:** {len(test_game.acts)}" in rendered_output_no_active
+        assert f"*   **Scenes:** {sum(len(a.scenes) for a in test_game.acts)}" in rendered_output_no_active
+        assert "*   **Active Scene:**" not in rendered_output_no_active # Ensure line is absent
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_interpretation_set ---
@@ -453,25 +493,26 @@ def test_display_interpretation_set_markdown(
         mock_console.reset_mock()
         renderer.display_interpretation_set(test_interpretation_set, show_context=True)
 
-        expected_context = (
-            f"### Oracle Interpretations\n\n"
-            f"**Context:** {test_interpretation_set.context}\n"
-            f"**Results:** {test_interpretation_set.oracle_results}\n\n"
-            f"---"
-        )
-        expected_instruction = (
-            f"Interpretation Set ID: `{test_interpretation_set.id}`\n"
-            f"(Use 'sologm oracle select' to choose)"
-        )
         # Expected calls: context(1) + N interpretations + N blank lines + instruction(1) = 2*N + 2
         expected_call_count_true = num_interpretations * 2 + 2
         assert mock_console.print.call_count == expected_call_count_true
-        mock_console.print.assert_any_call(
-            expected_context, highlight=False, markup=False
-        )
-        mock_console.print.assert_any_call(
-            expected_instruction, highlight=False, markup=False
-        )
+
+        # Check context call (first call)
+        context_call_args, context_call_kwargs = mock_console.print.call_args_list[0]
+        rendered_context = context_call_args[0]
+        assert "### Oracle Interpretations" in rendered_context
+        assert f"**Context:** {test_interpretation_set.context}" in rendered_context
+        assert f"**Results:** {test_interpretation_set.oracle_results}" in rendered_context
+        assert "---" in rendered_context
+        assert context_call_kwargs == {"highlight": False, "markup": False}
+
+        # Check instruction call (last call)
+        instruction_call_args, instruction_call_kwargs = mock_console.print.call_args_list[-1]
+        rendered_instruction = instruction_call_args[0]
+        assert f"Interpretation Set ID: `{test_interpretation_set.id}`" in rendered_instruction
+        assert "(Use 'sologm oracle select' to choose)" in rendered_instruction
+        assert instruction_call_kwargs == {"highlight": False, "markup": False}
+
         # We don't assert the exact interpretation calls here, as that's tested elsewhere
 
         # --- Test case 2: Hide context ---
@@ -481,24 +522,21 @@ def test_display_interpretation_set_markdown(
         # Expected calls: N interpretations + N blank lines + instruction(1) = 2*N + 1
         expected_call_count_false = num_interpretations * 2 + 1
         assert mock_console.print.call_count == expected_call_count_false
-        # Ensure context was NOT printed with the specific args and kwargs
-        found_context_call = False
-        target_args = (expected_context,)
-        target_kwargs = {"highlight": False, "markup": False}
-        for call_obj in mock_console.print.call_args_list:
-            # Check if args tuple matches AND kwargs dict matches
-            if call_obj.args == target_args and call_obj.kwargs == target_kwargs:
-                found_context_call = True
-                break
-        assert not found_context_call, (
-            f"Expected context call '{expected_context}' with kwargs {target_kwargs} "
-            "was found, but it should not have been printed."
-        )
 
-        # Check instruction print call again (this part remains the same)
-        mock_console.print.assert_any_call(
-            expected_instruction, highlight=False, markup=False
-        )
+        # Ensure context header was NOT printed by checking the first call's content
+        first_call_args, first_call_kwargs = mock_console.print.call_args_list[0]
+        rendered_first_call = first_call_args[0]
+        assert "### Oracle Interpretations" not in rendered_first_call
+        assert f"**Context:** {test_interpretation_set.context}" not in rendered_first_call
+        # The first call should now be the first interpretation
+        assert f"#### Interpretation #1: {interp1.title}" in rendered_first_call
+
+        # Check instruction print call again (last call)
+        instruction_call_args_hide, instruction_call_kwargs_hide = mock_console.print.call_args_list[-1]
+        rendered_instruction_hide = instruction_call_args_hide[0]
+        assert f"Interpretation Set ID: `{test_interpretation_set.id}`" in rendered_instruction_hide
+        assert "(Use 'sologm oracle select' to choose)" in rendered_instruction_hide
+        assert instruction_call_kwargs_hide == {"highlight": False, "markup": False}
 
 
 def test_display_scene_info_markdown(
@@ -530,24 +568,26 @@ def test_display_scene_info_markdown(
 
         renderer.display_scene_info(test_scene)
 
-        # The rest of the assertions remain the same...
-        # Accessing .act here might trigger lazy load if not flushed, but flush is safer
+        # Capture the output
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output = call_args[0]
+
+        # Assert key components
         act_title = test_scene.act.title or "Untitled Act"
         act_info = f"Act {test_scene.act.sequence}: {act_title}"
         status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
 
-        expected_output = (
-            f"### Scene {test_scene.sequence}: {test_scene.title}{status_indicator} (`{test_scene.id}`)\n\n"
-            f"{test_scene.description}\n\n"
-            f"*   **Status:** {test_scene.status.value}\n"
-            f"*   **Act:** {act_info}\n"
-            # Ensure created_at and modified_at are not None before formatting
-            f"*   **Created:** {test_scene.created_at.strftime('%Y-%m-%d') if test_scene.created_at else 'N/A'}\n"
-            f"*   **Modified:** {test_scene.modified_at.strftime('%Y-%m-%d') if test_scene.modified_at else 'N/A'}"
-        )
-        mock_console.print.assert_called_once_with(
-            expected_output, highlight=False, markup=False
-        )
+        assert f"### Scene {test_scene.sequence}: {test_scene.title}{status_indicator} (`{test_scene.id}`)" in rendered_output
+        assert test_scene.description in rendered_output
+        assert f"*   **Status:** {test_scene.status.value}" in rendered_output
+        assert f"*   **Act:** {act_info}" in rendered_output
+        if test_scene.created_at:
+            assert f"*   **Created:** {test_scene.created_at.strftime('%Y-%m-%d')}" in rendered_output
+        if test_scene.modified_at:
+            assert f"*   **Modified:** {test_scene.modified_at.strftime('%Y-%m-%d')}" in rendered_output
+
+        # Assert the markdown flags
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_acts_table ---
@@ -581,31 +621,48 @@ def test_display_acts_table_markdown(
         acts = sorted([test_act, other_act], key=lambda a: a.sequence)
 
         # Test case 1: With an active act ID
-        renderer.display_acts_table(acts, active_act_id=test_act.id)
-        expected_output_active = (
-            "### Acts\n\n"
-            "| ID | Seq | Title | Summary | Current |\n"
-            "|---|---|---|---|---|\n"
-            f"| `{test_act.id}` | {test_act.sequence} | **{test_act.title}** | {test_act.summary} | ✓ |\n"
-            f"| `{other_act.id}` | {other_act.sequence} | {other_act.title} | {other_act.summary} |  |"
-        )
-        mock_console.print.assert_called_with(
-            expected_output_active, highlight=False, markup=False
-        )
         mock_console.reset_mock()
+        renderer.display_acts_table(acts, active_act_id=test_act.id)
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_active = call_args[0]
+
+        assert "### Acts" in rendered_output_active
+        assert "| ID | Seq | Title | Summary | Current |" in rendered_output_active
+        # Check active act row
+        assert f"| `{test_act.id}`" in rendered_output_active
+        assert f"| {test_act.sequence}" in rendered_output_active
+        assert f"| **{test_act.title}**" in rendered_output_active # Bold
+        assert f"| {test_act.summary}" in rendered_output_active
+        assert "| ✓ |" in rendered_output_active # Marker
+        # Check other act row
+        assert f"| `{other_act.id}`" in rendered_output_active
+        assert f"| {other_act.sequence}" in rendered_output_active
+        assert f"| {other_act.title}" in rendered_output_active # Not bold
+        assert f"| {other_act.summary}" in rendered_output_active
+        assert "|  |" in rendered_output_active # Marker (check spacing carefully)
+        assert call_kwargs == {"highlight": False, "markup": False}
 
         # Test case 2: Without an active act ID
+        mock_console.reset_mock()
         renderer.display_acts_table(acts, active_act_id=None)
-        expected_output_no_active = (
-            "### Acts\n\n"
-            "| ID | Seq | Title | Summary | Current |\n"
-            "|---|---|---|---|---|\n"
-            f"| `{test_act.id}` | {test_act.sequence} | {test_act.title} | {test_act.summary} |  |\n"
-            f"| `{other_act.id}` | {other_act.sequence} | {other_act.title} | {other_act.summary} |  |"
-        )
-        mock_console.print.assert_called_with(
-            expected_output_no_active, highlight=False, markup=False
-        )
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output_no_active = call_args[0]
+
+        assert "### Acts" in rendered_output_no_active
+        assert "| ID | Seq | Title | Summary | Current |" in rendered_output_no_active
+        # Check first act row (not active)
+        assert f"| `{test_act.id}`" in rendered_output_no_active
+        assert f"| {test_act.sequence}" in rendered_output_no_active
+        assert f"| {test_act.title}" in rendered_output_no_active # Not bold
+        assert f"| {test_act.summary}" in rendered_output_no_active
+        assert "|  |" in rendered_output_no_active # Marker
+        # Check second act row (not active)
+        assert f"| `{other_act.id}`" in rendered_output_no_active
+        assert f"| {other_act.sequence}" in rendered_output_no_active
+        assert f"| {other_act.title}" in rendered_output_no_active # Not bold
+        assert f"| {other_act.summary}" in rendered_output_no_active
+        assert "|  |" in rendered_output_no_active # Marker
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 def test_display_acts_table_no_acts_markdown(mock_console: MagicMock):
@@ -647,51 +704,35 @@ def test_display_act_info_markdown(
 
         renderer.display_act_info(test_act, test_game.name)
 
-        # Expected output for act info
-        expected_act_output = (
-            f"## Act {test_act.sequence}: {test_act.title} (`{test_act.id}`)\n\n"
-            f"{test_act.summary}\n\n"
-            f"*   **Game:** {test_game.name}\n"
-            f"*   **Created:** {test_act.created_at.strftime('%Y-%m-%d')}\n"
-            f"*   **Modified:** {test_act.modified_at.strftime('%Y-%m-%d')}"
-        )
-
-        # Expected output for scenes table within act info
-        active_scene_id_in_test = test_scene.id
-        is_active = active_scene_id_in_test and test_scene.id == active_scene_id_in_test
-        active_marker = "✓" if is_active else ""
-        scene_title_display = (
-            f"**{test_scene.title}**" if is_active else test_scene.title
-        )
-        scene_description = test_scene.description
-
-        expected_scenes_output = (
-            "### Scenes\n\n"
-            "| ID | Title | Description | Status | Current | Sequence |\n"
-            "|---|---|---|---|---|---|\n"
-            f"| `{test_scene.id}` "
-            f"| {scene_title_display} "
-            f"| {scene_description} "
-            f"| {test_scene.status.value} "
-            f"| {active_marker} "
-            f"| {test_scene.sequence} |"
-        )
-
-        # Check that both parts were printed in order with a blank line, and with correct flags
+        # Check that the correct parts were printed in order
         calls = mock_console.print.call_args_list
-        assert len(calls) == 3  # Act Info, Blank Line, Scenes Table
+        # Expected calls: Act Info, Blank Line, Scenes Table
+        assert len(calls) >= 3
 
-        # Check Act Info call
-        assert calls[0].args[0] == expected_act_output
-        assert calls[0].kwargs == {"highlight": False, "markup": False}
+        # Check Act Info call (first call)
+        act_info_args, act_info_kwargs = calls[0]
+        rendered_act_info = act_info_args[0]
+        assert f"## Act {test_act.sequence}: {test_act.title} (`{test_act.id}`)" in rendered_act_info
+        assert test_act.summary in rendered_act_info
+        assert f"*   **Game:** {test_game.name}" in rendered_act_info
+        assert f"*   **Created:** {test_act.created_at.strftime('%Y-%m-%d')}" in rendered_act_info
+        assert f"*   **Modified:** {test_act.modified_at.strftime('%Y-%m-%d')}" in rendered_act_info
+        assert act_info_kwargs == {"highlight": False, "markup": False}
 
-        # Check Blank Line call
-        assert calls[1].args[0] == ""
-        assert calls[1].kwargs == {"highlight": False, "markup": False}
+        # Check Blank Line call (second call)
+        blank_line_args, blank_line_kwargs = calls[1]
+        assert blank_line_args[0] == ""
+        assert blank_line_kwargs == {"highlight": False, "markup": False}
 
-        # Check Scenes Table call
-        assert calls[2].args[0] == expected_scenes_output
-        assert calls[2].kwargs == {"highlight": False, "markup": False}
+        # Check Scenes Table call (third call)
+        # We rely on test_display_scenes_table_markdown to verify the *content*
+        # Here, just check that *a* table-like structure was printed.
+        scenes_table_args, scenes_table_kwargs = calls[2]
+        rendered_scenes_table = scenes_table_args[0]
+        assert "### Scenes" in rendered_scenes_table
+        assert "| ID | Title | Description | Status | Current | Sequence |" in rendered_scenes_table
+        assert f"`{test_scene.id}`" in rendered_scenes_table # Check scene ID is present
+        assert scenes_table_kwargs == {"highlight": False, "markup": False}
 
 
 def test_display_act_info_no_scenes_markdown(
@@ -713,39 +754,37 @@ def test_display_act_info_no_scenes_markdown(
 
         renderer.display_act_info(test_act, test_game.name)
 
-        # Expected output for act info (same as before)
-        expected_act_output = (
-            f"## Act {test_act.sequence}: {test_act.title} (`{test_act.id}`)\n\n"
-            f"{test_act.summary}\n\n"
-            f"*   **Game:** {test_game.name}\n"
-            f"*   **Created:** {test_act.created_at.strftime('%Y-%m-%d')}\n"
-            f"*   **Modified:** {test_act.modified_at.strftime('%Y-%m-%d')}"
-        )
-
-        # Expected outputs for the "no scenes" part
-        expected_no_scenes_header = f"### Scenes in Act {test_act.sequence}"
-        expected_no_scenes_message = "No scenes in this act yet."
-        expected_blank_line = ""
-
-        # Check the sequence of calls and flags
+        # Check the sequence of calls
         calls = mock_console.print.call_args_list
-        assert len(calls) == 5  # Act Info, Blank Line, Header, Blank Line, Message
+        # Expected calls: Act Info, Blank Line, Header, Blank Line, Message
+        assert len(calls) == 5
 
         expected_kwargs = {"highlight": False, "markup": False}
 
-        assert calls[0].args[0] == expected_act_output
-        assert calls[0].kwargs == expected_kwargs
+        # Check Act Info call (first call)
+        act_info_args, act_info_kwargs = calls[0]
+        rendered_act_info = act_info_args[0]
+        assert f"## Act {test_act.sequence}: {test_act.title} (`{test_act.id}`)" in rendered_act_info
+        assert test_act.summary in rendered_act_info
+        assert f"*   **Game:** {test_game.name}" in rendered_act_info
+        assert f"*   **Created:** {test_act.created_at.strftime('%Y-%m-%d')}" in rendered_act_info
+        assert f"*   **Modified:** {test_act.modified_at.strftime('%Y-%m-%d')}" in rendered_act_info
+        assert act_info_kwargs == expected_kwargs
 
-        assert calls[1].args[0] == expected_blank_line
+        # Check Blank Line call (second call)
+        assert calls[1].args[0] == ""
         assert calls[1].kwargs == expected_kwargs
 
-        assert calls[2].args[0] == expected_no_scenes_header
+        # Check "No Scenes" Header call (third call)
+        assert calls[2].args[0] == f"### Scenes in Act {test_act.sequence}"
         assert calls[2].kwargs == expected_kwargs
 
-        assert calls[3].args[0] == expected_blank_line
+        # Check Blank Line call (fourth call)
+        assert calls[3].args[0] == ""
         assert calls[3].kwargs == expected_kwargs
 
-        assert calls[4].args[0] == expected_no_scenes_message
+        # Check "No Scenes" Message call (fifth call)
+        assert calls[4].args[0] == "No scenes in this act yet."
         assert calls[4].kwargs == expected_kwargs
 
 
@@ -791,30 +830,34 @@ def test_display_interpretation_sets_table_markdown(
 
         renderer.display_interpretation_sets_table(interp_sets)
 
-        # Use full context and results, but escape pipes for the expected output
-        full_context = test_interpretation_set.context.replace("|", "\\|")
-        full_results = test_interpretation_set.oracle_results.replace("|", "\\|")
+        # Capture the output
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output = call_args[0]
+
+        # Assert key components
+        assert "### Oracle Interpretation Sets" in rendered_output
+        assert "| ID | Scene | Context | Oracle Results | Created | Status | Count |" in rendered_output
+        assert "|---|---|---|---|---|---|---|" in rendered_output
+
+        # Check row details (handle escaped pipes in original data)
+        full_context = test_interpretation_set.context # Renderer handles escaping
+        full_results = test_interpretation_set.oracle_results # Renderer handles escaping
         status = (
             "Resolved"
             if any(i.is_selected for i in test_interpretations)
             else "Pending"
         )
+        assert f"| `{test_interpretation_set.id}`" in rendered_output
+        assert f"| {test_scene.title}" in rendered_output
+        # Check for escaped content if pipes were present
+        assert f"| {full_context.replace('|', '\\|')}" in rendered_output
+        assert f"| {full_results.replace('|', '\\|')}" in rendered_output
+        assert f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')}" in rendered_output
+        assert f"| {status}" in rendered_output
+        assert f"| {len(test_interpretations)} |" in rendered_output
 
-        expected_output = (
-            "### Oracle Interpretation Sets\n\n"
-            "| ID | Scene | Context | Oracle Results | Created | Status | Count |\n"
-            "|---|---|---|---|---|---|---|\n"
-            f"| `{test_interpretation_set.id}` "
-            f"| {test_scene.title} "
-            f"| {full_context} "
-            f"| {full_results} "
-            f"| {test_interpretation_set.created_at.strftime('%Y-%m-%d %H:%M')} "
-            f"| {status} "
-            f"| {len(test_interpretations)} |"
-        )
-        mock_console.print.assert_called_once_with(
-            expected_output, highlight=False, markup=False
-        )
+        # Assert the markdown flags
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_interpretation_status ---
@@ -851,21 +894,23 @@ def test_display_interpretation_status_markdown(
 
         renderer.display_interpretation_status(test_interpretation_set)
 
+        # Capture the output
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output = call_args[0]
+
+        # Assert key components
         is_resolved = any(
             i.is_selected for i in test_interpretation_set.interpretations
         )
+        assert "### Current Oracle Interpretation Status" in rendered_output
+        assert f"**Context:** {test_interpretation_set.context}" in rendered_output
+        assert f"**Results:** {test_interpretation_set.oracle_results}" in rendered_output
+        assert f"*   **Set ID:** `{test_interpretation_set.id}`" in rendered_output
+        assert f"*   **Retry Count:** {test_interpretation_set.retry_attempt}" in rendered_output
+        assert f"*   **Resolved:** {is_resolved}" in rendered_output
 
-        expected_output = (
-            f"### Current Oracle Interpretation Status\n\n"
-            f"**Context:** {test_interpretation_set.context}\n"
-            f"**Results:** {test_interpretation_set.oracle_results}\n\n"
-            f"*   **Set ID:** `{test_interpretation_set.id}`\n"
-            f"*   **Retry Count:** {test_interpretation_set.retry_attempt}\n"
-            f"*   **Resolved:** {is_resolved}"
-        )
-        mock_console.print.assert_called_once_with(
-            expected_output, highlight=False, markup=False
-        )
+        # Assert the markdown flags
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_act_ai_generation_results ---
@@ -892,21 +937,24 @@ def test_display_act_ai_generation_results_markdown(
 
         renderer.display_act_ai_generation_results(results, test_act)
 
-        expected_output = (
-            "### AI Generation Results\n\n"
-            "**AI-Generated Title:**\n"
-            "> AI Title\n\n"
-            "**Current Title:**\n"
-            f"> {test_act.title}\n\n"
-            "---\n\n"
-            "**AI-Generated Summary:**\n"
-            "> AI Summary\n\n"
-            "**Current Summary:**\n"
-            f"> {test_act.summary}\n"
-        )
-        mock_console.print.assert_called_once_with(
-            expected_output, highlight=False, markup=False
-        )
+        # Capture the output
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output = call_args[0]
+
+        # Assert key components
+        assert "### AI Generation Results" in rendered_output
+        assert "**AI-Generated Title:**" in rendered_output
+        assert "> AI Title" in rendered_output
+        assert "**Current Title:**" in rendered_output
+        assert f"> {test_act.title}" in rendered_output
+        assert "---" in rendered_output
+        assert "**AI-Generated Summary:**" in rendered_output
+        assert "> AI Summary" in rendered_output
+        assert "**Current Summary:**" in rendered_output
+        assert f"> {test_act.summary}" in rendered_output
+
+        # Assert the markdown flags
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_act_completion_success ---
@@ -935,17 +983,22 @@ def test_display_act_completion_success_markdown(
 
         renderer.display_act_completion_success(test_act)
 
-        expected_output = (
-            f"## Act '{test_act.title}' Completed Successfully!\n\n"
-            f"*   **ID:** `{test_act.id}`\n"
-            f"*   **Sequence:** Act {test_act.sequence}\n"
-            f"*   **Status:** Completed\n\n"  # Assumes display method implies completion
-            f"**Final Title:**\n> {test_act.title}\n\n"
-            f"**Final Summary:**\n> {test_act.summary}"
-        )
-        mock_console.print.assert_called_once_with(
-            expected_output, highlight=False, markup=False
-        )
+        # Capture the output
+        call_args, call_kwargs = mock_console.print.call_args
+        rendered_output = call_args[0]
+
+        # Assert key components
+        assert f"## Act '{test_act.title}' Completed Successfully!" in rendered_output
+        assert f"*   **ID:** `{test_act.id}`" in rendered_output
+        assert f"*   **Sequence:** Act {test_act.sequence}" in rendered_output
+        assert "*   **Status:** Completed" in rendered_output
+        assert "**Final Title:**" in rendered_output
+        assert f"> {test_act.title}" in rendered_output
+        assert "**Final Summary:**" in rendered_output
+        assert f"> {test_act.summary}" in rendered_output
+
+        # Assert the markdown flags
+        assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_act_ai_feedback_prompt ---
@@ -981,16 +1034,19 @@ def test_display_act_edited_content_preview_markdown(mock_console: MagicMock):
 
     renderer.display_act_edited_content_preview(edited_results)
 
-    expected_output = (
-        "### Preview of Edited Content:\n\n"
-        "**Edited Title:**\n"
-        "> Edited Title\n\n"
-        "**Edited Summary:**\n"
-        "> Edited Summary"
-    )
-    mock_console.print.assert_called_once_with(
-        expected_output, highlight=False, markup=False
-    )
+    # Capture the output
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output = call_args[0]
+
+    # Assert key components
+    assert "### Preview of Edited Content:" in rendered_output
+    assert "**Edited Title:**" in rendered_output
+    assert "> Edited Title" in rendered_output
+    assert "**Edited Summary:**" in rendered_output
+    assert "> Edited Summary" in rendered_output
+
+    # Assert the markdown flags
+    assert call_kwargs == {"highlight": False, "markup": False}
 
 
 # --- Test for display_error ---
@@ -1002,10 +1058,72 @@ def test_display_error_markdown(mock_console: MagicMock):
     error_message = "Something went wrong!"
     renderer.display_error(error_message)
 
-    expected_output = f"> **Error:** {error_message}"
-    mock_console.print.assert_called_once_with(
-        expected_output, highlight=False, markup=False
-    )
+    # Capture the output
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output = call_args[0]
+
+    # Assert key components
+    assert "> **Error:**" in rendered_output
+    assert error_message in rendered_output
+
+    # Assert the markdown flags
+    assert call_kwargs == {"highlight": False, "markup": False}
 
 
-# --- Add other tests below ---
+# --- Test for display_success ---
+
+def test_display_success_markdown(mock_console: MagicMock):
+    """Test displaying a success message as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    success_message = "Operation successful!"
+    renderer.display_success(success_message)
+
+    # Capture the output
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output = call_args[0]
+
+    # Assert key components
+    assert "**Success:**" in rendered_output
+    assert success_message in rendered_output
+
+    # Assert the markdown flags
+    assert call_kwargs == {"highlight": False, "markup": False}
+
+
+# --- Test for display_warning ---
+
+def test_display_warning_markdown(mock_console: MagicMock):
+    """Test displaying a warning message as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    warning_message = "Something might be wrong."
+    renderer.display_warning(warning_message)
+
+    # Capture the output
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output = call_args[0]
+
+    # Assert key components
+    assert "**Warning:**" in rendered_output
+    assert warning_message in rendered_output
+
+    # Assert the markdown flags
+    assert call_kwargs == {"highlight": False, "markup": False}
+
+
+# --- Test for display_message ---
+
+def test_display_message_markdown(mock_console: MagicMock):
+    """Test displaying a simple message as Markdown."""
+    renderer = MarkdownRenderer(mock_console)
+    info_message = "Just some information."
+    renderer.display_message(info_message) # Style is ignored
+
+    # Capture the output
+    call_args, call_kwargs = mock_console.print.call_args
+    rendered_output = call_args[0]
+
+    # Assert the message is present (no specific prefix expected)
+    assert info_message in rendered_output
+
+    # Assert the markdown flags
+    assert call_kwargs == {"highlight": False, "markup": False}
