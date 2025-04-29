@@ -90,100 +90,96 @@ def create_act(
         # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
-    if not active_game:
-        renderer.display_error("No active game. Activate a game first.")
-        raise typer.Exit(1)
+        if not active_game:
+            renderer.display_error("No active game. Activate a game first.")
+            raise typer.Exit(1)
 
-    # ActManager will validate if we can create a new act (inside create_act method)
+        # If title and summary are not provided, open editor
+        if title is None or summary is None:
+            # Create editor configuration
+            editor_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="title",
+                        display_name="Title",
+                        help_text="Title of the act (can be left empty for "
+                                  "untitled acts)",
+                        required=False,
+                    ),
+                    FieldConfig(
+                        name="summary",
+                        display_name="Summary",
+                        help_text="Summary of the act",
+                        multiline=True,
+                        required=False,
+                    ),
+                ],
+                wrap_width=70,
+            )
 
-    # If title and summary are not provided, open editor
-    if title is None or summary is None:
-        # Create editor configuration
-        editor_config = StructuredEditorConfig(
-            fields=[
-                FieldConfig(
-                    name="title",
-                    display_name="Title",
-                    help_text="Title of the act (can be left empty for untitled acts)",
-                    required=False,
-                ),
-                FieldConfig(
-                    name="summary",
-                    display_name="Summary",
-                    help_text="Summary of the act",
-                    multiline=True,
-                    required=False,
-                ),
-            ],
-            wrap_width=70,
-        )
+            # Create context information
+            context_info = f"Creating a new act in game: {active_game.name}\n\n"
+            context_info += (
+                "Acts represent complete narrative situations or "
+                "problems that unfold through multiple connected "
+                "Scenes.\n"
+            )
+            context_info += (
+                "You can leave the title and summary empty if "
+                "you're not sure what to call this act yet."
+            )
 
-        # Create context information
-        context_info = f"Creating a new act in game: {active_game.name}\n\n"
-        context_info += (
-            "Acts represent complete narrative situations or "
-            "problems that unfold through multiple connected "
-            "Scenes.\n"
-        )
-        context_info += (
-            "You can leave the title and summary empty if "
-            "you're not sure what to call this act yet."
-        )
+            # Create initial data
+            initial_data = {
+                "title": title or "",
+                "summary": summary or "",
+            }
 
-        # Create initial data
-        initial_data = {
-            "title": title or "",
-            "summary": summary or "",
-        }
+            # Open editor
+            result, succeeded = edit_structured_data(
+                initial_data,  # Pass initial data (empty strings)
+                console,
+                editor_config,
+                context_info=context_info,
+                is_new=True,  # IMPORTANT: Indicate this is for a new item
+                # No need for original_data_for_comments when is_new=True
+            )
 
-        # Open editor
-        result, succeeded = edit_structured_data(
-            initial_data,  # Pass initial data (empty strings)
-            console,
-            editor_config,
-            context_info=context_info,
-            is_new=True,  # IMPORTANT: Indicate this is for a new item
-            # No need for original_data_for_comments when is_new=True
-        )
+            if not succeeded:
+                # Covers abort, validation failure after retries, editor errors
+                # Message already printed by edit_structured_data
+                # renderer.display_warning("Act creation canceled.") # Redundant
+                raise typer.Exit(0)
 
-        if not succeeded:
-            # Covers abort, validation failure after retries, editor errors
-            # Message already printed by edit_structured_data
-            # renderer.display_warning("Act creation canceled.") # Redundant
-            raise typer.Exit(0)
+            # If succeeded, result contains the (potentially empty) parsed data
+            title = result.get("title") or None
+            summary = result.get("summary") or None
 
-        # If succeeded, result contains the (potentially empty) parsed data
-        title = result.get("title") or None
-        summary = result.get("summary") or None
-    # else: title and summary were provided via options
+        # Create the act
+        try:
+            act = game_manager.act_manager.create_act(
+                game_id=active_game.id,
+                title=title,
+                summary=summary,
+            )
 
-    # Create the act
-    try:
-        act = game_manager.act_manager.create_act(
-            game_id=active_game.id,
-            title=title,
-            summary=summary,
-        )
+            # Display success message using renderer
+            title_display = f"'{act.title}'" if act.title else "untitled"
+            renderer.display_success(f"Act {title_display} created successfully!")
 
-        # Display success message using renderer
-        title_display = f"'{act.title}'" if act.title else "untitled"
-        renderer.display_success(f"Act {title_display} created successfully!")
+            # Display act details using renderer
+            renderer.display_message(f"ID: {act.id}")
+            renderer.display_message(f"Sequence: Act {act.sequence}")
+            renderer.display_message(f"Active: {act.is_active}")
+            if act.title:
+                renderer.display_message(f"Title: {act.title}")
+            if act.summary:
+                renderer.display_message(f"Summary: {act.summary}")
+            # Consider adding a dedicated renderer.display_act_details(act) method later
 
-        # Display act details using renderer
-        # Assuming a method like display_act_details exists or using display_message
-        # For now, using display_message for simplicity, ideally use a specific method
-        renderer.display_message(f"ID: {act.id}")
-        renderer.display_message(f"Sequence: Act {act.sequence}")
-        renderer.display_message(f"Active: {act.is_active}")
-        if act.title:
-            renderer.display_message(f"Title: {act.title}")
-        if act.summary:
-            renderer.display_message(f"Summary: {act.summary}")
-        # Consider adding a dedicated renderer.display_act_details(act) method later
-
-    except GameError as e:
-        renderer.display_error(f"Error: {str(e)}")
-        raise typer.Exit(1) from e
+        except GameError as e:
+            renderer.display_error(f"Error: {str(e)}")
+            raise typer.Exit(1) from e
 
 
 @act_app.command("list")
