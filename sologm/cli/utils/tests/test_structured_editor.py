@@ -1,5 +1,6 @@
 """Tests for the structured_editor module."""
 
+from typing import Optional # Add Optional here
 from unittest.mock import MagicMock, patch
 
 import pytest
