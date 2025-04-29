@@ -8,6 +8,7 @@ from rich.console import Console
 
 from sologm.cli.utils.structured_editor import (
     EditorAbortedError,
+    EditorConfig,  # <-- Add this
     EditorError,
     FieldConfig,
     StructuredEditor,
@@ -251,7 +252,8 @@ class MockEditorStrategy:
             True,
             "save_modified",
             {},
-            "---\nTITLE\n---\nNew Title\n--- END TITLE ---",
+            # Corrected format:
+            "--- TITLE ---\nNew Title\n--- END TITLE ---",
             {"title": "New Title"},
             True,
             1,
@@ -261,7 +263,8 @@ class MockEditorStrategy:
             True,
             "save_unchanged",
             {},
-            "---\nTITLE\n---\n\n--- END TITLE ---",
+            # Corrected format:
+            "--- TITLE ---\n\n--- END TITLE ---",
             {"title": ""},
             True,
             1,
@@ -276,7 +279,8 @@ class MockEditorStrategy:
             False,
             "save_modified",
             {"title": "Old"},
-            "---\nTITLE\n---\nNew Title\n--- END TITLE ---",
+            # Corrected format:
+            "--- TITLE ---\nNew Title\n--- END TITLE ---",
             {"title": "New Title"},
             True,
             1,
@@ -286,7 +290,8 @@ class MockEditorStrategy:
             False,
             "save_unchanged",
             {"title": "Old"},
-            "---\nTITLE\n---\nOld\n--- END TITLE ---",
+            # Corrected format:
+            "--- TITLE ---\nOld\n--- END TITLE ---",
             {"title": "Old"},
             False,
             1,
