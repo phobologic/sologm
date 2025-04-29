@@ -478,21 +478,24 @@ def test_display_interpretation_set_markdown(
         mock_console.reset_mock()
         renderer.display_interpretation_set(test_interpretation_set, show_context=False)
 
-        # --- DEBUGGING PRINT ---
-        print(
-            f"\nDEBUG: call_args_list for hide_context=False:\n{mock_console.print.call_args_list}\n"
-        )
-        # --- END DEBUGGING PRINT ---
-
         # Expected calls: N interpretations + N blank lines + instruction(1) = 2*N + 1
         expected_call_count_false = num_interpretations * 2 + 1
         assert mock_console.print.call_count == expected_call_count_false
-        # Ensure context was NOT printed
-        printed_call_args = [call.args for call in mock_console.print.call_args_list]
-        assert (expected_context, {"highlight": False, "markup": False}) not in [
-            (args[0], kwargs) for args, kwargs in printed_call_args if args
-        ]
-        # Check instruction print call again
+        # Ensure context was NOT printed with the specific args and kwargs
+        found_context_call = False
+        target_args = (expected_context,)
+        target_kwargs = {"highlight": False, "markup": False}
+        for call_obj in mock_console.print.call_args_list:
+            # Check if args tuple matches AND kwargs dict matches
+            if call_obj.args == target_args and call_obj.kwargs == target_kwargs:
+                found_context_call = True
+                break
+        assert not found_context_call, (
+            f"Expected context call '{expected_context}' with kwargs {target_kwargs} "
+            "was found, but it should not have been printed."
+        )
+
+        # Check instruction print call again (this part remains the same)
         mock_console.print.assert_any_call(
             expected_instruction, highlight=False, markup=False
         )
