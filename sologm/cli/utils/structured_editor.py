@@ -20,6 +20,12 @@ class EditorError(Exception):
     pass
 
 
+class EditorAbortedError(EditorError):
+    """Exception raised when the user aborts the editor session."""
+
+    pass
+
+
 class ValidationError(EditorError):
     """Exception raised when validation fails."""
 
@@ -293,37 +299,33 @@ class ClickEditorStrategy:
             Tuple of (edited_text, was_modified)
         """
         if console:
+            # Display message before opening editor
             console.print(f"\n[bold blue]{message}[/bold blue]")
-            console.print(text)
+            # The editor will show the text, no need to print it here.
 
         try:
             new_text = click.edit(text)
 
-            # If the user saved changes (didn't abort)
-            if new_text is not None:
-                edited_text = new_text
-                if edited_text != text:
-                    if console:
-                        console.print(f"\n[green]{success_message}[/green]")
-                    return edited_text, True
-                else:
-                    if console:
-                        console.print(f"\n[yellow]{cancel_message}[/yellow]")
-                    return text, False
+            if new_text is None:
+                # User aborted the editor session
+                raise EditorAbortedError("Editor session aborted by user.")
             else:
-                if console:
-                    console.print(f"\n[yellow]{cancel_message}[/yellow]")
-                return text, False
+                # User saved the editor
+                edited_text = new_text
+                content_changed = edited_text != text
+                # Success/cancel messages are handled by StructuredEditor after validation
+                return edited_text, content_changed
 
         except click.UsageError as e:
-            logger.error(f"Editor error: {e}")
+            logger.error(f"Editor error: {e}", exc_info=True)
             if console:
                 console.print(f"\n[red]{error_message}: {str(e)}[/red]")
                 console.print(
                     "[yellow]To use this feature, set the EDITOR environment "
                     "variable to your preferred text editor.[/yellow]"
                 )
-            return text, False
+            # Raise a general editor error if click fails
+            raise EditorError(f"Failed to launch editor: {e}") from e
 
 
 class UIManager:
@@ -386,25 +388,39 @@ class StructuredEditor:
         console: Console,
         context_info: str = "",
         is_new: bool = False,
+        original_data_for_comments: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Dict[str, Any], bool]:
         """Edit data using structured text blocks in an external editor.
 
         Args:
-            data: Dictionary of data to edit (None or empty dict for new items)
+            data: Dictionary of data to edit (None or empty dict for new items).
+                  This is the *original* data for comparison in edit mode.
             console: Rich console for output
             context_info: Context information to include at the top
-            is_new: Whether this is a new item (if True, don't show original values)
+            is_new: Whether this is a new item (affects success condition and comments).
+            original_data_for_comments: Optional data to show as comments (e.g., AI results).
 
         Returns:
-            Tuple of (edited_data, was_modified)
+            Tuple of (edited_data, operation_succeeded).
+            `operation_succeeded` is True if:
+            - `is_new` is True and the editor was saved (even if empty).
+            - `is_new` is False and the editor was saved with changes compared to `data`.
+            `operation_succeeded` is False if:
+            - The editor was aborted.
+            - Validation failed after retries.
+            - `is_new` is False and the editor was saved without changes compared to `data`.
         """
-        # Create a working copy of data or initialize empty dict if None
+        # Create a working copy for the editor, or initialize empty if data is None
         working_data = {} if data is None else data.copy()
 
-        # Format the data as structured text
-        original_data = None if is_new else data
+        # Determine what data to show as comments (original value)
+        # If original_data_for_comments is provided, use that.
+        # Otherwise, if not a new item, use the original `data`.
+        comments_data = original_data_for_comments if original_data_for_comments is not None else (data if not is_new else None)
+
+        # Format the initial text for the editor
         structured_text = self.formatter.format_structured_text(
-            working_data, self.config, context_info, original_data
+            working_data, self.config, context_info, comments_data
         )
 
         # Track retry attempts
@@ -412,55 +428,73 @@ class StructuredEditor:
         max_retries = self.editor_config.max_retries
 
         while retry_count <= max_retries:
-            # Prepare message based on retry status
             current_message = self.editor_config.edit_message
             if retry_count > 0:
                 current_message = f"Editing data (Retry {retry_count}/{max_retries}):"
 
-            # Open editor
-            edited_text, was_modified = self.editor_strategy.edit_text(
-                structured_text,
-                console=console,
-                message=current_message,
-                success_message="Validating your changes...",
-                cancel_message=self.editor_config.cancel_message,
-                error_message=self.editor_config.error_message,
-            )
-
-            # If user canceled, return original data
-            if not was_modified:
-                if retry_count > 0:
-                    console.print(
-                        "[yellow]No additional changes made. Canceling edit.[/yellow]"
-                    )
-                return data, False
-
             try:
-                # Parse and validate the edited text
-                parsed_data = self.parser.parse_structured_text(
-                    edited_text, self.config
+                # Open editor using the strategy
+                edited_text, was_content_modified = self.editor_strategy.edit_text(
+                    structured_text,
+                    console=console,
+                    message=current_message,
+                    # Success/cancel messages handled below after validation/parsing
                 )
 
-                # If we got here, validation passed
-                console.print(f"[green]{self.editor_config.success_message}[/green]")
-                return parsed_data, True
-
-            except ValidationError as e:
-                # Display the error and retry if we haven't exceeded max retries
-                self.ui_manager.display_validation_error(console, e)
-
-                if retry_count < max_retries:
-                    retry_count += 1
-                    structured_text = edited_text  # Keep user's edits for the retry
-                else:
-                    console.print(
-                        "[bold red]Maximum retry attempts reached. "
-                        "Canceling edit.[/bold red]"
+                # --- Editor was SAVED ---
+                try:
+                    # Parse and validate the edited text
+                    parsed_data = self.parser.parse_structured_text(
+                        edited_text, self.config
                     )
-                    return data, False
 
-        # This should never be reached
-        return data, False
+                    # --- Validation Passed ---
+                    if is_new:
+                        # For new items, saving always means success, even if empty
+                        console.print(f"[green]{self.editor_config.success_message}[/green]")
+                        return parsed_data, True
+                    else:
+                        # For existing items, check if data actually changed compared to original
+                        data_changed = parsed_data != data
+                        if data_changed:
+                            console.print(f"[green]{self.editor_config.success_message}[/green]")
+                        else:
+                            # Saved, but no effective change compared to original data
+                            console.print(f"[yellow]{self.editor_config.cancel_message}[/yellow]") # Or "No changes saved."
+                        # Return parsed data, success flag indicates if it differs from original
+                        return parsed_data, data_changed
+
+                except ValidationError as e:
+                    # --- Validation Failed ---
+                    self.ui_manager.display_validation_error(console, e)
+                    if retry_count < max_retries:
+                        retry_count += 1
+                        structured_text = edited_text # Keep user's edits for retry
+                        continue # Go to next retry iteration
+                    else:
+                        console.print(
+                            "[bold red]Maximum retry attempts reached. "
+                            "Canceling edit.[/bold red]"
+                        )
+                        # Return original data, operation failed
+                        return data or {}, False
+
+            except EditorAbortedError:
+                # --- Editor was ABORTED ---
+                console.print(f"\n[yellow]{self.editor_config.cancel_message}[/yellow]")
+                # Return original data, operation cancelled
+                return data or {}, False
+
+            except EditorError as e: # Catch errors from editor strategy (e.g., UsageError)
+                # Error message already printed by strategy or here if needed
+                logger.error(f"Editor strategy failed: {e}", exc_info=True)
+                # Optionally print a message here too
+                # console.print(f"[red]Error during editing: {e}[/red]")
+                # Return original data, operation failed
+                return data or {}, False
+
+        # Fallback if loop finishes unexpectedly (shouldn't happen)
+        return data or {}, False
 
 
 # Backward compatibility functions
@@ -512,10 +546,15 @@ def edit_structured_data(
     context_info: str = "",
     editor_config: Optional[EditorConfig] = None,
     is_new: bool = False,
+    # Add original_data_for_comments if needed
+    original_data_for_comments: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Dict[str, Any], bool]:
     """Edit data using structured text blocks (compatibility function)."""
     editor = StructuredEditor(config, editor_config)
-    return editor.edit_data(data, console, context_info, is_new)
+    # Pass original_data_for_comments if provided
+    return editor.edit_data(
+        data, console, context_info, is_new, original_data_for_comments
+    )
 
 
 def get_event_context_header(

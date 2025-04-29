@@ -1,9 +1,13 @@
 """Tests for the structured_editor module."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from rich.console import Console
 
 from sologm.cli.utils.structured_editor import (
+    EditorAbortedError,
+    EditorError,
     FieldConfig,
     StructuredEditor,
     StructuredEditorConfig,
@@ -181,94 +185,156 @@ UNKNOWN
         assert "ACTIVE, INACTIVE, PENDING" in str(excinfo.value)
 
 
+# Mock Editor Strategy for testing StructuredEditor behavior
 class MockEditorStrategy:
-    """Mock editor strategy for testing."""
+    """Mock editor strategy for testing StructuredEditor."""
 
-    def __init__(self, return_text=None, modified=True):
-        """Initialize with predetermined return values."""
+    def __init__(self, behavior="save_modified", return_text=None):
+        """
+        Initialize the mock editor strategy.
+
+        Args:
+            behavior: Controls the mock's behavior:
+                - 'save_modified': Simulate saving with changes.
+                - 'save_unchanged': Simulate saving without changes.
+                - 'abort': Simulate aborting the editor (raises EditorAbortedError).
+                - 'error': Simulate an editor launch error (raises EditorError).
+            return_text: The text to return when behavior is 'save_modified' or 'save_unchanged'.
+                         If None, returns the input text.
+        """
+        self.behavior = behavior
         self.return_text = return_text
-        self.modified = modified
-        self.called = False
-        self.last_text = None
+        self.called_with_text = None
+        self.call_count = 0
 
     def edit_text(
         self,
-        text,
-        console=None,
-        message="",
-        success_message="",
-        cancel_message="",
-        error_message="",
-    ):
-        """Mock implementation that returns predetermined values."""
-        self.called = True
-        self.last_text = text
-        return self.return_text or text, self.modified
+        text: str,
+        console: Optional[Console] = None,
+        message: str = "Edit the text below:",
+        success_message: str = "Text updated.",
+        cancel_message: str = "Text unchanged.",
+        error_message: str = "Could not open editor.",
+    ) -> tuple[str, bool]:
+        """Mock the edit_text method."""
+        self.call_count += 1
+        self.called_with_text = text
+
+        if self.behavior == "abort":
+            raise EditorAbortedError("User aborted")
+        elif self.behavior == "error":
+            raise EditorError("Mock editor launch failed")
+        elif self.behavior == "save_modified":
+            # Return specific text if provided, otherwise modify input slightly
+            edited_text = self.return_text if self.return_text is not None else text + "\n# Modified"
+            return edited_text, True # Indicate content was modified
+        elif self.behavior == "save_unchanged":
+            # Return specific text if provided, otherwise return original input
+            edited_text = self.return_text if self.return_text is not None else text
+            return edited_text, False # Indicate content was NOT modified
+        else:
+            raise ValueError(f"Unknown mock behavior: {self.behavior}")
 
 
-class TestStructuredEditor:
-    """Tests for the StructuredEditor class."""
+# Use parametrize for different scenarios
+@pytest.mark.parametrize(
+    "is_new, editor_behavior, initial_data, editor_return_text, expected_result, expected_succeeded, expected_mock_calls",
+    [
+        # --- SCENARIO: Create New Item ---
+        # Save modified (new item) -> Success
+        (True, "save_modified", {}, "---\nTITLE\n---\nNew Title\n--- END TITLE ---", {"title": "New Title"}, True, 1),
+        # Save empty (new item) -> Success (explicitly saving empty is allowed for new)
+        (True, "save_unchanged", {}, "---\nTITLE\n---\n\n--- END TITLE ---", {"title": ""}, True, 1),
+        # Abort (new item) -> Cancelled
+        (True, "abort", {}, None, {}, False, 1),
+        # Editor error (new item) -> Cancelled
+        (True, "error", {}, None, {}, False, 1),
 
-    def test_edit_data_success(self):
-        """Test successful data editing."""
-        config = StructuredEditorConfig(
-            fields=[
-                FieldConfig(
-                    name="title",
-                    display_name="Title",
-                    required=True,
-                ),
-            ]
+        # --- SCENARIO: Edit Existing Item ---
+        # Save modified (edit item) -> Success
+        (False, "save_modified", {"title": "Old"}, "---\nTITLE\n---\nNew Title\n--- END TITLE ---", {"title": "New Title"}, True, 1),
+        # Save unchanged (edit item) -> Cancelled (no effective change)
+        (False, "save_unchanged", {"title": "Old"}, "---\nTITLE\n---\nOld\n--- END TITLE ---", {"title": "Old"}, False, 1),
+        # Abort (edit item) -> Cancelled
+        (False, "abort", {"title": "Old"}, None, {"title": "Old"}, False, 1),
+        # Editor error (edit item) -> Cancelled
+        (False, "error", {"title": "Old"}, None, {"title": "Old"}, False, 1),
+    ]
+)
+def test_edit_data_scenarios(is_new, editor_behavior, initial_data, editor_return_text, expected_result, expected_succeeded, expected_mock_calls):
+    """Test various scenarios for StructuredEditor.edit_data."""
+    config = StructuredEditorConfig(
+        fields=[FieldConfig(name="title", display_name="Title", required=False)] # Make not required for simplicity
+    )
+    mock_editor_strategy = MockEditorStrategy(behavior=editor_behavior, return_text=editor_return_text)
+    editor = StructuredEditor(config=config, editor_strategy=mock_editor_strategy)
+    console = Console(width=80, file=None) # Mock console if needed for output checks
+
+    # Use patch for UIManager if testing validation retries
+    with patch('sologm.cli.utils.structured_editor.UIManager', MagicMock()):
+        result, succeeded = editor.edit_data(
+            data=initial_data,
+            console=console,
+            is_new=is_new,
+            # Pass original data for comments if editing
+            original_data_for_comments=initial_data if not is_new else None
         )
 
-        # Mock editor that returns valid data
-        mock_editor = MockEditorStrategy(
-            return_text="""--- TITLE ---
-New Title
---- END TITLE ---
-""",
-            modified=True,
-        )
+    assert result == expected_result
+    assert succeeded == expected_succeeded
+    assert mock_editor_strategy.call_count == expected_mock_calls
 
-        editor = StructuredEditor(
-            config=config,
-            editor_strategy=mock_editor,
-        )
+def test_edit_data_validation_retry_and_fail():
+    """Test validation failure, retry, and eventual failure."""
+    config = StructuredEditorConfig(
+        fields=[FieldConfig(name="title", display_name="Title", required=True)]
+    )
+    # Mock editor: first returns invalid (empty), second returns invalid again
+    mock_editor_strategy = MagicMock(spec=MockEditorStrategy)
+    mock_editor_strategy.edit_text.side_effect = [
+        # First call (invalid)
+        ("---\nTITLE\n---\n\n--- END TITLE ---", True),
+        # Second call (retry, still invalid)
+        ("---\nTITLE\n---\n\n--- END TITLE ---", True),
+    ]
 
-        data = {"title": "Original Title"}
-        console = Console(width=80, file=None)
+    editor_config = EditorConfig(max_retries=1) # Allow one retry
+    editor = StructuredEditor(config=config, editor_strategy=mock_editor_strategy, editor_config=editor_config)
+    console = Console(width=80, file=None)
+    initial_data = {"title": "Old"}
 
-        result, modified = editor.edit_data(data, console)
+    with patch('sologm.cli.utils.structured_editor.UIManager.display_validation_error') as mock_display_error:
+        result, succeeded = editor.edit_data(data=initial_data, console=console, is_new=False)
 
-        assert modified is True
-        assert result["title"] == "New Title"
-        assert mock_editor.called is True
+    assert result == initial_data # Returns original data on failure
+    assert succeeded is False
+    assert mock_editor_strategy.edit_text.call_count == 2 # Initial call + 1 retry
+    assert mock_display_error.call_count == 1 # Validation error displayed once
 
-    def test_edit_data_canceled(self):
-        """Test canceled data editing."""
-        config = StructuredEditorConfig(
-            fields=[
-                FieldConfig(
-                    name="title",
-                    display_name="Title",
-                    required=True,
-                ),
-            ]
-        )
+def test_edit_data_validation_retry_and_succeed():
+    """Test validation failure, retry, and eventual success."""
+    config = StructuredEditorConfig(
+        fields=[FieldConfig(name="title", display_name="Title", required=True)]
+    )
+    # Mock editor: first returns invalid (empty), second returns valid
+    valid_text = "---\nTITLE\n---\nValid Title\n--- END TITLE ---"
+    mock_editor_strategy = MagicMock(spec=MockEditorStrategy)
+    mock_editor_strategy.edit_text.side_effect = [
+        # First call (invalid)
+        ("---\nTITLE\n---\n\n--- END TITLE ---", True),
+        # Second call (retry, now valid)
+        (valid_text, True),
+    ]
 
-        # Mock editor that simulates cancellation
-        mock_editor = MockEditorStrategy(modified=False)
+    editor_config = EditorConfig(max_retries=1) # Allow one retry
+    editor = StructuredEditor(config=config, editor_strategy=mock_editor_strategy, editor_config=editor_config)
+    console = Console(width=80, file=None)
+    initial_data = {"title": "Old"}
 
-        editor = StructuredEditor(
-            config=config,
-            editor_strategy=mock_editor,
-        )
+    with patch('sologm.cli.utils.structured_editor.UIManager.display_validation_error') as mock_display_error:
+        result, succeeded = editor.edit_data(data=initial_data, console=console, is_new=False)
 
-        data = {"title": "Original Title"}
-        console = Console(width=80, file=None)
-
-        result, modified = editor.edit_data(data, console)
-
-        assert modified is False
-        assert result == data  # Original data returned unchanged
-        assert mock_editor.called is True
+    assert result == {"title": "Valid Title"} # Returns parsed valid data
+    assert succeeded is True
+    assert mock_editor_strategy.edit_text.call_count == 2 # Initial call + 1 retry
+    assert mock_display_error.call_count == 1 # Validation error displayed once

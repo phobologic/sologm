@@ -137,20 +137,25 @@ def create_act(
         }
 
         # Open editor
-        result, modified = edit_structured_data(
-            initial_data,
+        result, succeeded = edit_structured_data(
+            initial_data, # Pass initial data (empty strings)
             console,
             editor_config,
             context_info=context_info,
-            is_new=True,
+            is_new=True, # IMPORTANT: Indicate this is for a new item
+            # No need for original_data_for_comments when is_new=True
         )
 
-        if not modified:
-            renderer.display_warning("Act creation canceled.")
+        if not succeeded:
+            # Covers abort, validation failure after retries, editor errors
+            # Message already printed by edit_structured_data
+            # renderer.display_warning("Act creation canceled.") # Redundant
             raise typer.Exit(0)
 
+        # If succeeded, result contains the (potentially empty) parsed data
         title = result.get("title") or None
         summary = result.get("summary") or None
+    # else: title and summary were provided via options
 
     # Create the act
     try:
@@ -361,23 +366,25 @@ def edit_act(
             }
 
             # Open editor
-            result, modified = edit_structured_data(
-                initial_data,
+            result, succeeded = edit_structured_data(
+                initial_data, # Pass current data as the base for editing
                 console,
                 editor_config,
                 context_info=context_info,
+                is_new=False, # IMPORTANT: Indicate this is an edit
+                # Pass initial_data again to show original values as comments
+                original_data_for_comments=initial_data,
             )
 
-            if not modified:
-                renderer.display_warning("Act edit canceled.")
+            if not succeeded:
+                # Covers abort, validation failure, editor errors, or saving without changes
+                # Message already printed by edit_structured_data
+                # renderer.display_warning("Act edit canceled or no changes made.") # Redundant
                 raise typer.Exit(0)
 
-            # If parameters were NOT provided directly, use the results from the editor
-            # Otherwise, use the results from the editor
-            final_title = title if title is not None else result.get("title") or None
-            final_summary = (
-                summary if summary is not None else result.get("summary") or None
-            )
+            # If succeeded, result contains the potentially modified data
+            final_title = result.get("title") or None
+            final_summary = result.get("summary") or None
 
         else:
             # If parameters were provided directly, use them
@@ -506,16 +513,18 @@ def _collect_user_context(
         "context": "",
     }
 
-    # Open editor
-    result, modified = edit_structured_data(
+    # Open editor - this is like creating new context, so is_new=True
+    result, succeeded = edit_structured_data(
         initial_data,
         console,
         editor_config,
         context_info=context_info,
+        is_new=True, # Treat context collection as creating something new
     )
 
-    if not modified:
+    if not succeeded:
         logger.debug("User cancelled context collection")
+        # Message already printed by edit_structured_data
         return None
 
     user_context = result.get("context", "").strip()
@@ -631,12 +640,14 @@ def _collect_regeneration_feedback(
         "context": original_context or "",
     }
 
-    # Open editor
-    result, modified = edit_structured_data(
+    # Open editor - this is like creating new feedback, so is_new=True
+    # We don't need to compare against the initial empty state for success.
+    result, succeeded = edit_structured_data(
         initial_data,
         console,
         editor_config,
         context_info=context_info,
+        is_new=True, # Treat feedback collection as creating something new
         editor_config=EditorConfig(
             edit_message="Edit your regeneration feedback below (or leave "
             "empty for a new attempt):",
@@ -646,10 +657,12 @@ def _collect_regeneration_feedback(
         ),
     )
 
-    if not modified:
+    if not succeeded:
         logger.debug("User cancelled regeneration feedback collection")
+        # Message already printed by edit_structured_data
         return None
 
+    # Return the collected feedback and context
     return {
         "feedback": result.get("feedback", "").strip(),
         "context": result.get("context", "").strip(),
@@ -731,20 +744,25 @@ def _edit_ai_content(
         console,
         editor_config,
         context_info=context_info,
-        original_data=original_data if original_data else None,
+        # Pass the AI results as the data to edit
+        # Pass the original act content (if any) to show as comments
+        original_data_for_comments=original_data if original_data else None,
+        is_new=False, # This is an edit of the AI content
         editor_config=EditorConfig(
             edit_message="Edit the AI-generated content below:",
             success_message="AI-generated content updated successfully.",
-            cancel_message="Edit cancelled.",
+            cancel_message="Edit cancelled or no changes made.", # Updated message
             error_message="Could not open editor. Please try again.",
         ),
     )
 
-    if not modified:
-        logger.debug("User cancelled editing")
+    if not succeeded:
+        logger.debug("User cancelled editing or made no changes")
+        # Message already printed by edit_structured_data
         return None
 
-    # Validate the edited content
+    # If succeeded is True, it means the content was saved AND changed from the AI results
+    # Validate the edited content (result is stored in edited_results)
     if not edited_results.get("title") or not edited_results.get("title").strip():
         renderer.display_error("Title cannot be empty.")
         return None
