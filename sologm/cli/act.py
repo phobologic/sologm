@@ -138,11 +138,11 @@ def create_act(
 
         # Open editor
         result, succeeded = edit_structured_data(
-            initial_data, # Pass initial data (empty strings)
+            initial_data,  # Pass initial data (empty strings)
             console,
             editor_config,
             context_info=context_info,
-            is_new=True, # IMPORTANT: Indicate this is for a new item
+            is_new=True,  # IMPORTANT: Indicate this is for a new item
             # No need for original_data_for_comments when is_new=True
         )
 
@@ -367,11 +367,11 @@ def edit_act(
 
             # Open editor
             result, succeeded = edit_structured_data(
-                initial_data, # Pass current data as the base for editing
+                initial_data,  # Pass current data as the base for editing
                 console,
                 editor_config,
                 context_info=context_info,
-                is_new=False, # IMPORTANT: Indicate this is an edit
+                is_new=False,  # IMPORTANT: Indicate this is an edit
                 # Pass initial_data again to show original values as comments
                 original_data_for_comments=initial_data,
             )
@@ -519,7 +519,7 @@ def _collect_user_context(
         console,
         editor_config,
         context_info=context_info,
-        is_new=True, # Treat context collection as creating something new
+        is_new=True,  # Treat context collection as creating something new
     )
 
     if not succeeded:
@@ -647,7 +647,7 @@ def _collect_regeneration_feedback(
         console,
         editor_config,
         context_info=context_info,
-        is_new=True, # Treat feedback collection as creating something new
+        is_new=True,  # Treat feedback collection as creating something new
         editor_config=EditorConfig(
             edit_message="Edit your regeneration feedback below (or leave "
             "empty for a new attempt):",
@@ -747,11 +747,11 @@ def _edit_ai_content(
         # Pass the AI results as the data to edit
         # Pass the original act content (if any) to show as comments
         original_data_for_comments=original_data if original_data else None,
-        is_new=False, # This is an edit of the AI content
+        is_new=False,  # This is an edit of the AI content
         editor_config=EditorConfig(
             edit_message="Edit the AI-generated content below:",
             success_message="AI-generated content updated successfully.",
-            cancel_message="Edit cancelled or no changes made.", # Updated message
+            cancel_message="Edit cancelled or no changes made.",  # Updated message
             error_message="Could not open editor. Please try again.",
         ),
     )

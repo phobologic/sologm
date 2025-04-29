@@ -416,7 +416,11 @@ class StructuredEditor:
         # Determine what data to show as comments (original value)
         # If original_data_for_comments is provided, use that.
         # Otherwise, if not a new item, use the original `data`.
-        comments_data = original_data_for_comments if original_data_for_comments is not None else (data if not is_new else None)
+        comments_data = (
+            original_data_for_comments
+            if original_data_for_comments is not None
+            else (data if not is_new else None)
+        )
 
         # Format the initial text for the editor
         structured_text = self.formatter.format_structured_text(
@@ -451,16 +455,22 @@ class StructuredEditor:
                     # --- Validation Passed ---
                     if is_new:
                         # For new items, saving always means success, even if empty
-                        console.print(f"[green]{self.editor_config.success_message}[/green]")
+                        console.print(
+                            f"[green]{self.editor_config.success_message}[/green]"
+                        )
                         return parsed_data, True
                     else:
                         # For existing items, check if data actually changed compared to original
                         data_changed = parsed_data != data
                         if data_changed:
-                            console.print(f"[green]{self.editor_config.success_message}[/green]")
+                            console.print(
+                                f"[green]{self.editor_config.success_message}[/green]"
+                            )
                         else:
                             # Saved, but no effective change compared to original data
-                            console.print(f"[yellow]{self.editor_config.cancel_message}[/yellow]") # Or "No changes saved."
+                            console.print(
+                                f"[yellow]{self.editor_config.cancel_message}[/yellow]"
+                            )  # Or "No changes saved."
                         # Return parsed data, success flag indicates if it differs from original
                         return parsed_data, data_changed
 
@@ -469,8 +479,8 @@ class StructuredEditor:
                     self.ui_manager.display_validation_error(console, e)
                     if retry_count < max_retries:
                         retry_count += 1
-                        structured_text = edited_text # Keep user's edits for retry
-                        continue # Go to next retry iteration
+                        structured_text = edited_text  # Keep user's edits for retry
+                        continue  # Go to next retry iteration
                     else:
                         console.print(
                             "[bold red]Maximum retry attempts reached. "
@@ -485,7 +495,9 @@ class StructuredEditor:
                 # Return original data, operation cancelled
                 return data or {}, False
 
-            except EditorError as e: # Catch errors from editor strategy (e.g., UsageError)
+            except (
+                EditorError
+            ) as e:  # Catch errors from editor strategy (e.g., UsageError)
                 # Error message already printed by strategy or here if needed
                 logger.error(f"Editor strategy failed: {e}", exc_info=True)
                 # Optionally print a message here too
