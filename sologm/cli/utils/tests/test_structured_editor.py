@@ -345,11 +345,13 @@ def test_edit_data_validation_retry_and_fail():
     )
     # Mock editor: first returns invalid (empty), second returns invalid again
     mock_editor_strategy = MagicMock(spec=MockEditorStrategy)
+    # Correct the format of the returned text here:
+    invalid_text = "--- TITLE ---\n\n--- END TITLE ---"
     mock_editor_strategy.edit_text.side_effect = [
         # First call (invalid)
-        ("---\nTITLE\n---\n\n--- END TITLE ---", True),
+        (invalid_text, True),
         # Second call (retry, still invalid)
-        ("---\nTITLE\n---\n\n--- END TITLE ---", True),
+        (invalid_text, True),
     ]
 
     editor_config = EditorConfig(max_retries=1)  # Allow one retry
@@ -369,7 +371,8 @@ def test_edit_data_validation_retry_and_fail():
     assert result == initial_data  # Returns original data on failure
     assert succeeded is False
     assert mock_editor_strategy.edit_text.call_count == 2  # Initial call + 1 retry
-    assert mock_display_error.call_count == 1  # Validation error displayed once
+    # Update expected call count to 2:
+    assert mock_display_error.call_count == 2  # Validation error displayed twice
 
 
 def test_edit_data_validation_retry_and_succeed():
@@ -378,11 +381,14 @@ def test_edit_data_validation_retry_and_succeed():
         fields=[FieldConfig(name="title", display_name="Title", required=True)]
     )
     # Mock editor: first returns invalid (empty), second returns valid
-    valid_text = "---\nTITLE\n---\nValid Title\n--- END TITLE ---"
+    # Correct the format of valid_text:
+    valid_text = "--- TITLE ---\nValid Title\n--- END TITLE ---"
+    # Correct the format of the invalid text for the first call:
+    invalid_text = "--- TITLE ---\n\n--- END TITLE ---"
     mock_editor_strategy = MagicMock(spec=MockEditorStrategy)
     mock_editor_strategy.edit_text.side_effect = [
         # First call (invalid)
-        ("---\nTITLE\n---\n\n--- END TITLE ---", True),
+        (invalid_text, True),
         # Second call (retry, now valid)
         (valid_text, True),
     ]
