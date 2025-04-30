@@ -79,14 +79,14 @@ class RichRenderer(Renderer):
         # Build details with consistent styling
         details = []
 
-        if len(roll.individual_results) > 1:
-            details.append(
-                st.combine(
-                    st.subtitle("Rolls:"),
-                    " ",
-                    st.timestamp(str(roll.individual_results)),
-                )
+        # Always add the "Rolls:" line
+        details.append(
+            st.combine(
+                st.subtitle("Rolls:"),
+                " ",
+                st.timestamp(str(roll.individual_results)),
             )
+        )
 
         if roll.modifier != 0:
             details.append(
