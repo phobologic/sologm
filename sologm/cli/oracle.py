@@ -202,9 +202,8 @@ def retry_interpretation(
                 )
                 raise typer.Exit(1)
 
-            # Use the provided count or default to the config value
-            if not count:
-                from sologm.utils.config import get_config
+            # Determine the number of interpretations
+            if count is None:
 
                 config = get_config()
                 count_int = int(config.get("default_interpretations", 5))
