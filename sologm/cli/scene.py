@@ -324,7 +324,7 @@ def edit_scene(
     identifier: Optional[str] = typer.Option(  # Rename scene_id to identifier
         None,
         "--id",  # Keep the option name as --id for user convenience
-        help="ID or slug of the scene to edit (defaults to active scene)", # Updated help text
+        help="ID or slug of the scene to edit (defaults to active scene)",  # Updated help text
     ),
 ) -> None:
     """[bold]Edit the title and description of a scene using its ID or slug.[/bold]
@@ -351,9 +351,13 @@ def edit_scene(
             scene_to_edit: Optional["Scene"] = None
 
             if identifier:
-                logger.debug("Attempting to fetch specific scene with identifier: %s", identifier)
+                logger.debug(
+                    "Attempting to fetch specific scene with identifier: %s", identifier
+                )
                 # Use the new manager method that handles ID or slug
-                scene_to_edit = scene_manager.get_scene_by_identifier_or_error(identifier)
+                scene_to_edit = scene_manager.get_scene_by_identifier_or_error(
+                    identifier
+                )
                 logger.debug(
                     "Found specific scene: %s ('%s') using identifier '%s'",
                     scene_to_edit.id,
@@ -394,11 +398,11 @@ def edit_scene(
                 game_name=game_name,
                 act_title=act_title,
                 scene_title=scene_to_edit.title,
-                scene_id=scene_to_edit.id, # Use actual ID here for display
+                scene_id=scene_to_edit.id,  # Use actual ID here for display
             )
 
             editor_config_obj = EditorConfig(
-                edit_message=f"Editing Scene: {scene_to_edit.title} ({scene_to_edit.id})", # Use actual ID
+                edit_message=f"Editing Scene: {scene_to_edit.title} ({scene_to_edit.id})",  # Use actual ID
                 success_message="Scene updated successfully.",
                 cancel_message="Edit cancelled. Scene unchanged.",
                 error_message="Could not open editor.",
@@ -415,7 +419,9 @@ def edit_scene(
             )
 
             if status == EditorStatus.SAVED_MODIFIED:
-                logger.info("Editor returned SAVED_MODIFIED for scene %s.", scene_to_edit.id)
+                logger.info(
+                    "Editor returned SAVED_MODIFIED for scene %s.", scene_to_edit.id
+                )
                 # Pass the actual ID to the update method
                 updated_scene = scene_manager.update_scene(
                     scene_id=scene_to_edit.id,
@@ -426,14 +432,18 @@ def edit_scene(
                 renderer.display_scene_info(updated_scene)
 
             elif status == EditorStatus.SAVED_UNCHANGED:
-                logger.info("Editor returned SAVED_UNCHANGED for scene %s.", scene_to_edit.id)
-                renderer.display_message("No changes detected. Scene unchanged.") # Inform user
+                logger.info(
+                    "Editor returned SAVED_UNCHANGED for scene %s.", scene_to_edit.id
+                )
+                renderer.display_message(
+                    "No changes detected. Scene unchanged."
+                )  # Inform user
                 raise typer.Exit(0)
 
             else:  # ABORTED, VALIDATION_ERROR, EDITOR_ERROR
                 logger.info("Scene edit cancelled or failed (status: %s).", status.name)
                 # Message should be displayed by edit_structured_data or caught below
-                raise typer.Exit(0) # Exit cleanly on abort
+                raise typer.Exit(0)  # Exit cleanly on abort
 
     except (SceneError, ActError, GameError) as e:
         logger.error("Error editing scene: %s", e, exc_info=True)
@@ -449,7 +459,9 @@ def edit_scene(
 @scene_app.command("set-current")
 def set_current_scene(
     ctx: typer.Context,
-    identifier: str = typer.Argument(..., help="ID or slug of the scene to make current"), # Rename and update help
+    identifier: str = typer.Argument(
+        ..., help="ID or slug of the scene to make current"
+    ),  # Rename and update help
 ) -> None:
     """[bold]Set which scene is currently being played using its ID or slug.[/bold]
 
@@ -476,7 +488,7 @@ def set_current_scene(
                 target_scene.id,
                 target_scene.title,
                 identifier,
-                target_scene.act_id
+                target_scene.act_id,
             )
 
             # The get_scene_by_identifier_or_error already validated existence.
@@ -496,9 +508,15 @@ def set_current_scene(
             renderer.display_success("Current scene updated successfully!")
             renderer.display_scene_info(new_current)
 
-    except (GameError, SceneError, ActError) as e: # Keep catching these specific errors
+    except (
+        GameError,
+        SceneError,
+        ActError,
+    ) as e:  # Keep catching these specific errors
         logger.error("Error setting current scene: %s", e, exc_info=True)
-        renderer.display_error(f"Error: {str(e)}") # Display the specific error (e.g., "Scene not found...")
+        renderer.display_error(
+            f"Error: {str(e)}"
+        )  # Display the specific error (e.g., "Scene not found...")
         raise typer.Exit(1) from e
     except Exception as e:
         logger.exception("An unexpected error occurred during scene set-current: %s", e)

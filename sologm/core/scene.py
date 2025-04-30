@@ -254,7 +254,9 @@ class SceneManager(BaseManager[Scene, Scene]):
         scene = self._execute_db_operation(
             f"get scene by identifier or error {identifier}", _get_scene
         )
-        logger.debug(f"Retrieved scene by identifier: {scene.id} (Input: '{identifier}')")
+        logger.debug(
+            f"Retrieved scene by identifier: {scene.id} (Input: '{identifier}')"
+        )
         return scene
 
     def get_scene_in_act(self, act_id: str, scene_id: str) -> Optional[Scene]:
