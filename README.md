@@ -236,7 +236,7 @@ sologm scene edit --id rainy-alley
 sologm scene complete
 
 # Switch the current scene
-sologm scene set-current rainy-alley
+sologm scene set-current <insert scene ID from scene list>
 ```
 
 ### Event Recording
@@ -295,9 +295,6 @@ sologm oracle interpret --context "What complication arises?" --results "Betraya
 
 # Get new interpretations for the last query (retry)
 sologm oracle retry
-
-# Retry, but edit the context first (opens editor)
-sologm oracle retry --edit
 
 # List interpretation sets for the current scene
 sologm oracle list
