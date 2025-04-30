@@ -133,7 +133,6 @@ def interpret_oracle(
 
             # Determine the number of interpretations
             if count is None:
-
                 config = get_config()
                 count_int = int(config.get("default_interpretations", 5))
             else:
@@ -204,11 +203,10 @@ def retry_interpretation(
 
             # Determine the number of interpretations
             if count is None:
-
                 config = get_config()
                 count_int = int(config.get("default_interpretations", 5))
             else:
-                count_int = count # Already an int if provided
+                count_int = count  # Already an int if provided
 
             # Get the current context and results to pre-fill the editor
             initial_context = current_interp_set.context
@@ -443,12 +441,11 @@ def select_interpretation(
                     )
                     raise typer.Exit(1)
                 target_set_id = current_interp_set.id
-                target_interp_set = current_interp_set # Use the already fetched set
+                target_interp_set = current_interp_set  # Use the already fetched set
             else:
                 target_set_id = interpretation_set_id
                 # Fetch the specified set if ID was provided
                 target_interp_set = oracle_manager.get_interpretation_set(target_set_id)
-
 
             if not interpretation_id:
                 renderer.display_error(
@@ -500,22 +497,28 @@ def select_interpretation(
                         config=structured_config,
                         context_info="Edit the event description below:\n",
                         editor_config=editor_config,
-                        is_new=True, # Treat as new input for description
+                        is_new=True,  # Treat as new input for description
                     )
 
                     # Check status instead of was_modified
-                    if status in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
-                         # Use edited data even if unchanged from default, in case user opened editor and saved
-                        event_description = edited_data.get("description", default_description)
-                        if not event_description: # Ensure description is not empty
-                             renderer.display_error("Event description cannot be empty.")
-                             raise typer.Exit(1)
+                    if status in (
+                        EditorStatus.SAVED_MODIFIED,
+                        EditorStatus.SAVED_UNCHANGED,
+                    ):
+                        # Use edited data even if unchanged from default, in case user opened editor and saved
+                        event_description = edited_data.get(
+                            "description", default_description
+                        )
+                        if not event_description:  # Ensure description is not empty
+                            renderer.display_error("Event description cannot be empty.")
+                            raise typer.Exit(1)
                     elif status == EditorStatus.ABORTED:
-                        renderer.display_warning("Event creation cancelled during edit.")
+                        renderer.display_warning(
+                            "Event creation cancelled during edit."
+                        )
                         raise typer.Exit(0)
-                    else: # VALIDATION_ERROR or EDITOR_ERROR
+                    else:  # VALIDATION_ERROR or EDITOR_ERROR
                         raise typer.Exit(1)
-
 
                 event = oracle_manager.add_interpretation_event(
                     selected, event_description
@@ -526,8 +529,10 @@ def select_interpretation(
                 updated_scene = oracle_manager.scene_manager.get_scene(scene.id)
                 if not updated_scene:
                     # Should not happen if context was valid, but handle defensively
-                    renderer.display_warning("Could not retrieve updated scene details.")
-                    updated_scene = scene # Fallback to original scene context
+                    renderer.display_warning(
+                        "Could not retrieve updated scene details."
+                    )
+                    updated_scene = scene  # Fallback to original scene context
 
                 events = [event]
                 renderer.display_events_table(events, updated_scene)
