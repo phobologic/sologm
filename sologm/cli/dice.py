@@ -81,20 +81,20 @@ def roll_dice_command(
 
             # If no scene_id is provided, try to get the current scene
             scene = resolve_scene_id(session, scene_id)
-        if scene is None:
-            if scene_id:
-                renderer.display_warning(f"Scene {scene_id} not found.")
-            else:
-                renderer.display_warning("No current active scene found.")
-            renderer.display_warning("Dice roll will not be associated with any scene.")
+            if scene is None:
+                if scene_id:
+                    renderer.display_warning(f"Scene {scene_id} not found.")
+                else:
+                    renderer.display_warning("No current active scene found.")
+                renderer.display_warning("Dice roll will not be associated with any scene.")
 
-        logger.debug(
-            f"Rolling dice with notation: {notation}, reason: "
-            f"{reason}, scene_id: {scene.id if scene else 'NA'}"
-        )
+            logger.debug(
+                f"Rolling dice with notation: {notation}, reason: "
+                f"{reason}, scene_id: {scene.id if scene else 'NA'}"
+            )
 
-        result = dice_manager.roll(notation, reason, scene)
-        renderer.display_dice_roll(result)
+            result = dice_manager.roll(notation, reason, scene)
+            renderer.display_dice_roll(result)
 
     except DiceError as e:
         renderer.display_error(f"Error: {str(e)}")
@@ -120,17 +120,16 @@ def dice_history_command(
             # If scene_id is not provided, try to get the active scene
             scene = resolve_scene_id(session, scene_id)
 
-        # Call get_recent_rolls with the scene object (or None)
-        rolls = dice_manager.get_recent_rolls(scene=scene, limit=limit)
+            # Call get_recent_rolls with the scene object (or None)
+            rolls = dice_manager.get_recent_rolls(scene=scene, limit=limit)
 
-        if not rolls:
-            renderer.display_warning("No dice rolls found.")
-            return
+            if not rolls:
+                renderer.display_warning("No dice rolls found.")
+                return
 
-        renderer.display_message("Recent dice rolls:", style="bold")
-        for roll in rolls:
-            renderer.display_dice_roll(roll)
-
+            renderer.display_message("Recent dice rolls:", style="bold")
+            for roll in rolls:
+                renderer.display_dice_roll(roll)
     except DiceError as e:
         renderer.display_error(f"Error: {str(e)}")
         raise typer.Exit(1) from e

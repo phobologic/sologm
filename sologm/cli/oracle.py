@@ -38,7 +38,6 @@ def interpret_oracle(
 ) -> None:
     """Get interpretations for oracle results."""
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"]  # Needed for prompt display
     from sologm.database.session import get_db_context
 
     try:
@@ -46,34 +45,34 @@ def interpret_oracle(
         with get_db_context() as session:
             oracle_manager = OracleManager(session=session)
 
-        # Use the provided count or default to the config value
-        if count is None:
-            from sologm.utils.config import get_config
+            # Use the provided count or default to the config value
+            if not count:
+                from sologm.utils.config import get_config
 
-            config = get_config()
-            count = int(config.get("default_interpretations", 5))
+                config = get_config()
+                count = int(config.get("default_interpretations", 5))
 
-        if show_prompt:
-            # Get the prompt that would be sent to the AI
-            prompt = oracle_manager.build_interpretation_prompt_for_active_context(
-                context, results, count
+            if show_prompt:
+                # Get the prompt that would be sent to the AI
+                prompt = oracle_manager.build_interpretation_prompt_for_active_context(
+                    context, results, count
+                )
+                # Use renderer for message display
+                renderer.display_message(
+                    "\nPrompt that would be sent to AI:", style="bold blue"
+                )
+                renderer.display_message(prompt)  # Display prompt as plain text
+                return
+
+            scene, act, game = oracle_manager.get_active_context()
+
+            renderer.display_message("\nGenerating interpretations...",
+                                     style="bold blue")
+            interp_set = oracle_manager.get_interpretations(
+                scene.id, context, results, count
             )
-            # Use renderer for message display
-            renderer.display_message(
-                "\nPrompt that would be sent to AI:", style="bold blue"
-            )
-            renderer.display_message(prompt)  # Display prompt as plain text
-            return
 
-        scene, act, game = oracle_manager.get_active_context()
-
-        renderer.display_message("\nGenerating interpretations...", style="bold blue")
-        interp_set = oracle_manager.get_interpretations(
-            scene.id, context, results, count
-        )
-
-        renderer.display_interpretation_set(interp_set)
-
+            renderer.display_interpretation_set(interp_set)
     except OracleError as e:
         logger.error(f"Failed to interpret oracle results: {e}")
         renderer.display_error(f"Error: {str(e)}")
@@ -100,88 +99,87 @@ def retry_interpretation(
         with get_db_context() as session:
             oracle_manager = OracleManager(session=session)
 
-        # Get the active context
-        scene, act, game = oracle_manager.get_active_context()
+            # Get the active context
+            scene, act, game = oracle_manager.get_active_context()
 
-        current_interp_set = oracle_manager.get_current_interpretation_set(scene.id)
-        if not current_interp_set:
-            renderer.display_error(
-                "No current interpretation to retry. Run 'oracle interpret' first."
+            current_interp_set = oracle_manager.get_current_interpretation_set(scene.id)
+            if not current_interp_set:
+                renderer.display_error(
+                    "No current interpretation to retry. Run 'oracle interpret' first."
+                )
+                raise typer.Exit(1)
+
+            # Use the provided count or default to the config value
+            if not count:
+                from sologm.utils.config import get_config
+
+                config = get_config()
+                count = int(config.get("default_interpretations", 5))
+
+            # Get the current context
+            context = current_interp_set.context
+            oracle_results = current_interp_set.oracle_results
+
+            # If edit_context flag is set or user confirms editing
+            if edit_context or typer.confirm(
+                "Would you like to edit the context before retrying?"
+            ):
+                from sologm.cli.utils.structured_editor import (
+                    EditorConfig,
+                    FieldConfig,
+                    StructuredEditorConfig,
+                    edit_structured_data,
+                )
+
+                # Create editor configurations
+                editor_config = EditorConfig(
+                    edit_message="Current context:",
+                    success_message="Context updated.",
+                    cancel_message="Context unchanged.",
+                    error_message="Could not open editor",
+                )
+
+                # Configure the structured editor fields
+                structured_config = StructuredEditorConfig(
+                    fields=[
+                        FieldConfig(
+                            name="context",
+                            display_name="Oracle Context",
+                            help_text="The question or context for the oracle "
+                            "interpretation",
+                            required=True,
+                            multiline=True,
+                        ),
+                    ]
+                )
+
+                # Use the structured editor
+                context_data = {"context": context}
+                edited_data, was_modified = edit_structured_data(
+                    data=context_data,
+                    console=console,
+                    config=structured_config,
+                    context_info="Edit the context for the oracle interpretation:\n",
+                    editor_config=editor_config,
+                    is_new=False,  # This is an existing context
+                )
+
+                if was_modified:
+                    context = edited_data["context"]
+
+            renderer.display_message(
+                "\nGenerating new interpretations...", style="bold blue"
             )
-            raise typer.Exit(1)
-
-        # Use the provided count or default to the config value
-        if count is None:
-            from sologm.utils.config import get_config
-
-            config = get_config()
-            count = int(config.get("default_interpretations", 5))
-
-        # Get the current context
-        context = current_interp_set.context
-        oracle_results = current_interp_set.oracle_results
-
-        # If edit_context flag is set or user confirms editing
-        if edit_context or typer.confirm(
-            "Would you like to edit the context before retrying?"
-        ):
-            from sologm.cli.utils.structured_editor import (
-                EditorConfig,
-                FieldConfig,
-                StructuredEditorConfig,
-                edit_structured_data,
+            new_interp_set = oracle_manager.get_interpretations(
+                scene.id,
+                context,  # Use the potentially updated context
+                oracle_results,
+                count=count,
+                retry_attempt=current_interp_set.retry_attempt + 1,
+                previous_set_id=current_interp_set.id,  # Pass the current set ID
             )
 
-            # Create editor configurations
-            editor_config = EditorConfig(
-                edit_message="Current context:",
-                success_message="Context updated.",
-                cancel_message="Context unchanged.",
-                error_message="Could not open editor",
-            )
-
-            # Configure the structured editor fields
-            structured_config = StructuredEditorConfig(
-                fields=[
-                    FieldConfig(
-                        name="context",
-                        display_name="Oracle Context",
-                        help_text="The question or context for the oracle "
-                        "interpretation",
-                        required=True,
-                        multiline=True,
-                    ),
-                ]
-            )
-
-            # Use the structured editor
-            context_data = {"context": context}
-            edited_data, was_modified = edit_structured_data(
-                data=context_data,
-                console=console,
-                config=structured_config,
-                context_info="Edit the context for the oracle interpretation:\n",
-                editor_config=editor_config,
-                is_new=False,  # This is an existing context
-            )
-
-            if was_modified:
-                context = edited_data["context"]
-
-        renderer.display_message(
-            "\nGenerating new interpretations...", style="bold blue"
-        )
-        new_interp_set = oracle_manager.get_interpretations(
-            scene.id,
-            context,  # Use the potentially updated context
-            oracle_results,
-            count=count,
-            retry_attempt=current_interp_set.retry_attempt + 1,
-            previous_set_id=current_interp_set.id,  # Pass the current set ID
-        )
-
-        renderer.display_interpretation_set(new_interp_set)
-
+            renderer.display_interpretation_set(new_interp_set)
     except OracleError as e:
         logger.error(f"Failed to retry interpretation: {e}")
         renderer.display_error(f"Error: {str(e)}")
@@ -286,19 +284,19 @@ def show_interpretation_status(ctx: typer.Context) -> None:
         with get_db_context() as session:
             oracle_manager = OracleManager(session=session)
 
-        # Get the active context
-        scene, act, game = oracle_manager.get_active_context()
+            # Get the active context
+            scene, act, game = oracle_manager.get_active_context()
 
-        current_interp_set = oracle_manager.get_current_interpretation_set(scene.id)
-        if not current_interp_set:
-            renderer.display_warning("No current interpretation set.")
-            raise typer.Exit(0)
+            current_interp_set = oracle_manager.get_current_interpretation_set(scene.id)
+            if not current_interp_set:
+                renderer.display_warning("No current interpretation set.")
+                raise typer.Exit(0)
 
-        # Display the interpretation status using the renderer
-        renderer.display_interpretation_status(current_interp_set)
+            # Display the interpretation status using the renderer
+            renderer.display_interpretation_status(current_interp_set)
 
-        # Display the interpretation set using the renderer
-        renderer.display_interpretation_set(current_interp_set, show_context=False)
+            # Display the interpretation set using the renderer
+            renderer.display_interpretation_set(current_interp_set, show_context=False)
 
     except OracleError as e:
         logger.error(f"Failed to show interpretation status: {e}")
@@ -344,104 +342,108 @@ def select_interpretation(
         with get_db_context() as session:
             oracle_manager = OracleManager(session=session)
 
-        # Get the active context
-        scene, act, game = oracle_manager.get_active_context()
+            # Get the active context
+            scene, act, game = oracle_manager.get_active_context()
 
-        if not interpretation_set_id:
-            current_interp_set = oracle_manager.get_current_interpretation_set(scene.id)
-            if not current_interp_set:
+            if not interpretation_set_id:
+                current_interp_set = \
+                    oracle_manager.get_current_interpretation_set(scene.id)
+                if not current_interp_set:
+                    renderer.display_error(
+                        "No current interpretation set. Specify --set-id "
+                        "or run 'oracle interpret' first."
+                    )
+                    raise typer.Exit(1)
+                interpretation_set_id = current_interp_set.id
+
+            if not interpretation_id:
                 renderer.display_error(
-                    "No current interpretation set. Specify --set-id "
-                    "or run 'oracle interpret' first."
+                    "Please specify which interpretation to select with --id. "
+                    "You can use the number (1, 2, 3...), the slug, or the UUID."
                 )
                 raise typer.Exit(1)
-            interpretation_set_id = current_interp_set.id
 
-        if not interpretation_id:
-            renderer.display_error(
-                "Please specify which interpretation to select with --id. "
-                "You can use the number (1, 2, 3...), the slug, or the UUID."
-            )
-            raise typer.Exit(1)
-
-        # Mark the interpretation as selected
-        selected = oracle_manager.select_interpretation(
-            interpretation_set_id, interpretation_id
-        )
-
-        renderer.display_message("\nSelected interpretation:")
-        renderer.display_interpretation(selected)
-
-        if typer.confirm("\nAdd this interpretation as an event?"):
-            # Get the interpretation set to access context and results
-            interp_set = oracle_manager.get_interpretation_set(interpretation_set_id)
-
-            # Create a more comprehensive default description
-            default_description = (
-                f"Question: {interp_set.context}\n"
-                f"Oracle: {interp_set.oracle_results}\n"
-                f"Interpretation: {selected.title} - {selected.description}"
+            # Mark the interpretation as selected
+            selected = oracle_manager.select_interpretation(
+                interpretation_set_id, interpretation_id
             )
 
-            # Allow editing if requested or if user confirms
-            custom_description = default_description
-            if edit or typer.confirm("Would you like to edit the event description?"):
-                from sologm.cli.utils.structured_editor import (
-                    EditorConfig,
-                    FieldConfig,
-                    StructuredEditorConfig,
-                    edit_structured_data,
+            renderer.display_message("\nSelected interpretation:")
+            renderer.display_interpretation(selected)
+
+            if typer.confirm("\nAdd this interpretation as an event?"):
+                # Get the interpretation set to access context and results
+                interp_set = oracle_manager.get_interpretation_set(
+                    interpretation_set_id
                 )
 
-                # Create editor configurations
-                editor_config = EditorConfig(
-                    edit_message="Edit the event description:",
-                    success_message="Event description updated.",
-                    cancel_message="Event description unchanged.",
-                    error_message="Could not open editor",
+                # Create a more comprehensive default description
+                default_description = (
+                    f"Question: {interp_set.context}\n"
+                    f"Oracle: {interp_set.oracle_results}\n"
+                    f"Interpretation: {selected.title} - {selected.description}"
                 )
 
-                # Configure the structured editor fields
-                structured_config = StructuredEditorConfig(
-                    fields=[
-                        FieldConfig(
-                            name="description",
-                            display_name="Event Description",
-                            help_text="The detailed description of the event",
-                            required=True,
-                            multiline=True,
-                        ),
-                    ]
+                # Allow editing if requested or if user confirms
+                custom_description = default_description
+                if edit or typer.confirm("Would you like to edit the event "
+                                         "description?"):
+                    from sologm.cli.utils.structured_editor import (
+                        EditorConfig,
+                        FieldConfig,
+                        StructuredEditorConfig,
+                        edit_structured_data,
+                    )
+
+                    # Create editor configurations
+                    editor_config = EditorConfig(
+                        edit_message="Edit the event description:",
+                        success_message="Event description updated.",
+                        cancel_message="Event description unchanged.",
+                        error_message="Could not open editor",
+                    )
+
+                    # Configure the structured editor fields
+                    structured_config = StructuredEditorConfig(
+                        fields=[
+                            FieldConfig(
+                                name="description",
+                                display_name="Event Description",
+                                help_text="The detailed description of the event",
+                                required=True,
+                                multiline=True,
+                            ),
+                        ]
+                    )
+
+                    # Use the structured editor
+                    event_data = {"description": default_description}
+                    edited_data, was_modified = edit_structured_data(
+                        data=event_data,
+                        console=console,
+                        config=structured_config,
+                        context_info="Edit the event description below:\n",
+                        editor_config=editor_config,
+                        is_new=True
+                    )
+
+                    if was_modified:
+                        custom_description = edited_data["description"]
+
+                # Add the event with possibly edited description
+                event = oracle_manager.add_interpretation_event(
+                    selected, custom_description
                 )
+                renderer.display_success("Interpretation added as event.")
 
-                # Use the structured editor
-                event_data = {"description": default_description}
-                edited_data, was_modified = edit_structured_data(
-                    data=event_data,
-                    console=console,
-                    config=structured_config,
-                    context_info="Edit the event description below:\n",
-                    editor_config=editor_config,
-                    is_new=True,  # This is a new event
-                )
+                # Get the scene for display
+                scene = oracle_manager.scene_manager.get_scene(scene.id)
 
-                if was_modified:
-                    custom_description = edited_data["description"]
-
-            # Add the event with possibly edited description
-            event = oracle_manager.add_interpretation_event(
-                selected, custom_description
-            )
-            renderer.display_success("Interpretation added as event.")
-
-            # Get the scene for display
-            scene = oracle_manager.scene_manager.get_scene(scene.id)
-
-            # Display the event using the renderer
-            events = [event]  # Create a list with just this event
-            renderer.display_events_table(events, scene)
-        else:
-            renderer.display_warning("Interpretation not added as event.")
+                # Display the event using the renderer
+                events = [event]  # Create a list with just this event
+                renderer.display_events_table(events, scene)
+            else:
+                renderer.display_warning("Interpretation not added as event.")
 
     except OracleError as e:
         logger.error(f"Failed to select interpretation: {e}")
