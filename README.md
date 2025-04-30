@@ -236,7 +236,7 @@ sologm scene edit --id rainy-alley
 sologm scene complete
 
 # Switch the current scene
-sologm scene set-current --id rainy-alley
+sologm scene set-current rainy-alley
 ```
 
 ### Event Recording
