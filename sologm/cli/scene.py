@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 # --- Helper Functions for Editor ---
 
+
 def _get_scene_editor_config() -> StructuredEditorConfig:
     """Returns the standard StructuredEditorConfig for scene editing."""
     return StructuredEditorConfig(
@@ -60,8 +61,9 @@ def _get_scene_editor_config() -> StructuredEditorConfig:
         wrap_width=70,
     )
 
+
 def _build_scene_editor_context(
-    verb: str, # e.g., "Adding", "Editing"
+    verb: str,  # e.g., "Adding", "Editing"
     game_name: str,
     act_title: str,
     scene_title: Optional[str] = None,
@@ -73,13 +75,14 @@ def _build_scene_editor_context(
     context_info += f"Act: {act_title}\n"
     context_info += f"Game: {game_name}\n\n"
     if verb == "Adding":
-         context_info += (
+        context_info += (
             "Scenes represent specific locations, encounters, or challenges.\n"
             "Provide a concise title and an optional description."
         )
-    else: # Editing
+    else:  # Editing
         context_info += "Modify the title or description below."
     return context_info
+
 
 # --- End Helper Functions ---
 
