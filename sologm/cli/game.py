@@ -36,10 +36,6 @@ def create_game(
     description: str = typer.Option(
         ..., "--description", "-d", help="Description of the game"
     ),
-    name: str = typer.Option(..., "--name", "-n", help="Name of the game"),
-    description: str = typer.Option(
-        ..., "--description", "-d", help="Description of the game"
-    ),
 ) -> None:
     """Create a new game."""
     renderer: "Renderer" = ctx.obj["renderer"]
@@ -78,7 +74,6 @@ def list_games(ctx: typer.Context) -> None:
 @game_app.command("activate")
 def activate_game(
     ctx: typer.Context,
-    game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
     game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
 ) -> None:
     """Activate a game."""
@@ -216,7 +211,6 @@ def edit_game(
     ctx: typer.Context,
     game_id: str = typer.Option(
         None, "--id", help="ID of the game to edit (defaults to active game)"
-        None, "--id", help="ID of the game to edit (defaults to active game)"
     ),
 ) -> None:
     """Edit the name and description of a game."""
@@ -298,6 +292,7 @@ def edit_game(
         raise typer.Exit(1) from e
 
 
+@game_app.command("dump")
 def dump_game(
     ctx: typer.Context,
     game_id: str = typer.Option(
