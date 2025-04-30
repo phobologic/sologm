@@ -1076,7 +1076,6 @@ def test_display_act_completion_success(
 # --- Tests for display_act_ai_feedback_prompt (Moved & Adapted) ---
 
 
-
 @patch("rich.prompt.Prompt.ask")  # Patch Prompt.ask
 def test_display_act_ai_feedback_prompt(mock_ask: MagicMock, mock_console: MagicMock):
     """Test displaying AI feedback prompt for an act using RichRenderer."""

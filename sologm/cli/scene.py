@@ -446,7 +446,7 @@ def edit_scene(
                 context_info=context_info,
                 editor_config=editor_config_obj,
                 is_new=False,
-                original_data_for_comments=scene_data
+                original_data_for_comments=scene_data,
             )
 
             # Process editor result based on status
