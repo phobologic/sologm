@@ -1,7 +1,7 @@
 """Oracle interpretation commands for Solo RPG Helper."""
 
 import logging
-from typing import TYPE_CHECKING, Optional, Dict, Any # Added Dict, Any
+from typing import TYPE_CHECKING, Optional, Dict, Any  # Added Dict, Any
 
 import typer
 
@@ -29,10 +29,10 @@ oracle_app = typer.Typer(help="Oracle interpretation commands")
 @oracle_app.command("interpret")
 def interpret_oracle(
     ctx: typer.Context,
-    context: Optional[str] = typer.Option( # Changed default from ... to None
+    context: Optional[str] = typer.Option(  # Changed default from ... to None
         None, "--context", "-c", help="Context or question for interpretation"
     ),
-    results: Optional[str] = typer.Option( # Changed default from ... to None
+    results: Optional[str] = typer.Option(  # Changed default from ... to None
         None, "--results", "-r", help="Oracle results to interpret"
     ),
     count: int = typer.Option(
@@ -80,7 +80,7 @@ def interpret_oracle(
                         display_name="Oracle Results",
                         help_text="The raw results from the oracle (e.g., dice roll, card draw).",
                         required=True,
-                        multiline=False, # Typically single line, but adjust if needed
+                        multiline=False,  # Typically single line, but adjust if needed
                     ),
                 ]
                 structured_config = StructuredEditorConfig(fields=field_configs)
@@ -103,25 +103,27 @@ def interpret_oracle(
                     config=structured_config,
                     editor_config=editor_config,
                     context_info="Please provide the context and results for the oracle.",
-                    is_new=True, # Treat as new input gathering
+                    is_new=True,  # Treat as new input gathering
                 )
 
                 # Handle editor outcome
-                if status in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+                if status in (
+                    EditorStatus.SAVED_MODIFIED,
+                    EditorStatus.SAVED_UNCHANGED,
+                ):
                     context = edited_data.get("context")
                     results = edited_data.get("results")
                     # Basic check after editor, though validation should catch empty required fields
                     if not context or not results:
-                         renderer.display_error("Context and Results are required.")
-                         raise typer.Exit(1)
+                        renderer.display_error("Context and Results are required.")
+                        raise typer.Exit(1)
                 elif status == EditorStatus.ABORTED:
                     # Message already printed by editor
                     raise typer.Exit(0)
-                else: # VALIDATION_ERROR or EDITOR_ERROR
+                else:  # VALIDATION_ERROR or EDITOR_ERROR
                     # Message already printed by editor
                     raise typer.Exit(1)
             # --- End Editor Logic ---
-
 
             # Use the provided count or default to the config value
             if not count:
@@ -134,7 +136,9 @@ def interpret_oracle(
                 # Get the prompt that would be sent to the AI
                 # We know context and results are not None here due to earlier check
                 prompt = oracle_manager.build_interpretation_prompt_for_active_context(
-                    context, results, count # type: ignore
+                    context,
+                    results,
+                    count,  # type: ignore
                 )
                 # Use renderer for message display
                 renderer.display_message(
@@ -145,11 +149,15 @@ def interpret_oracle(
 
             scene, act, game = oracle_manager.get_active_context()
 
-            renderer.display_message("\nGenerating interpretations...",
-                                     style="bold blue")
+            renderer.display_message(
+                "\nGenerating interpretations...", style="bold blue"
+            )
             # We know context and results are not None here
             interp_set = oracle_manager.get_interpretations(
-                scene.id, context, results, count # type: ignore
+                scene.id,
+                context,
+                results,
+                count,  # type: ignore
             )
 
             renderer.display_interpretation_set(interp_set)
@@ -426,8 +434,9 @@ def select_interpretation(
             scene, act, game = oracle_manager.get_active_context()
 
             if not interpretation_set_id:
-                current_interp_set = \
-                    oracle_manager.get_current_interpretation_set(scene.id)
+                current_interp_set = oracle_manager.get_current_interpretation_set(
+                    scene.id
+                )
                 if not current_interp_set:
                     renderer.display_error(
                         "No current interpretation set. Specify --set-id "
@@ -466,8 +475,9 @@ def select_interpretation(
 
                 # Allow editing if requested or if user confirms
                 custom_description = default_description
-                if edit or typer.confirm("Would you like to edit the event "
-                                         "description?"):
+                if edit or typer.confirm(
+                    "Would you like to edit the event description?"
+                ):
                     from sologm.cli.utils.structured_editor import (
                         EditorConfig,
                         FieldConfig,
@@ -504,7 +514,7 @@ def select_interpretation(
                         config=structured_config,
                         context_info="Edit the event description below:\n",
                         editor_config=editor_config,
-                        is_new=True
+                        is_new=True,
                     )
 
                     if was_modified:
