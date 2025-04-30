@@ -38,7 +38,11 @@ class GameManager(BaseManager[Game, Game]):
             "_act_manager", "sologm.core.act.ActManager", game_manager=self
         )
 
-    def create_game(self, name: str, description: str, is_active: bool = True) -> Game:
+    def create_game(self,
+                    name: str,
+                    description: str,
+                    is_active: bool = True
+    ) -> Optional[Game]:
         """Create a new game.
 
         Args:
@@ -50,7 +54,8 @@ class GameManager(BaseManager[Game, Game]):
             The created Game instance.
 
         Raises:
-            GameError: If the game cannot be created or a game with the same name exists.
+            GameError: If the game cannot be created or a game with the same
+                       name exists.
         """
         logger.debug(f"Creating game: name='{name}', is_active={is_active}")
 
@@ -75,8 +80,9 @@ class GameManager(BaseManager[Game, Game]):
             logger.debug(f"Created game: {game.id}, name='{game.name}'")
             return game
         except IntegrityError as e:
-            self._session.rollback()  # Explicitly rollback the failed transaction state
+            self._session.rollback()
             self._handle_integrity_error(e, "create", name)
+            return None
 
     def _handle_integrity_error(
         self, error: IntegrityError, operation: str, name: str
@@ -164,7 +170,8 @@ class GameManager(BaseManager[Game, Game]):
             f"get game by identifier {identifier}", _get_game
         )
         logger.debug(
-            f"Retrieved game by identifier: {game.id if game else 'None'} (Input: '{identifier}')"
+            f"Retrieved game by identifier: {game.id if game else 'None'} "
+            f"(Input: '{identifier}')"
         )
         return game
 
@@ -200,7 +207,7 @@ class GameManager(BaseManager[Game, Game]):
     # Keep existing get_game_by_id and get_game_by_slug if needed elsewhere,
     # but get_game is now the primary interface.
     def get_game_by_id(self, game_id: str) -> Optional[Game]:
-        """Get a specific game by ID."""
+        """Get a specific game by ID.
 
         Args:
             game_id: ID of the game to get.
@@ -311,7 +318,7 @@ class GameManager(BaseManager[Game, Game]):
         game_id: str,
         name: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> Game:
+    ) -> Optional[Game]:
         """Update a game's properties. Requires the actual game ID.
 
         Args:
@@ -328,7 +335,8 @@ class GameManager(BaseManager[Game, Game]):
             ValueError: If neither name nor description is provided
         """
         logger.debug(
-            f"Updating game: {game_id}, name={name}, description={description is not None}"
+            f"Updating game: {game_id}, name={name}, "
+            f"description={description is not None}"
         )
         if name is None and description is None:
             raise ValueError("At least one of name or description must be provided")
@@ -359,6 +367,7 @@ class GameManager(BaseManager[Game, Game]):
         except IntegrityError as e:
             self._session.rollback()
             self._handle_integrity_error(e, "update", name or "")
+            return None
 
     def delete_game(self, game_id: str) -> bool:
         """Delete a game. Requires the actual game ID.
@@ -425,7 +434,8 @@ class GameManager(BaseManager[Game, Game]):
                 act_id=latest_act.id
             )
             self.logger.debug(
-                f"Found latest act: {latest_act.id}, latest scene: {latest_scene.id if latest_scene else 'None'}"
+                f"Found latest act: {latest_act.id}, latest scene: "
+                f"{latest_scene.id if latest_scene else 'None'}"
             )
         else:
             self.logger.debug(f"No acts found in active game {game.id}.")
@@ -433,7 +443,8 @@ class GameManager(BaseManager[Game, Game]):
         is_act_active = latest_act.is_active if latest_act else False
         is_scene_active = latest_scene.is_active if latest_scene else False
         self.logger.debug(
-            f"Latest Act Active: {is_act_active}, Latest Scene Active: {is_scene_active}"
+            f"Latest Act Active: {is_act_active}, Latest Scene Active: "
+            f"{is_scene_active}"
         )
 
         return {
