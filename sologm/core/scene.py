@@ -347,13 +347,21 @@ class SceneManager(BaseManager[Scene, Scene]):
 
             # Refresh to load DB-generated values (ID, timestamps) and relationships
             try:
-                logger.debug(f"Refreshing scene {scene.id} to load attributes: ['id', 'created_at', 'modified_at', 'act']")
+                logger.debug(
+                    f"Refreshing scene {scene.id} to load attributes: ['id', 'created_at', 'modified_at', 'act']"
+                )
                 # Explicitly refresh the necessary attributes
-                session.refresh(scene, attribute_names=['id', 'created_at', 'modified_at', 'act'])
-                logger.debug(f"Scene refreshed. Created_at: {scene.created_at}, Act loaded: {scene.act is not None}")
+                session.refresh(
+                    scene, attribute_names=["id", "created_at", "modified_at", "act"]
+                )
+                logger.debug(
+                    f"Scene refreshed. Created_at: {scene.created_at}, Act loaded: {scene.act is not None}"
+                )
             except Exception as e:
                 # Log a warning if refresh fails, but proceed cautiously
-                logger.warning(f"Warning: Failed to refresh scene {scene.id} after creation: {e}")
+                logger.warning(
+                    f"Warning: Failed to refresh scene {scene.id} after creation: {e}"
+                )
                 # The scene object might have stale data, but the DB record exists.
             # --- MODIFICATION END ---
 
@@ -412,7 +420,7 @@ class SceneManager(BaseManager[Scene, Scene]):
                 raise SceneError(msg)
 
             scene.status = SceneStatus.COMPLETED
-            session.add(scene) # Ensure change is tracked
+            session.add(scene)  # Ensure change is tracked
             logger.debug(f"Marked scene {scene_id} status as COMPLETED in session")
 
             # Flush to send UPDATE and update modified_at in DB
@@ -421,11 +429,17 @@ class SceneManager(BaseManager[Scene, Scene]):
 
             # Refresh to load updated modified_at
             try:
-                logger.debug(f"Refreshing scene {scene.id} to load attributes: ['modified_at', 'status']")
-                session.refresh(scene, attribute_names=['modified_at', 'status'])
-                logger.debug(f"Scene refreshed. Modified_at: {scene.modified_at}, Status: {scene.status}")
+                logger.debug(
+                    f"Refreshing scene {scene.id} to load attributes: ['modified_at', 'status']"
+                )
+                session.refresh(scene, attribute_names=["modified_at", "status"])
+                logger.debug(
+                    f"Scene refreshed. Modified_at: {scene.modified_at}, Status: {scene.status}"
+                )
             except Exception as e:
-                logger.warning(f"Warning: Failed to refresh scene {scene.id} after completion: {e}")
+                logger.warning(
+                    f"Warning: Failed to refresh scene {scene.id} after completion: {e}"
+                )
 
             logger.info(f"Marked scene {scene_id} as completed")
             return scene
@@ -461,7 +475,7 @@ class SceneManager(BaseManager[Scene, Scene]):
 
             # Set this scene as active
             scene.is_active = True
-            session.add(scene) # Ensure change is tracked
+            session.add(scene)  # Ensure change is tracked
             logger.debug(f"Marked scene {scene_id} as active in session")
 
             # Flush to send UPDATEs (for deactivated scenes and the new active one)
@@ -470,11 +484,17 @@ class SceneManager(BaseManager[Scene, Scene]):
 
             # Refresh the newly activated scene to get updated modified_at
             try:
-                logger.debug(f"Refreshing scene {scene.id} to load attributes: ['modified_at', 'is_active']")
-                session.refresh(scene, attribute_names=['modified_at', 'is_active'])
-                logger.debug(f"Scene refreshed. Modified_at: {scene.modified_at}, Is Active: {scene.is_active}")
+                logger.debug(
+                    f"Refreshing scene {scene.id} to load attributes: ['modified_at', 'is_active']"
+                )
+                session.refresh(scene, attribute_names=["modified_at", "is_active"])
+                logger.debug(
+                    f"Scene refreshed. Modified_at: {scene.modified_at}, Is Active: {scene.is_active}"
+                )
             except Exception as e:
-                logger.warning(f"Warning: Failed to refresh scene {scene.id} after setting current: {e}")
+                logger.warning(
+                    f"Warning: Failed to refresh scene {scene.id} after setting current: {e}"
+                )
 
             logger.info(f"Set scene {scene_id} as current")
             return scene
@@ -531,7 +551,7 @@ class SceneManager(BaseManager[Scene, Scene]):
             if description is not None:
                 scene.description = description
 
-            session.add(scene) # Ensure changes are tracked
+            session.add(scene)  # Ensure changes are tracked
             logger.debug(f"Marked scene {scene_id} for update in session")
 
             # Flush to send UPDATE and update modified_at in DB
@@ -540,12 +560,17 @@ class SceneManager(BaseManager[Scene, Scene]):
 
             # Refresh to load updated modified_at and potentially other fields if needed
             try:
-                logger.debug(f"Refreshing scene {scene.id} to load attributes: ['modified_at', 'title', 'description']")
-                session.refresh(scene, attribute_names=['modified_at', 'title', 'description'])
+                logger.debug(
+                    f"Refreshing scene {scene.id} to load attributes: ['modified_at', 'title', 'description']"
+                )
+                session.refresh(
+                    scene, attribute_names=["modified_at", "title", "description"]
+                )
                 logger.debug(f"Scene refreshed. Modified_at: {scene.modified_at}")
             except Exception as e:
-                logger.warning(f"Warning: Failed to refresh scene {scene.id} after update: {e}")
-
+                logger.warning(
+                    f"Warning: Failed to refresh scene {scene.id} after update: {e}"
+                )
 
             logger.info(f"Updated scene {scene_id}")
             return scene
