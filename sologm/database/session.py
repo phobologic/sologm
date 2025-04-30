@@ -254,6 +254,7 @@ def _seed_default_event_sources() -> None:
         # Log error but don't prevent application startup if seeding fails
         logger.error(f"Failed to seed default event sources: {e}", exc_info=True)
 
+
 # --- END ADDITION ---
 
 
