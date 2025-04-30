@@ -246,8 +246,6 @@ def _seed_default_event_sources() -> None:
         logger.error(f"Failed to seed default event sources: {e}", exc_info=True)
 
 
-
-
 def get_db_context() -> SessionContext:
     """Get a database session context manager for safe transaction handling.
 
