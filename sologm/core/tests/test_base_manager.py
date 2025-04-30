@@ -6,9 +6,6 @@ import pytest
 from sologm.core.base_manager import BaseManager
 from sologm.database.session import SessionContext
 from sologm.models.game import Game
-from sologm.tests.conftest import (
-    create_test_game,
-)  # Ensure factory fixture is available
 from sologm.utils.errors import SoloGMError  # Use a generic error for testing
 
 
