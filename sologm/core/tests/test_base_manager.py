@@ -6,7 +6,9 @@ import pytest
 from sologm.core.base_manager import BaseManager
 from sologm.database.session import SessionContext
 from sologm.models.game import Game
-from sologm.tests.conftest import create_test_game  # Ensure factory fixture is available
+from sologm.tests.conftest import (
+    create_test_game,
+)  # Ensure factory fixture is available
 from sologm.utils.errors import SoloGMError  # Use a generic error for testing
 
 
@@ -39,9 +41,7 @@ class TestBaseManagerIntegration:
         """Test finding an entity by ID."""
         with session_context as session:
             game = create_test_game(session, name="FindByID Game")
-            found_entity = base_manager.get_entity_by_identifier(
-                session, Game, game.id
-            )
+            found_entity = base_manager.get_entity_by_identifier(session, Game, game.id)
             assert found_entity is not None
             assert found_entity.id == game.id
             assert found_entity.name == "FindByID Game"
@@ -118,7 +118,9 @@ class TestBaseManagerIntegration:
                     session, Game, identifier, TestError
                 )
             # Check default error message
-            assert f"Game not found with identifier '{identifier}'" in str(exc_info.value)
+            assert f"Game not found with identifier '{identifier}'" in str(
+                exc_info.value
+            )
 
     def test_get_entity_by_identifier_or_error_raises_custom_error(
         self, session_context: SessionContext, base_manager: BaseManager
@@ -216,7 +218,6 @@ class TestBaseManagerIntegration:
             except ValueError:
                 pytest.fail("Created games not found in the listed entities")
 
-
     def test_list_entities_with_ordering_desc(
         self,
         session_context: SessionContext,
@@ -234,10 +235,9 @@ class TestBaseManagerIntegration:
             try:
                 index_a = ids.index(game_a.id)
                 index_b = ids.index(game_b.id)
-                assert index_b < index_a # B should come before A in descending
+                assert index_b < index_a  # B should come before A in descending
             except ValueError:
                 pytest.fail("Created games not found in the listed entities")
-
 
     def test_list_entities_with_limit(
         self,
