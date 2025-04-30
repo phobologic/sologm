@@ -1,7 +1,8 @@
 """Main CLI entry point for Solo RPG Helper."""
 
 import logging
-from typing import Optional
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import typer
 from rich.console import Console
@@ -12,12 +13,10 @@ from sologm.cli.dice import dice_app
 from sologm.cli.event import event_app
 from sologm.cli.game import game_app
 from sologm.cli.oracle import oracle_app
-
-# --- Added Placeholder Import ---
-from sologm.cli.rendering.base import Renderer  # Placeholder imports below
+from sologm.cli.rendering.base import Renderer
 from sologm.cli.scene import scene_app
-
-# --- End Added Placeholder Import ---
+from sologm.database import init_db
+from sologm.utils.config import Config
 from sologm.utils.logger import setup_root_logger
 
 logger = logging.getLogger(__name__)
@@ -78,18 +77,20 @@ def main(
     """Solo RPG Helper - A command-line tool for solo roleplaying games.
 
     Manage games, scenes, and events. Roll dice and interpret oracle results.
+
+    Args:
+        ctx: Typer context object, used to pass data (like the renderer).
+        debug: Enable debug logging output.
+        version: Show the application version and exit.
+        config_path: Optional path to a custom configuration file.
+        no_ui: Disable rich UI elements and use Markdown output instead.
     """
     # Set up root logger with debug flag
     setup_root_logger(debug)
     logger.debug("CLI startup with debug=%s", debug)
 
-    # Update config path if provided
     # Initialize config first if custom path provided
     if config_path:
-        from pathlib import Path
-
-        from sologm.utils.config import Config
-
         logger.debug("Loading config from %s", config_path)
         Config.get_instance(Path(config_path))
 
@@ -107,19 +108,19 @@ def main(
         logger.debug("RichRenderer selected and instantiated")
 
     # Store renderer and console on context object
+    # Ensure ctx.obj is a dictionary
     if ctx.obj is None:
-        ctx.obj = {}
-    ctx.obj["renderer"] = selected_renderer  # Store the instantiated renderer
-    ctx.obj["console"] = console  # Store the console instance
+        ctx.obj = {}  # type: Dict[str, Any]
+
+    ctx.obj["renderer"] = selected_renderer
+    ctx.obj["console"] = console
     logger.debug("Renderer and console stored in Typer context.")
     # --- End Added Renderer Selection Logic ---
 
     # Initialize database (now uses the renderer for errors)
     try:
-        from sologm.database import init_db
-
         # Initialize the database - this will use the singleton pattern internally
-        _ = init_db()  # Returns a session, but not needed here.
+        _ = init_db()  # Returns DatabaseManager instance, not needed here.
 
     except Exception as e:
         # Use the selected renderer to display the error
@@ -130,13 +131,13 @@ def main(
         renderer.display_error(error_message)
         # Optionally add more guidance using the renderer
         renderer.display_message(
-            "\nPlease configure a database URL using one of these methods:\n"
-            "1. Set the SOLOGM_DATABASE_URL environment variable\n"
-            "2. Add 'database_url' to your config file"
+            "\nPlease configure a database URL via:\n"
+            "1. SOLOGM_DATABASE_URL environment variable\n"
+            "2. 'database_url' in your config file"
         )
         raise typer.Exit(code=1) from e
 
-    logger.debug("Exiting main without errors.")
+    logger.debug("Exiting main callback without errors.")
 
 
 if __name__ == "__main__":
