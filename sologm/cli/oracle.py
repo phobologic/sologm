@@ -4,10 +4,9 @@ import logging
 from typing import Any, Dict, Optional
 
 import typer
-from rich.console import Console  # Moved import
+from rich.console import Console
 
-# Local application/library imports
-from sologm.cli.rendering.base import Renderer  # Moved import
+from sologm.cli.rendering.base import Renderer
 from sologm.cli.utils.structured_editor import (
     EditorConfig,
     EditorStatus,
@@ -16,8 +15,8 @@ from sologm.cli.utils.structured_editor import (
     edit_structured_data,
 )
 from sologm.core.oracle import OracleManager
-from sologm.database.session import get_db_context  # Moved import
-from sologm.utils.config import get_config  # Moved import
+from sologm.database.session import get_db_context
+from sologm.utils.config import get_config
 from sologm.utils.errors import OracleError
 
 logger = logging.getLogger(__name__)
@@ -46,6 +45,13 @@ def interpret_oracle(
 
     If context or results are not provided via options, an editor will be
     opened to prompt for them.
+
+    Args:
+        ctx: Typer context.
+        context: Context or question for interpretation.
+        results: Oracle results to interpret.
+        count: Number of interpretations to generate.
+        show_prompt: Show the prompt without sending it to the AI.
     """
     renderer: Renderer = ctx.obj["renderer"]
     console: Console = ctx.obj["console"]
@@ -58,8 +64,8 @@ def interpret_oracle(
             if context is None or results is None:
                 if show_prompt:
                     renderer.display_error(
-                        "Cannot show prompt without providing both --context "
-                        "and --results."
+                        "Cannot show prompt without providing both --context and "
+                        "--results."
                     )
                     raise typer.Exit(1)
 
@@ -73,18 +79,21 @@ def interpret_oracle(
                     FieldConfig(
                         name="context",
                         display_name="Oracle Context",
-                        help_text="The question or context for the oracle "
-                        "interpretation.",
+                        help_text=(
+                            "The question or context for the oracle interpretation."
+                        ),
                         required=True,
                         multiline=True,
                     ),
                     FieldConfig(
                         name="results",
                         display_name="Oracle Results",
-                        help_text="The raw results from the oracle (e.g., "
-                        "dice roll, card draw).",
+                        help_text=(
+                            "The raw results from the oracle (e.g., dice roll, "
+                            "card draw)."
+                        ),
                         required=True,
-                        multiline=False,  # Typically single line, but adjust if needed
+                        multiline=False,  # Typically single line
                     ),
                 ]
                 structured_config = StructuredEditorConfig(fields=field_configs)
@@ -106,8 +115,9 @@ def interpret_oracle(
                     console=console,
                     config=structured_config,
                     editor_config=editor_config,
-                    context_info="Please provide the context and results for "
-                    "the oracle.",
+                    context_info=(
+                        "Please provide the context and results for the oracle."
+                    ),
                     is_new=True,
                 )
 
@@ -179,11 +189,16 @@ def interpret_oracle(
 @oracle_app.command("retry")
 def retry_interpretation(
     ctx: typer.Context,
-    count: Optional[int] = typer.Option(  # Allow None initially
+    count: Optional[int] = typer.Option(
         None, "--count", "-c", help="Number of interpretations to generate"
     ),
 ) -> None:
-    """Request new interpretations, editing context and results first."""
+    """Request new interpretations, editing context and results first.
+
+    Args:
+        ctx: Typer context.
+        count: Number of interpretations to generate.
+    """
     renderer: Renderer = ctx.obj["renderer"]
     console: Console = ctx.obj["console"]
 
@@ -192,10 +207,13 @@ def retry_interpretation(
             oracle_manager = OracleManager(session=session)
             scene, act, game = oracle_manager.get_active_context()
 
-            current_interp_set = oracle_manager.get_current_interpretation_set(scene.id)
+            current_interp_set = oracle_manager.get_current_interpretation_set(
+                scene.id
+            )
             if not current_interp_set:
                 renderer.display_error(
-                    "No current interpretation to retry. Run 'oracle interpret' first."
+                    "No current interpretation to retry. Run 'oracle interpret' "
+                    "first."
                 )
                 raise typer.Exit(1)
 
@@ -227,16 +245,19 @@ def retry_interpretation(
                     FieldConfig(
                         name="context",
                         display_name="Oracle Context",
-                        help_text="The question or context for the oracle "
-                        "interpretation.",
+                        help_text=(
+                            "The question or context for the oracle interpretation."
+                        ),
                         required=True,
                         multiline=True,
                     ),
                     FieldConfig(
                         name="results",
                         display_name="Oracle Results",
-                        help_text="The raw results from the oracle (e.g., "
-                        "dice roll, card draw).",
+                        help_text=(
+                            "The raw results from the oracle (e.g., dice roll, "
+                            "card draw)."
+                        ),
                         required=True,
                         multiline=False,
                     ),
@@ -253,7 +274,10 @@ def retry_interpretation(
                 editor_config=editor_config,
                 is_new=False,
             )
-            if status in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+            if status in (
+                EditorStatus.SAVED_MODIFIED,
+                EditorStatus.SAVED_UNCHANGED,
+            ):
                 final_context = edited_data.get("context")
                 final_results = edited_data.get("results")
                 if not final_context or not final_results:
@@ -300,6 +324,12 @@ def list_interpretation_sets(
     """List oracle interpretation sets for the current scene or act.
 
     If neither scene-id nor act-id is provided, uses the active scene.
+
+    Args:
+        ctx: Typer context.
+        act_id: ID of the act to list interpretations from.
+        scene_id: ID of the scene to list interpretations from.
+        limit: Maximum number of interpretation sets to show.
     """
     renderer: Renderer = ctx.obj["renderer"]
 
@@ -314,13 +344,10 @@ def list_interpretation_sets(
                     scene_id = active_scene.id
                     act_id = active_act.id
                 except OracleError as e:
-                    renderer.display_error(f"Error: {str(e)}")
-                    renderer.display_error(
-                        f"Could not determine active context: {str(e)}"
-                    )
+                    renderer.display_error(f"Error determining active context: {e}")
                     renderer.display_warning(
-                        "Please specify --scene-id or run this command within "
-                        "an active game/act/scene."
+                        "Please specify --scene-id or run this command within an "
+                        "active game/act/scene."
                     )
                     raise typer.Exit(1) from e
 
@@ -352,7 +379,12 @@ def show_interpretation_set(
     ctx: typer.Context,
     set_id: str = typer.Argument(..., help="ID of the interpretation set to show"),
 ) -> None:
-    """Show details of a specific interpretation set."""
+    """Show details of a specific interpretation set.
+
+    Args:
+        ctx: Typer context.
+        set_id: ID of the interpretation set to show.
+    """
     renderer: Renderer = ctx.obj["renderer"]
 
     try:
@@ -370,7 +402,11 @@ def show_interpretation_set(
 
 @oracle_app.command("status")
 def show_interpretation_status(ctx: typer.Context) -> None:
-    """Show the currently active interpretation set for the current scene."""
+    """Show the currently active interpretation set for the current scene.
+
+    Args:
+        ctx: Typer context.
+    """
     renderer: Renderer = ctx.obj["renderer"]
 
     try:
@@ -419,9 +455,16 @@ def select_interpretation(
     """Select an interpretation to add as an event.
 
     You can specify the interpretation using:
+    You can specify the interpretation using:
     - A sequence number (1, 2, 3...)
     - The slug (derived from the title)
     - The full UUID
+
+    Args:
+        ctx: Typer context.
+        interpretation_id: Identifier of the interpretation to select.
+        interpretation_set_id: ID of the interpretation set (uses current if None).
+        edit: Edit the event description before adding.
     """
     renderer: Renderer = ctx.obj["renderer"]
     console: Console = ctx.obj["console"]
@@ -432,26 +475,28 @@ def select_interpretation(
             scene, act, game = oracle_manager.get_active_context()
 
             if not interpretation_set_id:
-                current_interp_set = oracle_manager.get_current_interpretation_set(
-                    scene.id
+                current_interp_set = (
+                    oracle_manager.get_current_interpretation_set(scene.id)
                 )
                 if not current_interp_set:
                     renderer.display_error(
-                        "No current interpretation set. Specify --set-id "
-                        "or run 'oracle interpret' first."
+                        "No current interpretation set. Specify --set-id or run "
+                        "'oracle interpret' first."
                     )
                     raise typer.Exit(1)
                 target_set_id = current_interp_set.id
-                target_interp_set = current_interp_set  # Use the already fetched set
+                target_interp_set = current_interp_set  # Use already fetched set
             else:
                 target_set_id = interpretation_set_id
                 # Fetch the specified set if ID was provided
-                target_interp_set = oracle_manager.get_interpretation_set(target_set_id)
+                target_interp_set = oracle_manager.get_interpretation_set(
+                    target_set_id
+                )
 
             if not interpretation_id:
                 renderer.display_error(
-                    "Please specify which interpretation to select with --id. "
-                    "You can use the number (1, 2, 3...), the slug, or the UUID."
+                    "Please specify which interpretation to select with --id. Use "
+                    "the number (1, 2, 3...), slug, or UUID."
                 )
                 raise typer.Exit(1)
 
@@ -463,7 +508,7 @@ def select_interpretation(
             renderer.display_interpretation(selected)
 
             if typer.confirm("\nAdd this interpretation as an event?"):
-                # Use the already fetched interpretation set (target_interp_set)
+                # Use the already fetched interpretation set
                 default_description = (
                     f"Question: {target_interp_set.context}\n"
                     f"Oracle: {target_interp_set.oracle_results}\n"
@@ -485,7 +530,7 @@ def select_interpretation(
                             FieldConfig(
                                 name="description",
                                 display_name="Event Description",
-                                help_text="The detailed description of the event",
+                                help_text="The detailed description of the event.",
                                 required=True,
                                 multiline=True,
                             ),
@@ -501,23 +546,19 @@ def select_interpretation(
                         is_new=True,  # Treat as new input for description
                     )
 
-                    # Check status instead of was_modified
                     if status in (
                         EditorStatus.SAVED_MODIFIED,
                         EditorStatus.SAVED_UNCHANGED,
                     ):
-                        # Use edited data even if unchanged from default,
-                        # in case user opened editor and saved
+                        # Use edited data even if unchanged from default
                         event_description = edited_data.get(
                             "description", default_description
                         )
-                        if not event_description:  # Ensure description is not empty
+                        if not event_description:  # Ensure not empty
                             renderer.display_error("Event description cannot be empty.")
                             raise typer.Exit(1)
                     elif status == EditorStatus.ABORTED:
-                        renderer.display_warning(
-                            "Event creation cancelled during edit."
-                        )
+                        renderer.display_warning("Event creation cancelled during edit.")
                         raise typer.Exit(0)
                     else:  # VALIDATION_ERROR or EDITOR_ERROR
                         raise typer.Exit(1)
