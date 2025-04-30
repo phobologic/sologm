@@ -1718,11 +1718,13 @@ class RichRenderer(Renderer):
         st = StyledText
 
         # Prompt user for action with consistent styling
-        choices = "(A)ccept, (E)dit, or (R)egenerate"
+        # choices = "(A)ccept, (E)dit, or (R)egenerate" # No longer needed, included in prompt_message
         default_choice = "E"
 
-        # Use StyledText for the prompt message itself
-        prompt_message = st.warning("What would you like to do with this content?")
+        # Use StyledText for the prompt message itself, including choice descriptions
+        prompt_message = st.warning(
+            "What would you like to do with this content? (A)ccept / (E)dit / (R)egenerate"
+        )
 
         choice = Prompt.ask(
             prompt_message,  # Pass the Text object directly

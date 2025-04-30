@@ -14,8 +14,9 @@ import typer
 from rich.prompt import Confirm  # Keep Confirm for interactive input
 
 # Display function imports removed, will use renderer
-from sologm.cli.utils.structured_editor import (
+from sologm.cli.utils.structured_editor import (  # Updated import
     EditorConfig,
+    EditorStatus,
     FieldConfig,
     StructuredEditorConfig,
     edit_structured_data,
@@ -103,7 +104,7 @@ def create_act(
                         name="title",
                         display_name="Title",
                         help_text="Title of the act (can be left empty for "
-                                  "untitled acts)",
+                        "untitled acts)",
                         required=False,
                     ),
                     FieldConfig(
@@ -136,7 +137,7 @@ def create_act(
             }
 
             # Open editor
-            result, succeeded = edit_structured_data(
+            result_data, status = edit_structured_data(
                 initial_data,  # Pass initial data (empty strings)
                 console,
                 editor_config,
@@ -145,15 +146,21 @@ def create_act(
                 # No need for original_data_for_comments when is_new=True
             )
 
-            if not succeeded:
-                # Covers abort, validation failure after retries, editor errors
-                # Message already printed by edit_structured_data
-                # renderer.display_warning("Act creation canceled.") # Redundant
-                raise typer.Exit(0)
+            # Check status: Proceed only if saved (modified or unchanged)
+            if status not in (
+                EditorStatus.SAVED_MODIFIED,
+                EditorStatus.SAVED_UNCHANGED,
+            ):
+                # Abort, validation error, or editor error occurred.
+                # Message already printed by edit_structured_data.
+                logger.info(
+                    f"Act creation cancelled due to editor status: {status.name}"
+                )
+                raise typer.Exit(0)  # Exit gracefully
 
-            # If succeeded, result contains the (potentially empty) parsed data
-            title = result.get("title") or None
-            summary = result.get("summary") or None
+            # If saved, result_data contains the (potentially empty) parsed data
+            title = result_data.get("title") or None
+            summary = result_data.get("summary") or None
 
         # Create the act
         try:
@@ -362,7 +369,7 @@ def edit_act(
             }
 
             # Open editor
-            result, succeeded = edit_structured_data(
+            result_data, status = edit_structured_data(
                 initial_data,  # Pass current data as the base for editing
                 console,
                 editor_config,
@@ -372,15 +379,21 @@ def edit_act(
                 original_data_for_comments=initial_data,
             )
 
-            if not succeeded:
-                # Covers abort, validation failure, editor errors, or saving without changes
-                # Message already printed by edit_structured_data
-                # renderer.display_warning("Act edit canceled or no changes made.") # Redundant
-                raise typer.Exit(0)
-
-            # If succeeded, result contains the potentially modified data
-            final_title = result.get("title") or None
-            final_summary = result.get("summary") or None
+            # Check status
+            if status == EditorStatus.SAVED_MODIFIED:
+                # Data changed, proceed with update
+                final_title = result_data.get("title") or None
+                final_summary = result_data.get("summary") or None
+                logger.info("Act data modified in editor.")
+            elif status == EditorStatus.SAVED_UNCHANGED:
+                # Saved, but no changes made
+                renderer.display_message("No changes detected. Act not updated.")
+                raise typer.Exit(0)  # Exit gracefully, no error
+            else:
+                # Abort, validation error, or editor error occurred.
+                # Message already printed by edit_structured_data.
+                logger.info(f"Act edit cancelled due to editor status: {status.name}")
+                raise typer.Exit(0)  # Exit gracefully
 
         else:
             # If parameters were provided directly, use them
@@ -431,13 +444,18 @@ def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool
     Returns:
         True if should proceed, False if cancelled
     """
+    logger.debug(f"Checking existing content for act {act.id} (force={force})")
     if force:
+        logger.debug("Force flag is True, skipping content check and confirmation.")
         return True
 
+    # Define has_title here
     has_title = act.title is not None and act.title.strip() != ""
     has_summary = act.summary is not None and act.summary.strip() != ""
+    logger.debug(f"Act has_title={has_title}, has_summary={has_summary}")
 
     if not has_title and not has_summary:
+        logger.debug("Act has no existing title or summary, proceeding.")
         return True
 
     if has_title and has_summary:
@@ -447,9 +465,14 @@ def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool
     else:
         confirm_message = "This will replace your existing summary."
 
+    logger.debug("Existing content found, asking for confirmation.")
     # Use Confirm directly, no need for renderer here for the prompt itself
     # But the message could potentially use renderer.display_warning if needed
-    return Confirm.ask(f"[yellow]{confirm_message} Continue?[/yellow]", default=False)
+    confirmed = Confirm.ask(
+        f"[yellow]{confirm_message} Continue?[/yellow]", default=False
+    )
+    logger.debug(f"User confirmation result: {confirmed}")
+    return confirmed
 
 
 def _collect_user_context(
@@ -470,7 +493,7 @@ def _collect_user_context(
     Returns:
         The user-provided context, or None if the user cancels
     """
-    logger.debug("Collecting context for AI generation")
+    logger.debug(f"[_collect_user_context] Entering function for act {act.id}.")
 
     # Create editor configuration
     editor_config = StructuredEditorConfig(
@@ -510,23 +533,31 @@ def _collect_user_context(
     }
 
     # Open editor - this is like creating new context, so is_new=True
-    result, succeeded = edit_structured_data(
+    logger.debug("Calling edit_structured_data for context collection")
+    result_data, status = edit_structured_data(
         initial_data,
         console,
         editor_config,
         context_info=context_info,
         is_new=True,  # Treat context collection as creating something new
     )
+    logger.debug(
+        f"[_collect_user_context] Editor returned status: {status.name}, data: {result_data}"
+    )
 
-    if not succeeded:
-        logger.debug("User cancelled context collection")
+    # Check status: Proceed only if saved
+    if status not in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+        logger.debug(
+            f"[_collect_user_context] User cancelled context collection (status: {status.name})"
+        )
         # Message already printed by edit_structured_data
         return None
 
-    user_context = result.get("context", "").strip()
+    user_context = result_data.get("context", "").strip()
+    # <<< ADD DEBUG LOG >>>
     logger.debug(
-        f"Collected context: {user_context[:50]}"
-        f"{'...' if len(user_context) > 50 else ''}"
+        f"[_collect_user_context] Collected context (truncated): "
+        f"'{user_context[:100]}{'...' if len(user_context) > 100 else ''}'"
     )
     return user_context if user_context else None
 
@@ -556,7 +587,16 @@ def _collect_regeneration_feedback(
     Returns:
         Dictionary with feedback and elements to keep, or None if user cancels
     """
-    logger.debug("Collecting regeneration feedback")
+    # <<< FIX: Handle None original_context in logging >>>
+    original_context_log = (
+        f"'{original_context[:100]}{'...' if len(original_context) > 100 else ''}'"
+        if original_context
+        else "None"
+    )
+    logger.debug(
+        f"[_collect_regeneration_feedback] Entering function for act {act.id}. "
+        f"Original context provided (truncated): {original_context_log}"
+    )
 
     # Create editor configuration
     editor_config = StructuredEditorConfig(
@@ -633,12 +673,16 @@ def _collect_regeneration_feedback(
     # Create initial data
     initial_data = {
         "feedback": "",
-        "context": original_context or "",
+        "context": original_context or "",  # Pre-fill context field with original
     }
+    # <<< ADD DEBUG LOG >>>
+    logger.debug(
+        f"[_collect_regeneration_feedback] Initial data for feedback editor: {initial_data}"
+    )
 
     # Open editor - this is like creating new feedback, so is_new=True
-    # We don't need to compare against the initial empty state for success.
-    result, succeeded = edit_structured_data(
+    logger.debug("Calling edit_structured_data for regeneration feedback")
+    result_data, status = edit_structured_data(
         initial_data,
         console,
         editor_config,
@@ -652,17 +696,31 @@ def _collect_regeneration_feedback(
             error_message="Could not open editor. Please try again.",
         ),
     )
+    logger.debug(
+        f"[_collect_regeneration_feedback] Editor returned status: {status.name}, data: {result_data}"
+    )
 
-    if not succeeded:
-        logger.debug("User cancelled regeneration feedback collection")
+    # Check status: Proceed only if saved
+    if status not in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+        logger.debug(
+            f"[_collect_regeneration_feedback] User cancelled regeneration feedback collection (status: {status.name})"
+        )
         # Message already printed by edit_structured_data
         return None
 
     # Return the collected feedback and context
-    return {
-        "feedback": result.get("feedback", "").strip(),
-        "context": result.get("context", "").strip(),
+    # Return the collected feedback and context
+    feedback_dict = {
+        "feedback": result_data.get("feedback", "").strip(),
+        "context": result_data.get(
+            "context", ""
+        ).strip(),  # Get potentially modified context
     }
+    # <<< ADD DEBUG LOG >>>
+    logger.debug(
+        f"[_collect_regeneration_feedback] Returning collected feedback data: {feedback_dict}"
+    )
+    return feedback_dict
 
 
 def _edit_ai_content(
@@ -687,7 +745,7 @@ def _edit_ai_content(
     Returns:
         Dictionary with edited title and summary, or None if user cancels
     """
-    logger.debug("Opening editor for AI content")
+    logger.debug(f"Opening editor for AI content for act {act.id}")
 
     # Create editor configuration
     editor_config = StructuredEditorConfig(
@@ -733,14 +791,15 @@ def _edit_ai_content(
         original_data["title"] = act.title
     if act.summary:
         original_data["summary"] = act.summary
+    logger.debug(f"Original act content for comments: {original_data}")
 
     # Open editor
-    edited_results, modified = edit_structured_data(
-        results,
+    logger.debug("Calling edit_structured_data for AI content edit")
+    edited_results, status = edit_structured_data(
+        results,  # Pass the AI results as the data to edit
         console,
         editor_config,
         context_info=context_info,
-        # Pass the AI results as the data to edit
         # Pass the original act content (if any) to show as comments
         original_data_for_comments=original_data if original_data else None,
         is_new=False,  # This is an edit of the AI content
@@ -751,35 +810,50 @@ def _edit_ai_content(
             error_message="Could not open editor. Please try again.",
         ),
     )
+    logger.debug(f"Editor returned status: {status.name}, data: {edited_results}")
 
-    if not succeeded:
-        logger.debug("User cancelled editing or made no changes")
+    # Check status: Only proceed if saved (modified or unchanged)
+    if status not in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+        logger.debug(f"User cancelled editing AI content (status: {status.name})")
         # Message already printed by edit_structured_data
         return None
 
-    # If succeeded is True, it means the content was saved AND changed from the AI results
     # Validate the edited content (result is stored in edited_results)
-    if not edited_results.get("title") or not edited_results.get("title").strip():
-        renderer.display_error("Title cannot be empty.")
+    # Perform validation even if SAVED_UNCHANGED, although it should pass if
+    # the original AI content was valid.
+    title = edited_results.get("title", "").strip()
+    summary = edited_results.get("summary", "").strip()
+    logger.debug(f"Validating edited title='{title}', summary='{summary}'")
+
+    if not title:
+        logger.warning("Validation failed: Edited title is empty.")
+        renderer.display_error("Title cannot be empty after edit.")
+        # Maybe re-prompt or return None? Returning None for now.
         return None
 
-    if not edited_results.get("summary") or not edited_results.get("summary").strip():
-        renderer.display_error("Summary cannot be empty.")
+    if not summary:
+        logger.warning("Validation failed: Edited summary is empty.")
+        renderer.display_error("Summary cannot be empty after edit.")
+        # Maybe re-prompt or return None? Returning None for now.
         return None
 
     # Show a preview of the edited content using the renderer
+    logger.debug("Displaying edited content preview")
     renderer.display_act_edited_content_preview(edited_results)
 
     # Ask for confirmation
-
-    if Confirm.ask(
+    logger.debug("Asking user to confirm edited content")
+    confirmed = Confirm.ask(
         "[yellow]Use this edited content?[/yellow]",
         default=True,
-    ):
-        logger.debug("User confirmed edited content")
+    )
+    logger.debug(f"User confirmation result: {confirmed}")
+
+    if confirmed:
+        logger.debug("User confirmed edited content, returning results.")
         return edited_results
     else:
-        logger.debug("User rejected edited content")
+        logger.debug("User rejected edited content, returning None.")
         return None
 
 
@@ -811,45 +885,87 @@ def _handle_user_feedback_loop(
     Returns:
         Final dictionary with title and summary, or None if user cancels
     """
-    logger.debug("Starting user feedback loop")
+    # <<< FIX: Handle None original_context in logging >>>
+    original_context_log = (
+        f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+        if original_context
+        else "None"
+    )
+    logger.debug(
+        f"[_handle_user_feedback_loop] Entering feedback loop for act {act.id}. "
+        f"Initial original_context (truncated): {original_context_log}"
+    )
+    current_results = results.copy()  # Work with a copy
+    # <<< REMOVE current_loop_context initialization >>>
+    # current_loop_context = original_context # REMOVED
 
     while True:
         # Get user choice using the renderer
-        choice = renderer.display_act_ai_feedback_prompt()
+        logger.debug("Calling renderer.display_act_ai_feedback_prompt")
+        choice = renderer.display_act_ai_feedback_prompt(console=console)
 
         logger.debug(f"User chose: {choice}")
 
         # Handle potential None choice if prompt is cancelled in renderer
-        if choice is None:
-            logger.debug("User cancelled feedback prompt")
+        if choice is None:  # Handle potential cancellation from prompt
+            logger.debug(
+                "[_handle_user_feedback_loop] User cancelled feedback prompt, exiting loop."
+            )
             return None
 
         if choice == "A":  # Accept
-            logger.debug("User accepted the generated content")
-            return results
+            logger.debug(
+                "[_handle_user_feedback_loop] User accepted the generated content, exiting loop."
+            )
+            return current_results
 
         elif choice == "E":  # Edit
             logger.debug("User chose to edit the generated content")
+            logger.debug("Calling _edit_ai_content")
             edited_results = _edit_ai_content(
-                results, act, game_name, console, renderer
+                current_results, act, game_name, console, renderer
             )
 
             if edited_results:
+                logger.debug("Edit successful and confirmed, returning edited results.")
                 return edited_results
 
             # If editing was cancelled, return to the prompt
+            logger.debug("Edit was cancelled or rejected, returning to prompt.")
             renderer.display_warning("Edit cancelled. Returning to prompt.")
             continue
 
         elif choice == "R":  # Regenerate
-            logger.debug("User chose to regenerate content")
+            logger.debug(
+                "[_handle_user_feedback_loop] User chose to regenerate content"
+            )
 
             # Collect regeneration feedback
+            logger.debug(
+                "[_handle_user_feedback_loop] Calling _collect_regeneration_feedback"
+            )
+            # <<< FIX: Always pass original_context to the feedback collector >>>
+            original_context_log_for_collector = (
+                f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+                if original_context
+                else "None"
+            )
+            logger.debug(
+                f"[_handle_user_feedback_loop] Passing original_context to feedback collector (truncated): {original_context_log_for_collector}"
+            )
             feedback_data = _collect_regeneration_feedback(
-                results, act, game_name, console, renderer, original_context
+                current_results,
+                act,
+                game_name,
+                console,
+                renderer,
+                original_context,  # <<< CHANGE: Pass original_context here
             )
 
             if not feedback_data:
+                logger.debug(
+                    "[_handle_user_feedback_loop] Regeneration feedback cancelled, returning to prompt."
+                )
                 renderer.display_warning("Regeneration cancelled. Returning to prompt.")
                 continue
 
@@ -858,34 +974,76 @@ def _handle_user_feedback_loop(
                     "Regenerating summary with AI...", style="yellow"
                 )
 
-                # Generate new content with feedback
-                if feedback_data.get("feedback") or feedback_data.get("context"):
-                    # If user provided feedback or updated context, use it
+                # --- MODIFICATION START ---
+                # Always use the context returned from the feedback editor,
+                # even if feedback itself is empty. This context will either be
+                # the original context (if unchanged in the editor) or the
+                # Always use the context returned from the feedback editor
+                regeneration_context = feedback_data.get(
+                    "context"
+                )  # This might be original or modified
+                regeneration_feedback = feedback_data.get("feedback")
+                # <<< ADD DEBUG LOG >>>
+                logger.debug(
+                    f"[_handle_user_feedback_loop] Regeneration context from feedback editor (truncated): "
+                    f"'{regeneration_context[:100]}{'...' if regeneration_context and len(regeneration_context) > 100 else ''}'"
+                )
+                logger.debug(
+                    f"[_handle_user_feedback_loop] Regeneration feedback: '{regeneration_feedback}'"
+                )
+
+                if regeneration_feedback:
+                    logger.debug(
+                        "[_handle_user_feedback_loop] Calling generate_act_summary_with_feedback with feedback and context."
+                    )
                     new_results = act_manager.generate_act_summary_with_feedback(
                         act.id,
-                        feedback_data["feedback"],
-                        previous_generation=results,
-                        context=feedback_data["context"],
+                        feedback=regeneration_feedback,
+                        previous_generation=current_results,
+                        context=regeneration_context,  # Pass potentially updated context
                     )
                 else:
-                    # If user didn't provide feedback or context, just
-                    # generate a new summary without referencing the previous
-                    # one
-                    renderer.display_message(
-                        "Generating completely new attempt...", style="yellow"
+                    # If no feedback, generate again but *still use the context*
+                    # from the feedback editor (which might be the original or modified).
+                    # This prevents losing the original context if only regeneration is requested.
+                    # <<< ADD DEBUG LOG >>>
+                    logger.debug(
+                        "[_handle_user_feedback_loop] Calling generate_act_summary with potentially updated context (no new feedback)."
                     )
-                    new_results = act_manager.generate_act_summary(act.id)
+                    # Call the base generation method, but pass the context from feedback_data
+                    new_results = act_manager.generate_act_summary(
+                        act.id, additional_context=regeneration_context
+                    )
+                # --- MODIFICATION END ---
+                logger.info(
+                    f"[_handle_user_feedback_loop] AI regeneration successful for act {act.id}"
+                )
 
                 # Display the new results using the renderer
+                logger.debug(
+                    "[_handle_user_feedback_loop] Calling renderer.display_act_ai_generation_results"
+                )
                 renderer.display_act_ai_generation_results(new_results, act)
 
                 # Continue the loop with the new results
-                results = new_results
+                current_results = new_results
+                # --- REMOVAL START ---
+                # current_loop_context = regeneration_context # REMOVED THIS LINE
+                # <<< REMOVE logging related to current_loop_context update >>>
+                # logger.debug(
+                #     f"[_handle_user_feedback_loop] Updated loop variables: results={current_results}, "
+                #     f"current_loop_context (truncated)={current_loop_context_log}" # REMOVED
+                # )
+                # --- REMOVAL END ---
+                continue  # Continue loop with new results
 
             except APIError as e:
+                logger.error(f"APIError during regeneration: {e}", exc_info=True)
                 renderer.display_error(f"AI Error: {str(e)}")
                 renderer.display_warning("Returning to previous content.")
-                continue
+                continue  # Go back to prompt with old results
+                # No need for the specific except GameError here, handled by outer complete_act
+                # continue # Duplicate continue removed
 
 
 def _handle_ai_completion(
@@ -894,7 +1052,7 @@ def _handle_ai_completion(
     active_game: Game,
     console: "Console",
     renderer: "Renderer",
-    context: Optional[str],
+    context: Optional[str],  # Context from CLI --context option
     force: bool,
 ) -> Optional[Act]:
     """Handles the AI-driven act completion flow.
@@ -918,29 +1076,106 @@ def _handle_ai_completion(
         The completed Act object on success, or None if the process is
         cancelled or fails.
     """
-    logger.debug("Handling AI completion path")
+    # <<< FIX: Handle None context in logging >>>
+    context_log = (
+        f"'{context[:100]}{'...' if len(context) > 100 else ''}'" if context else "None"
+    )
+    logger.debug(
+        f"[_handle_ai_completion] Entering function for act {active_act.id}. "
+        f"CLI context provided (truncated): {context_log}, "
+        f"force: {force}"
+    )
 
-    # 1. Check existing content
-    if not _check_existing_content(active_act, force, renderer):
+    # 1. Check existing content - do not regenerate if force is not true and
+    # content already exists in title/summary
+    logger.debug("Checking existing content before AI generation")
+    should_proceed = _check_existing_content(active_act, force, renderer)
+    if not should_proceed:
+        logger.warning("AI completion cancelled by user during existing content check.")
         renderer.display_warning("Operation cancelled.")
         return None
+    logger.debug("Existing content check passed or forced.")
 
     # 2. Collect context if needed
-    original_context = context  # Keep track for regeneration feedback
+    # <<< ADD DEBUG LOG >>>
+    logger.debug(
+        f"[_handle_ai_completion] Initial context before user collection: '{context}'"
+    )
+    original_context = (
+        context  # Keep track of the initial CLI context for regeneration feedback
+    )
+    # <<< FIX: Handle None original_context in logging >>>
+    original_context_log = (
+        f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+        if original_context
+        else "None"
+    )
+    logger.debug(
+        f"[_handle_ai_completion] Stored original_context (truncated): {original_context_log}"
+    )
     if not context:
+        logger.debug(
+            "[_handle_ai_completion] No context provided via CLI, attempting to collect from user."
+        )
+        # <<< ADD DEBUG LOG >>>
+        logger.debug("[_handle_ai_completion] Calling _collect_user_context")
         context = _collect_user_context(active_act, active_game.name, console, renderer)
+        # <<< FIX: Handle None context in logging after collection >>>
+        context_log_after = (
+            f"'{context[:100]}{'...' if context and len(context) > 100 else ''}'"
+            if context
+            else "None"
+        )
+        logger.debug(
+            f"[_handle_ai_completion] Context after user collection (truncated): {context_log_after}"
+        )
+        if context is None:
+            logger.warning(
+                "[_handle_ai_completion] AI completion cancelled during user context collection."
+            )
+            # Message already displayed by _collect_user_context or editor
+            return None
+        logger.debug("[_handle_ai_completion] User context collected successfully.")
         # User might cancel context collection, context will be None which
         # is handled by generate_act_summary
 
+        # --- ADD THIS LINE ---
+        original_context = context  # Update original_context with the collected value
+        # --- END ADDITION ---
+
     try:
         # 3. Generate initial summary
+        # <<< FIX: Handle None context in logging before AI call >>>
+        context_log_before_ai = (
+            f"'{context[:100]}{'...' if context and len(context) > 100 else ''}'"
+            if context
+            else "None"
+        )
+        logger.debug(
+            f"[_handle_ai_completion] Calling act_manager.generate_act_summary for act {active_act.id} "
+            f"with context (truncated)={context_log_before_ai}"
+        )
         renderer.display_message("Generating summary with AI...", style="yellow")
         summary_data = act_manager.generate_act_summary(active_act.id, context)
+        logger.info(
+            f"[_handle_ai_completion] Initial AI summary generated for act {active_act.id}"
+        )
 
         # 4. Display results using renderer
+        logger.debug("Displaying initial AI generation results")
         renderer.display_act_ai_generation_results(summary_data, active_act)
 
         # 5. Handle user feedback loop
+        logger.debug("[_handle_ai_completion] Entering user feedback loop")
+        # <<< FIX: Handle None original_context in logging before feedback loop >>>
+        original_context_log_before_loop = (
+            f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+            if original_context
+            else "None"
+        )
+        logger.debug(
+            f"[_handle_ai_completion] Passing original_context to feedback loop (truncated): {original_context_log_before_loop}"
+        )
         final_data = _handle_user_feedback_loop(
             summary_data,
             active_act,
@@ -948,22 +1183,35 @@ def _handle_ai_completion(
             act_manager,
             console,
             renderer,
-            original_context,
+            original_context,  # Pass original CLI context for potential regeneration feedback
         )
 
         if final_data is None:
+            logger.warning(
+                "[_handle_ai_completion] AI completion cancelled during feedback loop."
+            )
             renderer.display_warning("Operation cancelled during feedback.")
             return None  # User cancelled the loop
+        logger.debug(
+            f"[_handle_ai_completion] Feedback loop completed successfully. Final data: {final_data}"
+        )
 
         # 6. Complete the act with final AI data
+        logger.debug(
+            f"Calling act_manager.complete_act_with_ai for act {active_act.id} "
+            f"with title='{final_data.get('title')}', "
+            f"summary='{final_data.get('summary')}'"
+        )
         completed_act = act_manager.complete_act_with_ai(
             active_act.id,
             final_data.get("title"),
             final_data.get("summary"),
         )
+        logger.info(f"Act {active_act.id} completed successfully using AI data.")
         return completed_act  # Success
 
     except APIError as e:
+        logger.error(f"APIError during AI completion: {e}", exc_info=True)
         renderer.display_error(f"AI Error: {str(e)}")
         renderer.display_warning("Falling back to manual entry might be needed.")
         return None  # Indicate AI failure
@@ -996,7 +1244,9 @@ def _handle_manual_completion(
     Returns:
         The completed Act object on success, or None if the editor is cancelled.
     """
-    logger.debug("Handling manual completion path")
+    logger.debug(
+        f"[_handle_manual_completion] Entering function for act {active_act.id}."
+    )
 
     # 1. Setup editor config
     editor_config = StructuredEditorConfig(
@@ -1032,28 +1282,46 @@ def _handle_manual_completion(
         "title": active_act.title or "",
         "summary": active_act.summary or "",
     }
+    logger.debug(f"Initial data for manual completion editor: {initial_data}")
 
     # 4. Call editor
-    result, modified = edit_structured_data(
+    logger.debug("Calling edit_structured_data for manual completion")
+    result_data, status = edit_structured_data(
         initial_data,
         console,
         editor_config,
         context_info=context_info,
+        is_new=False,  # Explicitly set is_new=False for clarity
+        original_data_for_comments=initial_data,  # Show original as comments
+        # No need for treat_unchanged_save_as_success flag anymore
     )
+    logger.debug(f"Editor returned status: {status.name}, data: {result_data}")
 
-    # 5. Handle cancellation
-    if not modified:
-        renderer.display_warning("Act completion canceled.")
-        return None
+    # 5. Handle cancellation based on status
+    if status not in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+        # Abort, validation error, or editor error occurred.
+        # Message already printed by edit_structured_data.
+        logger.debug(f"Completion cancelled due to editor status: {status.name}")
+        return None  # Signal cancellation to the main complete_act function
 
-    # 6. Extract results
-    title = result.get("title") or None
-    summary = result.get("summary") or None
+    # --- If we reach here, the user saved successfully ---
+    # --- (either with or without changes) ---
+    logger.debug("Editor saved successfully (modified or unchanged).")
+
+    # 6. Extract results (always use the data returned by the editor)
+    title = result_data.get("title") or None
+    summary = result_data.get("summary") or None
+    logger.debug(f"Extracted title='{title}', summary='{summary}' from editor")
 
     # 7. Complete the act (outer function handles GameError)
+    logger.debug(
+        f"Calling act_manager.complete_act for act {active_act.id} "
+        f"with title='{title}', summary='{summary}'"
+    )
     completed_act = act_manager.complete_act(
         act_id=active_act.id, title=title, summary=summary
     )
+    logger.info(f"Act {active_act.id} completed successfully using manual data.")
 
     # 8. Return completed act
     return completed_act
@@ -1063,7 +1331,7 @@ def _handle_manual_completion(
 def complete_act(
     ctx: typer.Context,
     ai: bool = typer.Option(False, "--ai", help="Use AI to generate title and summary"),
-    context: Optional[str] = typer.Option(
+    context: Optional[str] = typer.Option(  # This is the CLI --context option
         None,
         "--context",
         "-c",
@@ -1103,13 +1371,22 @@ def complete_act(
         [green]Force AI regeneration, overwriting existing title/summary:[/green]
         $ sologm act complete --ai --force
     """
-    logger.debug("Completing act")
+    # <<< FIX: Handle None context in logging >>>
+    context_log_str = "None"
+    if context:
+        context_log_str = f"'{context[:100]}{'...' if len(context) > 100 else ''}'"
+    logger.debug(
+        f"[complete_act] Entering command: ai={ai}, "
+        f"CLI context provided (truncated)={context_log_str}, "
+        f"force={force}"
+    )
     renderer: "Renderer" = ctx.obj["renderer"]
     console: "Console" = ctx.obj["console"]  # Needed for editor/prompts
     # Main command flow
     from sologm.database.session import get_db_context
 
     # Use a single session for the entire command
+    logger.debug("[complete_act] Entering database session context")
     with get_db_context() as session:
         # Initialize managers with the session
         game_manager = GameManager(session=session)
@@ -1117,50 +1394,71 @@ def complete_act(
 
         try:
             # Validate active game and act
+            logger.debug("Validating active game")
             active_game = game_manager.get_active_game()
             if not active_game:
+                logger.error("No active game found during act completion.")
                 renderer.display_error("No active game. Activate a game first.")
                 raise typer.Exit(1)
+            logger.debug(f"Active game found: {active_game.id}")
 
+            logger.debug("Validating active act")
             active_act = act_manager.get_active_act(active_game.id)
             if not active_act:
+                logger.warning(f"No active act found in game '{active_game.name}'.")
                 renderer.display_error(f"No active act in game '{active_game.name}'.")
                 renderer.display_message("Create one with 'sologm act create'.")
                 raise typer.Exit(1)
+            logger.debug(f"Active act found: {active_act.id}")
 
             completed_act: Optional[Act] = None
             if ai:
+                logger.debug("[complete_act] AI completion path chosen.")
                 # Handle AI path
+                # <<< ADD DEBUG LOG >>>
+                logger.debug("[complete_act] Calling _handle_ai_completion")
                 completed_act = _handle_ai_completion(
                     act_manager,
                     active_act,
                     active_game,
                     console,
                     renderer,
-                    context,
+                    context,  # Pass the CLI context here
                     force,
+                )
+                logger.debug(
+                    f"[complete_act] _handle_ai_completion returned: {completed_act}"
                 )
                 # If AI fails or is cancelled, completed_act will be None
             else:
+                logger.debug("[complete_act] Manual completion path chosen.")
                 # Handle manual editor path (this is now the default if
                 # --ai is not used)
-                logger.debug("Handling manual completion via editor")
+                # <<< ADD DEBUG LOG >>>
+                logger.debug("[complete_act] Calling _handle_manual_completion")
                 completed_act = _handle_manual_completion(
                     act_manager, active_act, active_game, console, renderer
+                )
+                logger.debug(
+                    f"[complete_act] _handle_manual_completion returned: {completed_act}"
                 )
                 # If manual edit is cancelled, completed_act will be None
 
             # Display success only if completion happened successfully
             if completed_act:
+                logger.info(f"Act {completed_act.id} completion process successful.")
+                logger.debug("Calling renderer.display_act_completion_success")
                 renderer.display_act_completion_success(completed_act)
             else:
-                logger.debug(
-                    "Act completion did not finish successfully or was cancelled."
+                logger.warning(
+                    f"Act {active_act.id} completion did not finish successfully or was cancelled."
                 )
                 # Optionally, add a message here if needed, e.g.:
                 # renderer.display_warning("Act completion process ended.")
 
         except GameError as e:
             # Catch errors from validation or manual completion
+            logger.error(f"GameError during act completion: {e}", exc_info=True)
             renderer.display_error(f"Error: {str(e)}")
             raise typer.Exit(1) from e
+    logger.debug("[complete_act] Exiting command")

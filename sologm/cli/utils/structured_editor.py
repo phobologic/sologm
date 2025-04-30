@@ -4,6 +4,7 @@ import logging
 import re
 import textwrap
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import click
@@ -30,6 +31,16 @@ class ValidationError(EditorError):
     """Exception raised when validation fails."""
 
     pass
+
+
+class EditorStatus(Enum):
+    """Represents the outcome of the structured editor session."""
+
+    SAVED_MODIFIED = auto()  # Saved, content changed from original
+    SAVED_UNCHANGED = auto()  # Saved, content identical to original
+    ABORTED = auto()  # User explicitly cancelled/quit editor without saving
+    VALIDATION_ERROR = auto()  # Validation failed after retries
+    EDITOR_ERROR = auto()  # Failed to launch editor or other editor issue
 
 
 @dataclass
@@ -389,29 +400,28 @@ class StructuredEditor:
         context_info: str = "",
         is_new: bool = False,
         original_data_for_comments: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Dict[str, Any], bool]:
+    ) -> Tuple[Dict[str, Any], EditorStatus]:
         """Edit data using structured text blocks in an external editor.
 
         Args:
             data: Dictionary of data to edit (None or empty dict for new items).
-                  This is the *original* data for comparison in edit mode.
+                  This is the *original* data for comparison and return on failure.
             console: Rich console for output
             context_info: Context information to include at the top
-            is_new: Whether this is a new item (affects success condition and comments).
+            is_new: Whether this is a new item (affects validation and comments).
             original_data_for_comments: Optional data to show as comments (e.g., AI results).
 
         Returns:
-            Tuple of (edited_data, operation_succeeded).
-            `operation_succeeded` is True if:
-            - `is_new` is True and the editor was saved (even if empty).
-            - `is_new` is False and the editor was saved with changes compared to `data`.
-            `operation_succeeded` is False if:
-            - The editor was aborted.
-            - Validation failed after retries.
-            - `is_new` is False and the editor was saved without changes compared to `data`.
+            Tuple of (result_data, status).
+            `result_data` contains:
+                - The parsed data if status is SAVED_MODIFIED or SAVED_UNCHANGED.
+                - The original input `data` (or empty dict) otherwise.
+            `status` is an EditorStatus enum indicating the outcome.
         """
-        # Create a working copy for the editor, or initialize empty if data is None
-        working_data = {} if data is None else data.copy()
+        # Store original data for return on failure/abort
+        original_data = {} if data is None else data.copy()
+        # Create a working copy for the editor
+        working_data = original_data.copy()
 
         # Determine what data to show as comments (original value)
         # If original_data_for_comments is provided, use that.
@@ -453,26 +463,20 @@ class StructuredEditor:
                     )
 
                     # --- Validation Passed ---
-                    if is_new:
-                        # For new items, saving always means success, even if empty
+                    data_changed_compared_to_original = parsed_data != original_data
+
+                    if data_changed_compared_to_original:
                         console.print(
                             f"[green]{self.editor_config.success_message}[/green]"
                         )
-                        return parsed_data, True
+                        return parsed_data, EditorStatus.SAVED_MODIFIED
                     else:
-                        # For existing items, check if data actually changed compared to original
-                        data_changed = parsed_data != data
-                        if data_changed:
-                            console.print(
-                                f"[green]{self.editor_config.success_message}[/green]"
-                            )
-                        else:
-                            # Saved, but no effective change compared to original data
-                            console.print(
-                                f"[yellow]{self.editor_config.cancel_message}[/yellow]"
-                            )  # Or "No changes saved."
-                        # Return parsed data, success flag indicates if it differs from original
-                        return parsed_data, data_changed
+                        # Saved, but no effective change compared to original data
+                        console.print(
+                            f"[yellow]{self.editor_config.cancel_message}[/yellow]"
+                        )  # Or "No changes detected."
+                        # Return the parsed data (which is same as original), but signal unchanged
+                        return parsed_data, EditorStatus.SAVED_UNCHANGED
 
                 except ValidationError as e:
                     # --- Validation Failed ---
@@ -484,29 +488,29 @@ class StructuredEditor:
                     else:
                         console.print(
                             "[bold red]Maximum retry attempts reached. "
-                            "Canceling edit.[/bold red]"
+                            "Edit cancelled.[/bold red]"
                         )
-                        # Return original data, operation failed
-                        return data or {}, False
+                        # Return original data, validation failed
+                        return original_data, EditorStatus.VALIDATION_ERROR
 
             except EditorAbortedError:
                 # --- Editor was ABORTED ---
                 console.print(f"\n[yellow]{self.editor_config.cancel_message}[/yellow]")
-                # Return original data, operation cancelled
-                return data or {}, False
+                # Return original data, aborted
+                return original_data, EditorStatus.ABORTED
 
             except (
                 EditorError
             ) as e:  # Catch errors from editor strategy (e.g., UsageError)
                 # Error message already printed by strategy or here if needed
                 logger.error(f"Editor strategy failed: {e}", exc_info=True)
-                # Optionally print a message here too
-                # console.print(f"[red]Error during editing: {e}[/red]")
-                # Return original data, operation failed
-                return data or {}, False
+                # Error message already printed by strategy
+                # Return original data, editor error
+                return original_data, EditorStatus.EDITOR_ERROR
 
         # Fallback if loop finishes unexpectedly (shouldn't happen)
-        return data or {}, False
+        logger.error("Structured editor loop finished unexpectedly.")
+        return original_data, EditorStatus.EDITOR_ERROR
 
 
 # Backward compatibility functions
@@ -560,7 +564,7 @@ def edit_structured_data(
     is_new: bool = False,
     # Add original_data_for_comments if needed
     original_data_for_comments: Optional[Dict[str, Any]] = None,
-) -> Tuple[Dict[str, Any], bool]:
+) -> Tuple[Dict[str, Any], EditorStatus]:
     """Edit data using structured text blocks (compatibility function)."""
     editor = StructuredEditor(config, editor_config)
     # Pass original_data_for_comments if provided

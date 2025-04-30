@@ -6,10 +6,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from rich.console import Console
 
-from sologm.cli.utils.structured_editor import (
+from sologm.cli.utils.structured_editor import (  # Updated import
     EditorAbortedError,
-    EditorConfig,  # <-- Add this
+    EditorConfig,
     EditorError,
+    EditorStatus,  # <-- Add this
     FieldConfig,
     StructuredEditor,
     StructuredEditorConfig,
@@ -244,62 +245,74 @@ class MockEditorStrategy:
 
 # Use parametrize for different scenarios
 @pytest.mark.parametrize(
-    "is_new, editor_behavior, initial_data, editor_return_text, expected_result, expected_succeeded, expected_mock_calls",
+    "is_new, editor_behavior, initial_data, editor_return_text, expected_data, expected_status, expected_mock_calls",
     [
-        # --- SCENARIO: Create New Item ---
-        # Save modified (new item) -> Success
+        # --- SCENARIO: Create New Item (is_new=True) ---
+        # Save modified -> SAVED_MODIFIED
         (
             True,
             "save_modified",
             {},
-            # Corrected format:
             "--- TITLE ---\nNew Title\n--- END TITLE ---",
             {"title": "New Title"},
-            True,
+            EditorStatus.SAVED_MODIFIED,
             1,
         ),
-        # Save empty (new item) -> Success (explicitly saving empty is allowed for new)
+        # Save empty -> SAVED_MODIFIED (adding an empty key IS a change from {})
         (
             True,
             "save_unchanged",
             {},
-            # Corrected format:
             "--- TITLE ---\n\n--- END TITLE ---",
             {"title": ""},
-            True,
-            1,
+            EditorStatus.SAVED_MODIFIED,
+            1,  # <-- Changed expected status
         ),
-        # Abort (new item) -> Cancelled
-        (True, "abort", {}, None, {}, False, 1),
-        # Editor error (new item) -> Cancelled
-        (True, "error", {}, None, {}, False, 1),
-        # --- SCENARIO: Edit Existing Item ---
-        # Save modified (edit item) -> Success
+        # Abort -> ABORTED (returns original empty dict)
+        (True, "abort", {}, None, {}, EditorStatus.ABORTED, 1),
+        # Editor error -> EDITOR_ERROR (returns original empty dict)
+        (True, "error", {}, None, {}, EditorStatus.EDITOR_ERROR, 1),
+        # --- SCENARIO: Edit Existing Item (is_new=False) ---
+        # Save modified -> SAVED_MODIFIED
         (
             False,
             "save_modified",
             {"title": "Old"},
-            # Corrected format:
             "--- TITLE ---\nNew Title\n--- END TITLE ---",
             {"title": "New Title"},
-            True,
+            EditorStatus.SAVED_MODIFIED,
             1,
         ),
-        # Save unchanged (edit item) -> Cancelled (no effective change)
+        # Save unchanged -> SAVED_UNCHANGED (returns parsed but unchanged data)
         (
             False,
             "save_unchanged",
             {"title": "Old"},
-            # Corrected format:
             "--- TITLE ---\nOld\n--- END TITLE ---",
             {"title": "Old"},
-            False,
+            EditorStatus.SAVED_UNCHANGED,
             1,
         ),
-        # Abort (edit item) -> Cancelled
-        (False, "abort", {"title": "Old"}, None, {"title": "Old"}, False, 1),
-        # Editor error (edit item) -> Cancelled
-        (False, "error", {"title": "Old"}, None, {"title": "Old"}, False, 1),
+        # Abort -> ABORTED (returns original data)
+        (
+            False,
+            "abort",
+            {"title": "Old"},
+            None,
+            {"title": "Old"},
+            EditorStatus.ABORTED,
+            1,
+        ),
+        # Editor error -> EDITOR_ERROR (returns original data)
+        (
+            False,
+            "error",
+            {"title": "Old"},
+            None,
+            {"title": "Old"},
+            EditorStatus.EDITOR_ERROR,
+            1,
+        ),
     ],
 )
 def test_edit_data_scenarios(
@@ -307,11 +320,11 @@ def test_edit_data_scenarios(
     editor_behavior,
     initial_data,
     editor_return_text,
-    expected_result,
-    expected_succeeded,
+    expected_data,
+    expected_status,
     expected_mock_calls,
 ):
-    """Test various scenarios for StructuredEditor.edit_data."""
+    """Test various scenarios for StructuredEditor.edit_data return status."""
     config = StructuredEditorConfig(
         fields=[
             FieldConfig(name="title", display_name="Title", required=False)
@@ -323,9 +336,9 @@ def test_edit_data_scenarios(
     editor = StructuredEditor(config=config, editor_strategy=mock_editor_strategy)
     console = Console(width=80, file=None)  # Mock console if needed for output checks
 
-    # Use patch for UIManager if testing validation retries
+    # Use patch for UIManager to avoid console output during tests
     with patch("sologm.cli.utils.structured_editor.UIManager", MagicMock()):
-        result, succeeded = editor.edit_data(
+        result_data, status = editor.edit_data(
             data=initial_data,
             console=console,
             is_new=is_new,
@@ -333,8 +346,8 @@ def test_edit_data_scenarios(
             original_data_for_comments=initial_data if not is_new else None,
         )
 
-    assert result == expected_result
-    assert succeeded == expected_succeeded
+    assert result_data == expected_data
+    assert status == expected_status
     assert mock_editor_strategy.call_count == expected_mock_calls
 
 
@@ -361,18 +374,26 @@ def test_edit_data_validation_retry_and_fail():
     console = Console(width=80, file=None)
     initial_data = {"title": "Old"}
 
-    with patch(
-        "sologm.cli.utils.structured_editor.UIManager.display_validation_error"
-    ) as mock_display_error:
-        result, succeeded = editor.edit_data(
-            data=initial_data, console=console, is_new=False
-        )
+    # Create a mock UIManager instance
+    mock_ui_manager_instance = MagicMock()
+    # Pass the mock instance to the editor
+    editor = StructuredEditor(
+        config=config,
+        editor_strategy=mock_editor_strategy,
+        editor_config=editor_config,
+        ui_manager=mock_ui_manager_instance,  # Pass the mock instance
+    )
 
-    assert result == initial_data  # Returns original data on failure
-    assert succeeded is False
+    # No need to patch the class now
+    result_data, status = editor.edit_data(
+        data=initial_data, console=console, is_new=False
+    )
+
+    assert result_data == initial_data  # Returns original data on validation failure
+    assert status == EditorStatus.VALIDATION_ERROR
     assert mock_editor_strategy.edit_text.call_count == 2  # Initial call + 1 retry
-    # Update expected call count to 2:
-    assert mock_display_error.call_count == 2  # Validation error displayed twice
+    # Check that display_validation_error was called twice on the instance
+    assert mock_ui_manager_instance.display_validation_error.call_count == 2
 
 
 def test_edit_data_validation_retry_and_succeed():
@@ -400,14 +421,23 @@ def test_edit_data_validation_retry_and_succeed():
     console = Console(width=80, file=None)
     initial_data = {"title": "Old"}
 
-    with patch(
-        "sologm.cli.utils.structured_editor.UIManager.display_validation_error"
-    ) as mock_display_error:
-        result, succeeded = editor.edit_data(
-            data=initial_data, console=console, is_new=False
-        )
+    # Create a mock UIManager instance
+    mock_ui_manager_instance = MagicMock()
+    # Pass the mock instance to the editor
+    editor = StructuredEditor(
+        config=config,
+        editor_strategy=mock_editor_strategy,
+        editor_config=editor_config,
+        ui_manager=mock_ui_manager_instance,  # Pass the mock instance
+    )
 
-    assert result == {"title": "Valid Title"}  # Returns parsed valid data
-    assert succeeded is True
+    # No need to patch the class now
+    result_data, status = editor.edit_data(
+        data=initial_data, console=console, is_new=False
+    )
+
+    assert result_data == {"title": "Valid Title"}  # Returns parsed valid data
+    assert status == EditorStatus.SAVED_MODIFIED  # Succeeded on retry
     assert mock_editor_strategy.edit_text.call_count == 2  # Initial call + 1 retry
-    assert mock_display_error.call_count == 1  # Validation error displayed once
+    # Check that display_validation_error was called once on the instance
+    assert mock_ui_manager_instance.display_validation_error.call_count == 1
