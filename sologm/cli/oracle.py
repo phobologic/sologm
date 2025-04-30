@@ -8,7 +8,7 @@ import typer
 # Import structured editor components
 from sologm.cli.utils.structured_editor import (
     EditorConfig,
-    EditorStatus,
+    EditorStatus, # Added EditorStatus
     FieldConfig,
     StructuredEditorConfig,
     edit_structured_data,
@@ -174,13 +174,11 @@ def retry_interpretation(
     count: int = typer.Option(
         None, "--count", "-c", help="Number of interpretations to generate"
     ),
-    edit_context: bool = typer.Option(
-        False, "--edit", "-e", help="Edit the context before retrying"
-    ),
+    # Removed edit_context option
 ) -> None:
-    """Request new interpretations using current context and results."""
+    """Request new interpretations, editing context and results first.""" # Updated docstring
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"]  # Needed for editor/confirm
+    console: "Console" = ctx.obj["console"]
     from sologm.database.session import get_db_context
 
     try:
@@ -209,52 +207,70 @@ def retry_interpretation(
             context = current_interp_set.context
             oracle_results = current_interp_set.oracle_results
 
-            # If edit_context flag is set or user confirms editing
-            if edit_context or typer.confirm(
-                "Would you like to edit the context before retrying?"
-            ):
-                from sologm.cli.utils.structured_editor import (
-                    EditorConfig,
-                    FieldConfig,
-                    StructuredEditorConfig,
-                    edit_structured_data,
-                )
+            # --- Always open editor for context and results ---
+            renderer.display_message(
+                "Opening editor to refine context and results...",
+                style="italic yellow",
+            )
 
-                # Create editor configurations
-                editor_config = EditorConfig(
-                    edit_message="Current context:",
-                    success_message="Context updated.",
-                    cancel_message="Context unchanged.",
-                    error_message="Could not open editor",
-                )
+            # Create editor configurations
+            editor_config = EditorConfig(
+                edit_message="Edit Context and Results:", # Updated message
+                success_message="Context/Results updated.",
+                cancel_message="Context/Results unchanged.",
+                error_message="Could not open editor",
+            )
 
-                # Configure the structured editor fields
-                structured_config = StructuredEditorConfig(
-                    fields=[
-                        FieldConfig(
-                            name="context",
-                            display_name="Oracle Context",
-                            help_text="The question or context for the oracle "
-                            "interpretation",
-                            required=True,
-                            multiline=True,
-                        ),
-                    ]
-                )
+            # Configure the structured editor fields for both context and results
+            structured_config = StructuredEditorConfig(
+                fields=[
+                    FieldConfig(
+                        name="context",
+                        display_name="Oracle Context",
+                        help_text="The question or context for the oracle interpretation.",
+                        required=True,
+                        multiline=True,
+                    ),
+                    FieldConfig( # Added field for results
+                        name="results",
+                        display_name="Oracle Results",
+                        help_text="The raw results from the oracle (e.g., dice roll, card draw).",
+                        required=True,
+                        multiline=False, # Typically single line
+                    ),
+                ]
+            )
 
-                # Use the structured editor
-                context_data = {"context": context}
-                edited_data, was_modified = edit_structured_data(
-                    data=context_data,
-                    console=console,
-                    config=structured_config,
-                    context_info="Edit the context for the oracle interpretation:\n",
-                    editor_config=editor_config,
-                    is_new=False,  # This is an existing context
-                )
+            # Prepare initial data for the editor
+            initial_data = {"context": context, "results": oracle_results}
 
-                if was_modified:
-                    context = edited_data["context"]
+            # Use the structured editor
+            edited_data, status = edit_structured_data(
+                data=initial_data, # Pass original data for editing
+                console=console,
+                config=structured_config,
+                context_info="Edit the context and/or results before retrying:\n", # Updated context info
+                editor_config=editor_config,
+                is_new=False,  # Editing existing data
+            )
+
+            # Handle editor outcome
+            if status in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+                context = edited_data.get("context")
+                oracle_results = edited_data.get("results")
+                # Basic check after editor
+                if not context or not oracle_results:
+                     renderer.display_error("Context and Results cannot be empty.")
+                     raise typer.Exit(1)
+                # Message printed by editor on success/unchanged
+            elif status == EditorStatus.ABORTED:
+                # Message already printed by editor
+                raise typer.Exit(0)
+            else: # VALIDATION_ERROR or EDITOR_ERROR
+                # Message already printed by editor
+                raise typer.Exit(1)
+            # --- End Editor Logic ---
+
 
             renderer.display_message(
                 "\nGenerating new interpretations...", style="bold blue"
@@ -262,10 +278,10 @@ def retry_interpretation(
             new_interp_set = oracle_manager.get_interpretations(
                 scene.id,
                 context,  # Use the potentially updated context
-                oracle_results,
+                oracle_results, # Use the potentially updated results
                 count=count,
                 retry_attempt=current_interp_set.retry_attempt + 1,
-                previous_set_id=current_interp_set.id,  # Pass the current set ID
+                previous_set_id=current_interp_set.id,
             )
 
             renderer.display_interpretation_set(new_interp_set)
