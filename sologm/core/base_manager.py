@@ -132,7 +132,7 @@ class BaseManager(Generic[T, M]):
         Args:
             session: Database session
             model_class: Model class to query
-            entity_id: ID of the entity to retrieve
+            entity_id: ID of the entity to retrieve (assumed to be the primary key ID)
             error_class: Exception class to raise if entity not found
             error_message: Optional custom error message
 
@@ -142,6 +142,7 @@ class BaseManager(Generic[T, M]):
         Raises:
             error_class: If entity not found
         """
+        # Assuming model_class.id refers to the primary key column
         entity = session.query(model_class).filter(model_class.id == entity_id).first()
         if not entity:
             msg = (
