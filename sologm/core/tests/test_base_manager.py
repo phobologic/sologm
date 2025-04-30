@@ -32,7 +32,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test finding an entity by ID."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game = create_test_game(session, name="FindByID Game")
             # Pass session explicitly as it's required by the method signature
             found_entity = base_manager.get_entity_by_identifier(session, Game, game.id)
@@ -48,7 +48,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test finding an entity by slug."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game = create_test_game(session, name="FindBySlug Game")
             # Ensure slug is generated correctly by the model/factory
             assert game.slug == "findbyslug-game"
@@ -61,11 +61,12 @@ class TestBaseManagerIntegration:
             assert found_entity.slug == "findbyslug-game"
 
     def test_get_entity_by_identifier_returns_none_for_nonexistent(
-        self, session_context: SessionContext # base_manager: BaseManager, <-- Remove
+        self,
+        session_context: SessionContext,  # base_manager: BaseManager, <-- Remove
     ) -> None:
         """Test returning None when identifier does not match ID or slug."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             # Pass session explicitly
             found_entity = base_manager.get_entity_by_identifier(
                 session, Game, "nonexistent-identifier"
@@ -82,7 +83,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test finding an entity by ID using the _or_error method."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game = create_test_game(session, name="FindByIDOrError Game")
             # Pass session explicitly
             found_entity = base_manager.get_entity_by_identifier_or_error(
@@ -99,7 +100,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test finding an entity by slug using the _or_error method."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game = create_test_game(session, name="FindBySlugOrError Game")
             assert game.slug == "findbyslugorerror-game"
             # Pass session explicitly
@@ -110,11 +111,12 @@ class TestBaseManagerIntegration:
             assert found_entity.slug == "findbyslugorerror-game"
 
     def test_get_entity_by_identifier_or_error_raises_error(
-        self, session_context: SessionContext # base_manager: BaseManager, <-- Remove
+        self,
+        session_context: SessionContext,  # base_manager: BaseManager, <-- Remove
     ) -> None:
         """Test raising the specified error when identifier is not found."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             identifier = "nonexistent-for-error"
             with pytest.raises(TestError) as exc_info:
                 # Pass session explicitly
@@ -127,11 +129,12 @@ class TestBaseManagerIntegration:
             )
 
     def test_get_entity_by_identifier_or_error_raises_custom_error(
-        self, session_context: SessionContext # base_manager: BaseManager, <-- Remove
+        self,
+        session_context: SessionContext,  # base_manager: BaseManager, <-- Remove
     ) -> None:
         """Test raising the specified error with a custom message."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             identifier = "nonexistent-for-custom-error"
             custom_message = "Custom not found message."
             with pytest.raises(TestError) as exc_info:
@@ -151,7 +154,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test finding an entity by ID using get_entity_or_error."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game = create_test_game(session, name="GetOrError Game")
             # Pass session explicitly
             found_entity = base_manager.get_entity_or_error(
@@ -161,11 +164,12 @@ class TestBaseManagerIntegration:
             assert found_entity.id == game.id
 
     def test_get_entity_or_error_raises_error(
-        self, session_context: SessionContext # base_manager: BaseManager, <-- Remove
+        self,
+        session_context: SessionContext,  # base_manager: BaseManager, <-- Remove
     ) -> None:
         """Test get_entity_or_error raises error for nonexistent ID."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             entity_id = "nonexistent-id-for-get-error"
             with pytest.raises(TestError) as exc_info:
                 # Pass session explicitly
@@ -183,7 +187,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test listing entities with no filters."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game1 = create_test_game(session, name="List Game 1")
             game2 = create_test_game(session, name="List Game 2")
             # list_entities uses the manager's session via _execute_db_operation
@@ -201,7 +205,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test listing entities with a filter."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             create_test_game(session, name="Filter Other Game")
             game_to_find = create_test_game(session, name="Filter Target Game")
             entities = base_manager.list_entities(
@@ -218,7 +222,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test listing entities with ascending order."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game_b = create_test_game(session, name="Order B Game")
             game_a = create_test_game(session, name="Order A Game")
             entities = base_manager.list_entities(
@@ -241,7 +245,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test listing entities with descending order."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             game_a = create_test_game(session, name="Order A Game Desc")
             game_b = create_test_game(session, name="Order B Game Desc")
             entities = base_manager.list_entities(
@@ -263,7 +267,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test listing entities with a limit."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             # Create more games than the limit
             create_test_game(session, name="Limit Game 1")
             create_test_game(session, name="Limit Game 2")
@@ -279,7 +283,7 @@ class TestBaseManagerIntegration:
     ) -> None:
         """Test listing entities with combined filters, ordering, and limit."""
         with session_context as session:
-            base_manager = BaseManager(session=session) # Instantiate here
+            base_manager = BaseManager(session=session)  # Instantiate here
             create_test_game(session, name="Combo A", description="Keep")
             game_b = create_test_game(session, name="Combo B", description="Keep")
             game_c = create_test_game(session, name="Combo C", description="Keep")
