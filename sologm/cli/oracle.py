@@ -74,7 +74,7 @@ def interpret_oracle(
                         name="context",
                         display_name="Oracle Context",
                         help_text="The question or context for the oracle "
-                                  "interpretation.",
+                        "interpretation.",
                         required=True,
                         multiline=True,
                     ),
@@ -82,7 +82,7 @@ def interpret_oracle(
                         name="results",
                         display_name="Oracle Results",
                         help_text="The raw results from the oracle (e.g., "
-                                  "dice roll, card draw).",
+                        "dice roll, card draw).",
                         required=True,
                         multiline=False,  # Typically single line, but adjust if needed
                     ),
@@ -107,8 +107,8 @@ def interpret_oracle(
                     config=structured_config,
                     editor_config=editor_config,
                     context_info="Please provide the context and results for "
-                                 "the oracle.",
-                    is_new=True
+                    "the oracle.",
+                    is_new=True,
                 )
 
                 # Handle editor outcome
@@ -228,7 +228,7 @@ def retry_interpretation(
                         name="context",
                         display_name="Oracle Context",
                         help_text="The question or context for the oracle "
-                                  "interpretation.",
+                        "interpretation.",
                         required=True,
                         multiline=True,
                     ),
@@ -236,7 +236,7 @@ def retry_interpretation(
                         name="results",
                         display_name="Oracle Results",
                         help_text="The raw results from the oracle (e.g., "
-                                  "dice roll, card draw).",
+                        "dice roll, card draw).",
                         required=True,
                         multiline=False,
                     ),
