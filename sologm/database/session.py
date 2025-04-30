@@ -8,6 +8,10 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
+# --- ADD THIS IMPORT ---
+from sologm.models.event_source import EventSource
+# --- END ADDITION ---
+
 from sologm.models.base import Base
 
 # Set up logger
@@ -214,6 +218,45 @@ class SessionContext:
                 self.session.close()
 
 
+# --- ADD THIS FUNCTION ---
+def _seed_default_event_sources() -> None:
+    """Ensure default event sources exist in the database."""
+    logger.debug("Checking and seeding default event sources if necessary.")
+    default_sources = ["manual", "oracle", "dice"]
+    try:
+        with get_db_context() as session:
+            existing_sources = (
+                session.query(EventSource.name)
+                .filter(EventSource.name.in_(default_sources))
+                .all()
+            )
+            existing_names = {name for (name,) in existing_sources}
+            logger.debug(f"Found existing event sources: {existing_names}")
+
+            missing_sources = [
+                name for name in default_sources if name not in existing_names
+            ]
+
+            if not missing_sources:
+                logger.debug("All default event sources already exist.")
+                return
+
+            logger.info(f"Creating missing default event sources: {missing_sources}")
+            for source_name in missing_sources:
+                source = EventSource.create(name=source_name)
+                session.add(source)
+                logger.debug(f"Added '{source_name}' event source to session.")
+
+            # Commit happens automatically via SessionContext exit
+            logger.info("Default event sources seeded successfully.")
+
+    except Exception as e:
+        # Log error but don't prevent application startup if seeding fails
+        logger.error(f"Failed to seed default event sources: {e}", exc_info=True)
+
+# --- END ADDITION ---
+
+
 # Convenience functions
 def initialize_database(
     db_url: Optional[str] = None, engine: Optional[Engine] = None
@@ -237,6 +280,11 @@ def initialize_database(
 
     db = DatabaseManager.get_instance(db_url=db_url, engine=engine)
     db.create_tables()
+
+    # --- ADD THIS CALL ---
+    _seed_default_event_sources()
+    # --- END ADDITION ---
+
     logger.info("Database initialized successfully")
     return db
 
