@@ -1,7 +1,7 @@
 """Oracle interpretation commands for Solo RPG Helper."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional
 
 import typer
 from rich.console import Console  # Moved import
@@ -19,13 +19,6 @@ from sologm.core.oracle import OracleManager
 from sologm.database.session import get_db_context  # Moved import
 from sologm.utils.config import get_config  # Moved import
 from sologm.utils.errors import OracleError
-
-if TYPE_CHECKING:
-    # These are typically only needed for type checking if you have complex
-    # forward references or want to avoid circular imports at runtime.
-    # Keeping them here based on original structure.
-    pass  # Keep the block structure if needed, or remove if Console/Renderer are always available
-
 
 logger = logging.getLogger(__name__)
 oracle_app = typer.Typer(help="Oracle interpretation commands")
@@ -65,7 +58,8 @@ def interpret_oracle(
             if context is None or results is None:
                 if show_prompt:
                     renderer.display_error(
-                        "Cannot show prompt without providing both --context and --results."
+                        "Cannot show prompt without providing both --context "
+                        "and --results."
                     )
                     raise typer.Exit(1)
 
@@ -79,14 +73,16 @@ def interpret_oracle(
                     FieldConfig(
                         name="context",
                         display_name="Oracle Context",
-                        help_text="The question or context for the oracle interpretation.",
+                        help_text="The question or context for the oracle "
+                                  "interpretation.",
                         required=True,
                         multiline=True,
                     ),
                     FieldConfig(
                         name="results",
                         display_name="Oracle Results",
-                        help_text="The raw results from the oracle (e.g., dice roll, card draw).",
+                        help_text="The raw results from the oracle (e.g., "
+                                  "dice roll, card draw).",
                         required=True,
                         multiline=False,  # Typically single line, but adjust if needed
                     ),
@@ -110,8 +106,9 @@ def interpret_oracle(
                     console=console,
                     config=structured_config,
                     editor_config=editor_config,
-                    context_info="Please provide the context and results for the oracle.",
-                    is_new=True,  # Treat as new input gathering
+                    context_info="Please provide the context and results for "
+                                 "the oracle.",
+                    is_new=True
                 )
 
                 # Handle editor outcome
@@ -121,7 +118,8 @@ def interpret_oracle(
                 ):
                     context = edited_data.get("context")
                     results = edited_data.get("results")
-                    # Basic check after editor, though validation should catch empty required fields
+                    # Basic check after editor, though validation should
+                    # catch empty required fields
                     if not context or not results:
                         renderer.display_error("Context and Results are required.")
                         raise typer.Exit(1)
@@ -229,14 +227,16 @@ def retry_interpretation(
                     FieldConfig(
                         name="context",
                         display_name="Oracle Context",
-                        help_text="The question or context for the oracle interpretation.",
+                        help_text="The question or context for the oracle "
+                                  "interpretation.",
                         required=True,
                         multiline=True,
                     ),
                     FieldConfig(
                         name="results",
                         display_name="Oracle Results",
-                        help_text="The raw results from the oracle (e.g., dice roll, card draw).",
+                        help_text="The raw results from the oracle (e.g., "
+                                  "dice roll, card draw).",
                         required=True,
                         multiline=False,
                     ),
@@ -319,7 +319,8 @@ def list_interpretation_sets(
                         f"Could not determine active context: {str(e)}"
                     )
                     renderer.display_warning(
-                        "Please specify --scene-id or run this command within an active game/act/scene."
+                        "Please specify --scene-id or run this command within "
+                        "an active game/act/scene."
                     )
                     raise typer.Exit(1) from e
 
@@ -505,7 +506,8 @@ def select_interpretation(
                         EditorStatus.SAVED_MODIFIED,
                         EditorStatus.SAVED_UNCHANGED,
                     ):
-                        # Use edited data even if unchanged from default, in case user opened editor and saved
+                        # Use edited data even if unchanged from default,
+                        # in case user opened editor and saved
                         event_description = edited_data.get(
                             "description", default_description
                         )
