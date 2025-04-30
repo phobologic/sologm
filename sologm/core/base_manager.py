@@ -150,6 +150,78 @@ class BaseManager(Generic[T, M]):
             raise error_class(msg)
         return entity
 
+    def get_entity_by_identifier(
+        self, session: Session, model_class: Type[M], identifier: str
+    ) -> Optional[M]:
+        """Find an entity by its ID (UUID) or slug.
+
+        Tries to find the entity by ID first, then by slug if the model
+        has a 'slug' attribute.
+
+        Args:
+            session: The SQLAlchemy session to use.
+            model_class: The SQLAlchemy model class to query.
+            identifier: The ID (UUID) or slug to search for.
+
+        Returns:
+            The entity instance if found, None otherwise.
+        """
+        # Try finding by ID first (usually primary key)
+        entity = session.query(model_class).filter(model_class.id == identifier).first()
+        if entity:
+            self.logger.debug(f"Found {model_class.__name__} by ID: {identifier}")
+            return entity
+
+        # If not found by ID and the model has a 'slug' attribute, try by slug
+        if hasattr(model_class, "slug"):
+            entity = (
+                session.query(model_class)
+                .filter(getattr(model_class, "slug") == identifier)
+                .first()
+            )
+            if entity:
+                self.logger.debug(f"Found {model_class.__name__} by slug: {identifier}")
+                return entity
+
+        # Not found by either
+        self.logger.debug(
+            f"{model_class.__name__} not found by identifier: {identifier}"
+        )
+        return None
+
+    def get_entity_by_identifier_or_error(
+        self,
+        session: Session,
+        model_class: Type[M],
+        identifier: str,
+        error_class: Type[Exception],
+        error_message: Optional[str] = None,
+    ) -> M:
+        """Find an entity by its ID (UUID) or slug, raising an error if not found.
+
+        Args:
+            session: The SQLAlchemy session to use.
+            model_class: The SQLAlchemy model class to query.
+            identifier: The ID (UUID) or slug to search for.
+            error_class: The exception class to raise if not found.
+            error_message: Custom error message. If None, a default is used.
+
+        Returns:
+            The entity instance.
+
+        Raises:
+            error_class: If the entity is not found by ID or slug.
+        """
+        entity = self.get_entity_by_identifier(session, model_class, identifier)
+        if not entity:
+            if error_message is None:
+                error_message = (
+                    f"{model_class.__name__} not found with identifier '{identifier}'"
+                )
+            self.logger.warning(f"Raising error: {error_message}")
+            raise error_class(error_message)
+        return entity
+
     def list_entities(
         self,
         model_class: Type[M],

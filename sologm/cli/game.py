@@ -8,6 +8,7 @@ import typer
 from sologm.cli.utils.markdown import generate_game_markdown
 from sologm.cli.utils.structured_editor import (
     EditorConfig,
+    EditorStatus,  # Import EditorStatus
     FieldConfig,
     StructuredEditorConfig,
     edit_structured_data,
@@ -74,21 +75,27 @@ def list_games(ctx: typer.Context) -> None:
 @game_app.command("activate")
 def activate_game(
     ctx: typer.Context,
-    game_id: str = typer.Option(..., "--id", help="ID of the game to activate"),
+    game_id: str = typer.Option(
+        ..., "--id", help="ID or slug of the game to activate" # Updated help text
+    ),
 ) -> None:
-    """Activate a game."""
+    """Activate a game using its ID or slug.""" # Updated docstring
     renderer: "Renderer" = ctx.obj["renderer"]
 
     try:
-        logger.debug(f"Activating game with id='{game_id}'")
+        logger.debug(f"Attempting to activate game with identifier='{game_id}'")
         with get_db_context() as session:
             game_manager = GameManager(session=session)
-            game = game_manager.activate_game(game_id)
+            # Find the game first using the identifier
+            game_to_activate = game_manager.get_game_by_identifier_or_error(game_id)
+            # Then pass the actual ID to the activate method
+            activated_game = game_manager.activate_game(game_to_activate.id)
 
             renderer.display_success("Game activated successfully!")
-            renderer.display_message(f"Name: {game.name} ({game.id})")
-            renderer.display_message(f"Description: {game.description}")
+            renderer.display_message(f"Name: {activated_game.name} ({activated_game.id})")
+            renderer.display_message(f"Description: {activated_game.description}")
     except GameError as e:
+        # Error message from get_game_by_identifier_or_error or activate_game
         renderer.display_error(f"Error activating game: {str(e)}")
         raise typer.Exit(1) from e
 
@@ -210,10 +217,10 @@ def game_status(ctx: typer.Context) -> None:
 def edit_game(
     ctx: typer.Context,
     game_id: str = typer.Option(
-        None, "--id", help="ID of the game to edit (defaults to active game)"
+        None, "--id", help="ID or slug of the game to edit (defaults to active game)" # Updated help text
     ),
 ) -> None:
-    """Edit the name and description of a game."""
+    """Edit the name and description of a game using its ID or slug.""" # Updated docstring
     renderer: "Renderer" = ctx.obj["renderer"]
     console: "Console" = ctx.obj["console"]
 
@@ -221,24 +228,22 @@ def edit_game(
         with get_db_context() as session:
             game_manager = GameManager(session=session)
 
-            game = None
+            target_game = None
             if game_id:
-                game = game_manager.get_game(game_id)
-                if not game:
-                    renderer.display_error(f"Game with ID {game_id} not found")
-                    raise typer.Exit(1)
+                # Find the game first using the identifier
+                target_game = game_manager.get_game_by_identifier_or_error(game_id)
             else:
-                game = game_manager.get_active_game()
-                if not game:
+                target_game = game_manager.get_active_game()
+                if not target_game:
                     renderer.display_warning(
-                        "No active game. Specify a game ID or activate a game first.",
+                        "No active game. Specify a game ID/slug or activate a game first.", # Updated message
                     )
                     raise typer.Exit(1)
 
-            game_data = {"name": game.name, "description": game.description}
+            game_data = {"name": target_game.name, "description": target_game.description}
 
             editor_config = EditorConfig(
-                edit_message=f"Editing game {game.id}:",
+                edit_message=f"Editing game {target_game.slug} ({target_game.id}):", # Show slug and ID
                 success_message="Game updated successfully.",
                 cancel_message="Game unchanged.",
                 error_message="Could not open editor",
@@ -263,30 +268,41 @@ def edit_game(
                 ],
             )
 
-            edited_data, was_modified = edit_structured_data(
+            # Pass original data for comparison in edit_structured_data
+            edited_data, status = edit_structured_data(
                 data=game_data,
                 console=console,
                 config=structured_config,
-                context_info=f"Editing game: {game.name} ({game.id})\n",
+                context_info=f"Editing game: {target_game.name} ({target_game.id})\n",
                 editor_config=editor_config,
                 is_new=False,
+                original_data_for_comments=game_data, # Pass original for comparison
             )
 
-            if was_modified:
+            # Check status from edit_structured_data
+            if status == EditorStatus.SAVED_MODIFIED:
+                # Pass the actual ID to the update method
                 updated_game = game_manager.update_game(
-                    game_id=game.id,
+                    game_id=target_game.id,
                     name=edited_data["name"],
                     description=edited_data["description"],
                 )
                 renderer.display_success("Game updated successfully!")
                 renderer.display_game_info(updated_game)
-            else:
+            elif status == EditorStatus.SAVED_UNCHANGED:
+                 renderer.display_message("No changes detected. Game unchanged.")
+            elif status == EditorStatus.ABORTED:
                 renderer.display_warning("Game edit cancelled.")
+            else: # VALIDATION_ERROR or EDITOR_ERROR
+                 # Error message should be displayed by edit_structured_data or caught below
+                 raise typer.Exit(1)
+
 
     except GameError as e:
         renderer.display_error(f"Error editing game: {str(e)}")
         raise typer.Exit(1) from e
     except Exception as e:
+        # Catch potential errors from edit_structured_data as well
         logger.exception("Unexpected error during game edit.")
         renderer.display_error(f"An unexpected error occurred: {str(e)}")
         raise typer.Exit(1) from e
@@ -308,36 +324,36 @@ def dump_game(
         help="Include a header explaining game concepts",
     ),
 ) -> None:
-    """Export a game with all scenes and events as a markdown document to stdout."""
+    """Export a game with all scenes and events as a markdown document to stdout,
+    identifying the game by ID or slug.""" # Updated docstring
     renderer: "Renderer" = ctx.obj["renderer"]  # Needed for error reporting
 
     try:
         with get_db_context() as session:
             game_manager = GameManager(session=session)
 
-            game = None
+            target_game = None
             if game_id:
-                game = game_manager.get_game(game_id)
-                if not game:
-                    renderer.display_error(f"Game with ID {game_id} not found")
-                    raise typer.Exit(1)
+                # Find the game first using the identifier
+                target_game = game_manager.get_game_by_identifier_or_error(game_id)
             else:
-                game = game_manager.get_active_game()
-                if not game:
+                target_game = game_manager.get_active_game()
+                if not target_game:
                     renderer.display_warning(
-                        "No active game. Specify a game ID or activate a game first.",
+                        "No active game. Specify a game ID/slug or activate a game first.", # Updated message
                     )
                     raise typer.Exit(1)
+
+            # Ensure related data is loaded if needed by the markdown generator
+            # Pass the found game object (target_game)
+            session.refresh(target_game) # Refresh the specific game instance
 
             act_manager = game_manager.act_manager
             scene_manager = act_manager.scene_manager
             event_manager = scene_manager.event_manager
 
-            # Ensure related data is loaded if needed by the markdown generator
-            session.refresh(game)
-
             markdown_content = generate_game_markdown(
-                game=game,
+                game=target_game, # Pass the found game
                 scene_manager=scene_manager,
                 event_manager=event_manager,
                 include_metadata=include_metadata,
@@ -347,6 +363,9 @@ def dump_game(
             # Print directly to stdout, bypassing the renderer
             print(markdown_content)
 
+    except GameError as e: # Catch GameError specifically
+        renderer.display_error(f"Error exporting game: {str(e)}")
+        raise typer.Exit(1) from e
     except Exception as e:
         logger.exception("Unexpected error during game dump.")
         renderer.display_error(f"Error exporting game: {str(e)}")
