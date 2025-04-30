@@ -205,6 +205,58 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug(f"Found scene: {result.id if result else 'None'}")
         return result
 
+    def get_scene_by_identifier(self, identifier: str) -> Optional[Scene]:
+        """Get a specific scene by its ID (UUID) or slug.
+
+        Args:
+            identifier: ID or slug of the scene to get.
+
+        Returns:
+            Scene instance if found, None otherwise.
+        """
+        logger.debug(f"Getting scene by identifier: {identifier}")
+
+        def _get_scene(session: Session) -> Optional[Scene]:
+            return self.get_entity_by_identifier(session, Scene, identifier)
+
+        scene = self._execute_db_operation(
+            f"get scene by identifier {identifier}", _get_scene
+        )
+        logger.debug(
+            f"Retrieved scene by identifier: {scene.id if scene else 'None'} "
+            f"(Input: '{identifier}')"
+        )
+        return scene
+
+    def get_scene_by_identifier_or_error(self, identifier: str) -> Scene:
+        """Get a specific scene by its ID (UUID) or slug, raising SceneError if not found.
+
+        Args:
+            identifier: ID or slug of the scene to get.
+
+        Returns:
+            The Scene instance.
+
+        Raises:
+            SceneError: If the scene is not found.
+        """
+        logger.debug(f"Getting scene by identifier or error: {identifier}")
+
+        def _get_scene(session: Session) -> Scene:
+            return self.get_entity_by_identifier_or_error(
+                session,
+                Scene,
+                identifier,
+                SceneError,
+                f"Scene not found with identifier '{identifier}'",
+            )
+
+        scene = self._execute_db_operation(
+            f"get scene by identifier or error {identifier}", _get_scene
+        )
+        logger.debug(f"Retrieved scene by identifier: {scene.id} (Input: '{identifier}')")
+        return scene
+
     def get_scene_in_act(self, act_id: str, scene_id: str) -> Optional[Scene]:
         """Get a specific scene by ID within a specific act.
 

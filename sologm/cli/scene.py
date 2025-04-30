@@ -321,23 +321,27 @@ def complete_scene(ctx: typer.Context) -> None:
 @scene_app.command("edit")
 def edit_scene(
     ctx: typer.Context,
-    scene_id: Optional[str] = typer.Option(  # Make scene_id optional
+    identifier: Optional[str] = typer.Option(  # Rename scene_id to identifier
         None,
-        "--id",
-        help="ID of the scene to edit (defaults to active scene)",
+        "--id",  # Keep the option name as --id for user convenience
+        help="ID or slug of the scene to edit (defaults to active scene)", # Updated help text
     ),
 ) -> None:
-    """[bold]Edit the title and description of a scene.[/bold]
+    """[bold]Edit the title and description of a scene using its ID or slug.[/bold]
 
     Opens a structured editor to modify the title and description of a scene.
-    If no [cyan]--id[/cyan] is provided, it edits the currently active scene.
+    If no [cyan]--id[/cyan] is provided (with an ID or slug), it edits the
+    currently active scene.
 
     [yellow]Examples:[/yellow]
         [green]Edit the active scene:[/green]
         $ sologm scene edit
 
         [green]Edit a specific scene by ID:[/green]
-        $ sologm scene edit --id <scene_id>
+        $ sologm scene edit --id <scene_uuid>
+
+        [green]Edit a specific scene by slug:[/green]
+        $ sologm scene edit --id <scene-slug>
     """
     renderer: "Renderer" = ctx.obj["renderer"]
     console: "Console" = ctx.obj["console"]
@@ -346,22 +350,21 @@ def edit_scene(
             scene_manager = SceneManager(session=session)
             scene_to_edit: Optional["Scene"] = None
 
-            if scene_id:
-                logger.debug("Attempting to fetch specific scene with ID: %s", scene_id)
-                scene_to_edit = scene_manager.get_scene(scene_id)
-                if not scene_to_edit:
-                    renderer.display_error(f"Scene with ID '{scene_id}' not found.")
-                    raise typer.Exit(1)
+            if identifier:
+                logger.debug("Attempting to fetch specific scene with identifier: %s", identifier)
+                # Use the new manager method that handles ID or slug
+                scene_to_edit = scene_manager.get_scene_by_identifier_or_error(identifier)
                 logger.debug(
-                    "Found specific scene: %s ('%s')",
+                    "Found specific scene: %s ('%s') using identifier '%s'",
                     scene_to_edit.id,
                     scene_to_edit.title,
+                    identifier,
                 )
             else:
-                logger.debug("No scene ID provided, fetching active scene.")
+                logger.debug("No identifier provided, fetching active scene.")
+                # Existing logic to get active scene is fine
                 context = scene_manager.get_active_context()
                 scene_to_edit = context["scene"]
-                scene_id = scene_to_edit.id
                 logger.debug(
                     "Found active scene: %s ('%s')",
                     scene_to_edit.id,
@@ -391,11 +394,11 @@ def edit_scene(
                 game_name=game_name,
                 act_title=act_title,
                 scene_title=scene_to_edit.title,
-                scene_id=scene_to_edit.id,
+                scene_id=scene_to_edit.id, # Use actual ID here for display
             )
 
             editor_config_obj = EditorConfig(
-                edit_message=f"Editing Scene: {scene_to_edit.title} ({scene_id})",
+                edit_message=f"Editing Scene: {scene_to_edit.title} ({scene_to_edit.id})", # Use actual ID
                 success_message="Scene updated successfully.",
                 cancel_message="Edit cancelled. Scene unchanged.",
                 error_message="Could not open editor.",
@@ -412,128 +415,90 @@ def edit_scene(
             )
 
             if status == EditorStatus.SAVED_MODIFIED:
-                logger.info("Editor returned SAVED_MODIFIED for scene %s.", scene_id)
+                logger.info("Editor returned SAVED_MODIFIED for scene %s.", scene_to_edit.id)
+                # Pass the actual ID to the update method
                 updated_scene = scene_manager.update_scene(
-                    scene_id=scene_id,
+                    scene_id=scene_to_edit.id,
                     title=edited_data["title"],
                     description=edited_data["description"] or None,
                 )
-                logger.info("Scene %s updated successfully.", scene_id)
+                logger.info("Scene %s updated successfully.", scene_to_edit.id)
                 renderer.display_scene_info(updated_scene)
 
             elif status == EditorStatus.SAVED_UNCHANGED:
-                logger.info("Editor returned SAVED_UNCHANGED for scene %s.", scene_id)
+                logger.info("Editor returned SAVED_UNCHANGED for scene %s.", scene_to_edit.id)
+                renderer.display_message("No changes detected. Scene unchanged.") # Inform user
                 raise typer.Exit(0)
 
             else:  # ABORTED, VALIDATION_ERROR, EDITOR_ERROR
                 logger.info("Scene edit cancelled or failed (status: %s).", status.name)
-                raise typer.Exit(0)
+                # Message should be displayed by edit_structured_data or caught below
+                raise typer.Exit(0) # Exit cleanly on abort
 
     except (SceneError, ActError, GameError) as e:
         logger.error("Error editing scene: %s", e, exc_info=True)
         renderer.display_error(f"Error: {str(e)}")
+        raise typer.Exit(1) from e
+    except Exception as e:
+        # Catch potential errors from edit_structured_data as well
+        logger.exception("Unexpected error during scene edit.")
+        renderer.display_error(f"An unexpected error occurred: {str(e)}")
         raise typer.Exit(1) from e
 
 
 @scene_app.command("set-current")
 def set_current_scene(
     ctx: typer.Context,
-    scene_id: str = typer.Argument(..., help="ID of the scene to make current"),
+    identifier: str = typer.Argument(..., help="ID or slug of the scene to make current"), # Rename and update help
 ) -> None:
-    """[bold]Set which scene is currently being played.[/bold]
+    """[bold]Set which scene is currently being played using its ID or slug.[/bold]
 
     Makes the specified scene the 'active' scene within its act. Any subsequent
     commands that operate on the 'active scene' (like adding events) will target
     this scene.
 
-    You must provide the ID of the scene you want to activate.
+    You must provide the ID or slug of the scene you want to activate.
 
     [yellow]Example:[/yellow]
-        $ sologm scene set-current <scene_id>
+        $ sologm scene set-current <scene_uuid_or_slug>
     """
     renderer: "Renderer" = ctx.obj["renderer"]
-    logger.debug("Attempting to set scene '%s' as current.", scene_id)
+    logger.debug("Attempting to set scene '%s' as current.", identifier)
     try:
         with get_db_context() as session:
             scene_manager = SceneManager(session=session)
-            act_id: Optional[str] = None
 
-            # Determine the relevant Act ID (either from current context or target scene)
-            try:
-                # First, try to get the target scene to find its act_id
-                target_scene = scene_manager.get_scene(scene_id)
-                if target_scene:
-                    act_id = target_scene.act_id
-                    logger.debug(
-                        "Target scene %s found, belongs to act %s.", scene_id, act_id
-                    )
-                else:
-                    # If target scene not found, try getting current act context
-                    logger.debug(
-                        "Target scene %s not found, checking current context.", scene_id
-                    )
-                    try:
-                        current_context = scene_manager.get_active_context()
-                        act_id = current_context["act"].id
-                        logger.debug("Using current active act ID: %s", act_id)
-                    except SceneError:
-                        # If no active scene, try getting active act directly
-                        active_game = scene_manager.game_manager.get_active_game()
-                        if active_game:
-                            active_act = scene_manager.act_manager.get_active_act(
-                                active_game.id
-                            )
-                            if active_act:
-                                act_id = active_act.id
-                                logger.debug(
-                                    "Using active act ID from active game: %s", act_id
-                                )
+            # Use the new manager method to find the scene by ID or slug
+            # This handles the "not found" case automatically by raising SceneError
+            target_scene = scene_manager.get_scene_by_identifier_or_error(identifier)
+            logger.debug(
+                "Found target scene %s ('%s') using identifier '%s'. Belongs to act %s.",
+                target_scene.id,
+                target_scene.title,
+                identifier,
+                target_scene.act_id
+            )
 
-            except (GameError, ActError) as e:
-                logger.error("Could not determine context: %s", e, exc_info=True)
-                renderer.display_error(f"Error determining context: {str(e)}")
-                raise typer.Exit(1) from e
+            # The get_scene_by_identifier_or_error already validated existence.
+            # The set_current_scene manager method handles the logic of
+            # deactivating others within the *same act* as the target scene.
+            # No need for the complex act_id determination and validation here anymore.
 
-            if not act_id:
-                # This should only happen if there's no active game/act and
-                # the target scene wasn't found initially.
-                renderer.display_error(
-                    "Could not determine the relevant act. "
-                    "Ensure a game/act is active or the scene ID is valid."
-                )
-                raise typer.Exit(1)
-
-            # List scenes *from the determined act* for validation
-            scenes_in_act = scene_manager.list_scenes(act_id)
-            scene_ids_in_act = [s.id for s in scenes_in_act]
-
-            if scene_id not in scene_ids_in_act:
-                renderer.display_error(
-                    f"Scene '{scene_id}' not found in the relevant act ({act_id})."
-                )
-                if scene_ids_in_act:
-                    renderer.display_message("\nValid scene IDs in this act:")
-                    for sid in scene_ids_in_act:
-                        renderer.display_message(f"  {sid}")
-                else:
-                    renderer.display_message(f"No scenes found in act {act_id}.")
-                raise typer.Exit(1)
-
-            # If we reached here, scene_id is valid within act_id
-            new_current = scene_manager.set_current_scene(scene_id)
+            # Pass the actual ID to the manager method
+            new_current = scene_manager.set_current_scene(target_scene.id)
             logger.info(
                 "Successfully set scene %s ('%s') as current for act %s.",
                 new_current.id,
                 new_current.title,
-                act_id,
+                new_current.act_id,
             )
 
             renderer.display_success("Current scene updated successfully!")
             renderer.display_scene_info(new_current)
 
-    except (GameError, SceneError, ActError) as e:
+    except (GameError, SceneError, ActError) as e: # Keep catching these specific errors
         logger.error("Error setting current scene: %s", e, exc_info=True)
-        renderer.display_error(f"Error: {str(e)}")
+        renderer.display_error(f"Error: {str(e)}") # Display the specific error (e.g., "Scene not found...")
         raise typer.Exit(1) from e
     except Exception as e:
         logger.exception("An unexpected error occurred during scene set-current: %s", e)
