@@ -80,11 +80,13 @@ class RichRenderer(Renderer):
         details = []
 
         # Always add the "Rolls:" line
+        # Format individual results without brackets
+        results_str = ", ".join(map(str, roll.individual_results))
         details.append(
             st.combine(
                 st.subtitle("Rolls:"),
                 " ",
-                st.timestamp(str(roll.individual_results)),
+                st.timestamp(results_str),
             )
         )
 
