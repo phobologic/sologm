@@ -102,7 +102,8 @@ class RichRenderer(Renderer):
         # Add timestamp metadata if available
         metadata = {}
         if roll.created_at:
-            metadata["Time"] = roll.created_at.isoformat()
+            # Use a more readable timestamp format (down to the second)
+            metadata["Time"] = roll.created_at.strftime("%Y-%m-%d %H:%M:%S")
 
         # Create panel content
         panel_content = Text()  # Assuming Text is imported
@@ -1246,12 +1247,11 @@ class RichRenderer(Renderer):
                     panel_content.append(st.subtitle(roll.reason))
                     panel_content.append(")")
 
-                # Add timestamp
+                # Add timestamp (down to the second)
                 logger.debug(f"Roll timestamp: {roll.created_at}")
                 panel_content.append("\n")
-                panel_content.append(
-                    st.timestamp(roll.created_at.strftime("%Y-%m-%d %H:%M"))
-                )
+                formatted_time = roll.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                panel_content.append(st.timestamp(formatted_time))
 
                 # Add details for complex rolls
                 if len(roll.individual_results) > 1:
