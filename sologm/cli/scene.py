@@ -27,6 +27,54 @@ scene_app = typer.Typer(help="Scene management commands")
 logger = logging.getLogger(__name__)
 
 
+# --- Helper Functions for Editor ---
+
+def _get_scene_editor_config() -> StructuredEditorConfig:
+    """Returns the standard StructuredEditorConfig for scene editing."""
+    return StructuredEditorConfig(
+        fields=[
+            FieldConfig(
+                name="title",
+                display_name="Title",
+                help_text="Title of the scene (required)",
+                required=True,
+                multiline=False,
+            ),
+            FieldConfig(
+                name="description",
+                display_name="Description",
+                help_text="Description of the scene (optional)",
+                multiline=True,
+                required=False,
+            ),
+        ],
+        wrap_width=70,
+    )
+
+def _build_scene_editor_context(
+    verb: str, # e.g., "Adding", "Editing"
+    game_name: str,
+    act_title: str,
+    scene_title: Optional[str] = None,
+    scene_id: Optional[str] = None,
+) -> str:
+    """Builds the context info string for the scene editor."""
+    scene_display = f": {scene_title} ({scene_id})" if scene_title and scene_id else ""
+    context_info = f"{verb} Scene{scene_display}\n"
+    context_info += f"Act: {act_title}\n"
+    context_info += f"Game: {game_name}\n\n"
+    if verb == "Adding":
+         context_info += (
+            "Scenes represent specific locations, encounters, or challenges.\n"
+            "Provide a concise title and an optional description."
+        )
+    else: # Editing
+        context_info += "Modify the title or description below."
+    return context_info
+
+# --- End Helper Functions ---
+
+
 @scene_app.command("add")
 def add_scene(
     ctx: typer.Context,
