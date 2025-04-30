@@ -34,8 +34,10 @@ def add_event(
         "manual",
         "--source",
         "-s",
-        help="Source of the event (use 'sologm event sources' to see "
-        "available options)",
+        help=(
+            "Source of the event (use 'sologm event sources' to see available "
+            "options)"
+        ),
     ),
 ) -> None:
     """Add a new event to the current scene.
@@ -56,7 +58,9 @@ def add_event(
 
             # Get the current scene, act, and game for context through manager chain
             game = event_manager.scene_manager.game_manager.get_game(game_id)
-            active_act = event_manager.scene_manager.act_manager.get_active_act(game_id)
+            active_act = event_manager.scene_manager.act_manager.get_active_act(
+                game_id
+            )
             scene = event_manager.scene_manager.get_scene(scene_id)
 
             # If no description is provided, open an editor
@@ -185,7 +189,9 @@ def edit_event(
 
             # Get the game, act, and scene objects through manager chain
             game = event_manager.scene_manager.game_manager.get_game(game_id)
-            active_act = event_manager.scene_manager.act_manager.get_active_act(game_id)
+            active_act = event_manager.scene_manager.act_manager.get_active_act(
+                game_id
+            )
             scene = event_manager.scene_manager.get_scene(scene_id)
 
             # If no event_id provided, get the most recent event
@@ -195,8 +201,8 @@ def edit_event(
 
                 if not recent_events:
                     renderer.display_error(
-                        "No events found in the current scene. "
-                        "Please provide an event ID with --id."
+                        "No events found in the current scene. Please provide an "
+                        "event ID with --id."
                     )
                     raise typer.Exit(1)
 
