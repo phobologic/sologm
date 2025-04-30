@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 # --- Helper Functions ---
 
+
 def _get_scene_editor_config() -> StructuredEditorConfig:
     """Returns the standard StructuredEditorConfig for scene editing."""
     return StructuredEditorConfig(
@@ -82,6 +83,7 @@ def _build_scene_editor_context(
 
 
 # --- Commands ---
+
 
 @scene_app.command("add")
 def add_scene(
@@ -375,8 +377,7 @@ def edit_scene(
             try:
                 game_name = scene_to_edit.act.game.name
                 act_title = (
-                    scene_to_edit.act.title
-                    or f"Act {scene_to_edit.act.sequence}"
+                    scene_to_edit.act.title or f"Act {scene_to_edit.act.sequence}"
                 )
             except Exception as e:
                 logger.warning(
@@ -425,9 +426,7 @@ def edit_scene(
                 raise typer.Exit(0)
 
             else:  # ABORTED, VALIDATION_ERROR, EDITOR_ERROR
-                logger.info(
-                    "Scene edit cancelled or failed (status: %s).", status.name
-                )
+                logger.info("Scene edit cancelled or failed (status: %s).", status.name)
                 raise typer.Exit(0)
 
     except (SceneError, ActError, GameError) as e:
