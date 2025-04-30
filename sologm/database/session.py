@@ -246,33 +246,6 @@ def _seed_default_event_sources() -> None:
         logger.error(f"Failed to seed default event sources: {e}", exc_info=True)
 
 
-def initialize_database(
-    db_url: Optional[str] = None, engine: Optional[Engine] = None
-) -> DatabaseManager:
-    """Initialize the database and create tables if they don't exist.
-
-    Args:
-        db_url: Database URL (required if engine is not provided)
-        engine: Pre-configured SQLAlchemy engine instance
-                (required if db_url is not provided)
-    Returns:
-        The DatabaseManager instance.
-
-    Raises:
-        ValueError: If neither db_url nor engine is provided
-    """
-    logger.info("Initializing database")
-    if db_url is None and engine is None:
-        logger.error("No db_url or engine provided to initialize_database")
-        raise ValueError("Either db_url or engine must be provided")
-
-    db = DatabaseManager.get_instance(db_url=db_url, engine=engine)
-    db.create_tables()
-
-    _seed_default_event_sources()
-
-    logger.info("Database initialized successfully")
-    return db
 
 
 def get_db_context() -> SessionContext:

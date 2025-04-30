@@ -8,9 +8,10 @@ from sqlalchemy.engine import Engine
 
 from sologm.database.session import (
     DatabaseManager,
+    _seed_default_event_sources,
     get_db_context,
     # get_session, # Removed in Phase 1
-    initialize_database,
+    # initialize_database,
 )
 from sologm.utils.config import Config
 
@@ -54,6 +55,9 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseManager:
     # Create tables
     db_session.create_tables()
 
+    # Seed default data
+    _seed_default_event_sources()
+
     logger.info("Database initialized successfully")
     return db_session
 
@@ -61,7 +65,7 @@ def init_db(engine: Optional[Engine] = None) -> DatabaseManager:
 __all__ = [
     "DatabaseManager",
     # "get_session", # Removed in Phase 1
-    "initialize_database",
+    # "initialize_database",
     "get_db_context",
     "init_db",
 ]
