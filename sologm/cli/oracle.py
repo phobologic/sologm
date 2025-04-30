@@ -8,7 +8,7 @@ import typer
 # Import structured editor components
 from sologm.cli.utils.structured_editor import (
     EditorConfig,
-    EditorStatus, # Added EditorStatus
+    EditorStatus,  # Added EditorStatus
     FieldConfig,
     StructuredEditorConfig,
     edit_structured_data,
@@ -176,7 +176,7 @@ def retry_interpretation(
     ),
     # Removed edit_context option
 ) -> None:
-    """Request new interpretations, editing context and results first.""" # Updated docstring
+    """Request new interpretations, editing context and results first."""  # Updated docstring
     renderer: "Renderer" = ctx.obj["renderer"]
     console: "Console" = ctx.obj["console"]
     from sologm.database.session import get_db_context
@@ -215,7 +215,7 @@ def retry_interpretation(
 
             # Create editor configurations
             editor_config = EditorConfig(
-                edit_message="Edit Context and Results:", # Updated message
+                edit_message="Edit Context and Results:",  # Updated message
                 success_message="Context/Results updated.",
                 cancel_message="Context/Results unchanged.",
                 error_message="Could not open editor",
@@ -231,12 +231,12 @@ def retry_interpretation(
                         required=True,
                         multiline=True,
                     ),
-                    FieldConfig( # Added field for results
+                    FieldConfig(  # Added field for results
                         name="results",
                         display_name="Oracle Results",
                         help_text="The raw results from the oracle (e.g., dice roll, card draw).",
                         required=True,
-                        multiline=False, # Typically single line
+                        multiline=False,  # Typically single line
                     ),
                 ]
             )
@@ -246,10 +246,10 @@ def retry_interpretation(
 
             # Use the structured editor
             edited_data, status = edit_structured_data(
-                data=initial_data, # Pass original data for editing
+                data=initial_data,  # Pass original data for editing
                 console=console,
                 config=structured_config,
-                context_info="Edit the context and/or results before retrying:\n", # Updated context info
+                context_info="Edit the context and/or results before retrying:\n",  # Updated context info
                 editor_config=editor_config,
                 is_new=False,  # Editing existing data
             )
@@ -260,17 +260,16 @@ def retry_interpretation(
                 oracle_results = edited_data.get("results")
                 # Basic check after editor
                 if not context or not oracle_results:
-                     renderer.display_error("Context and Results cannot be empty.")
-                     raise typer.Exit(1)
+                    renderer.display_error("Context and Results cannot be empty.")
+                    raise typer.Exit(1)
                 # Message printed by editor on success/unchanged
             elif status == EditorStatus.ABORTED:
                 # Message already printed by editor
                 raise typer.Exit(0)
-            else: # VALIDATION_ERROR or EDITOR_ERROR
+            else:  # VALIDATION_ERROR or EDITOR_ERROR
                 # Message already printed by editor
                 raise typer.Exit(1)
             # --- End Editor Logic ---
-
 
             renderer.display_message(
                 "\nGenerating new interpretations...", style="bold blue"
@@ -278,7 +277,7 @@ def retry_interpretation(
             new_interp_set = oracle_manager.get_interpretations(
                 scene.id,
                 context,  # Use the potentially updated context
-                oracle_results, # Use the potentially updated results
+                oracle_results,  # Use the potentially updated results
                 count=count,
                 retry_attempt=current_interp_set.retry_attempt + 1,
                 previous_set_id=current_interp_set.id,
