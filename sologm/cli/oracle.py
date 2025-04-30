@@ -207,13 +207,10 @@ def retry_interpretation(
             oracle_manager = OracleManager(session=session)
             scene, act, game = oracle_manager.get_active_context()
 
-            current_interp_set = oracle_manager.get_current_interpretation_set(
-                scene.id
-            )
+            current_interp_set = oracle_manager.get_current_interpretation_set(scene.id)
             if not current_interp_set:
                 renderer.display_error(
-                    "No current interpretation to retry. Run 'oracle interpret' "
-                    "first."
+                    "No current interpretation to retry. Run 'oracle interpret' first."
                 )
                 raise typer.Exit(1)
 
@@ -475,8 +472,8 @@ def select_interpretation(
             scene, act, game = oracle_manager.get_active_context()
 
             if not interpretation_set_id:
-                current_interp_set = (
-                    oracle_manager.get_current_interpretation_set(scene.id)
+                current_interp_set = oracle_manager.get_current_interpretation_set(
+                    scene.id
                 )
                 if not current_interp_set:
                     renderer.display_error(
@@ -489,9 +486,7 @@ def select_interpretation(
             else:
                 target_set_id = interpretation_set_id
                 # Fetch the specified set if ID was provided
-                target_interp_set = oracle_manager.get_interpretation_set(
-                    target_set_id
-                )
+                target_interp_set = oracle_manager.get_interpretation_set(target_set_id)
 
             if not interpretation_id:
                 renderer.display_error(
@@ -558,7 +553,9 @@ def select_interpretation(
                             renderer.display_error("Event description cannot be empty.")
                             raise typer.Exit(1)
                     elif status == EditorStatus.ABORTED:
-                        renderer.display_warning("Event creation cancelled during edit.")
+                        renderer.display_warning(
+                            "Event creation cancelled during edit."
+                        )
                         raise typer.Exit(0)
                     else:  # VALIDATION_ERROR or EDITOR_ERROR
                         raise typer.Exit(1)
