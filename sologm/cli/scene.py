@@ -1,9 +1,18 @@
 """Scene management commands for Solo RPG Helper."""
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import typer
+
+# Import structured editor components globally
+from sologm.cli.utils.structured_editor import (
+    EditorConfig,
+    EditorStatus,
+    FieldConfig,
+    StructuredEditorConfig,
+    edit_structured_data,
+)
 
 # Console import removed
 # display_scene_info import removed
@@ -227,13 +236,6 @@ def edit_scene(
     ),
 ) -> None:
     """Edit the title and description of a scene."""
-    from sologm.cli.utils.structured_editor import (
-        EditorConfig,
-        FieldConfig,
-        StructuredEditorConfig,
-        edit_structured_data,
-    )
-
     renderer: "Renderer" = ctx.obj["renderer"]
     console: "Console" = ctx.obj["console"]  # Needed for editor
     try:
