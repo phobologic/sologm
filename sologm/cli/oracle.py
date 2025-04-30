@@ -46,6 +46,7 @@ def interpret_oracle(
 ) -> None:
     """Get interpretations for oracle results."""
     renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"]  # Get console for editor
     from sologm.database.session import get_db_context
 
     try:
