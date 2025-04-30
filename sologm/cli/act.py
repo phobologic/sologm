@@ -633,7 +633,7 @@ def _collect_regeneration_feedback(
         "Examples of effective feedback:\n"
         '- "Make the title more dramatic and focus on the conflict with the dragon"\n'
         '- "The summary is too focused on side characters. Center it on the '
-        'protagonist\'s journey"\n'
+        "protagonist's journey\"\n"
         '- "Change the tone to be more somber and reflective of the losses in '
         'this act"\n'
         '- "I like the theme of betrayal in the summary but want it to be more '
@@ -1067,9 +1067,7 @@ def _handle_ai_completion(
             "collect from user."
         )
         logger.debug("[_handle_ai_completion] Calling _collect_user_context")
-        context = _collect_user_context(
-            active_act, active_game.name, console, renderer
-        )
+        context = _collect_user_context(active_act, active_game.name, console, renderer)
         context_log_after = (
             f"'{context[:100]}{'...' if context and len(context) > 100 else ''}'"
             if context
