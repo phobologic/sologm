@@ -8,13 +8,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
-# --- ADD THIS IMPORT ---
-from sologm.models.event_source import EventSource
-# --- END ADDITION ---
-
 from sologm.models.base import Base
+from sologm.models.event_source import EventSource
 
-# Set up logger
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound="DatabaseManager")
@@ -126,16 +122,12 @@ class DatabaseManager:
         Base.metadata.create_all(self.engine)
         logger.debug("Database tables created")
 
-    # Step 1.1: Remove get_session method
-    # Step 1.1: Remove close_session method
-
     def dispose(self) -> None:
         """Dispose of the engine and all its connections."""
         logger.debug("Disposing engine connections")
         self.engine.dispose()
 
 
-# Context manager for session handling
 class SessionContext:
     """Context manager for database sessions and transaction management.
 
@@ -218,7 +210,6 @@ class SessionContext:
                 self.session.close()
 
 
-# --- ADD THIS FUNCTION ---
 def _seed_default_event_sources() -> None:
     """Ensure default event sources exist in the database."""
     logger.debug("Checking and seeding default event sources if necessary.")
@@ -255,10 +246,6 @@ def _seed_default_event_sources() -> None:
         logger.error(f"Failed to seed default event sources: {e}", exc_info=True)
 
 
-# --- END ADDITION ---
-
-
-# Convenience functions
 def initialize_database(
     db_url: Optional[str] = None, engine: Optional[Engine] = None
 ) -> DatabaseManager:
@@ -282,15 +269,10 @@ def initialize_database(
     db = DatabaseManager.get_instance(db_url=db_url, engine=engine)
     db.create_tables()
 
-    # --- ADD THIS CALL ---
     _seed_default_event_sources()
-    # --- END ADDITION ---
 
     logger.info("Database initialized successfully")
     return db
-
-
-# Step 1.3: Remove standalone get_session() function
 
 
 def get_db_context() -> SessionContext:
