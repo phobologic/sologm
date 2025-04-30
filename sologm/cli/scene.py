@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from typer import Typer
 
     from sologm.cli.rendering.base import Renderer
+    from sologm.models.act import Act
+    from sologm.models.scene import Scene
 
     app: Typer
 
@@ -34,9 +36,6 @@ scene_app = typer.Typer(help="Scene management commands")
 
 # console instance removed
 logger = logging.getLogger(__name__)
-
-
-# --- Helper Functions for Editor ---
 
 
 def _get_scene_editor_config() -> StructuredEditorConfig:
@@ -82,9 +81,6 @@ def _build_scene_editor_context(
     else:  # Editing
         context_info += "Modify the title or description below."
     return context_info
-
-
-# --- End Helper Functions ---
 
 
 @scene_app.command("add")
@@ -144,27 +140,29 @@ def add_scene(
                 act_id = active_act.id
                 game_name = context["game"].name
                 logger.debug(
-                    f"Found active context: Game='{game_name}', Act='{active_act.title}' ({act_id})"
+                    f"Found active context: Game='{game_name}', "
+                    f"Act='{active_act.title}' ({act_id})"
                 )
-            except SceneError:
+            except SceneError as e:
                 # If there's no active scene, we still need the active act
                 logger.debug("No active scene found, attempting to find active act.")
                 active_game = scene_manager.game_manager.get_active_game()
                 if not active_game:
                     raise GameError(
                         "No active game. Use 'sologm game activate' to set one."
-                    )
+                    ) from e
 
                 active_act = scene_manager.act_manager.get_active_act(active_game.id)
                 if not active_act:
                     raise ActError(
                         "No active act. Create one with 'sologm act create'."
-                    )
+                    ) from e
 
                 act_id = active_act.id
                 game_name = active_game.name
                 logger.debug(
-                    f"Found active game='{game_name}' and act='{active_act.title}' ({act_id}), but no active scene."
+                    f"Found active game='{game_name}' and "
+                    f"act='{active_act.title}' ({act_id}), but no active scene."
                 )
 
             # --- Editor Logic ---
@@ -173,7 +171,9 @@ def add_scene(
 
                 # Use helper functions to get config and context
                 editor_config = _get_scene_editor_config()
-                act_title_display = active_act.title or f"Act {active_act.sequence}"
+                act_title_display = f"Act {active_act.sequence}"
+                if active_act and active_act.title:
+                    act_title_display = active_act.title
                 context_info = _build_scene_editor_context(
                     verb="Adding",
                     game_name=game_name,
@@ -233,7 +233,8 @@ def add_scene(
 
             # Create the scene using the (potentially editor-provided) title/description
             logger.debug(
-                f"Calling scene_manager.create_scene for act {act_id} with title='{title}'"
+                f"Calling scene_manager.create_scene for act {act_id} with "
+                f"title='{title}'"
             )
             scene = scene_manager.create_scene(
                 act_id=act_id,
@@ -385,7 +386,8 @@ def edit_scene(
                     raise typer.Exit(1)
                 # Optional: Verify scene_to_edit.act.game_id matches active game
                 logger.debug(
-                    f"Found specific scene: {scene_to_edit.id} ('{scene_to_edit.title}')"
+                    f"Found specific scene: {scene_to_edit.id} "
+                    f"('{scene_to_edit.title}')"
                 )
             else:
                 logger.debug("No scene ID provided, fetching active scene.")
@@ -440,11 +442,11 @@ def edit_scene(
             edited_data, status = edit_structured_data(
                 data=scene_data,
                 console=console,
-                config=structured_config,  # Use shared config
-                context_info=context_info,  # Use built context
-                editor_config=editor_config_obj,  # Pass specific messages
-                is_new=False,  # This is an existing scene
-                original_data_for_comments=scene_data,  # Show original values as comments
+                config=structured_config,
+                context_info=context_info,
+                editor_config=editor_config_obj,
+                is_new=False,
+                original_data_for_comments=scene_data
             )
 
             # Process editor result based on status
@@ -463,8 +465,6 @@ def edit_scene(
 
             elif status == EditorStatus.SAVED_UNCHANGED:
                 logger.info(f"Editor returned SAVED_UNCHANGED for scene {scene_id}.")
-                # Message already printed by editor
-                # renderer.display_message("No changes detected. Scene remains unchanged.")
                 raise typer.Exit(0)  # Exit gracefully
 
             else:  # ABORTED, VALIDATION_ERROR, EDITOR_ERROR
@@ -575,7 +575,8 @@ def set_current_scene(
             # Set the current scene using the manager
             new_current = scene_manager.set_current_scene(scene_id)
             logger.info(
-                f"Successfully set scene {new_current.id} ('{new_current.title}') as current for act {act_id}."
+                f"Successfully set scene {new_current.id} "
+                f"('{new_current.title}') as current for act {act_id}."
             )
 
             renderer.display_success("Current scene updated successfully!")
