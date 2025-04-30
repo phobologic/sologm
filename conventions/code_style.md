@@ -12,6 +12,12 @@ This document outlines the Python code style and documentation conventions for t
     -   Use single blank lines to separate logical code blocks within functions/methods.
     -   Use two blank lines between top-level functions and class definitions.
 -   **Trailing Commas:** Use trailing commas on the final item in multi-line lists, dictionaries, tuples, and function arguments/parameters.
+-   **Comments:**
+    - Comment on "why" not "what"
+    - Use docstrings for functions and modules
+    - Keep implementation comments rare and valuable
+    - Remove commented-out code
+    - Update comments when updating code
 
 ## 2. Imports
 
