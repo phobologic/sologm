@@ -35,8 +35,7 @@ def add_event(
         "--source",
         "-s",
         help=(
-            "Source of the event (use 'sologm event sources' to see available "
-            "options)"
+            "Source of the event (use 'sologm event sources' to see available options)"
         ),
     ),
 ) -> None:
@@ -58,9 +57,7 @@ def add_event(
 
             # Get the current scene, act, and game for context through manager chain
             game = event_manager.scene_manager.game_manager.get_game(game_id)
-            active_act = event_manager.scene_manager.act_manager.get_active_act(
-                game_id
-            )
+            active_act = event_manager.scene_manager.act_manager.get_active_act(game_id)
             scene = event_manager.scene_manager.get_scene(scene_id)
 
             # If no description is provided, open an editor
@@ -79,7 +76,9 @@ def add_event(
                 # Format act info for context header
                 act_info = None
                 if active_act:
-                    act_title = active_act.title or f"Act {active_act.sequence} (Untitled)"
+                    act_title = (
+                        active_act.title or f"Act {active_act.sequence} (Untitled)"
+                    )
                     act_info = f"Act: {act_title}"
 
                 context_info = get_event_context_header(
@@ -189,9 +188,7 @@ def edit_event(
 
             # Get the game, act, and scene objects through manager chain
             game = event_manager.scene_manager.game_manager.get_game(game_id)
-            active_act = event_manager.scene_manager.act_manager.get_active_act(
-                game_id
-            )
+            active_act = event_manager.scene_manager.act_manager.get_active_act(game_id)
             scene = event_manager.scene_manager.get_scene(scene_id)
 
             # If no event_id provided, get the most recent event
@@ -291,7 +288,10 @@ def edit_event(
             )
 
             # Use the structured editor with existing data
-            initial_data = {"description": event.description, "source": event.source.name}
+            initial_data = {
+                "description": event.description,
+                "source": event.source.name,
+            }
             edited_data, was_modified = edit_structured_data(
                 data=initial_data,
                 console=console,
