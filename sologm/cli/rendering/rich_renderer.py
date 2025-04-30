@@ -345,7 +345,8 @@ class RichRenderer(Renderer):
         )
 
         # Add columns with consistent styling
-        table.add_column("ID", style=st.STYLES["timestamp"])
+        # Ensure ID column does not wrap/truncate
+        table.add_column("ID", style=st.STYLES["timestamp"], no_wrap=True)
         table.add_column("Title", style=st.STYLES["category"])
         table.add_column("Description")
         table.add_column("Status", style=st.STYLES["success"])
