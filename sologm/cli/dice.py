@@ -28,11 +28,11 @@ def resolve_scene_id(session: Session, scene_id: Optional[str]) -> Optional[Scen
 
     Args:
         session: Database session
-        scene_id: Optional scene ID provided by user
+        scene_id: Optional scene ID provided by user.
 
     Returns:
-        Resolved Scene or None if not resolvable. Default to using the current
-        scene if no scene_id is passed in.
+        Resolved Scene or None if not resolvable. Defaults to the current scene
+        if no scene_id is passed in.
     """
     scene = None
     # Create a new DiceManager instance with the session
@@ -67,6 +67,12 @@ def roll_dice_command(
 ) -> None:
     """Roll dice using standard notation (XdY+Z).
 
+    Args:
+        ctx: Typer context.
+        notation: Dice notation string (e.g., "2d6+3").
+        reason: Optional reason for the roll.
+        scene_id: Optional ID of the scene to associate the roll with.
+
     Examples:
         1d20    Roll a single 20-sided die
         2d6+3   Roll two 6-sided dice and add 3
@@ -86,11 +92,14 @@ def roll_dice_command(
                     renderer.display_warning(f"Scene {scene_id} not found.")
                 else:
                     renderer.display_warning("No current active scene found.")
-                renderer.display_warning("Dice roll will not be associated with any scene.")
+                renderer.display_warning(
+                    "Dice roll will not be associated with any scene."
+                )
 
+            scene_display_id = scene.id if scene else "N/A"
             logger.debug(
-                f"Rolling dice with notation: {notation}, reason: "
-                f"{reason}, scene_id: {scene.id if scene else 'NA'}"
+                f"Rolling dice: notation={notation}, reason={reason}, "
+                f"scene_id={scene_display_id}"
             )
 
             result = dice_manager.roll(notation, reason, scene)
@@ -109,7 +118,13 @@ def dice_history_command(
         None, "--scene-id", "-s", help="Filter by scene ID"
     ),
 ) -> None:
-    """Show recent dice roll history."""
+    """Show recent dice roll history.
+
+    Args:
+        ctx: Typer context.
+        limit: Maximum number of rolls to display.
+        scene_id: Optional ID of the scene to filter rolls by.
+    """
     renderer: "Renderer" = ctx.obj["renderer"]
     try:
         # Use a single session for the entire command
