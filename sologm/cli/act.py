@@ -180,7 +180,7 @@ def create_act(
                 renderer.display_message(f"Title: {act.title}")
             if act.summary:
                 renderer.display_message(f"Summary: {act.summary}")
-            # Consider adding a dedicated renderer.display_act_details(act) method later
+            # TODO: Consider adding renderer.display_act_details(act) method
 
         except GameError as e:
             renderer.display_error(f"Error: {str(e)}")
