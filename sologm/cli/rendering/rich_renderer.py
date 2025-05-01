@@ -1316,14 +1316,14 @@ class RichRenderer(Renderer):
                 f"({act.slug})", style="dim"
             )  # Add slug in dim style
 
-            # Truncate summary
-            truncated_summary = truncate_text(act.summary or "", max_length=40)
+            # Use the full summary (or empty string if None)
+            summary_content = act.summary or ""
 
             table.add_row(
                 id_cell_content,  # Pass the Text object here
                 str(act.sequence),
                 act_title_styled,
-                truncated_summary,  # Use truncated summary
+                summary_content,  # Use full summary
                 active_marker,
             )
 
