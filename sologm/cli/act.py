@@ -259,6 +259,109 @@ def act_info(ctx: typer.Context) -> None:
         renderer.display_act_info(active_act, active_game.name)
 
 
+# --- Helper Function 1: Get the Act ---
+def _get_act_to_edit(
+    act_manager: ActManager,
+    active_game: Game,
+    identifier: Optional[str],
+    renderer: "Renderer",
+) -> Act:
+    """Finds the act to be edited based on identifier or active status."""
+    logger.debug(f"Attempting to find act to edit (identifier='{identifier}')")
+    act_to_edit: Optional[Act] = None
+    try:
+        if identifier:
+            act_to_edit = act_manager.get_act_by_identifier_or_error(identifier)
+            # Verify the act belongs to the active game
+            if act_to_edit.game_id != active_game.id:
+                logger.error(
+                    f"Act '{identifier}' (ID: {act_to_edit.id}) found but does not belong to active game '{active_game.name}' (ID: {active_game.id})"
+                )
+                renderer.display_error(
+                    f"Act '{identifier}' does not belong to active game '{active_game.name}'."
+                )
+                raise typer.Exit(1)
+            logger.debug(f"Found specific act by identifier: {act_to_edit.id}")
+        else:
+            act_to_edit = act_manager.get_active_act(active_game.id)
+            if not act_to_edit:
+                logger.warning(f"No active act found in game '{active_game.name}'.")
+                renderer.display_error(f"No active act in game '{active_game.name}'.")
+                renderer.display_message("Create one with `sologm act create`.")
+                raise typer.Exit(1)
+            logger.debug(f"Found active act: {act_to_edit.id}")
+        return act_to_edit
+    except GameError as e:
+        # Catch error ONLY from act retrieval methods
+        logger.error(f"GameError while finding act to edit: {e}", exc_info=True)
+        renderer.display_error(f"Error finding act: {str(e)}")
+        raise typer.Exit(1) from e
+
+
+# --- Helper Function 2: Get Edit Data (Title/Summary) ---
+def _get_edit_data(
+    act_to_edit: Act,
+    active_game: Game,
+    cli_title: Optional[str],
+    cli_summary: Optional[str],
+    console: "Console",
+    renderer: "Renderer",
+) -> Optional[Dict[str, Optional[str]]]:
+    """Gets the title and summary data, either from CLI args or editor.
+
+    Returns a dictionary {'title': ..., 'summary': ...} if an update should
+    proceed, otherwise returns None and handles user messages.
+    """
+    logger.debug("Determining edit data source (CLI vs Editor)")
+    if cli_title is None and cli_summary is None:
+        # Editor Path
+        logger.debug("Using editor to get edit data.")
+        editor_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(name="title", display_name="Title", help_text="Title of the act (can be left empty for untitled acts)", required=False),
+                FieldConfig(name="summary", display_name="Summary", help_text="Summary of the act", multiline=True, required=False),
+            ],
+            wrap_width=70,
+        )
+        title_display = act_to_edit.title or "Untitled Act"
+        context_info = (
+            f"Editing Act {act_to_edit.sequence}: {title_display}\n"
+            f"Game: {active_game.name}\n"
+            f"ID: {act_to_edit.id}\n\n"
+            "You can leave the title empty for an untitled act."
+        )
+        initial_data = {"title": act_to_edit.title or "", "summary": act_to_edit.summary or ""}
+
+        result_data, status = edit_structured_data(
+            initial_data, console, editor_config, context_info=context_info, is_new=False, original_data_for_comments=initial_data
+        )
+
+        if status == EditorStatus.SAVED_MODIFIED:
+            final_title = result_data.get("title") or None
+            final_summary = result_data.get("summary") or None
+            logger.info("Act data modified in editor. Proceeding with update.")
+            return {"title": final_title, "summary": final_summary}
+        elif status == EditorStatus.SAVED_UNCHANGED:
+            logger.info("Editor saved, but no changes detected.")
+            renderer.display_message("No changes detected. Act not updated.")
+            return None # Indicate no update needed
+        else: # Aborted or error
+            # Message already displayed by edit_structured_data
+            logger.info(f"Act edit cancelled or failed due to editor status: {status.name}")
+            return None # Indicate cancellation/failure
+    else:
+        # CLI Args Path
+        logger.debug("Using CLI arguments for edit data.")
+        # Basic check: ensure at least one was provided if we took this path
+        if cli_title is None and cli_summary is None:
+             # This case should ideally not be reachable if options were defined correctly
+             logger.warning("CLI path taken but both title and summary are None.")
+             renderer.display_warning("No changes specified via command line options.")
+             return None # Indicate no update needed
+        logger.info("Proceeding with update using CLI arguments.")
+        return {"title": cli_title, "summary": cli_summary}
+
+
 @act_app.command("edit")
 def edit_act(
     ctx: typer.Context,
@@ -272,7 +375,7 @@ def edit_act(
         None, "--summary", "-s", help="New summary for the act"
     ),
 ) -> None:
-    """[bold]Edit an act in the current game using its ID or slug.[/bold] # Updated docstring
+    """[bold]Edit an act in the current game using its ID or slug.[/bold]
 
     If no identifier is provided, edits the current active act.
     If title and summary are not provided, opens an editor to enter them.
@@ -293,123 +396,47 @@ def edit_act(
         [green]Update both title and summary for a specific act:[/green]
         $ sologm act edit --id act-1-the-first-step -t "New Title" -s "New summary"
     """
-    logger.debug(f"Editing act with identifier: {identifier}") # Updated log message
+    logger.debug(f"Executing edit_act command (identifier='{identifier}')")
     renderer: "Renderer" = ctx.obj["renderer"]
-    console: "Console" = ctx.obj["console"]  # Needed for editor
+    console: "Console" = ctx.obj["console"]
     from sologm.database.session import get_db_context
 
-    # Use a single session for the entire command
     with get_db_context() as session:
-        # Initialize manager with the session
+        # Initialize managers
         game_manager = GameManager(session=session)
+        act_manager = ActManager(session=session) # Pass session explicitly
+
+        # --- Step 1: Get Active Game ---
         active_game = game_manager.get_active_game()
         if not active_game:
             renderer.display_error("No active game. Activate a game first.")
             raise typer.Exit(1)
+        logger.debug(f"Active game: {active_game.name} ({active_game.id})")
 
-        # Get the act to edit
-        act_manager = ActManager(session=session)
-        act_to_edit: Optional[Act] = None # Initialize to None
+        # --- Step 2: Find the Act to Edit (uses helper) ---
+        # Helper handles errors and exits
+        act_to_edit = _get_act_to_edit(act_manager, active_game, identifier, renderer)
 
-        try: # Add try block to catch GameError from get_act_by_identifier_or_error
-            if identifier:
-                # Get the specified act using the new method
-                act_to_edit = act_manager.get_act_by_identifier_or_error(identifier)
-                # Removed the manual check 'if not act_to_edit:' as the manager method handles it
+        # --- Step 3: Get Edit Data (uses helper) ---
+        # Helper handles editor interaction, cancellation messages, and returns None if no update needed
+        edit_data = _get_edit_data(act_to_edit, active_game, title, summary, console, renderer)
 
-                # Verify the act belongs to the active game
-                if act_to_edit.game_id != active_game.id:
-                    renderer.display_error(
-                        f"Act '{identifier}' does not belong to active game '{active_game.name}'." # Improved error message
-                    )
-                    raise typer.Exit(1)
-            else:
-                # Get the active act
-                act_to_edit = act_manager.get_active_act(active_game.id)
-                if not act_to_edit:
-                    renderer.display_error(f"No active act in game '{active_game.name}'.")
-                    renderer.display_message("Create one with `sologm act create`.")
-                    raise typer.Exit(1)
-
-            # --- The rest of the function remains largely the same ---
-            # --- It uses act_to_edit which is now guaranteed to be found ---
-            # --- or an error would have been raised ---
-
-            # Initialize variables before the if/else block
-            final_title: Optional[str] = None
-            final_summary: Optional[str] = None
-
-            # If title/summary not provided via options, open editor
-            if title is None and summary is None:
-                # Create editor configuration
-                editor_config = StructuredEditorConfig(
-                fields=[
-                    FieldConfig(
-                        name="title",
-                        display_name="Title",
-                        help_text=(
-                            "Title of the act (can be left empty for untitled acts)"
-                        ),
-                        required=False,
-                    ),
-                    FieldConfig(
-                        name="summary",
-                        display_name="Summary",
-                        help_text="Summary of the act",
-                        multiline=True,
-                        required=False,
-                    ),
-                ],
-                wrap_width=70,
-            )  # Add trailing comma
-
-            # Create context information
-            title_display = act_to_edit.title or "Untitled Act"
-            context_info = (
-                f"Editing Act {act_to_edit.sequence}: {title_display}\n"
-                f"Game: {active_game.name}\n"
-                f"ID: {act_to_edit.id}\n\n"
-                "You can leave the title empty for an untitled act."
-            )
-
-            # Create initial data
-            initial_data = {
-                "title": act_to_edit.title or "",
-                "summary": act_to_edit.summary or "",
-            }
-
-            # Open editor
-            result_data, status = edit_structured_data(
-                initial_data,  # Pass current data as the base for editing
-                console,
-                editor_config,
-                context_info=context_info,
-                is_new=False,  # IMPORTANT: Indicate this is an edit
-                # Pass initial_data again to show original values as comments
-                original_data_for_comments=initial_data,
-            )
-
-            # Check status
-            if status == EditorStatus.SAVED_MODIFIED:
-                # Data changed, proceed with update
-                final_title = result_data.get("title") or None
-                final_summary = result_data.get("summary") or None
-                logger.info("Act data modified in editor.")
-
-                # --- Call edit_act and display results HERE (Editor Path) ---
-                if act_to_edit is None: # Defensive check (should not happen)
-                    raise GameError("Internal error: Act to edit was not determined.")
-
-                updated_act = game_manager.act_manager.edit_act(
+        # --- Step 4: Perform Update if data was obtained ---
+        if edit_data is not None:
+            logger.debug(f"Proceeding to update act {act_to_edit.id} with data: {edit_data}")
+            try:
+                # Call the manager method within its own try block
+                updated_act = act_manager.edit_act( # Use act_manager directly
                     act_id=act_to_edit.id,
-                    title=final_title,
-                    summary=final_summary,
+                    title=edit_data["title"],
+                    summary=edit_data["summary"],
                 )
+                logger.info(f"Successfully updated act {updated_act.id}")
+
                 # Display success message using renderer
-                title_display = (
-                    f"'{updated_act.title}'" if updated_act.title else "untitled"
-                )
+                title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
                 renderer.display_success(f"Act {title_display} updated successfully!")
+
                 # Display updated act details using renderer
                 renderer.display_message(f"ID: {updated_act.id}")
                 renderer.display_message(f"Sequence: Act {updated_act.sequence}")
@@ -418,51 +445,16 @@ def edit_act(
                     renderer.display_message(f"Title: {updated_act.title}")
                 if updated_act.summary:
                     renderer.display_message(f"Summary: {updated_act.summary}")
-                # --- End of moved block ---
 
-            elif status == EditorStatus.SAVED_UNCHANGED:
-                # Saved, but no changes made
-                renderer.display_message("No changes detected. Act not updated.")
-                raise typer.Exit(0)  # Exit gracefully, no error
-            else:
-                # Abort, validation error, or editor error occurred. Message
-                # already printed by edit_structured_data.
-                logger.info(f"Act edit cancelled due to editor status: {status.name}")
-                raise typer.Exit(0)  # Exit gracefully
+            except (GameError, ValueError) as e:
+                # Catch error ONLY from the edit_act manager call
+                logger.error(f"Error during act update: {e}", exc_info=True)
+                renderer.display_error(f"Error updating act: {str(e)}")
+                raise typer.Exit(1) from e
+        else:
+             logger.debug("No edit data returned, update skipped (cancelled or no changes).")
 
-        except:
-            # If parameters were provided directly, use them
-            final_title = title
-            final_summary = summary
-            # Removed pass statement
-
-            # --- Call edit_act and display results HERE (CLI Args Path) ---
-            if act_to_edit is None: # Defensive check (should not happen)
-                 raise GameError("Internal error: Act to edit was not determined.")
-
-            updated_act = game_manager.act_manager.edit_act(
-                act_id=act_to_edit.id,
-                title=final_title,
-                summary=final_summary,
-            )
-            # Display success message using renderer
-            title_display = (
-                f"'{updated_act.title}'" if updated_act.title else "untitled"
-            )
-            renderer.display_success(f"Act {title_display} updated successfully!")
-            # Display updated act details using renderer
-            renderer.display_message(f"ID: {updated_act.id}")
-            renderer.display_message(f"Sequence: Act {updated_act.sequence}")
-            renderer.display_message(f"Active: {updated_act.is_active}")
-            if updated_act.title:
-                renderer.display_message(f"Title: {updated_act.title}")
-            if updated_act.summary:
-                renderer.display_message(f"Summary: {updated_act.summary}")
-            # --- End of moved block ---
-
-    except GameError as e: # Catch errors from get_act_by_identifier_or_error or edit_act
-        renderer.display_error(f"Error: {str(e)}")
-        raise typer.Exit(1) from e
+    logger.debug("edit_act command finished.")
 
 
 def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool:
