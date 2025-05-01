@@ -450,62 +450,8 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug(f"Found {len(scenes)} scenes in act {act_id}")
         return scenes
 
-    def complete_scene(self, scene_id: str) -> Scene:
-        """Mark a scene as complete without changing which scene is current.
-
-        Args:
-            scene_id: ID of the scene to complete.
-
-        Returns:
-            Updated Scene object.
-
-        Raises:
-            SceneError: If the scene doesn't exist or is already completed
-        """
-        logger.debug(f"Completing scene {scene_id}")
-
-        def _complete_scene(session: Session) -> Scene:
-            scene = self.get_entity_or_error(
-                session, Scene, scene_id, SceneError, f"Scene {scene_id} not found"
-            )
-            logger.debug(f"Found scene: {scene.title}")
-
-            if scene.status == SceneStatus.COMPLETED:
-                msg = f"Scene {scene_id} is already completed"
-                logger.warning(msg)
-                raise SceneError(msg)
-
-            scene.status = SceneStatus.COMPLETED
-            session.add(scene)  # Ensure change is tracked
-            logger.debug(f"Marked scene {scene_id} status as COMPLETED in session")
-
-            # Flush to send UPDATE and update modified_at in DB
-            logger.debug("Flushing session to persist status change")
-            session.flush()
-
-            # Refresh to load updated modified_at
-            try:
-                logger.debug(
-                    f"Refreshing scene {scene.id} to load attributes: "
-                    f"['modified_at', 'status']"
-                )
-                session.refresh(scene, attribute_names=["modified_at", "status"])
-                logger.debug(
-                    f"Scene refreshed. Modified_at: {scene.modified_at}, "
-                    f"Status: {scene.status}"
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Warning: Failed to refresh scene {scene.id} after completion: {e}"
-                )
-
-            logger.info(f"Marked scene {scene_id} as completed")
-            return scene
-
-        return self._execute_db_operation("complete scene", _complete_scene)
-
     def set_current_scene(self, scene_id: str) -> Scene:
-        """Set which scene is currently being played without changing its status.
+        """Set which scene is currently being played.
 
         Args:
             scene_id: ID of the scene to make current.
