@@ -99,18 +99,17 @@ def database_manager(db_engine: Engine) -> Generator[DatabaseManager, None, None
     # Import locally to avoid potential issues if this file is imported early
     from sologm.database.session import DatabaseManager
 
-    # Save original instance to restore it after the test
-    # This prevents tests from affecting each other or the real application
-    # This prevents tests from affecting each other or the real application
+    # Save original instance to restore it after the test.
+    # This prevents tests from affecting each other or the real application state.
     old_instance = DatabaseManager._instance
 
-    # Create new instance with test engine
+    # Create a new DatabaseManager instance using the test engine.
     db_manager = DatabaseManager(engine=db_engine)
     DatabaseManager._instance = db_manager
 
     yield db_manager
 
-    # Restore original instance to prevent test pollution
+    # Restore the original singleton instance to prevent test pollution.
     DatabaseManager._instance = old_instance
 
 
@@ -172,9 +171,8 @@ def session_context() -> SessionContext:
         A SessionContext instance connected to the test database.
     """
     # Import locally to avoid potential issues if this file is imported early
-    from sologm.database.session import SessionContext  # Import the class
+    from sologm.database.session import SessionContext
 
-    # Return an instance of the context manager
     return SessionContext()
 
 
@@ -203,9 +201,8 @@ def create_test_game(
         with session_context as session:
             managers = create_all_managers(session)
             game = managers.game.create_game(name, description, is_active=is_active)
-            # No merge needed, object is already session-bound
-            # REMOVED: session.refresh call and try/except block
-            return game  # Return the session-bound object
+            # No merge needed as the object is already session-bound via the manager.
+            return game
 
     return _create_game
 
@@ -245,10 +242,9 @@ def create_test_act(
             if sequence is not None:
                 act.sequence = sequence
                 session.add(act)
-                session.flush()  # Keep flush if sequence is manually set
+                session.flush()  # Keep flush here as sequence is manually set outside manager.
 
-            # No merge needed
-            # REMOVED: session.refresh call and try/except block
+            # No merge needed as the object is already session-bound via the manager.
             return act
 
     return _create_act
@@ -273,7 +269,6 @@ def create_test_scene(
         title: str = "Test Scene",
         description: str = "A test scene",
         is_active: bool = True,
-        # Removed status parameter
     ) -> Scene:
         with session_context as session:
             managers = create_all_managers(session)
@@ -283,28 +278,23 @@ def create_test_scene(
                 description=description,
                 make_active=is_active,
             )
-            # Removed block checking for SceneStatus.COMPLETED
 
-            # Add a refresh call here before returning, similar to create_test_event
-            # This helps ensure relationships are loaded while the object is known
-            # to be persistent within this session context. Flushing ensures the object
-            # state is synchronized with the DB before refresh.
+            # Refresh relationships to ensure they are loaded while the object is
+            # known to be persistent within this session context.
+            # Flushing ensures the object state is synchronized with the DB before refresh.
             try:
-                session.flush()  # Flush *before* refresh to ensure state is synchronized
-                # Refresh common relationships that might be needed immediately after creation
-                # Adjust attribute_names based on typical usage patterns
+                session.flush()  # Flush *before* refresh to ensure state is synchronized.
+                # Refresh common relationships typically needed immediately after creation.
                 session.refresh(scene, attribute_names=["act"])
             except Exception as e:
                 logger.warning(
                     "Warning: Error refreshing relationships in create_test_scene factory: %s",
                     e,
                 )
-                # Decide if this should be a hard failure or just a warning
-                # For now, log and continue, but this might hide issues
+                # Log and continue for now, but this might hide issues in tests.
 
-            # No merge needed
-            # REMOVED: session.refresh call and try/except block (was already removed)
-            return scene  # Return the potentially refreshed, session-bound object
+            # No merge needed as the object is already session-bound via the manager.
+            return scene
 
     return _create_scene
 
@@ -337,9 +327,9 @@ def create_test_event(
                 source=source,
                 interpretation_id=interpretation_id,
             )
-            # No merge needed
+            # No merge needed as the object is already session-bound via the manager.
             try:
-                # Refresh relationships using the passed-in session
+                # Refresh relationships to ensure they are loaded.
                 session.refresh(
                     event, attribute_names=["scene", "source", "interpretation"]
                 )
@@ -366,7 +356,6 @@ def create_test_interpretation_set(
         A callable function `_create_interpretation_set(scene_id, context="...", ...)`
         that creates and returns a persisted InterpretationSet instance.
     """
-    # Import locally
     from sologm.models.oracle import InterpretationSet
 
     def _create_interpretation_set(
@@ -377,13 +366,9 @@ def create_test_interpretation_set(
         is_current: bool = False,
     ) -> InterpretationSet:
         with session_context as session:
-            # Placeholder: Needs implementation using InterpretationSetManager if it exists,
-            # or direct model creation + session add/flush/refresh.
-            # For now, just create directly to satisfy fixture requirement.
+            # TODO: Replace direct model creation with manager call when available.
             managers = create_all_managers(session)
-            # Assuming InterpretationSetManager exists and has a create method
-            # If not, use InterpretationSet.create(...) and session.add/flush/refresh
-            # interp_set = managers.interpretation.create_interpretation_set(...) # Example
+            # Example: interp_set = managers.oracle.create_interpretation_set(...)
             interp_set = InterpretationSet.create(
                 scene_id=scene_id,
                 context=context,
@@ -423,7 +408,6 @@ def create_test_interpretation(
         A callable function `_create_interpretation(set_id, title="...", ...)`
         that creates and returns a persisted Interpretation instance.
     """
-    # Import locally
     from sologm.models.oracle import Interpretation
 
     def _create_interpretation(
@@ -433,12 +417,9 @@ def create_test_interpretation(
         is_selected: bool = False,
     ) -> Interpretation:
         with session_context as session:
-            # Placeholder: Needs implementation using InterpretationManager if it exists,
-            # or direct model creation + session add/flush/refresh.
+            # TODO: Replace direct model creation with manager call when available.
             managers = create_all_managers(session)
-            # Assuming InterpretationManager exists and has a create method
-            # If not, use Interpretation.create(...) and session.add/flush/refresh
-            # interp = managers.interpretation.create_interpretation(...) # Example
+            # Example: interp = managers.oracle.create_interpretation(...)
             interp = Interpretation.create(
                 set_id=set_id,
                 title=title,
@@ -485,4 +466,4 @@ def initialize_event_sources(session_context: SessionContext) -> None:
             if not existing:
                 source = EventSource.create(name=source_name)
                 session.add(source)
-        # Session is committed automatically when context exits
+        # Session is committed automatically by the SessionContext manager upon exit.
