@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act
-from sologm.models.scene import Scene  # Added import
-from sologm.utils.errors import ActError, SceneError  # Added ActError
+from sologm.models.scene import Scene
+from sologm.utils.errors import ActError, SceneError
 
 if TYPE_CHECKING:
     from sologm.core.act import ActManager
@@ -228,7 +228,8 @@ class SceneManager(BaseManager[Scene, Scene]):
         return scene
 
     def get_scene_by_identifier_or_error(self, identifier: str) -> Scene:
-        """Get a specific scene by its ID (UUID) or slug, raising SceneError if not found.
+        """Get a specific scene by its ID (UUID) or slug, raising SceneError
+           if not found.
 
         Args:
             identifier: ID or slug of the scene to get.
@@ -350,7 +351,7 @@ class SceneManager(BaseManager[Scene, Scene]):
                 session=session,
                 model_class=Act,
                 entity_id=act_id,
-                error_class=ActError,  # Use ActError if act not found
+                error_class=ActError,
                 error_message=f"Act with ID '{act_id}' does not exist",
             )
             logger.debug(f"Found act: {act.id} ('{act.title}')")
