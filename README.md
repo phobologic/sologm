@@ -387,6 +387,13 @@ This project follows a set of coding and design conventions to ensure consistenc
 *   **[Testing (`conventions/testing.md`)](conventions/testing.md):** Describes the testing strategy, focusing on testing Manager logic with session injection and avoiding direct CLI tests. Includes fixture patterns.
 *   **[Type Annotations (`conventions/type_annotations.md`)](conventions/type_annotations.md):** Specifies the requirements for using Python type hints, including function signatures, containers, `Optional`/`Union`, and SQLAlchemy `Mapped` types.
 
+## Example Playthrough
+
+An example playthrough demonstrating many of the features is available:
+
+*   **[Markdown Walkthrough (`example_game.md`)](example_game.md):** A step-by-step guide with explanations and example commands.
+*   **[Executable Bash Script (`example_game.sh`)](example_game.sh):** A script that runs the commands from the walkthrough (requires bash and may need manual interaction for editor steps). You can run it like: `bash example_game.sh`.
+
 ## Project Documentation
 
 This project was developed using a comprehensive documentation-driven approach:
