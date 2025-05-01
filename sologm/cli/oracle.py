@@ -67,9 +67,7 @@ def _prompt_for_oracle_input_if_needed(
         FieldConfig(
             name="results",
             display_name="Oracle Results",
-            help_text=(
-                "The raw results from the oracle (e.g., dice roll, card draw)."
-            ),
+            help_text=("The raw results from the oracle (e.g., dice roll, card draw)."),
             required=True,
             multiline=False,  # Typically single line
         ),
