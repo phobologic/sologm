@@ -395,6 +395,31 @@ def edit_act(
                 final_title = result_data.get("title") or None
                 final_summary = result_data.get("summary") or None
                 logger.info("Act data modified in editor.")
+
+                # --- Call edit_act and display results HERE (Editor Path) ---
+                if act_to_edit is None: # Defensive check (should not happen)
+                    raise GameError("Internal error: Act to edit was not determined.")
+
+                updated_act = game_manager.act_manager.edit_act(
+                    act_id=act_to_edit.id,
+                    title=final_title,
+                    summary=final_summary,
+                )
+                # Display success message using renderer
+                title_display = (
+                    f"'{updated_act.title}'" if updated_act.title else "untitled"
+                )
+                renderer.display_success(f"Act {title_display} updated successfully!")
+                # Display updated act details using renderer
+                renderer.display_message(f"ID: {updated_act.id}")
+                renderer.display_message(f"Sequence: Act {updated_act.sequence}")
+                renderer.display_message(f"Active: {updated_act.is_active}")
+                if updated_act.title:
+                    renderer.display_message(f"Title: {updated_act.title}")
+                if updated_act.summary:
+                    renderer.display_message(f"Summary: {updated_act.summary}")
+                # --- End of moved block ---
+
             elif status == EditorStatus.SAVED_UNCHANGED:
                 # Saved, but no changes made
                 renderer.display_message("No changes detected. Act not updated.")
@@ -411,32 +436,29 @@ def edit_act(
             final_summary = summary
             # Removed pass statement
 
-        # The check 'if act_to_edit is None:' has been removed.
-        # Preceding logic should ensure act_to_edit is valid here,
-        # or an error/exit would have already occurred.
+            # --- Call edit_act and display results HERE (CLI Args Path) ---
+            if act_to_edit is None: # Defensive check (should not happen)
+                 raise GameError("Internal error: Act to edit was not determined.")
 
-        updated_act = game_manager.act_manager.edit_act(
-            act_id=act_to_edit.id, # Pass the actual UUID here
-            title=final_title,
-            summary=final_summary,
-        )
-
-        # Display success message using renderer
-        title_display = (
-            f"'{updated_act.title}'" if updated_act.title else "untitled"
-        )
-        renderer.display_success(f"Act {title_display} updated successfully!")
-
-        # Display updated act details using renderer
-        # Again, ideally use a specific method, using display_message for now
-        renderer.display_message(f"ID: {updated_act.id}")
-        renderer.display_message(f"Sequence: Act {updated_act.sequence}")
-        renderer.display_message(f"Active: {updated_act.is_active}")
-        if updated_act.title:
-            renderer.display_message(f"Title: {updated_act.title}")
-        if updated_act.summary:
-            renderer.display_message(f"Summary: {updated_act.summary}")
-        # TODO: Consider adding renderer.display_act_details(updated_act)
+            updated_act = game_manager.act_manager.edit_act(
+                act_id=act_to_edit.id,
+                title=final_title,
+                summary=final_summary,
+            )
+            # Display success message using renderer
+            title_display = (
+                f"'{updated_act.title}'" if updated_act.title else "untitled"
+            )
+            renderer.display_success(f"Act {title_display} updated successfully!")
+            # Display updated act details using renderer
+            renderer.display_message(f"ID: {updated_act.id}")
+            renderer.display_message(f"Sequence: Act {updated_act.sequence}")
+            renderer.display_message(f"Active: {updated_act.is_active}")
+            if updated_act.title:
+                renderer.display_message(f"Title: {updated_act.title}")
+            if updated_act.summary:
+                renderer.display_message(f"Summary: {updated_act.summary}")
+            # --- End of moved block ---
 
     except GameError as e: # Catch errors from get_act_by_identifier_or_error or edit_act
         renderer.display_error(f"Error: {str(e)}")
