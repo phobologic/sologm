@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act
 from sologm.models.scene import Scene  # Added import
-from sologm.utils.errors import SceneError
+from sologm.utils.errors import ActError, SceneError  # Added ActError
 
 if TYPE_CHECKING:
     from sologm.core.act import ActManager
