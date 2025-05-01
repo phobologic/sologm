@@ -105,7 +105,7 @@ class RichRenderer(Renderer):
             metadata["Time"] = roll.created_at.strftime("%Y-%m-%d %H:%M:%S")
 
         # Create panel content
-        panel_content = Text()  # Assuming Text is imported
+        panel_content = Text()
 
         # Add all details
         for i, detail in enumerate(details):
