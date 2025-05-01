@@ -100,24 +100,7 @@ def database_manager(db_engine: Engine) -> Generator[DatabaseManager, None, None
     from sologm.database.session import DatabaseManager
 
     # Save original instance to restore it after the test
-
-    1. Test isolation: Each test gets its own clean database
-    2. No side effects: Tests don't affect the real application database
-    3. Singleton pattern preservation: The pattern is maintained during testing
-
-    The original singleton instance is saved before the test and restored afterward,
-    ensuring that tests don't permanently modify the application's database connection.
-    This is critical for test isolation and preventing test order dependencies.
-
-    Args:
-        db_engine: SQLite in-memory engine for testing
-
-    Yields:
-        A test-specific DatabaseManager instance
-    """
-    from sologm.database.session import DatabaseManager
-
-    # Save original instance to restore it after the test
+    # This prevents tests from affecting each other or the real application
     # This prevents tests from affecting each other or the real application
     old_instance = DatabaseManager._instance
 
