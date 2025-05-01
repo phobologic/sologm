@@ -466,7 +466,9 @@ def edit_act(
                 act_to_edit = act_manager.get_active_act(active_game.id)
                 if not act_to_edit:
                     logger.warning(f"No active act found in game '{active_game.name}'.")
-                    renderer.display_error(f"No active act in game '{active_game.name}'.")
+                    renderer.display_error(
+                        f"No active act in game '{active_game.name}'."
+                    )
                     renderer.display_message("Create one with `sologm act create`.")
                     raise typer.Exit(1)
                 logger.debug(f"Found active act: {act_to_edit.id}")
