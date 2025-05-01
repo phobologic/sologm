@@ -430,7 +430,7 @@ def edit_act(
                 logger.info(f"Act edit cancelled due to editor status: {status.name}")
                 raise typer.Exit(0)  # Exit gracefully
 
-        else:
+        except:
             # If parameters were provided directly, use them
             final_title = title
             final_summary = summary
