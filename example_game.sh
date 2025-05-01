@@ -44,11 +44,12 @@ run_cmd sologm dice roll 1d20+3 --reason "Detailed scan of the orbital station"
 run_cmd sologm oracle interpret --context "What is the immediate state of the derelict station?" --results "Silent, Power Fluctuations, Ancient Markings" --count 3
 run_cmd sologm oracle status
 
-# Use 'yes |' to automatically confirm adding the event
-echo "+ yes | sologm oracle select 2 --edit"
+# Note: The following command requires manual interaction for the editor (--edit)
+# and potentially for the confirmation prompt afterwards.
+# We remove 'yes |' because it breaks the interactive editor.
+echo "+ sologm oracle select 2 --edit"
 sleep 0.5
-# Note: --edit will still open the editor here, requiring manual interaction.
-yes | sologm oracle select 2 --edit
+sologm oracle select 2 --edit
 echo
 sleep 0.5
 
