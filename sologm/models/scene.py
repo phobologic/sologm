@@ -5,7 +5,14 @@ import uuid
 from typing import TYPE_CHECKING, List, Optional
 
 # Removed Enum import as it's no longer used for status
-from sqlalchemy import ForeignKey, Integer, Text, UniqueConstraint, func, select
+from sqlalchemy import (
+    ForeignKey,
+    Integer,
+    Text,
+    UniqueConstraint,
+    func,
+    select,
+)  # Sorted imports
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
@@ -13,6 +20,7 @@ from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
 if TYPE_CHECKING:
+    from sologm.models.act import Act  # Added Act for relationship back_populates type hint
     from sologm.models.dice import DiceRoll
     from sologm.models.event import Event
     from sologm.models.game import Game
@@ -23,7 +31,9 @@ class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
     __tablename__ = "scenes"
-    __table_args__ = (UniqueConstraint("act_id", "slug", name="uix_act_scene_slug"),)
+    __table_args__ = (
+        UniqueConstraint("act_id", "slug", name="uix_act_scene_slug"),
+    )  # Added trailing comma
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     slug: Mapped[str] = mapped_column(nullable=False, index=True)
@@ -38,76 +48,120 @@ class Scene(Base, TimestampMixin):
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(
         default=False
-    )  # This is now the primary state indicator
+    )  # Indicates if this is the current scene being played
 
     # Relationships this model owns
     events: Mapped[List["Event"]] = relationship(
-        "Event", back_populates="scene", cascade="all, delete-orphan"
+        "Event",
+        back_populates="scene",
+        cascade="all, delete-orphan",
+        lazy="selectin",  # Consider selectin loading for performance
     )
     interpretation_sets: Mapped[List["InterpretationSet"]] = relationship(
-        "InterpretationSet", back_populates="scene", cascade="all, delete-orphan"
+        "InterpretationSet",
+        back_populates="scene",
+        cascade="all, delete-orphan",
+        lazy="selectin",  # Consider selectin loading for performance
     )
     dice_rolls: Mapped[List["DiceRoll"]] = relationship(
-        "DiceRoll", back_populates="scene"
+        "DiceRoll",
+        back_populates="scene",
+        lazy="selectin",  # Consider selectin loading for performance
     )
+
+    # Relationship this model belongs to (defined in Act model)
+    # Use TYPE_CHECKING block for the type hint to avoid circular import
+    if TYPE_CHECKING:
+        act: Mapped["Act"]
+
+    # --- Accessor Properties ---
 
     @property
     def game(self) -> "Game":
-        """Get the game this scene belongs to through the act relationship."""
+        """Get the Game this scene belongs to via the Act relationship.
+
+        Requires the 'act' relationship (and its 'game' relationship) to be loaded.
+        """
+        # Assumes self.act and self.act.game are loaded or loadable
+        if not hasattr(self, "act") or self.act is None:
+            # Handle cases where act might not be loaded (e.g., detached object)
+            # This might indicate a programming error if accessed inappropriately.
+            # Consider raising an error or returning None based on expected usage.
+            raise AttributeError(
+                "The 'act' relationship is not loaded on this Scene object."
+            )
         return self.act.game
 
     @property
     def game_id(self) -> str:
-        """Get the game ID this scene belongs to."""
+        """Get the game ID this scene belongs to via the Act relationship.
+
+        Requires the 'act' relationship to be loaded.
+        """
+        # Assumes self.act is loaded or loadable
+        if not hasattr(self, "act") or self.act is None:
+            raise AttributeError(
+                "The 'act' relationship is not loaded on this Scene object."
+            )
         return self.act.game_id
+
+    # --- Latest Item Properties (using loaded relationships) ---
 
     @property
     def latest_event(self) -> Optional["Event"]:
-        """Get the most recently created event for this scene, if any.
+        """Get the most recently created event from the loaded 'events' collection.
 
-        This property sorts the already loaded events collection
-        and doesn't trigger a new database query.
+        Returns:
+            The most recent Event object, or None if no events are loaded/present.
         """
         if not self.events:
             return None
+        # Sorts the already loaded collection in Python
         return sorted(self.events, key=lambda event: event.created_at, reverse=True)[0]
 
     @property
     def latest_dice_roll(self) -> Optional["DiceRoll"]:
-        """Get the most recently created dice roll for this scene, if any.
+        """Get the most recently created roll from the loaded 'dice_rolls' collection.
 
-        This property sorts the already loaded dice_rolls collection
-        and doesn't trigger a new database query.
+        Returns:
+            The most recent DiceRoll object, or None if no rolls are loaded/present.
         """
         if not self.dice_rolls:
             return None
+        # Sorts the already loaded collection in Python
         return sorted(self.dice_rolls, key=lambda roll: roll.created_at, reverse=True)[
             0
         ]
 
     @property
     def latest_interpretation_set(self) -> Optional["InterpretationSet"]:
-        """Get the most recently created interpretation set for this scene, if any.
+        """Get the most recent set from the loaded 'interpretation_sets' collection.
 
-        This property sorts the already loaded interpretation_sets collection
-        and doesn't trigger a new database query.
+        Returns:
+            The most recent InterpretationSet object, or None if no sets are
+            loaded/present.
         """
         if not self.interpretation_sets:
             return None
+        # Sorts the already loaded collection in Python
         return sorted(
             self.interpretation_sets, key=lambda iset: iset.created_at, reverse=True
         )[0]
 
     @property
     def latest_interpretation(self) -> Optional["Interpretation"]:
-        """Get the most recently created interpretation for this scene, if any.
+        """Get the most recent interpretation across all loaded interpretation sets.
 
-        This property navigates through interpretation sets to find the latest
-        interpretation, without triggering new database queries.
+        Navigates through loaded 'interpretation_sets' and their 'interpretations'.
+
+        Returns:
+            The most recent Interpretation object, or None if no interpretations
+            are loaded/present.
         """
         latest_interp = None
         latest_time = None
 
+        # Iterates through already loaded collections in Python
         for interp_set in self.interpretation_sets:
             for interp in interp_set.interpretations:
                 if latest_time is None or interp.created_at > latest_time:
@@ -116,13 +170,18 @@ class Scene(Base, TimestampMixin):
 
         return latest_interp
 
+    # --- Interpretation Set Properties (using loaded relationships) ---
+
     @property
     def current_interpretation_set(self) -> Optional["InterpretationSet"]:
-        """Get the current interpretation set for this scene, if any.
+        """Get the current set from the loaded 'interpretation_sets' collection.
 
-        This property filters the already loaded interpretation_sets collection
-        and doesn't trigger a new database query.
+        Filters the loaded collection based on the 'is_current' flag.
+
+        Returns:
+            The current InterpretationSet object, or None if none is marked as current.
         """
+        # Filters the already loaded collection in Python
         for interp_set in self.interpretation_sets:
             if interp_set.is_current:
                 return interp_set
@@ -130,12 +189,15 @@ class Scene(Base, TimestampMixin):
 
     @property
     def selected_interpretations(self) -> List["Interpretation"]:
-        """Get all selected interpretations for this scene.
+        """Get all selected interpretations from loaded interpretation sets.
 
-        This property collects selected interpretations from all interpretation sets
-        without triggering new database queries.
+        Collects interpretations where 'is_selected' is True across loaded sets.
+
+        Returns:
+            A list of selected Interpretation objects.
         """
         selected = []
+        # Iterates through already loaded collections in Python
         for interp_set in self.interpretation_sets:
             for interp in interp_set.interpretations:
                 if interp.is_selected:
@@ -144,301 +206,276 @@ class Scene(Base, TimestampMixin):
 
     @property
     def all_interpretations(self) -> List["Interpretation"]:
-        """Get all interpretations for this scene.
+        """Get all interpretations from all loaded interpretation sets.
 
-        This property collects interpretations from all interpretation sets
-        without triggering new database queries.
+        Returns:
+            A list of all Interpretation objects associated with this scene.
         """
         all_interps = []
+        # Iterates through already loaded collections in Python
         for interp_set in self.interpretation_sets:
             all_interps.extend(interp_set.interpretations)
         return all_interps
 
-    # --- Removed status-related properties ---
-    # @property
-    # def is_completed(self) -> bool:
-    #     """Check if this scene is completed."""
-    #     return self.status == SceneStatus.COMPLETED
-    #
-    # @property
-    # def is_active_status(self) -> bool:
-    #     """Check if this scene has an active status."""
-    #     return self.status == SceneStatus.ACTIVE
-    # --- End removal ---
-
     # --- Validators ---
+
     @validates("title")
     def validate_title(self, _: str, title: str) -> str:
-        """Validate the scene title."""
+        """Ensure the scene title is not empty or just whitespace."""
         if not title or not title.strip():
             raise ValueError("Scene title cannot be empty")
-        return title
+        return title.strip() # Return stripped title
 
     @validates("slug")
     def validate_slug(self, _: str, slug: str) -> str:
-        """Validate the scene slug."""
+        """Ensure the scene slug is not empty or just whitespace."""
         if not slug or not slug.strip():
             raise ValueError("Scene slug cannot be empty")
-        return slug
+        # Slugs should generally be lowercase and follow conventions
+        return slugify(slug) # Ensure slug is properly formatted
+
+    # --- Hybrid Properties (for efficient querying) ---
 
     @hybrid_property
     def has_events(self) -> bool:
-        """Check if the scene has any events.
+        """Check if the scene has any associated events.
 
-        Works in both Python and SQL contexts:
-        - Python: Checks if the events list is non-empty
-        - SQL: Performs a subquery to check for events
+        Works in Python (checks loaded 'events') and SQL (uses EXISTS subquery).
         """
-        return len(self.events) > 0
+        return bool(self.events) # More explicit check for non-empty list
 
     @has_events.expression
     def has_events(cls):
-        """SQL expression for has_events."""
+        """SQL expression for checking the existence of related events."""
+        # Local import avoids potential circular dependency issues at module level
         from sologm.models.event import Event
 
-        return select(1).where(Event.scene_id == cls.id).exists().label("has_events")
+        return select(Event.id).where(Event.scene_id == cls.id).exists()
 
     @hybrid_property
     def event_count(self) -> int:
-        """Get the number of events in this scene.
+        """Get the number of events associated with this scene.
 
-        Works in both Python and SQL contexts:
-        - Python: Returns the length of the events list
-        - SQL: Performs a count query
+        Works in Python (returns len of loaded 'events') and SQL (uses COUNT query).
         """
         return len(self.events)
 
     @event_count.expression
     def event_count(cls):
-        """SQL expression for event_count."""
+        """SQL expression for counting related events."""
         from sologm.models.event import Event
 
         return (
             select(func.count(Event.id))
             .where(Event.scene_id == cls.id)
-            .label("event_count")
+            .scalar_subquery() # Use scalar_subquery for expressions
         )
 
     @hybrid_property
     def has_dice_rolls(self) -> bool:
-        """Check if the scene has any dice rolls.
+        """Check if the scene has any associated dice rolls.
 
-        Works in both Python and SQL contexts:
-        - Python: Checks if the dice_rolls list is non-empty
-        - SQL: Performs a subquery to check for dice rolls
+        Works in Python (checks loaded 'dice_rolls') and SQL (uses EXISTS subquery).
         """
-        return len(self.dice_rolls) > 0
+        return bool(self.dice_rolls)
 
     @has_dice_rolls.expression
     def has_dice_rolls(cls):
-        """SQL expression for has_dice_rolls."""
+        """SQL expression for checking the existence of related dice rolls."""
         from sologm.models.dice import DiceRoll
 
-        return (
-            select(1)
-            .where(DiceRoll.scene_id == cls.id)
-            .exists()
-            .label("has_dice_rolls")
-        )
+        return select(DiceRoll.id).where(DiceRoll.scene_id == cls.id).exists()
 
     @hybrid_property
     def dice_roll_count(self) -> int:
-        """Get the number of dice rolls in this scene.
+        """Get the number of dice rolls associated with this scene.
 
-        Works in both Python and SQL contexts:
-        - Python: Returns the length of the dice_rolls list
-        - SQL: Performs a count query
+        Works in Python (returns len of loaded 'dice_rolls') and SQL (uses COUNT query).
         """
         return len(self.dice_rolls)
 
     @dice_roll_count.expression
     def dice_roll_count(cls):
-        """SQL expression for dice_roll_count."""
+        """SQL expression for counting related dice rolls."""
         from sologm.models.dice import DiceRoll
 
         return (
             select(func.count(DiceRoll.id))
             .where(DiceRoll.scene_id == cls.id)
-            .label("dice_roll_count")
+            .scalar_subquery()
         )
 
     @hybrid_property
     def has_interpretation_sets(self) -> bool:
-        """Check if the scene has any interpretation sets.
+        """Check if the scene has any associated interpretation sets.
 
-        Works in both Python and SQL contexts:
-        - Python: Checks if the interpretation_sets list is non-empty
-        - SQL: Performs a subquery to check for interpretation sets
+        Works in Python (checks loaded 'interpretation_sets') and SQL (uses EXISTS subquery).
         """
-        return len(self.interpretation_sets) > 0
+        return bool(self.interpretation_sets)
 
     @has_interpretation_sets.expression
     def has_interpretation_sets(cls):
-        """SQL expression for has_interpretation_sets."""
+        """SQL expression for checking the existence of related interpretation sets."""
         from sologm.models.oracle import InterpretationSet
 
         return (
-            select(1)
+            select(InterpretationSet.id)
             .where(InterpretationSet.scene_id == cls.id)
             .exists()
-            .label("has_interpretation_sets")
         )
 
     @hybrid_property
     def interpretation_set_count(self) -> int:
-        """Get the number of interpretation sets in this scene.
+        """Get the number of interpretation sets associated with this scene.
 
-        Works in both Python and SQL contexts:
-        - Python: Returns the length of the interpretation_sets list
-        - SQL: Performs a count query
+        Works in Python (returns len of loaded 'interpretation_sets') and SQL (uses COUNT query).
         """
         return len(self.interpretation_sets)
 
     @interpretation_set_count.expression
     def interpretation_set_count(cls):
-        """SQL expression for interpretation_set_count."""
+        """SQL expression for counting related interpretation sets."""
         from sologm.models.oracle import InterpretationSet
 
         return (
             select(func.count(InterpretationSet.id))
             .where(InterpretationSet.scene_id == cls.id)
-            .label("interpretation_set_count")
+            .scalar_subquery()
         )
 
     @hybrid_property
     def has_interpretations(self) -> bool:
         """Check if the scene has any interpretations across all sets.
 
-        Works in both Python and SQL contexts:
-        - Python: Checks if all_interpretations is non-empty
-        - SQL: Performs a subquery to check for interpretations
+        Works in Python (checks loaded sets/interpretations) and SQL (uses EXISTS subquery).
         """
-        return any(
-            len(interp_set.interpretations) > 0
-            for interp_set in self.interpretation_sets
-        )
+        # Python implementation iterates through loaded relationships
+        return any(iset.interpretations for iset in self.interpretation_sets)
 
     @has_interpretations.expression
     def has_interpretations(cls):
-        """SQL expression for has_interpretations."""
+        """SQL expression for checking the existence of related interpretations."""
         from sologm.models.oracle import Interpretation, InterpretationSet
 
+        # Check if any Interpretation exists linked to an InterpretationSet linked to this Scene
         return (
-            select(1)
-            .where(
-                (InterpretationSet.scene_id == cls.id)
-                & (Interpretation.set_id == InterpretationSet.id)
-            )
+            select(Interpretation.id)
+            .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
+            .where(InterpretationSet.scene_id == cls.id)
             .exists()
-            .label("has_interpretations")
         )
 
     @hybrid_property
     def interpretation_count(self) -> int:
         """Get the total number of interpretations across all sets.
 
-        Works in both Python and SQL contexts:
-        - Python: Returns the length of all_interpretations
-        - SQL: Performs a count query
+        Works in Python (sums len of loaded 'interpretations') and SQL (uses COUNT query).
         """
-        return sum(
-            len(interp_set.interpretations) for interp_set in self.interpretation_sets
-        )
+        # Python implementation iterates through loaded relationships
+        return sum(len(iset.interpretations) for iset in self.interpretation_sets)
 
     @interpretation_count.expression
     def interpretation_count(cls):
-        """SQL expression for interpretation_count."""
+        """SQL expression for counting related interpretations."""
         from sologm.models.oracle import Interpretation, InterpretationSet
 
         return (
             select(func.count(Interpretation.id))
-            .where(
-                (InterpretationSet.scene_id == cls.id)
-                & (Interpretation.set_id == InterpretationSet.id)
-            )
-            .label("interpretation_count")
+            .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
+            .where(InterpretationSet.scene_id == cls.id)
+            .scalar_subquery()
         )
 
     @hybrid_property
     def has_selected_interpretations(self) -> bool:
         """Check if the scene has any selected interpretations.
 
-        Works in both Python and SQL contexts:
-        - Python: Checks if selected_interpretations is non-empty
-        - SQL: Performs a subquery to check for selected interpretations
+        Works in Python (checks loaded interpretations) and SQL (uses EXISTS subquery).
         """
+        # Python implementation iterates through loaded relationships
         return any(
-            any(interp.is_selected for interp in interp_set.interpretations)
-            for interp_set in self.interpretation_sets
+            interp.is_selected
+            for iset in self.interpretation_sets
+            for interp in iset.interpretations
         )
 
     @has_selected_interpretations.expression
     def has_selected_interpretations(cls):
-        """SQL expression for has_selected_interpretations."""
+        """SQL expression for checking the existence of selected interpretations."""
         from sologm.models.oracle import Interpretation, InterpretationSet
 
         return (
-            select(1)
-            .where(
-                (InterpretationSet.scene_id == cls.id)
-                & (Interpretation.set_id == InterpretationSet.id)
-                & Interpretation.is_selected
-            )
+            select(Interpretation.id)
+            .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
+            .where(InterpretationSet.scene_id == cls.id)
+            .where(Interpretation.is_selected) # Filter for selected interpretations
             .exists()
-            .label("has_selected_interpretations")
         )
 
     @hybrid_property
     def selected_interpretation_count(self) -> int:
-        """Get the number of selected interpretations.
+        """Get the number of selected interpretations across all sets.
 
-        Works in both Python and SQL contexts:
-        - Python: Returns the length of selected_interpretations
-        - SQL: Performs a count query
+        Works in Python (counts selected in loaded interpretations) and SQL (uses COUNT query).
         """
-        return len(self.selected_interpretations)
+        # Python implementation iterates through loaded relationships
+        count = 0
+        for iset in self.interpretation_sets:
+            for interp in iset.interpretations:
+                if interp.is_selected:
+                    count += 1
+        return count
 
     @selected_interpretation_count.expression
     def selected_interpretation_count(cls):
-        """SQL expression for selected_interpretation_count."""
+        """SQL expression for counting selected interpretations."""
         from sologm.models.oracle import Interpretation, InterpretationSet
 
         return (
             select(func.count(Interpretation.id))
-            .where(
-                (InterpretationSet.scene_id == cls.id)
-                & (Interpretation.set_id == InterpretationSet.id)
-                & Interpretation.is_selected
-            )
-            .label("selected_interpretation_count")
+            .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
+            .where(InterpretationSet.scene_id == cls.id)
+            .where(Interpretation.is_selected) # Filter for selected interpretations
+            .scalar_subquery()
         )
+
+    # --- Class Methods ---
 
     @classmethod
     def create(
-        cls, act_id: str, title: str, description: str, sequence: int
+        cls, act_id: str, title: str, description: Optional[str], sequence: int
     ) -> "Scene":
-        """Create a new scene with a unique ID and slug based on the title.
+        """Create a new scene instance with a unique ID and generated slug.
+
+        Note: This method creates the instance but does not add it to the session.
 
         Args:
             act_id: ID of the act this scene belongs to.
-            title: Title of the scene.
-            description: Description of the scene.
-            sequence: Sequence number of the scene.
+            title: Title of the scene (will be stripped).
+            description: Optional description of the scene (will be stripped if provided).
+            sequence: Sequence number of the scene within the act.
+
         Returns:
-            A new Scene instance.
+            A new, transient Scene instance.
+
+        Raises:
+            ValueError: If title is empty or whitespace.
         """
+        clean_title = title.strip() if title else ""
+        if not clean_title:
+            raise ValueError("Scene title cannot be empty")
+
+        clean_description = description.strip() if description else None
+
         # Generate a URL-friendly slug from the title and sequence
-        scene_slug = f"scene-{sequence}-{slugify(title)}"
+        scene_slug = f"scene-{sequence}-{slugify(clean_title)}"
 
         return cls(
             id=str(uuid.uuid4()),
             slug=scene_slug,
             act_id=act_id,
-            title=title,
-            description=description,
-            # --- Removed status assignment ---
-            # status=SceneStatus.ACTIVE,
-            # --- End removal ---
+            title=clean_title,
+            description=clean_description,
             sequence=sequence,
             # is_active defaults to False via mapped_column definition
         )
