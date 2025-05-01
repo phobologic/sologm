@@ -154,7 +154,7 @@ def generate_act_markdown(
         content.append(f"*Created: {format_datetime(act.created_at)}*")
         content.append("")
 
-    # Get all scenes for this act in sequence order
+    # Retrieve and sort scenes for the act.
     scenes = scene_manager.list_scenes(act_id=act.id)
     scenes.sort(key=lambda s: s.sequence)
 
@@ -203,10 +203,8 @@ def generate_scene_markdown(
         content.append(f"*Modified: {format_datetime(scene.modified_at)}*")
         content.append("")
 
-    # Get all events for this scene
+    # Retrieve and sort events for the scene.
     events = event_manager.list_events(scene_id=scene.id)
-
-    # Sort events chronologically
     events.sort(key=lambda e: e.created_at)
 
     if events:
@@ -244,14 +242,13 @@ def generate_event_markdown(
     elif event.source == "dice":
         source_indicator = " 🎲:"
 
-    # Split the description into lines
     description_lines = event.description.split("\n")
 
-    # First line with the bullet and source indicator
     if description_lines:
+        # Format the first line with bullet and optional source indicator.
         content.append(f"-{source_indicator} {description_lines[0]}")
 
-        # Additional lines need proper indentation to align with the first line content
+        # Indent subsequent lines to align under the first line's content.
         indent = "  " + " " * len(source_indicator)
         for line in description_lines[1:]:
             content.append(f"  {indent} {line}")
@@ -261,7 +258,7 @@ def generate_event_markdown(
         metadata_lines.append(f"  - Source: {event.source_name}")
 
         if metadata_lines:
-            content.append("")
+            content.append("") # Add blank line before metadata for readability.
             content.extend(metadata_lines)
 
     return content
