@@ -60,7 +60,6 @@ def interpret_oracle(
         with get_db_context() as session:
             oracle_manager = OracleManager(session=session)
 
-            # --- Input Gathering / Editor Logic ---
             if context is None or results is None:
                 if show_prompt:
                     renderer.display_error(
