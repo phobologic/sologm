@@ -213,9 +213,7 @@ class TestActManager:
         with session_context as session:
             managers = create_all_managers(session)
             test_game = create_test_game(session)
-            test_act = create_test_act(
-                session, game_id=test_game.id, title="Find Me"
-            )
+            test_act = create_test_act(session, game_id=test_game.id, title="Find Me")
 
             # Get by ID
             act_by_id = managers.act.get_act_by_identifier_or_error(test_act.id)
@@ -298,11 +296,13 @@ class TestActManager:
 
             # Edit summary only using slug
             updated_act_by_slug = managers.act.edit_act(
-                act_id=updated_act_by_id.id, # Still need ID here for the edit method itself
+                act_id=updated_act_by_id.id,  # Still need ID here for the edit method itself
                 summary="Updated summary",
             )
 
-            assert updated_act_by_slug.title == "Updated Title" # Title from previous edit
+            assert (
+                updated_act_by_slug.title == "Updated Title"
+            )  # Title from previous edit
             assert updated_act_by_slug.summary == "Updated summary"
 
             # Edit both title and summary using ID again
