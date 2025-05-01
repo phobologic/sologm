@@ -1,10 +1,11 @@
 """Scene model for SoloGM."""
 
-import enum
+# Removed enum import as SceneStatus is gone
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Enum, ForeignKey, Integer, Text, UniqueConstraint, func, select
+# Removed Enum import as it's no longer used for status
+from sqlalchemy import ForeignKey, Integer, Text, UniqueConstraint, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
@@ -29,11 +30,13 @@ class Scene(Base, TimestampMixin):
     act_id: Mapped[str] = mapped_column(ForeignKey("acts.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    status: Mapped[SceneStatus] = mapped_column(
-        Enum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE
-    )
+    # --- Removed status column ---
+    # status: Mapped[SceneStatus] = mapped_column(
+    #     Enum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE
+    # )
+    # --- End removal ---
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
-    is_active: Mapped[bool] = mapped_column(default=False)
+    is_active: Mapped[bool] = mapped_column(default=False) # This is now the primary state indicator
 
     # Relationships this model owns
     events: Mapped[List["Event"]] = relationship(
@@ -149,24 +152,19 @@ class Scene(Base, TimestampMixin):
             all_interps.extend(interp_set.interpretations)
         return all_interps
 
-    @property
-    def is_completed(self) -> bool:
-        """Check if this scene is completed.
+    # --- Removed status-related properties ---
+    # @property
+    # def is_completed(self) -> bool:
+    #     """Check if this scene is completed."""
+    #     return self.status == SceneStatus.COMPLETED
+    #
+    # @property
+    # def is_active_status(self) -> bool:
+    #     """Check if this scene has an active status."""
+    #     return self.status == SceneStatus.ACTIVE
+    # --- End removal ---
 
-        This property provides a more readable way to check the scene status.
-        """
-        return self.status == SceneStatus.COMPLETED
-
-    @property
-    def is_active_status(self) -> bool:
-        """Check if this scene has an active status.
-
-        This property provides a more readable way to check the scene status.
-        Note: This is different from is_active which indicates if this is the
-        current scene.
-        """
-        return self.status == SceneStatus.ACTIVE
-
+    # --- Validators ---
     @validates("title")
     def validate_title(self, _: str, title: str) -> str:
         """Validate the scene title."""
@@ -436,6 +434,9 @@ class Scene(Base, TimestampMixin):
             act_id=act_id,
             title=title,
             description=description,
-            status=SceneStatus.ACTIVE,
+            # --- Removed status assignment ---
+            # status=SceneStatus.ACTIVE,
+            # --- End removal ---
             sequence=sequence,
+            # is_active defaults to False via mapped_column definition
         )
