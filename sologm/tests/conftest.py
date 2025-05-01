@@ -220,7 +220,7 @@ def create_test_act(
         A callable function `_create_act(game_id, title="...", ...)`
         that creates and returns a persisted Act instance.
     """
-    # Import Act locally to avoid circular dependency issues at module level
+    # Import Act locally to avoid potential circular dependency issues at module level.
     from sologm.models.act import Act
 
     def _create_act(
