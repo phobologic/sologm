@@ -62,6 +62,14 @@ This document outlines the Python code style and documentation conventions for t
 -   Use inline comments (`#`) sparingly.
 -   Explain the *why* behind complex or non-obvious code, not *what* the code is doing (the code itself should explain the "what").
 -   Keep comments accurate and up-to-date as the code evolves.
+-   **No Temporary or Change History Comments:** 
+    -   Do not add comments such as "TODO", "FIXME", "Refactor this later", or similar markers for future work directly in the code.
+    -   Do not include comments describing past changes like "Removed method XXX in refactor." Use version control history for tracking changes.
+    -   If you see something that needs improvement, share that in the chat output, rather than adding it as comments.
+    -   This prevents the codebase from accumulating "comment debt" that rarely gets addressed and keeps the focus on current code rather than its history.
+    -   *Examples of what NOT to do:* 
+        -   `# TODO: This is inefficient, needs refactoring`
+        -   `# Removed UserManager.authenticate() in authentication refactor`
 
 ## 6. Type Hinting (PEP 484+)
 
