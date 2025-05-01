@@ -22,7 +22,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene  # SceneStatus removed implicitly
+from sologm.models.scene import Scene
 
 
 # Add mock_console fixture if not already present globally
@@ -68,12 +68,10 @@ def test_display_dice_roll(
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
     assert isinstance(args[0], Panel)
-    # Verify border style based on is_active
-    assert (
-        args[0].border_style == BORDER_STYLES["current"]
-    )  # Scene is active by default
-    # Verify status is not in metadata (more complex assertion, maybe skip for now)
-    # assert "Status" not in args[0].renderable.plain # Example, might need refinement
+    # Verify border style based on active status (default is True).
+    assert args[0].border_style == BORDER_STYLES["current"]
+    # Verify status is not in metadata.
+    assert "Status" not in str(args[0].renderable)
 
 
 # --- End Tests for display_scene_info ---
@@ -86,10 +84,8 @@ def test_display_error(mock_console: MagicMock):
     """Test displaying an error message using RichRenderer."""
     renderer = RichRenderer(mock_console)
     error_message = "Something went wrong!"
-    # This call should fail with NotImplementedError initially
     renderer.display_error(error_message)
 
-    # Assertions will run after implementation
     mock_console.print.assert_called_once_with(f"[red]Error: {error_message}[/red]")
 
 
@@ -172,7 +168,6 @@ def test_display_game_status_full(
             is_scene_active=True,
         )
 
-    # Assertions remain the same
     assert mock_console.print.called
 
 
@@ -202,7 +197,6 @@ def test_display_game_status_no_scene(
             is_scene_active=False,
         )
 
-    # Assertions will run after implementation
     assert mock_console.print.called
 
 
@@ -249,7 +243,6 @@ def test_display_game_status_no_events(
             is_scene_active=True,
         )
 
-    # Assertions will run after implementation
     assert mock_console.print.called
 
 
@@ -284,7 +277,6 @@ def test_display_game_status_no_interpretation(
             is_scene_active=True,
         )
 
-    # Assertions will run after implementation
     assert mock_console.print.called
 
 
@@ -344,7 +336,6 @@ def test_display_game_status_selected_interpretation(
             is_scene_active=True,
         )
 
-    # Assertions will run after implementation
     assert mock_console.print.called
 
 
@@ -357,26 +348,19 @@ def test_display_game_status_selected_interpretation(
 def test_calculate_truncation_length(mock_console: MagicMock):
     """Test the truncation length calculation using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
-    # Test with a valid console width
+
     mock_console.width = 100
     result = renderer._calculate_truncation_length()
-    # --- MODIFIED ASSERTION ---
-    assert result == 40  # Expected: max(40, int(100 / 2) - 10) = 40
+    assert result == 40 # Expected: max(40, int(100 / 2) - 10) = 40
 
-    # Test with a small console width
     mock_console.width = 30
     result = renderer._calculate_truncation_length()
-    assert result == 40  # min value
+    assert result == 40 # Min value check.
 
-    # Test with an invalid console width (should use self.console.width)
     mock_console.width = None
-    # Mock console width to return a default if None
-    mock_console.width = 80  # Keep this mock setup
+    mock_console.width = 80 # Set a default for the None case.
     result = renderer._calculate_truncation_length()
-    # --- MODIFIED ASSERTION ---
-    # Expected: max(40, int(80 / 2) - 10) = max(40, 30) = 40
-    assert result == 40
+    assert result == 40 # Expected: max(40, int(80 / 2) - 10) = 40
 
 
 def test_create_act_panel(
@@ -396,10 +380,7 @@ def test_create_act_panel(
         assert panel_active is not None
         assert panel_active.title is not None
         assert panel_active.border_style == BORDER_STYLES["current"]
-        # Check if summary is present (might be truncated)
-        assert act.summary[:10] in str(
-            panel_active.renderable
-        )  # Check start of summary
+        assert act.summary[:10] in str(panel_active.renderable) # Check start of summary.
 
         # Test with inactive act and specific truncation
         act.summary = "This is a very long summary that definitely needs to be truncated for the test."
@@ -410,20 +391,15 @@ def test_create_act_panel(
         )
         assert panel_inactive_truncated is not None
         assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
-        # Check if the summary is truncated (20 * 1.5 = 30 chars max)
-        assert "This is a very long summary..." in str(
-            panel_inactive_truncated.renderable
-        )
-        assert "truncated for the test." not in str(
-            panel_inactive_truncated.renderable
-        )  # End should be cut off
+        # Check if the summary is truncated (20 * 1.5 = 30 chars max).
+        assert "This is a very long summary..." in str(panel_inactive_truncated.renderable)
+        assert "truncated for the test." not in str(panel_inactive_truncated.renderable) # End should be cut off.
 
         # Test with no active act
         panel_no_act = renderer._create_act_panel(game, None)
         assert panel_no_act is not None
         assert panel_no_act.title is not None
         assert panel_no_act.border_style == BORDER_STYLES["neutral"]
-    # Check for the updated message when no act is provided
     assert "No acts found in this game." in str(panel_no_act.renderable)
 
 
@@ -464,10 +440,12 @@ def test_create_scene_panels_grid(
             game, scene, mock_scene_manager, is_scene_active=True
         )
         assert grid_active is not None
-        # Add assertion: Check border style of the first panel in the grid (latest scene)
+        # Check border style of the first panel in the grid (latest scene).
         latest_scene_panel_active = grid_active.renderables[0].renderables[0]
         assert isinstance(latest_scene_panel_active, Panel)
         assert latest_scene_panel_active.border_style == BORDER_STYLES["current"]
+        # Check status is not in the metadata of the active scene panel.
+        assert "Status" not in str(latest_scene_panel_active.renderable)
 
         # Test with inactive scene and scene manager
         grid_inactive = renderer._create_scene_panels_grid(
@@ -477,6 +455,8 @@ def test_create_scene_panels_grid(
         latest_scene_panel_inactive = grid_inactive.renderables[0].renderables[0]
         assert isinstance(latest_scene_panel_inactive, Panel)
         assert latest_scene_panel_inactive.border_style == BORDER_STYLES["neutral"]
+        # Check status is not in the metadata of the inactive scene panel.
+        assert "Status" not in str(latest_scene_panel_inactive.renderable)
 
         # Test with active scene but no scene manager
         grid = renderer._create_scene_panels_grid(
@@ -484,12 +464,11 @@ def test_create_scene_panels_grid(
         )
         assert grid is not None
 
-        # Test with no active scene
         grid_no_scene = renderer._create_scene_panels_grid(
             game, None, None, is_scene_active=False
         )
         assert grid_no_scene is not None
-        # Check the content of the first panel when no scene exists
+        # Check the content of the first panel when no scene exists.
         no_scene_panel = grid_no_scene.renderables[0].renderables[0]
         assert isinstance(no_scene_panel, Panel)
         assert "No scenes found" in str(no_scene_panel.renderable)
@@ -561,7 +540,6 @@ def test_create_oracle_panel(
 def test_create_empty_oracle_panel(mock_console: MagicMock):
     """Test creating an empty oracle panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with AttributeError initially
     panel = renderer._create_empty_oracle_panel()
     assert panel is not None
     assert "Oracle" in panel.title
@@ -634,13 +612,12 @@ def test_display_interpretation_set(
         interp2 = create_test_interpretation(
             session, set_id=interp_set.id, title="Interp 2"
         )
-        # Refresh the set to load interpretations relationship
+        # Refresh the set to load interpretations relationship.
         session.refresh(interp_set, attribute_names=["interpretations"])
 
     renderer.display_interpretation_set(interp_set)
 
-    # Assertions will run after implementation
-    # Expect calls for context panel (if show_context=True), each interpretation, and instruction panel
+    # Expect calls for context panel, each interpretation, and instruction panel.
     assert mock_console.print.call_count >= len(interp_set.interpretations) + 2
 
 
@@ -666,13 +643,12 @@ def test_display_interpretation_set_no_context(
         interp2 = create_test_interpretation(
             session, set_id=interp_set.id, title="Interp 2"
         )
-        # Refresh the set to load interpretations relationship
+        # Refresh the set to load interpretations relationship.
         session.refresh(interp_set, attribute_names=["interpretations"])
 
     renderer.display_interpretation_set(interp_set, show_context=False)
 
-    # Assertions will run after implementation
-    # Expect calls for each interpretation (panel + newline) and instruction panel
+    # Expect calls for each interpretation (panel + newline) and instruction panel.
     assert mock_console.print.call_count == len(interp_set.interpretations) * 2 + 1
 
 
@@ -698,13 +674,12 @@ def test_display_interpretation_status(
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         interp_set = create_test_interpretation_set(session, scene_id=scene.id)
-        # Add interpretations if needed by the display logic
         create_test_interpretation(session, set_id=interp_set.id)
         session.refresh(interp_set, attribute_names=["interpretations"])
 
     renderer.display_interpretation_status(interp_set)
 
-    # Expecting two prints: one for the panel, one for the trailing newline
+    # Expecting two prints: one for the panel, one for the trailing newline.
     assert mock_console.print.call_count == 2
     args1, _ = mock_console.print.call_args_list[0]
     args2, _ = mock_console.print.call_args_list[1]
@@ -745,7 +720,7 @@ def test_display_interpretation_sets_table(
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
-    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+    assert isinstance(args[0], Panel)
 
 
 # --- End Tests for display_interpretation_sets_table ---
@@ -774,19 +749,16 @@ def test_display_acts_table_with_acts(
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
-    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
-    # Add assertion: Check number of columns in the table inside the panel
+    assert isinstance(args[0], Panel)
     table = args[0].renderable
-    assert len(table.columns) == 5  # ID, Seq, Title, Summary, Current
+    assert len(table.columns) == 5 # ID, Seq, Title, Summary, Current
 
 
 def test_display_acts_table_no_acts(mock_console: MagicMock):
     """Test displaying acts table with no acts using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
     renderer.display_acts_table([], None)
 
-    # Assertions will run after implementation
     mock_console.print.assert_called_once_with(
         "No acts found. Create one with 'sologm act create'."
     )
@@ -824,19 +796,16 @@ def test_display_scenes_table_with_scenes(
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
-    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
-    # Add assertion: Check number of columns in the table inside the panel
+    assert isinstance(args[0], Panel)
     table = args[0].renderable
-    assert len(table.columns) == 5  # ID, Title, Description, Current, Sequence
+    assert len(table.columns) == 5 # ID, Title, Description, Current, Sequence
 
 
 def test_display_scenes_table_no_scenes(mock_console: MagicMock):
     """Test displaying scenes table with no scenes using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
     renderer.display_scenes_table([], None)
 
-    # Assertions will run after implementation
     mock_console.print.assert_called_once_with(
         "No scenes found. Create one with 'sologm scene create'."
     )
@@ -870,7 +839,7 @@ def test_display_events_table_with_events(
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
-    assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+    assert isinstance(args[0], Panel)
 
 
 def test_display_events_table_with_truncation(
@@ -895,16 +864,14 @@ def test_display_events_table_with_truncation(
         )
         events = [event1, event2]
 
-        # Test with truncation enabled (default)
         renderer.display_events_table(
             events, scene, max_description_length=20
-        )  # Pass max_length
+        )
         mock_console.print.assert_called_once()
         args1, _ = mock_console.print.call_args
         assert isinstance(args1[0], Panel)
-        mock_console.reset_mock()  # Reset for the next call
+        mock_console.reset_mock()
 
-        # Test with truncation disabled
         renderer.display_events_table(events, scene, truncate_descriptions=False)
         mock_console.print.assert_called_once()
         args2, _ = mock_console.print.call_args
@@ -959,10 +926,10 @@ def test_display_interpretation(
     renderer.display_interpretation(interpretation)
 
     mock_console.print.assert_called()
-    args, kwargs = mock_console.print.call_args_list[0]  # Check first call
+    args, kwargs = mock_console.print.call_args_list[0]
     assert len(args) == 1
     assert isinstance(args[0], Panel)
-    # Check second call is just a newline print
+    # Check second call is just a newline print for spacing.
     args, kwargs = mock_console.print.call_args_list[1]
     assert len(args) == 0
 
@@ -990,10 +957,10 @@ def test_display_interpretation_selected(
     renderer.display_interpretation(interpretation, selected=True)
 
     mock_console.print.assert_called()
-    args, kwargs = mock_console.print.call_args_list[0]  # Check first call
+    args, kwargs = mock_console.print.call_args_list[0]
     assert len(args) == 1
     assert isinstance(args[0], Panel)
-    # Check second call is just a newline print
+    # Check second call is just a newline print for spacing.
     args, kwargs = mock_console.print.call_args_list[1]
     assert len(args) == 0
 
@@ -1025,26 +992,21 @@ def test_display_act_ai_generation_results(
         assert mock_console.print.call_count >= 2  # At least title and summary panels
         mock_console.reset_mock()
 
-        # Test with only title
         results_title = {"title": "AI Generated Title"}
         renderer.display_act_ai_generation_results(results_title, act)
-        assert mock_console.print.call_count >= 1  # At least title panel
+        assert mock_console.print.call_count >= 1
         mock_console.reset_mock()
 
-        # Test with only summary
         results_summary = {"summary": "AI Generated Summary"}
         renderer.display_act_ai_generation_results(results_summary, act)
-        assert mock_console.print.call_count >= 1  # At least summary panel
+        assert mock_console.print.call_count >= 1
         mock_console.reset_mock()
 
-        # Test with empty results
         results_empty = {}
         renderer.display_act_ai_generation_results(results_empty, act)
-        # No panels should be printed if results are empty
-        assert mock_console.print.call_count == 0
+        assert mock_console.print.call_count == 0 # No panels should be printed.
         mock_console.reset_mock()
 
-        # Test with existing content for comparison
         act.title = "Existing Title"
         act.summary = "Existing Summary"
         session.add(act)
@@ -1054,13 +1016,13 @@ def test_display_act_ai_generation_results(
             "summary": "AI Generated Summary",
         }
         renderer.display_act_ai_generation_results(results_compare, act)
-        # Expect 4 panels: AI title, existing title, AI summary, existing summary
+        # Expect 4 panels: AI title, existing title, AI summary, existing summary.
         assert mock_console.print.call_count == 4
         args_list = mock_console.print.call_args_list
-    assert isinstance(args_list[0][0][0], Panel)  # AI Title
-    assert isinstance(args_list[1][0][0], Panel)  # Existing Title
-    assert isinstance(args_list[2][0][0], Panel)  # AI Summary
-    assert isinstance(args_list[3][0][0], Panel)  # Existing Summary
+    assert isinstance(args_list[0][0][0], Panel)
+    assert isinstance(args_list[1][0][0], Panel)
+    assert isinstance(args_list[2][0][0], Panel)
+    assert isinstance(args_list[3][0][0], Panel)
 
 
 # --- End Tests for display_act_ai_generation_results ---
@@ -1079,28 +1041,22 @@ def test_display_act_completion_success(
     renderer = RichRenderer(mock_console)
     with session_context as session:
         game = create_test_game(session)
-        # Test with title and summary - make it inactive initially to allow creating the next one
         act_with_title = create_test_act(
             session,
             game_id=game.id,
             title="Completed Act",
             summary="It is done.",
-            is_active=False,  # Ensure this doesn't block the next create
+            is_active=False, # Ensure this doesn't block the next create.
         )
         renderer.display_act_completion_success(act_with_title)
-        assert (
-            mock_console.print.call_count >= 3
-        )  # Title message, metadata, title, summary
+        assert mock_console.print.call_count >= 3 # Title message, metadata, title, summary.
         mock_console.reset_mock()
 
-        # Test with untitled act
         act_untitled = create_test_act(
             session, game_id=game.id, title=None, summary="Summary only"
         )
         renderer.display_act_completion_success(act_untitled)
-        assert (
-            mock_console.print.call_count >= 2
-        )  # Title message, metadata, summary (no title print)
+        assert mock_console.print.call_count >= 2 # Title message, metadata, summary (no title print).
 
 
 # --- End Tests for display_act_completion_success ---
@@ -1114,19 +1070,13 @@ def test_display_act_ai_feedback_prompt(mock_ask: MagicMock, mock_console: Magic
     """Test displaying AI feedback prompt for an act using RichRenderer."""
     renderer = RichRenderer(mock_console)
 
-    # Mock the Prompt.ask method to return a fixed value
     mock_ask.return_value = "A"
 
-    # This call should fail with NotImplementedError initially
-    # Note: The original function took console, the Renderer method doesn't need it
-    # in the signature as it uses self.console, but the base class requires it.
-    # We pass self.console here to match the base class signature for now.
-    # This might be refined later if the base class signature changes.
+    # The 'console' parameter is passed to match the base class, even if unused internally.
     result = renderer.display_act_ai_feedback_prompt(renderer.console)
 
-    # Assertions will run after implementation
     assert result == "A"
-    mock_ask.assert_called_once()  # Verify Prompt.ask was called
+    mock_ask.assert_called_once()
 
 
 # --- End Tests for display_act_ai_feedback_prompt ---
@@ -1139,16 +1089,14 @@ def test_display_act_edited_content_preview(mock_console: MagicMock):
     """Test displaying edited content preview for an act using RichRenderer."""
     renderer = RichRenderer(mock_console)
     edited_results = {"title": "Edited Title", "summary": "Edited Summary"}
-    # This call should fail with NotImplementedError initially
     renderer.display_act_edited_content_preview(edited_results)
 
-    # Assertions will run after implementation
-    # Expecting 3 prints: header, title panel, summary panel
+    # Expecting 3 prints: header, title panel, summary panel.
     assert mock_console.print.call_count == 3
     args_list = mock_console.print.call_args_list
     assert "Preview of your edited content:" in args_list[0][0][0]
-    assert isinstance(args_list[1][0][0], Panel)  # Title Panel
-    assert isinstance(args_list[2][0][0], Panel)  # Summary Panel
+    assert isinstance(args_list[1][0][0], Panel)
+    assert isinstance(args_list[2][0][0], Panel)
 
 
 # --- End Tests for display_act_edited_content_preview ---
@@ -1187,10 +1135,8 @@ def test_display_game_info_no_scene(
     renderer = RichRenderer(mock_console)
     with session_context as session:
         game = create_test_game(session)
-        # Call the renderer *inside* the session context
         renderer.display_game_info(game, None)
 
-    # Assertions remain outside the context
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
@@ -1215,21 +1161,19 @@ def test_display_act_info(
     with session_context as session:
         game = create_test_game(session, name="My Game")
         act = create_test_act(session, game_id=game.id)
-        # Add a scene to test the scene listing part
         create_test_scene(session, act_id=act.id)
-        session.refresh(act, attribute_names=["scenes"])  # Load scenes relationship
+        session.refresh(act, attribute_names=["scenes"]) # Load scenes relationship.
 
     renderer.display_act_info(act, game.name)
 
-    # Expecting two prints: one for the main act panel, one for the scenes panel/table
+    # Expecting two prints: one for the main act panel, one for the scenes panel/table.
     assert mock_console.print.call_count == 2
     args1, _ = mock_console.print.call_args_list[0]
     args2, _ = mock_console.print.call_args_list[1]
-    assert isinstance(args1[0], Panel)  # Act info panel
-    assert isinstance(args2[0], Panel)  # Scenes table panel
-    # Add assertion: Check number of columns in the scenes table inside the second panel
+    assert isinstance(args1[0], Panel)
+    assert isinstance(args2[0], Panel)
     scenes_table = args2[0].renderable
-    assert len(scenes_table.columns) == 5  # ID, Seq, Title, Summary, Current
+    assert len(scenes_table.columns) == 5 # ID, Seq, Title, Summary, Current
 
 
 # --- End Tests for display_act_info ---
@@ -1261,10 +1205,8 @@ def test_display_games_table_with_games(
 def test_display_games_table_no_games(mock_console: MagicMock):
     """Test displaying games table with no games using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    # This call should fail with NotImplementedError initially
     renderer.display_games_table([], None)
 
-    # Assertions will run after implementation
     mock_console.print.assert_called_once_with(
         "No games found. Create one with 'sologm game create'."
     )
@@ -1290,16 +1232,15 @@ def test_display_scene_info(
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
-        # Add an event to test event listing
         create_test_event(session, scene_id=scene.id)
-        session.refresh(scene, attribute_names=["events", "act"])  # Load relationships
+        session.refresh(scene, attribute_names=["events", "act"]) # Load relationships.
         renderer.display_scene_info(scene)
 
     mock_console.print.assert_called_once()
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
     assert isinstance(args[0], Panel)
-    # Add assertion: Check border style based on is_active (default is True)
+    # Check border style based on is_active (default is True).
     assert args[0].border_style == BORDER_STYLES["current"]
-    # Add assertion: Check that "Status" is not in the panel's content
+    # Check that "Status" is not in the panel's content.
     assert "Status" not in str(args[0].renderable)

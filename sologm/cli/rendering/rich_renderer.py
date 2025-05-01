@@ -24,7 +24,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene  # Removed SceneStatus import
+from sologm.models.scene import Scene
 
 # Corrected import based on file structure from Phase 1
 from .base import Renderer
@@ -50,11 +50,8 @@ class RichRenderer(Renderer):
         Args:
             console: The Rich Console instance for output.
         """
-        # Pass the console and explicitly set markdown_mode to False
         super().__init__(console, markdown_mode=False)
         logger.debug("RichRenderer initialized")
-
-    # --- Method implementations will be moved here from display.py in Step 3 ---
 
     def display_dice_roll(self, roll: DiceRoll) -> None:
         """Displays the results of a dice roll using Rich."""
@@ -121,15 +118,13 @@ class RichRenderer(Renderer):
             panel_content.append("\n")
             panel_content.append(st.format_metadata(metadata))
 
-        # Use consistent border style for dice rolls (neutral information)
-        panel = Panel(  # Assuming Panel is imported
+        panel = Panel(
             panel_content,
             title=panel_title,
-            border_style=BORDER_STYLES["neutral"],  # Assuming BORDER_STYLES is imported
+            border_style=BORDER_STYLES["neutral"],
             expand=True,
             title_align="left",
         )
-        # Use self.console instead of the console parameter
         self.console.print(panel)
 
     def display_interpretation(
@@ -178,9 +173,8 @@ class RichRenderer(Renderer):
             border_style=border_style,
             title_align="left",
         )
-        # Use self.console instead of the console parameter
         self.console.print(panel)
-        self.console.print()  # Print the trailing newline
+        self.console.print() # Ensure trailing newline for spacing.
 
     def display_events_table(
         self,
@@ -202,7 +196,6 @@ class RichRenderer(Renderer):
         )
         if not events:
             logger.debug(f"No events to display for scene '{scene.title}'")
-            # Use self.console
             self.console.print(f"\nNo events in scene '{scene.title}'")
             return
 
@@ -256,7 +249,6 @@ class RichRenderer(Renderer):
             title_align="left",
             border_style=BORDER_STYLES["game_info"],
         )
-        # Use self.console
         self.console.print(panel)
 
     def display_games_table(
@@ -267,7 +259,6 @@ class RichRenderer(Renderer):
         logger.debug(f"Active game: {active_game.id if active_game else 'None'}")
         if not games:
             logger.debug("No games found to display")
-            # Use self.console
             self.console.print("No games found. Create one with 'sologm game create'.")
             return
 
@@ -321,7 +312,6 @@ class RichRenderer(Renderer):
             title_align="left",
             border_style=BORDER_STYLES["game_info"],
         )
-        # Use self.console
         self.console.print(panel)
 
     def display_scenes_table(
@@ -334,7 +324,6 @@ class RichRenderer(Renderer):
         )
         if not scenes:
             logger.debug("No scenes found to display")
-            # Use self.console
             self.console.print(
                 "No scenes found. Create one with 'sologm scene create'."
             )
@@ -347,12 +336,12 @@ class RichRenderer(Renderer):
             border_style=BORDER_STYLES["game_info"],
         )
 
-        # Add columns with consistent styling
-        # Ensure ID column does not wrap/truncate
+        # Add columns with consistent styling.
+        # Ensure ID column does not wrap/truncate.
         table.add_column("ID", style=st.STYLES["timestamp"], no_wrap=True)
         table.add_column("Title", style=st.STYLES["category"])
         table.add_column("Description")
-        table.add_column("Status", style=st.STYLES["success"])
+        # Removed Status column
         table.add_column("Current", style=st.STYLES["success"], justify="center")
         table.add_column("Sequence", justify="right")
 
@@ -368,7 +357,7 @@ class RichRenderer(Renderer):
                 scene.id,
                 scene_title,
                 scene.description,
-                scene.status.value,
+                # Removed status value
                 active_marker,
                 str(scene.sequence),
             )
@@ -383,7 +372,6 @@ class RichRenderer(Renderer):
             title_align="left",
             border_style=BORDER_STYLES["game_info"],
         )
-        # Use self.console
         self.console.print(panel)
 
     def display_game_info(
@@ -455,7 +443,6 @@ class RichRenderer(Renderer):
             title_align="left",
         )
 
-        # Use self.console instead of the console parameter
         self.console.print(panel)
 
     def display_interpretation_set(
@@ -502,9 +489,8 @@ class RichRenderer(Renderer):
             self.console.print(context_panel)
             self.console.print()
 
-        # Display each interpretation with its sequence number
+        # Display each interpretation with its sequence number.
         for i, interp in enumerate(interp_set.interpretations, 1):
-            # CRUCIAL: Call the method on self
             self.display_interpretation(interp, sequence=i)
 
         # Show set ID with instruction
@@ -519,9 +505,7 @@ class RichRenderer(Renderer):
 
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene using Rich."""
-        logger.debug(
-            f"Displaying scene info for {scene.id} (status: {scene.status.value})"
-        )
+        logger.debug(f"Displaying scene info for {scene.id} (active: {scene.is_active})")
         logger.debug(
             f"Scene details: title='{scene.title}', sequence={scene.sequence}, "
             f"act_id={scene.act_id if hasattr(scene, 'act_id') else 'unknown'}"
@@ -535,19 +519,19 @@ class RichRenderer(Renderer):
             act_title = scene.act.title or "Untitled Act"
             act_info = f"Act {scene.act.sequence}: {act_title}"
 
-        # Create metadata with consistent formatting
+        # Create metadata with consistent formatting.
         metadata = {
-            "Status": scene.status.value,
+            # Status removed
             "Sequence": scene.sequence,
             "Act": act_info,
             "Created": scene.created_at.strftime("%Y-%m-%d"),
             "Modified": scene.modified_at.strftime("%Y-%m-%d"),
         }
 
-        # Determine border style based on scene status
-        border_style = BORDER_STYLES["current"]
-        if scene.status.value == "COMPLETED":
-            border_style = BORDER_STYLES["success"]
+        # Determine border style based on active status.
+        border_style = (
+            BORDER_STYLES["current"] if scene.is_active else BORDER_STYLES["game_info"]
+        )
 
         # Create panel content
         panel_content = st.combine(
@@ -566,10 +550,9 @@ class RichRenderer(Renderer):
             title_align="left",
         )
 
-        # Use self.console instead of the console parameter
         self.console.print(panel)
 
-    # --- display_game_status and its helpers (Moved & Adapted) ---
+    # --- display_game_status and its helpers ---
 
     def display_game_status(
         self,
@@ -681,7 +664,7 @@ class RichRenderer(Renderer):
         except (TypeError, ValueError) as e:
             # Default to a reasonable truncation length if console width is not available
             logger.debug(
-                f"Could not determine console width due to error: {e}, using default value"
+                f"Could not determine console width due to error: {e}, using default value."
             )
             return 40
 
@@ -750,7 +733,7 @@ class RichRenderer(Renderer):
         return Panel(
             panel_content,
             title=st.title(panel_title_text),
-            border_style=border_style,  # Use dynamic border
+            border_style=border_style,
             expand=True,
             title_align="left",
         )
@@ -878,7 +861,7 @@ class RichRenderer(Renderer):
                 latest_scene.description, max_length=max_desc_length
             )
             logger.debug(
-                f"Truncated latest scene description from {len(latest_scene.description)} to {len(truncated_description)} chars"
+                f"Truncated latest scene description from {len(latest_scene.description)} to {len(truncated_description)} chars."
             )
             act_info = ""
             if hasattr(latest_scene, "act") and latest_scene.act:
@@ -892,26 +875,21 @@ class RichRenderer(Renderer):
                 truncated_description,
             )
 
-            # Determine status string and border style
-            if latest_scene.status == SceneStatus.COMPLETED:
-                status_string = st.success("Completed")
-                latest_scene_border_style = BORDER_STYLES["success"]
-            elif is_scene_active:
+            # Determine status string and border style based on is_active.
+            if is_scene_active:
                 status_string = st.success("Active")
                 latest_scene_border_style = BORDER_STYLES["current"]
             else:
                 status_string = st.warning("Inactive")
                 latest_scene_border_style = BORDER_STYLES["neutral"]
 
-            # Add metadata including status
+            # Add metadata including status.
             metadata = {
-                "Status": status_string,
+                "Status": status_string, # Reflects active/inactive, not completion.
                 "Sequence": latest_scene.sequence,
-                # --- MODIFIED: Add check for created_at ---
                 "Created": latest_scene.created_at.strftime("%Y-%m-%d")
                 if latest_scene.created_at
                 else "N/A",
-                # --- END MODIFICATION ---
             }
             scenes_content.append("\n")
             scenes_content.append(st.format_metadata(metadata))
@@ -924,9 +902,9 @@ class RichRenderer(Renderer):
         scenes_panel = Panel(
             scenes_content,
             title=st.title(latest_scene_title_text),
-            border_style=latest_scene_border_style,  # Use dynamic border
+            border_style=latest_scene_border_style,
             title_align="left",
-            expand=True,  # Ensure panel expands to fill available width
+            expand=True,
         )
 
         # Create previous scene panel (logic remains similar, finds scene before latest_scene)
@@ -945,7 +923,7 @@ class RichRenderer(Renderer):
                 prev_scene.description, max_length=max_desc_length
             )
             logger.debug(
-                f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars"
+                f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars."
             )
             act_info = ""
             if hasattr(prev_scene, "act") and prev_scene.act:
@@ -958,9 +936,9 @@ class RichRenderer(Renderer):
                 "\n",
                 truncated_description,
             )
-            # Add metadata for previous scene (status is just its stored status)
+            # Add metadata for previous scene.
             prev_metadata = {
-                "Status": prev_scene.status.value,  # Display stored status
+                "Status": "Active" if prev_scene.is_active else "Inactive", # Display active/inactive status.
                 "Sequence": prev_scene.sequence,
                 "Created": prev_scene.created_at.strftime("%Y-%m-%d"),
             }
@@ -975,7 +953,7 @@ class RichRenderer(Renderer):
             title=st.title("Previous Scene"),
             border_style=BORDER_STYLES["game_info"],
             title_align="left",
-            expand=True,  # Ensure panel expands to fill available width
+            expand=True,
         )
 
         # Create a nested grid for the left column to stack the scene panels
@@ -1062,7 +1040,6 @@ class RichRenderer(Renderer):
             logger.debug("No oracle manager or latest scene, skipping oracle panel")
             return None
 
-        # Check for current interpretation set using latest_scene.id
         current_interp_set = oracle_manager.get_current_interpretation_set(
             latest_scene.id
         )
@@ -1080,7 +1057,6 @@ class RichRenderer(Renderer):
                     current_interp_set, truncation_length
                 )
 
-        # Try to get most recent interpretation using latest_scene.id
         recent_interp = oracle_manager.get_most_recent_interpretation(latest_scene.id)
 
         if recent_interp:
@@ -1088,8 +1064,7 @@ class RichRenderer(Renderer):
             # Call self._create_recent_oracle_panel
             return self._create_recent_oracle_panel(recent_interp[0], recent_interp[1])
 
-        logger.debug("No oracle panel needed, creating empty panel")
-        # If no current set and no recent interpretation, return an empty panel
+        logger.debug("No oracle panel needed, creating empty panel.")
         return self._create_empty_oracle_panel()
 
     def _create_pending_oracle_panel(
@@ -1102,10 +1077,8 @@ class RichRenderer(Renderer):
 
         st = StyledText
 
-        # Create panel content
         panel_content = Text()
 
-        # Add header
         panel_content.append(st.warning("Open Oracle Interpretation:"))
         panel_content.append("\n")
         panel_content.append(st.subtitle("Context:"))
@@ -1128,10 +1101,9 @@ class RichRenderer(Renderer):
             )
             panel_content.append(truncated_desc)
 
-        # Add footer
         panel_content.append("\n\n")
         panel_content.append(
-            st.subtitle("Use 'sologm oracle select' to choose an interpretation")
+            st.subtitle("Use 'sologm oracle select' to choose an interpretation.")
         )
 
         return Panel(
@@ -1155,10 +1127,8 @@ class RichRenderer(Renderer):
 
         st = StyledText
 
-        # Build the panel content
         panel_content = Text()
 
-        # Add oracle results and context
         panel_content.append(st.subtitle("Oracle Results:"))
         panel_content.append(" ")
         panel_content.append(interp_set.oracle_results)
@@ -1168,7 +1138,6 @@ class RichRenderer(Renderer):
         panel_content.append(interp_set.context)
         panel_content.append("\n\n")
 
-        # Add selected interpretation
         panel_content.append(st.subtitle("Selected Interpretation:"))
         panel_content.append(" ")
         panel_content.append(st.title(selected_interp.title))
@@ -1176,10 +1145,8 @@ class RichRenderer(Renderer):
         panel_content.append(selected_interp.description)
         panel_content.append("\n\n")
 
-        # Add other options header
         panel_content.append(st.subtitle("Other options were:"))
 
-        # Add other interpretations that weren't selected
         for i, interp in enumerate(interp_set.interpretations, 1):
             if interp.id != selected_interp.id:
                 panel_content.append("\n")
@@ -1249,13 +1216,11 @@ class RichRenderer(Renderer):
                     panel_content.append(st.subtitle(roll.reason))
                     panel_content.append(")")
 
-                # Add timestamp (down to the second)
                 logger.debug(f"Roll timestamp: {roll.created_at}")
                 panel_content.append("\n")
                 formatted_time = roll.created_at.strftime("%Y-%m-%d %H:%M:%S")
                 panel_content.append(st.timestamp(formatted_time))
 
-                # Add details for complex rolls
                 if len(roll.individual_results) > 1:
                     logger.debug(
                         f"Roll has individual results: {roll.individual_results}"
@@ -1281,7 +1246,6 @@ class RichRenderer(Renderer):
         logger.debug(f"Active act ID: {active_act_id if active_act_id else 'None'}")
         if not acts:
             logger.debug("No acts found to display")
-            # Use self.console
             self.console.print("No acts found. Create one with 'sologm act create'.")
             return
 
@@ -1337,7 +1301,6 @@ class RichRenderer(Renderer):
             title_align="left",
             border_style=BORDER_STYLES["game_info"],
         )
-        # Use self.console
         self.console.print(panel)
 
     def display_act_info(self, act: Act, game_name: str) -> None:
@@ -1412,9 +1375,7 @@ class RichRenderer(Renderer):
             scenes_table.add_column("Sequence", justify="right")
             scenes_table.add_column("Title", style=st.STYLES["category"])
             scenes_table.add_column("Summary")
-            scenes_table.add_column(
-                "Status", style=st.STYLES["success"]
-            )  # Added Status column
+            # Status column removed
             scenes_table.add_column(
                 "Current", style=st.STYLES["success"], justify="center"
             )
@@ -1436,7 +1397,7 @@ class RichRenderer(Renderer):
                     str(scene.sequence),
                     scene_title,
                     truncated_description,
-                    scene.status.value,  # Display status value
+                    # Removed status value
                     active_marker,
                 )
 
@@ -1452,7 +1413,6 @@ class RichRenderer(Renderer):
             )
             self.console.print(scenes_panel)
         else:
-            # Create an empty panel for no scenes
             empty_panel = Panel(
                 st.subtitle("No scenes in this act yet."),
                 title=st.title("Scenes"),
@@ -1533,7 +1493,6 @@ class RichRenderer(Renderer):
             title_align="left",
             border_style=BORDER_STYLES["game_info"],
         )
-        # Use self.console instead of console parameter
         self.console.print(panel)
 
     def display_interpretation_status(self, interp_set: InterpretationSet) -> None:
@@ -1579,19 +1538,6 @@ class RichRenderer(Renderer):
         self.console.print(panel)
         self.console.print()
 
-    # display_act_ai_generation_results is implemented below, removing this stub
-
-    def display_act_completion_success(self, completed_act: Act) -> None:
-        """Displays a success message upon act completion using Rich."""
-        raise NotImplementedError
-
-    def display_act_ai_feedback_prompt(self, console: Console) -> None:
-        """Displays the prompt asking for feedback on AI generation using Rich Prompt."""
-        # Note: This implementation will likely directly use Rich Prompt.
-        # The base class signature includes `console` which might be redundant
-        # if we always use `self.console`. We'll refine this when implementing.
-        raise NotImplementedError
-
     def display_act_edited_content_preview(
         self, edited_results: Dict[str, str]
     ) -> None:
@@ -1617,7 +1563,7 @@ class RichRenderer(Renderer):
             expand=False,
             title_align="left",
         )
-        self.console.print(title_panel)  # Use self.console
+        self.console.print(title_panel)
 
         summary_panel = Panel(
             edited_results["summary"],
@@ -1626,7 +1572,7 @@ class RichRenderer(Renderer):
             expand=False,
             title_align="left",
         )
-        self.console.print(summary_panel)  # Use self.console
+        self.console.print(summary_panel)
 
     def display_act_ai_generation_results(
         self, results: Dict[str, str], act: Act
@@ -1645,9 +1591,8 @@ class RichRenderer(Renderer):
                 expand=False,
                 title_align="left",
             )
-            self.console.print(title_panel)  # Use self.console
+            self.console.print(title_panel)
 
-            # Display existing title for comparison if it exists
             if act.title:
                 existing_title_panel = Panel(
                     act.title,
@@ -1656,9 +1601,8 @@ class RichRenderer(Renderer):
                     expand=False,
                     title_align="left",
                 )
-                self.console.print(existing_title_panel)  # Use self.console
+                self.console.print(existing_title_panel)
 
-        # Display generated summary
         if "summary" in results and results["summary"]:
             summary_panel = Panel(
                 results["summary"],
@@ -1667,9 +1611,8 @@ class RichRenderer(Renderer):
                 expand=False,
                 title_align="left",
             )
-            self.console.print(summary_panel)  # Use self.console
+            self.console.print(summary_panel)
 
-            # Display existing summary for comparison if it exists
             if act.summary:
                 existing_summary_panel = Panel(
                     act.summary,
@@ -1678,7 +1621,7 @@ class RichRenderer(Renderer):
                     expand=False,
                     title_align="left",
                 )
-                self.console.print(existing_summary_panel)  # Use self.console
+                self.console.print(existing_summary_panel)
 
     def display_act_completion_success(self, completed_act: Act) -> None:
         """Displays a success message upon act completion using Rich."""
@@ -1690,27 +1633,23 @@ class RichRenderer(Renderer):
             f"'{completed_act.title}'" if completed_act.title else "untitled"
         )
 
-        # Create success message with consistent styling
         self.console.print(
             st.title_success(f"Act {title_display} completed successfully!")
-        )  # Use self.console
+        )
 
-        # Display completed act details with metadata formatting
         metadata = {
             "ID": completed_act.id,
             "Sequence": f"Act {completed_act.sequence}",
-            "Status": "Completed",
+            "Status": "Completed", # Assuming completion implies inactive now.
         }
-        # Use StyledText.format_metadata directly for Rich Text object
-        self.console.print(st.format_metadata(metadata))  # Use self.console
+        self.console.print(st.format_metadata(metadata))
 
-        # Display title and summary if present
         if completed_act.title:
-            self.console.print(  # Use self.console
+            self.console.print(
                 "\n" + st.combine(st.title("Title:"), " ", completed_act.title).plain
             )
         if completed_act.summary:
-            self.console.print(  # Use self.console
+            self.console.print(
                 "\n"
                 + st.combine(st.title("Summary:"), "\n", completed_act.summary).plain
             )
@@ -1725,26 +1664,21 @@ class RichRenderer(Renderer):
         Returns:
             User's choice: "A" for Accept, "E" for Edit, or "R" for Regenerate
         """
-        # Note: The 'console' parameter is present to match the base class signature.
-        # Rich's Prompt.ask handles the actual console interaction.
+        # The 'console' parameter is present to match the base class signature,
+        # but Rich's Prompt.ask handles the actual console interaction.
         logger.debug("Displaying AI feedback prompt for act")
 
         st = StyledText
-
-        # Prompt user for action with consistent styling
-        # choices = "(A)ccept, (E)dit, or (R)egenerate" # No longer needed, included in prompt_message
         default_choice = "E"
 
-        # Use StyledText for the prompt message itself, including choice descriptions
         prompt_message = st.warning(
             "What would you like to do with this content? (A)ccept / (E)dit / (R)egenerate"
         )
 
         choice = Prompt.ask(
-            prompt_message,  # Pass the Text object directly
+            prompt_message,
             choices=["A", "E", "R", "a", "e", "r"],
             default=default_choice,
-            # console=self.console # Optionally pass console if needed by Prompt internals
         ).upper()
 
         logger.debug(f"User chose: {choice}")
@@ -1753,15 +1687,11 @@ class RichRenderer(Renderer):
     def display_error(self, message: str) -> None:
         """Displays an error message to the user using Rich."""
         logger.error(f"Displaying error: {message}")
-        # Use self.console to print the error message with red styling
-        # --- MODIFIED: Use simple red text formatting ---
         self.console.print(f"[red]Error: {message}[/red]")
-        # --- END MODIFICATION ---
 
     def display_success(self, message: str) -> None:
         """Displays a success message using Rich."""
         logger.debug(f"Displaying success: {message}")
-        # Use a consistent success style
         self.console.print(StyledText.success(f"Success: {message}"))
 
     def display_warning(self, message: str) -> None:
@@ -1773,10 +1703,7 @@ class RichRenderer(Renderer):
         """Displays a simple informational message using Rich, optionally styled."""
         logger.debug(f"Displaying message: {message} (style: {style})")
         if style:
-            # Ensure Text is imported if not already
-            from rich.text import Text
-
+            from rich.text import Text # Local import is fine here.
             self.console.print(Text(message, style=style))
         else:
-            # Default style or just plain text
             self.console.print(message)
