@@ -719,7 +719,7 @@ class RichRenderer(Renderer):
                 latest_act.summary, max_length=max_summary_length
             )
             panel_content.append("\n")
-            panel_content.append(truncated_summary)  # Append the truncated summary
+            panel_content.append(truncated_summary)
 
         # Add metadata including status
         metadata = {
@@ -796,7 +796,7 @@ class RichRenderer(Renderer):
 
         # Add metadata with dim style
         metadata_text = st.format_metadata(metadata)
-        metadata_text.stylize("dim")
+        metadata_text.stylize("dim") # Dim the metadata for less emphasis.
         content.append(metadata_text)
 
         logger.debug("Game header panel created")
@@ -1018,11 +1018,10 @@ class RichRenderer(Renderer):
             st.title("Recent Events"), f" ({len(recent_events)} shown)"
         )
 
-        # Use success border style for events as they represent completed actions
         return Panel(
             events_content,
             title=panel_title,
-            border_style=BORDER_STYLES["success"],
+            border_style=BORDER_STYLES["success"], # Events represent completed actions.
             title_align="left",
         )
 
@@ -1363,9 +1362,8 @@ class RichRenderer(Renderer):
 
         self.console.print(panel)
 
-        # Display scenes in this act if any
+        # Display scenes in this act if any.
         if hasattr(act, "scenes") and act.scenes:
-            # Create a table for scenes
             scenes_table = Table(
                 border_style=BORDER_STYLES["game_info"],
             )
