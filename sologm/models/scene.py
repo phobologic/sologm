@@ -1,10 +1,8 @@
 """Scene model for SoloGM."""
 
-# Removed enum import as SceneStatus is gone
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-# Removed Enum import as it's no longer used for status
 from sqlalchemy import (
     ForeignKey,
     Integer,
@@ -12,7 +10,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
     select,
-)  # Sorted imports
+)
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
@@ -33,20 +31,18 @@ class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
     __tablename__ = "scenes"
-    __table_args__ = (
-        UniqueConstraint("act_id", "slug", name="uix_act_scene_slug"),
-    )  # Added trailing comma
+    __table_args__ = (UniqueConstraint("act_id", "slug", name="uix_act_scene_slug"),)
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     slug: Mapped[str] = mapped_column(nullable=False, index=True)
     act_id: Mapped[str] = mapped_column(ForeignKey("acts.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    # Status column removed, replaced by is_active flag
+    # Status column was removed; is_active flag now indicates the current scene.
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(
         default=False, index=True
-    )  # Indicates if this is the current scene being played
+    )  # True if this is the current scene being played in its act.
 
     # Relationships
     events: Mapped[List["Event"]] = relationship(
@@ -64,11 +60,10 @@ class Scene(Base, TimestampMixin):
     dice_rolls: Mapped[List["DiceRoll"]] = relationship(
         "DiceRoll",
         back_populates="scene",
-        lazy="selectin",  # Consider selectin loading for performance
+        lazy="selectin",  # Use selectin loading for potential performance gain.
     )
 
-    # Relationship this model belongs to (defined in Act model)
-    # Use TYPE_CHECKING block for the type hint to avoid circular import
+    # Define the relationship back to Act within TYPE_CHECKING to avoid circular imports.
     if TYPE_CHECKING:
         act: Mapped["Act"]
 
@@ -110,7 +105,6 @@ class Scene(Base, TimestampMixin):
         """
         if not self.events:
             return None
-        # Sorts the already loaded collection in Python.
         return sorted(self.events, key=lambda event: event.created_at, reverse=True)[0]
 
     @property
@@ -122,7 +116,6 @@ class Scene(Base, TimestampMixin):
         """
         if not self.dice_rolls:
             return None
-        # Sorts the already loaded collection in Python.
         return sorted(self.dice_rolls, key=lambda roll: roll.created_at, reverse=True)[
             0
         ]
@@ -137,7 +130,6 @@ class Scene(Base, TimestampMixin):
         """
         if not self.interpretation_sets:
             return None
-        # Sorts the already loaded collection in Python.
         return sorted(
             self.interpretation_sets, key=lambda iset: iset.created_at, reverse=True
         )[0]
@@ -155,7 +147,6 @@ class Scene(Base, TimestampMixin):
         latest_interp = None
         latest_time = None
 
-        # Iterates through already loaded collections in Python.
         for interp_set in self.interpretation_sets:
             for interp in interp_set.interpretations:
                 if latest_time is None or interp.created_at > latest_time:
@@ -175,7 +166,6 @@ class Scene(Base, TimestampMixin):
         Returns:
             The current InterpretationSet object, or None if none is marked as current.
         """
-        # Filters the already loaded collection in Python.
         for interp_set in self.interpretation_sets:
             if interp_set.is_current:
                 return interp_set
@@ -191,7 +181,6 @@ class Scene(Base, TimestampMixin):
             A list of selected Interpretation objects.
         """
         selected = []
-        # Iterates through already loaded collections in Python.
         for interp_set in self.interpretation_sets:
             for interp in interp_set.interpretations:
                 if interp.is_selected:
@@ -206,7 +195,6 @@ class Scene(Base, TimestampMixin):
             A list of all Interpretation objects associated with this scene.
         """
         all_interps = []
-        # Iterates through already loaded collections in Python.
         for interp_set in self.interpretation_sets:
             all_interps.extend(interp_set.interpretations)
         return all_interps
@@ -225,7 +213,6 @@ class Scene(Base, TimestampMixin):
         """Ensure the scene slug is not empty or just whitespace."""
         if not slug or not slug.strip():
             raise ValueError("Scene slug cannot be empty")
-        # Ensure slug is properly formatted (lowercase, dashes, etc.).
         return slugify(slug)
 
     # --- Hybrid Properties (for efficient querying) ---
@@ -342,7 +329,6 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (checks loaded sets/interpretations) and SQL (uses EXISTS subquery).
         """
-        # Python implementation iterates through loaded relationships.
         return any(iset.interpretations for iset in self.interpretation_sets)
 
     @has_interpretations.expression
@@ -363,7 +349,6 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (sums len of loaded 'interpretations') and SQL (uses COUNT query).
         """
-        # Python implementation iterates through loaded relationships.
         return sum(len(iset.interpretations) for iset in self.interpretation_sets)
 
     @interpretation_count.expression
@@ -384,7 +369,6 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (checks loaded interpretations) and SQL (uses EXISTS subquery).
         """
-        # Python implementation iterates through loaded relationships.
         return any(
             interp.is_selected
             for iset in self.interpretation_sets
@@ -410,7 +394,6 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (counts selected in loaded interpretations) and SQL (uses COUNT query).
         """
-        # Python implementation iterates through loaded relationships.
         count = 0
         for iset in self.interpretation_sets:
             for interp in iset.interpretations:
@@ -468,5 +451,5 @@ class Scene(Base, TimestampMixin):
             title=clean_title,
             description=clean_description,
             sequence=sequence,
-            # is_active defaults to False via mapped_column definition
+            # is_active defaults to False via the mapped_column definition.
         )

@@ -105,7 +105,7 @@ class Act(Base, TimestampMixin):
             .label("has_active_scene")
         )
 
-    # Removed has_completed_scenes hybrid property
+    # has_completed_scenes hybrid property removed (status field removed from Scene)
 
     @property
     def active_scene(self) -> Optional["Scene"]:
@@ -119,8 +119,8 @@ class Act(Base, TimestampMixin):
                 return scene
         return None
 
-    # Removed completed_scenes property
-    # Removed active_scenes property (use active_scene or filter scenes by is_active)
+    # completed_scenes property removed (status field removed from Scene)
+    # active_scenes property removed (use active_scene or filter scenes by is_active)
 
     @property
     def latest_scene(self) -> Optional["Scene"]:

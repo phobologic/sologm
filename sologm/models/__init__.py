@@ -10,14 +10,13 @@ from sologm.models.event import Event
 from sologm.models.event_source import EventSource
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene  # Removed SceneStatus import
+from sologm.models.scene import Scene
 
 __all__ = [
     "Base",
     "TimestampMixin",
     "Game",
     "Scene",
-    # Removed SceneStatus from __all__
     "Act",
     "Event",
     "EventSource",

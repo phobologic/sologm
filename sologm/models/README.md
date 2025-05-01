@@ -70,10 +70,10 @@ class Act(Base, TimestampMixin):
     slug: Mapped[str]
     game_id: Mapped[str]
     title: Mapped[Optional[str]]
-    summary: Mapped[Optional[str]] # Changed from description
+    summary: Mapped[Optional[str]]
     sequence: Mapped[int]
     is_active: Mapped[bool]
-    # Removed status: Mapped[ActStatus]
+    # Status field removed
     # Relationships
     game: Mapped["Game"]
     scenes: Mapped[List["Scene"]]
@@ -150,10 +150,10 @@ class Scene(Base, TimestampMixin):
     slug: Mapped[str]
     act_id: Mapped[str]
     title: Mapped[str]
-    description: Mapped[Optional[str]] # Changed from str
+    description: Mapped[Optional[str]]
     sequence: Mapped[int]
     is_active: Mapped[bool]
-    # Removed status: Mapped[SceneStatus]
+    # Status field removed
     # Relationships
     act: Mapped["Act"]
     events: Mapped[List["Event"]]
