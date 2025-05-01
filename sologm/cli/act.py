@@ -259,41 +259,23 @@ def act_info(ctx: typer.Context) -> None:
         renderer.display_act_info(active_act, active_game.name)
 
 
-# --- Helper Function 1: Get the Act ---
-def _get_act_to_edit(
+# --- Helper Function 1: Find Act by Identifier ---
+def _find_act_by_identifier(
     act_manager: ActManager,
-    active_game: Game,
-    identifier: Optional[str],
+    identifier: str,
     renderer: "Renderer",
 ) -> Act:
-    """Finds the act to be edited based on identifier or active status."""
-    logger.debug(f"Attempting to find act to edit (identifier='{identifier}')")
-    act_to_edit: Optional[Act] = None
+    """Finds a specific act by its ID or slug, raising Exit on error."""
+    logger.debug(f"Attempting to find act by identifier='{identifier}'")
     try:
-        if identifier:
-            act_to_edit = act_manager.get_act_by_identifier_or_error(identifier)
-            # Verify the act belongs to the active game
-            if act_to_edit.game_id != active_game.id:
-                logger.error(
-                    f"Act '{identifier}' (ID: {act_to_edit.id}) found but does not belong to active game '{active_game.name}' (ID: {active_game.id})"
-                )
-                renderer.display_error(
-                    f"Act '{identifier}' does not belong to active game '{active_game.name}'."
-                )
-                raise typer.Exit(1)
-            logger.debug(f"Found specific act by identifier: {act_to_edit.id}")
-        else:
-            act_to_edit = act_manager.get_active_act(active_game.id)
-            if not act_to_edit:
-                logger.warning(f"No active act found in game '{active_game.name}'.")
-                renderer.display_error(f"No active act in game '{active_game.name}'.")
-                renderer.display_message("Create one with `sologm act create`.")
-                raise typer.Exit(1)
-            logger.debug(f"Found active act: {act_to_edit.id}")
-        return act_to_edit
+        act = act_manager.get_act_by_identifier_or_error(identifier)
+        logger.debug(f"Found act {act.id} using identifier '{identifier}'")
+        return act
     except GameError as e:
-        # Catch error ONLY from act retrieval methods
-        logger.error(f"GameError while finding act to edit: {e}", exc_info=True)
+        logger.error(
+            f"GameError while finding act by identifier '{identifier}': {e}",
+            exc_info=True,
+        )
         renderer.display_error(f"Error finding act: {str(e)}")
         raise typer.Exit(1) from e
 
@@ -301,7 +283,7 @@ def _get_act_to_edit(
 # --- Helper Function 2: Get Edit Data (Title/Summary) ---
 def _get_edit_data(
     act_to_edit: Act,
-    active_game: Game,
+    game_for_context: Game,  # Renamed parameter
     cli_title: Optional[str],
     cli_summary: Optional[str],
     console: "Console",
@@ -337,7 +319,7 @@ def _get_edit_data(
         title_display = act_to_edit.title or "Untitled Act"
         context_info = (
             f"Editing Act {act_to_edit.sequence}: {title_display}\n"
-            f"Game: {active_game.name}\n"
+            f"Game: {game_for_context.name}\n"  # Use renamed parameter
             f"ID: {act_to_edit.id}\n\n"
             "You can leave the title empty for an untitled act."
         )
@@ -398,26 +380,27 @@ def edit_act(
         None, "--summary", "-s", help="New summary for the act"
     ),
 ) -> None:
-    """[bold]Edit an act in the current game using its ID or slug.[/bold]
+    """[bold]Edit an act using its ID/slug or the active act.[/bold] # Docstring updated
 
-    If no identifier is provided, edits the current active act.
-    If title and summary are not provided, opens an editor to enter them.
-    You can update the title and/or summary of the act, or remove them
-    by leaving the fields empty.
+    If an identifier (--id) is provided, edits that specific act regardless
+    of active status. If no identifier is provided, edits the current active act
+    within the active game.
+
+    If title and summary are not provided via options, opens an editor.
 
     [yellow]Examples:[/yellow]
         [green]Edit active act with an interactive editor:[/green]
         $ sologm act edit
 
-        [green]Edit a specific act by ID or slug:[/green]
+        [green]Edit a specific act (active or not) by ID or slug:[/green]
         $ sologm act edit --id abc123
         $ sologm act edit --id act-1-the-first-step
 
-        [green]Update just the title:[/green]
+        [green]Update just the title of the active act:[/green]
         $ sologm act edit --title "New Title"
 
-        [green]Update both title and summary for a specific act:[/green]
-        $ sologm act edit --id act-1-the-first-step -t "New Title" -s "New summary"
+        [green]Update summary for a specific act:[/green]
+        $ sologm act edit --id act-1-the-first-step -s "New summary"
     """
     logger.debug(f"Executing edit_act command (identifier='{identifier}')")
     renderer: "Renderer" = ctx.obj["renderer"]
@@ -429,21 +412,75 @@ def edit_act(
         game_manager = GameManager(session=session)
         act_manager = ActManager(session=session)  # Pass session explicitly
 
-        # --- Step 1: Get Active Game ---
-        active_game = game_manager.get_active_game()
-        if not active_game:
-            renderer.display_error("No active game. Activate a game first.")
-            raise typer.Exit(1)
-        logger.debug(f"Active game: {active_game.name} ({active_game.id})")
+        act_to_edit: Optional[Act] = None
+        game_for_context: Optional[Game] = None
 
-        # --- Step 2: Find the Act to Edit (uses helper) ---
-        # Helper handles errors and exits
-        act_to_edit = _get_act_to_edit(act_manager, active_game, identifier, renderer)
+        if identifier:
+            # --- Path 1: Identifier Provided ---
+            logger.debug("Identifier provided, finding specific act.")
+            # Helper handles errors and exits if act not found
+            act_to_edit = _find_act_by_identifier(act_manager, identifier, renderer)
+            try:
+                # Fetch the game this act belongs to for context
+                game_for_context = game_manager.get_game_by_id(act_to_edit.game_id)
+                if not game_for_context:
+                    # This should be unlikely if DB constraints are correct
+                    logger.error(
+                        f"Could not find game with ID {act_to_edit.game_id} "
+                        f"associated with act {act_to_edit.id}"
+                    )
+                    renderer.display_error(
+                        f"Internal error: Could not find game for act {act_to_edit.id}."
+                    )
+                    raise typer.Exit(1)
+                logger.debug(
+                    f"Found associated game for context: {game_for_context.name} "
+                    f"({game_for_context.id})"
+                )
+            except GameError as e:
+                logger.error(
+                    f"Error fetching game {act_to_edit.game_id} for act "
+                    f"{act_to_edit.id}: {e}",
+                    exc_info=True,
+                )
+                renderer.display_error(
+                    f"Internal error: Could not load game context for act: {str(e)}"
+                )
+                raise typer.Exit(1) from e
 
+        else:
+            # --- Path 2: No Identifier Provided ---
+            logger.debug("No identifier provided, finding active game and act.")
+            # Get active game (required for this path)
+            active_game = game_manager.get_active_game()
+            if not active_game:
+                renderer.display_error(
+                    "No active game. Activate a game first or specify an act --id."
+                )
+                raise typer.Exit(1)
+            logger.debug(f"Active game: {active_game.name} ({active_game.id})")
+            game_for_context = active_game  # Use active game for context
+
+            # Get active act within the active game
+            try:
+                act_to_edit = act_manager.get_active_act(active_game.id)
+                if not act_to_edit:
+                    logger.warning(f"No active act found in game '{active_game.name}'.")
+                    renderer.display_error(f"No active act in game '{active_game.name}'.")
+                    renderer.display_message("Create one with `sologm act create`.")
+                    raise typer.Exit(1)
+                logger.debug(f"Found active act: {act_to_edit.id}")
+            except GameError as e:
+                # Catch error ONLY from get_active_act
+                logger.error(f"GameError while finding active act: {e}", exc_info=True)
+                renderer.display_error(f"Error finding active act: {str(e)}")
+                raise typer.Exit(1) from e
+
+        # --- Now we have act_to_edit and game_for_context ---
         # --- Step 3: Get Edit Data (uses helper) ---
         # Helper handles editor interaction, cancellation messages, and returns None if no update needed
         edit_data = _get_edit_data(
-            act_to_edit, active_game, title, summary, console, renderer
+            act_to_edit, game_for_context, title, summary, console, renderer
         )
 
         # --- Step 4: Perform Update if data was obtained ---
@@ -469,7 +506,9 @@ def edit_act(
                 # Display updated act details using renderer
                 renderer.display_message(f"ID: {updated_act.id}")
                 renderer.display_message(f"Sequence: Act {updated_act.sequence}")
-                renderer.display_message(f"Active: {updated_act.is_active}")
+                renderer.display_message(
+                    f"Active: {updated_act.is_active}"
+                )  # Display active status even if editing inactive
                 if updated_act.title:
                     renderer.display_message(f"Title: {updated_act.title}")
                 if updated_act.summary:
