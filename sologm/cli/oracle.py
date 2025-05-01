@@ -1,7 +1,7 @@
 """Oracle interpretation commands for Solo RPG Helper."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import typer
 from rich.console import Console
@@ -15,12 +15,262 @@ from sologm.cli.utils.structured_editor import (
     edit_structured_data,
 )
 from sologm.core.oracle import OracleManager
+from sologm.core.oracle import OracleManager
 from sologm.database.session import get_db_context
+from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.utils.config import get_config
 from sologm.utils.errors import OracleError
 
 logger = logging.getLogger(__name__)
 oracle_app = typer.Typer(help="Oracle interpretation commands")
+
+
+# --- Helper Functions for Editor Interactions ---
+
+
+def _prompt_for_oracle_input_if_needed(
+    context: Optional[str],
+    results: Optional[str],
+    console: Console,
+    renderer: Renderer,
+) -> Tuple[str, str]:
+    """Prompts user for oracle context and results via editor if not provided.
+
+    Args:
+        context: Initial context (can be None).
+        results: Initial results (can be None).
+        console: Rich console instance.
+        renderer: Renderer instance.
+
+    Returns:
+        Tuple containing the final context and results.
+
+    Raises:
+        typer.Exit: If user cancels or an editor error occurs.
+    """
+    if context is not None and results is not None:
+        return context, results
+
+    renderer.display_message(
+        "Context or results not provided. Opening editor...",
+        style="italic yellow",
+    )
+
+    field_configs = [
+        FieldConfig(
+            name="context",
+            display_name="Oracle Context",
+            help_text=("The question or context for the oracle interpretation."),
+            required=True,
+            multiline=True,
+        ),
+        FieldConfig(
+            name="results",
+            display_name="Oracle Results",
+            help_text=(
+                "The raw results from the oracle (e.g., dice roll, card draw)."
+            ),
+            required=True,
+            multiline=False,  # Typically single line
+        ),
+    ]
+    structured_config = StructuredEditorConfig(fields=field_configs)
+    editor_config = EditorConfig(
+        edit_message="Enter Oracle Details:",
+        success_message="Oracle details updated.",
+        cancel_message="Interpretation cancelled.",
+    )
+
+    # Prepare initial data (pre-fill if one option was provided)
+    initial_data: Dict[str, Any] = {
+        "context": context or "",
+        "results": results or "",
+    }
+
+    edited_data, status = edit_structured_data(
+        data=initial_data,
+        console=console,
+        config=structured_config,
+        editor_config=editor_config,
+        context_info=("Please provide the context and results for the oracle."),
+        is_new=True,
+    )
+
+    if status in (
+        EditorStatus.SAVED_MODIFIED,
+        EditorStatus.SAVED_UNCHANGED,
+    ):
+        final_context = edited_data.get("context")
+        final_results = edited_data.get("results")
+        # Basic check after editor, though validation should catch empty required fields
+        if not final_context or not final_results:
+            renderer.display_error("Context and Results are required.")
+            raise typer.Exit(1)
+        return final_context, final_results
+    elif status == EditorStatus.ABORTED:
+        renderer.display_warning("Interpretation cancelled.")
+        raise typer.Exit(0)
+    else:  # VALIDATION_ERROR or EDITOR_ERROR
+        # Error message should be displayed by edit_structured_data
+        raise typer.Exit(1)
+
+
+def _edit_oracle_input(
+    initial_context: str,
+    initial_results: str,
+    console: Console,
+    renderer: Renderer,
+) -> Tuple[str, str]:
+    """Opens editor to allow modification of oracle context and results.
+
+    Args:
+        initial_context: The starting context.
+        initial_results: The starting results.
+        console: Rich console instance.
+        renderer: Renderer instance.
+
+    Returns:
+        Tuple containing the final context and results.
+
+    Raises:
+        typer.Exit: If user cancels or an editor error occurs.
+    """
+    renderer.display_message(
+        "Opening editor to refine context and results...",
+        style="italic yellow",
+    )
+
+    editor_config = EditorConfig(
+        edit_message="Edit Context and Results:",
+        success_message="Context/Results updated.",
+        cancel_message="Context/Results unchanged.",
+        error_message="Could not open editor",
+    )
+    structured_config = StructuredEditorConfig(
+        fields=[
+            FieldConfig(
+                name="context",
+                display_name="Oracle Context",
+                help_text=("The question or context for the oracle interpretation."),
+                required=True,
+                multiline=True,
+            ),
+            FieldConfig(
+                name="results",
+                display_name="Oracle Results",
+                help_text=(
+                    "The raw results from the oracle (e.g., dice roll, card draw)."
+                ),
+                required=True,
+                multiline=False,
+            ),
+        ]
+    )
+
+    initial_data = {"context": initial_context, "results": initial_results}
+
+    edited_data, status = edit_structured_data(
+        data=initial_data,
+        console=console,
+        config=structured_config,
+        context_info="Edit the context and/or results before retrying:\n",
+        editor_config=editor_config,
+        is_new=False,
+    )
+    if status in (
+        EditorStatus.SAVED_MODIFIED,
+        EditorStatus.SAVED_UNCHANGED,
+    ):
+        final_context = edited_data.get("context")
+        final_results = edited_data.get("results")
+        if not final_context or not final_results:
+            renderer.display_error("Context and Results cannot be empty.")
+            raise typer.Exit(1)
+        return final_context, final_results
+    elif status == EditorStatus.ABORTED:
+        renderer.display_warning("Retry cancelled.")
+        raise typer.Exit(0)
+    else:  # VALIDATION_ERROR or EDITOR_ERROR
+        raise typer.Exit(1)
+
+
+def _get_event_description_from_interpretation(
+    selected_interpretation: "Interpretation",  # Use quotes for forward ref if needed
+    interpretation_set: "InterpretationSet",  # Use quotes for forward ref if needed
+    edit_flag: bool,
+    console: Console,
+    renderer: Renderer,
+) -> str:
+    """Generates default event description and optionally edits it.
+
+    Args:
+        selected_interpretation: The selected Interpretation object.
+        interpretation_set: The InterpretationSet object containing the interpretation.
+        edit_flag: Boolean indicating if --edit was passed.
+        console: Rich console instance.
+        renderer: Renderer instance.
+
+    Returns:
+        The final event description string.
+
+    Raises:
+        typer.Exit: If user cancels during edit or an editor error occurs.
+    """
+    # Use the already fetched interpretation set
+    default_description = (
+        f"Question: {interpretation_set.context}\n"
+        f"Oracle: {interpretation_set.oracle_results}\n"
+        f"Interpretation: {selected_interpretation.title} - {selected_interpretation.description}"
+    )
+
+    event_description = default_description
+    if edit_flag or typer.confirm("Would you like to edit the event description?"):
+        editor_config = EditorConfig(
+            edit_message="Edit the event description:",
+            success_message="Event description updated.",
+            cancel_message="Event description unchanged.",
+            error_message="Could not open editor",
+        )
+        structured_config = StructuredEditorConfig(
+            fields=[
+                FieldConfig(
+                    name="description",
+                    display_name="Event Description",
+                    help_text="The detailed description of the event.",
+                    required=True,
+                    multiline=True,
+                ),
+            ]
+        )
+        event_data = {"description": default_description}
+        edited_data, status = edit_structured_data(
+            data=event_data,
+            console=console,
+            config=structured_config,
+            context_info="Edit the event description below:\n",
+            editor_config=editor_config,
+            is_new=True,  # Treat as new input for description
+        )
+
+        if status in (
+            EditorStatus.SAVED_MODIFIED,
+            EditorStatus.SAVED_UNCHANGED,
+        ):
+            # Use edited data even if unchanged from default
+            event_description = edited_data.get("description", default_description)
+            if not event_description:
+                renderer.display_error("Event description cannot be empty.")
+                raise typer.Exit(1)
+        elif status == EditorStatus.ABORTED:
+            renderer.display_warning("Event creation cancelled during edit.")
+            raise typer.Exit(0)
+        else:  # VALIDATION_ERROR or EDITOR_ERROR
+            raise typer.Exit(1)
+
+    return event_description
+
+
+# --- Typer Commands ---
 
 
 @oracle_app.command("interpret")
@@ -224,66 +474,10 @@ def retry_interpretation(
             initial_context = current_interp_set.context
             initial_results = current_interp_set.oracle_results
 
-            # --- Editor Logic ---
-            renderer.display_message(
-                "Opening editor to refine context and results...",
-                style="italic yellow",
+            # Edit context/results via editor
+            final_context, final_results = _edit_oracle_input(
+                initial_context, initial_results, console, renderer
             )
-
-            editor_config = EditorConfig(
-                edit_message="Edit Context and Results:",
-                success_message="Context/Results updated.",
-                cancel_message="Context/Results unchanged.",
-                error_message="Could not open editor",
-            )
-            structured_config = StructuredEditorConfig(
-                fields=[
-                    FieldConfig(
-                        name="context",
-                        display_name="Oracle Context",
-                        help_text=(
-                            "The question or context for the oracle interpretation."
-                        ),
-                        required=True,
-                        multiline=True,
-                    ),
-                    FieldConfig(
-                        name="results",
-                        display_name="Oracle Results",
-                        help_text=(
-                            "The raw results from the oracle (e.g., dice roll, "
-                            "card draw)."
-                        ),
-                        required=True,
-                        multiline=False,
-                    ),
-                ]
-            )
-
-            initial_data = {"context": initial_context, "results": initial_results}
-
-            edited_data, status = edit_structured_data(
-                data=initial_data,
-                console=console,
-                config=structured_config,
-                context_info="Edit the context and/or results before retrying:\n",
-                editor_config=editor_config,
-                is_new=False,
-            )
-            if status in (
-                EditorStatus.SAVED_MODIFIED,
-                EditorStatus.SAVED_UNCHANGED,
-            ):
-                final_context = edited_data.get("context")
-                final_results = edited_data.get("results")
-                if not final_context or not final_results:
-                    renderer.display_error("Context and Results cannot be empty.")
-                    raise typer.Exit(1)
-            elif status == EditorStatus.ABORTED:
-                raise typer.Exit(0)
-            else:  # VALIDATION_ERROR or EDITOR_ERROR
-                raise typer.Exit(1)
-            # --- End Editor Logic ---
 
             renderer.display_message(
                 "\nGenerating new interpretations...", style="bold blue"
