@@ -72,10 +72,11 @@ sologm oracle retry
 echo
 sleep 0.5
 
-# Use 'yes |' to automatically confirm adding the event
-echo "+ yes | sologm oracle select 1"
+# Note: The following command requires manual confirmation [y/N]
+# to add the selected interpretation as an event.
+echo "+ sologm oracle select 1"
 sleep 0.5
-yes | sologm oracle select 1
+sologm oracle select 1
 echo
 sleep 0.5
 
