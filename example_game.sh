@@ -12,9 +12,11 @@
 
 # Function to echo, sleep, and run a command
 run_cmd() {
+    # Use "$@" to preserve arguments with spaces correctly
     echo "+ $@"
     sleep 0.5
-    eval "$@"
+    # Execute the command directly, letting the shell handle arguments
+    "$@"
     echo # Add a newline for better readability
     sleep 0.5 # Pause after command execution too
 }
@@ -22,23 +24,24 @@ run_cmd() {
 # --- Initial Setup ---
 
 echo "--- Initial Setup ---"
-run_cmd sologm game create --name "\"Starfall Legacy\"" --description "\"Searching for ancient Precursor technology in the forgotten sectors of the galaxy.\""
+# Use standard shell quoting for arguments with spaces
+run_cmd sologm game create --name "Starfall Legacy" --description "Searching for ancient Precursor technology in the forgotten sectors of the galaxy."
 run_cmd sologm game info
 
 # --- Act 1: The Xylar Signal ---
 
 echo "--- Act 1: The Xylar Signal ---"
-run_cmd sologm act create --title "\"The Xylar Signal\"" --summary "\"Investigating a mysterious energy signature detected near the abandoned moon Xylar.\""
+run_cmd sologm act create --title "The Xylar Signal" --summary "Investigating a mysterious energy signature detected near the abandoned moon Xylar."
 run_cmd sologm act info
 
 # --- Act 1, Scene 1: Arrival at Xylar ---
 
 echo "--- Act 1, Scene 1: Arrival at Xylar ---"
-run_cmd sologm scene add --title "\"Arrival at Xylar\"" --description "\"The starship 'Stardust Drifter' drops out of warp near the desolate moon Xylar. The signal source appears to be planetside.\""
+run_cmd sologm scene add --title "Arrival at Xylar" --description "The starship 'Stardust Drifter' drops out of warp near the desolate moon Xylar. The signal source appears to be planetside."
 run_cmd sologm scene info
-run_cmd sologm event add --description "\"Scanners pick up faint energy fluctuations matching the signal from a derelict orbital station.\"" --source manual
-run_cmd sologm dice roll 1d20+3 --reason "\"Detailed scan of the orbital station\""
-run_cmd sologm oracle interpret --context "\"What is the immediate state of the derelict station?\"" --results "\"Silent, Power Fluctuations, Ancient Markings\"" --count 3
+run_cmd sologm event add --description "Scanners pick up faint energy fluctuations matching the signal from a derelict orbital station." --source manual
+run_cmd sologm dice roll 1d20+3 --reason "Detailed scan of the orbital station"
+run_cmd sologm oracle interpret --context "What is the immediate state of the derelict station?" --results "Silent, Power Fluctuations, Ancient Markings" --count 3
 run_cmd sologm oracle status
 
 # Use 'yes |' to automatically confirm adding the event
@@ -55,11 +58,11 @@ run_cmd sologm scene complete
 # --- Act 1, Scene 2: Station Interior ---
 
 echo "--- Act 1, Scene 2: Station Interior ---"
-run_cmd sologm scene add --title "\"Station Interior\"" --description "\"Boarding the station. Halls are dark, filled with floating debris and strange glyphs.\""
+run_cmd sologm scene add --title "Station Interior" --description "Boarding the station. Halls are dark, filled with floating debris and strange glyphs."
 run_cmd sologm scene list
-run_cmd sologm dice roll 1d6 --reason "\"Navigating debris field inside the station\""
-run_cmd sologm event add --description "\"Successfully navigated the debris, finding a partially sealed door covered in the strange markings.\"" --source dice
-run_cmd sologm oracle interpret --context "\"What lies beyond the marked door?\"" --results "\"Faint Humming, Data Archive, Warning Signal\""
+run_cmd sologm dice roll 1d6 --reason "Navigating debris field inside the station"
+run_cmd sologm event add --description "Successfully navigated the debris, finding a partially sealed door covered in the strange markings." --source dice
+run_cmd sologm oracle interpret --context "What lies beyond the marked door?" --results "Faint Humming, Data Archive, Warning Signal"
 
 echo "+ sologm oracle retry"
 sleep 0.5
@@ -87,11 +90,12 @@ run_cmd sologm scene complete
 # --- Completing Act 1 ---
 
 echo "--- Completing Act 1 ---"
+# Use standard quoting for the context string
 echo "+ sologm act complete --ai --context \"Focus on the discovery of the Precursor station and the mystery of the data archive. Keep the summary to 3 paragraphs.\""
 sleep 0.5
 # Note: 'act complete --ai' enters an interactive loop (Accept/Edit/Regenerate/Cancel).
 # This requires manual user input (e.g., 'A').
-sologm act complete --ai --context "\"Focus on the discovery of the Precursor station and the mystery of the data archive. Keep the summary to 3 paragraphs.\""
+sologm act complete --ai --context "Focus on the discovery of the Precursor station and the mystery of the data archive. Keep the summary to 3 paragraphs."
 echo
 sleep 0.5
 
@@ -105,8 +109,8 @@ sologm act create
 echo
 sleep 0.5
 
-run_cmd sologm scene add --title "\"Nebula Run\"" --description "\"Fleeing through a dense nebula, pursued by unidentified vessels.\""
-run_cmd sologm event add --description "\"The 'Stardust Drifter' takes minor hull damage from weapon fire.\""
+run_cmd sologm scene add --title "Nebula Run" --description "Fleeing through a dense nebula, pursued by unidentified vessels."
+run_cmd sologm event add --description "The 'Stardust Drifter' takes minor hull damage from weapon fire."
 
 # --- Status Checks and Export ---
 
