@@ -422,7 +422,7 @@ def test_create_act_panel(
         assert panel_no_act.title is not None
         assert panel_no_act.border_style == BORDER_STYLES["neutral"]
     # Check for the updated message when no act is provided
-    assert "No acts found in this game." in panel_no_act.renderable
+    assert "No acts found in this game." in str(panel_no_act.renderable)
 
 
 def test_create_game_header_panel(
