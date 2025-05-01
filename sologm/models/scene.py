@@ -20,7 +20,9 @@ from sologm.models.base import Base, TimestampMixin
 from sologm.models.utils import slugify
 
 if TYPE_CHECKING:
-    from sologm.models.act import Act  # Added Act for relationship back_populates type hint
+    from sologm.models.act import (
+        Act,
+    )  # Added Act for relationship back_populates type hint
     from sologm.models.dice import DiceRoll
     from sologm.models.event import Event
     from sologm.models.game import Game
@@ -224,7 +226,7 @@ class Scene(Base, TimestampMixin):
         """Ensure the scene title is not empty or just whitespace."""
         if not title or not title.strip():
             raise ValueError("Scene title cannot be empty")
-        return title.strip() # Return stripped title
+        return title.strip()  # Return stripped title
 
     @validates("slug")
     def validate_slug(self, _: str, slug: str) -> str:
@@ -232,7 +234,7 @@ class Scene(Base, TimestampMixin):
         if not slug or not slug.strip():
             raise ValueError("Scene slug cannot be empty")
         # Slugs should generally be lowercase and follow conventions
-        return slugify(slug) # Ensure slug is properly formatted
+        return slugify(slug)  # Ensure slug is properly formatted
 
     # --- Hybrid Properties (for efficient querying) ---
 
@@ -242,7 +244,7 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (checks loaded 'events') and SQL (uses EXISTS subquery).
         """
-        return bool(self.events) # More explicit check for non-empty list
+        return bool(self.events)  # More explicit check for non-empty list
 
     @has_events.expression
     def has_events(cls):
@@ -268,7 +270,7 @@ class Scene(Base, TimestampMixin):
         return (
             select(func.count(Event.id))
             .where(Event.scene_id == cls.id)
-            .scalar_subquery() # Use scalar_subquery for expressions
+            .scalar_subquery()  # Use scalar_subquery for expressions
         )
 
     @hybrid_property
@@ -408,7 +410,7 @@ class Scene(Base, TimestampMixin):
             select(Interpretation.id)
             .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
             .where(InterpretationSet.scene_id == cls.id)
-            .where(Interpretation.is_selected) # Filter for selected interpretations
+            .where(Interpretation.is_selected)  # Filter for selected interpretations
             .exists()
         )
 
@@ -435,7 +437,7 @@ class Scene(Base, TimestampMixin):
             select(func.count(Interpretation.id))
             .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
             .where(InterpretationSet.scene_id == cls.id)
-            .where(Interpretation.is_selected) # Filter for selected interpretations
+            .where(Interpretation.is_selected)  # Filter for selected interpretations
             .scalar_subquery()
         )
 
