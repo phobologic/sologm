@@ -406,33 +406,34 @@ def edit_act(
             final_title = title
             final_summary = summary
 
-            # Update the act using the actual ID from the found object
-            updated_act = game_manager.act_manager.edit_act(
-                act_id=act_to_edit.id, # Pass the actual UUID here
-                title=final_title,
-                summary=final_summary,
-            )
+        # Update the act using the actual ID from the found object
+        # This block is now correctly indented at the same level as the 'if' block above
+        updated_act = game_manager.act_manager.edit_act(
+            act_id=act_to_edit.id, # Pass the actual UUID here
+            title=final_title,
+            summary=final_summary,
+        )
 
-            # Display success message using renderer
-            title_display = (
-                f"'{updated_act.title}'" if updated_act.title else "untitled"
-            )
-            renderer.display_success(f"Act {title_display} updated successfully!")
+        # Display success message using renderer
+        title_display = (
+            f"'{updated_act.title}'" if updated_act.title else "untitled"
+        )
+        renderer.display_success(f"Act {title_display} updated successfully!")
 
-            # Display updated act details using renderer
-            # Again, ideally use a specific method, using display_message for now
-            renderer.display_message(f"ID: {updated_act.id}")
-            renderer.display_message(f"Sequence: Act {updated_act.sequence}")
-            renderer.display_message(f"Active: {updated_act.is_active}")
-            if updated_act.title:
-                renderer.display_message(f"Title: {updated_act.title}")
-            if updated_act.summary:
-                renderer.display_message(f"Summary: {updated_act.summary}")
-            # TODO: Consider adding renderer.display_act_details(updated_act)
+        # Display updated act details using renderer
+        # Again, ideally use a specific method, using display_message for now
+        renderer.display_message(f"ID: {updated_act.id}")
+        renderer.display_message(f"Sequence: Act {updated_act.sequence}")
+        renderer.display_message(f"Active: {updated_act.is_active}")
+        if updated_act.title:
+            renderer.display_message(f"Title: {updated_act.title}")
+        if updated_act.summary:
+            renderer.display_message(f"Summary: {updated_act.summary}")
+        # TODO: Consider adding renderer.display_act_details(updated_act)
 
-        except GameError as e: # Catch errors from get_act_by_identifier_or_error or edit_act
-            renderer.display_error(f"Error: {str(e)}")
-            raise typer.Exit(1) from e
+    except GameError as e: # Catch errors from get_act_by_identifier_or_error or edit_act
+        renderer.display_error(f"Error: {str(e)}")
+        raise typer.Exit(1) from e
 
 
 def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool:
