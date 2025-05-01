@@ -394,7 +394,9 @@ def create_test_interpretation_set(
             session.add(interp_set)
             session.flush()
             try:
-                session.refresh(interp_set, attribute_names=["scene", "interpretations"])
+                session.refresh(
+                    interp_set, attribute_names=["scene", "interpretations"]
+                )
             except Exception as e:
                 logger.warning(
                     "Warning: Error refreshing relationships in create_test_interpretation_set factory: %s",
