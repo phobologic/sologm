@@ -335,6 +335,10 @@ def edit_act(
             # --- It uses act_to_edit which is now guaranteed to be found ---
             # --- or an error would have been raised ---
 
+            # Initialize variables before the if/else block
+            final_title: Optional[str] = None
+            final_summary: Optional[str] = None
+
             # If title/summary not provided via options, open editor
             if title is None and summary is None:
                 # Create editor configuration
@@ -405,7 +409,12 @@ def edit_act(
             # If parameters were provided directly, use them
             final_title = title
             final_summary = summary
-            pass # Explicitly end the else block
+            # Removed pass statement
+
+        # Ensure act_to_edit is not None before proceeding (defensive check)
+        if act_to_edit is None:
+             # This case should ideally not be reachable due to earlier checks/exits
+             raise GameError("Internal error: Act to edit was not determined.")
 
         updated_act = game_manager.act_manager.edit_act(
             act_id=act_to_edit.id, # Pass the actual UUID here
