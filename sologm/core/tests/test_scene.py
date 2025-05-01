@@ -9,7 +9,7 @@ from sologm.core.factory import create_all_managers
 from sologm.database.session import SessionContext
 from sologm.models.act import Act
 from sologm.models.game import Game
-from sologm.models.scene import Scene, SceneStatus
+from sologm.models.scene import Scene  # Removed SceneStatus import
 from sologm.utils.errors import SceneError
 
 
