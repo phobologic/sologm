@@ -309,13 +309,10 @@ sologm oracle show set_xyz789
 sologm oracle status
 
 # Select an interpretation (e.g., the 2nd one) from the current set to add as an event
-sologm oracle select --id 2
+sologm oracle select 2
 
 # Select an interpretation by slug from a specific set
-sologm oracle select --id unexpected-visitor --set-id set_xyz789
-
-# Select interpretation and edit the event description before adding
-sologm oracle select --id 3 --edit
+sologm oracle select --set-id set_xyz789 unexpected-visitor 
 ```
 
 ## Configuration
