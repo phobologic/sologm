@@ -69,7 +69,9 @@ def test_display_dice_roll(
     assert len(args) == 1
     assert isinstance(args[0], Panel)
     # Verify border style based on is_active
-    assert args[0].border_style == BORDER_STYLES["current"]  # Scene is active by default
+    assert (
+        args[0].border_style == BORDER_STYLES["current"]
+    )  # Scene is active by default
     # Verify status is not in metadata (more complex assertion, maybe skip for now)
     # assert "Status" not in args[0].renderable.plain # Example, might need refinement
 
@@ -412,8 +414,8 @@ def test_create_act_panel(
         assert "This is a very long summary..." in str(
             panel_inactive_truncated.renderable
         )
-        assert (
-            "truncated for the test." not in str(panel_inactive_truncated.renderable)
+        assert "truncated for the test." not in str(
+            panel_inactive_truncated.renderable
         )  # End should be cut off
 
         # Test with no active act
