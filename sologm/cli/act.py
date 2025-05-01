@@ -411,10 +411,9 @@ def edit_act(
             final_summary = summary
             # Removed pass statement
 
-        # Ensure act_to_edit is not None before proceeding (defensive check)
-        if act_to_edit is None:
-             # This case should ideally not be reachable due to earlier checks/exits
-             raise GameError("Internal error: Act to edit was not determined.")
+        # The check 'if act_to_edit is None:' has been removed.
+        # Preceding logic should ensure act_to_edit is valid here,
+        # or an error/exit would have already occurred.
 
         updated_act = game_manager.act_manager.edit_act(
             act_id=act_to_edit.id, # Pass the actual UUID here
