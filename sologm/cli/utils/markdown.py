@@ -258,7 +258,7 @@ def generate_event_markdown(
         metadata_lines.append(f"  - Source: {event.source_name}")
 
         if metadata_lines:
-            content.append("") # Add blank line before metadata for readability.
+            content.append("")  # Add blank line before metadata for readability.
             content.extend(metadata_lines)
 
     return content
