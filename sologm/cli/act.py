@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 # Console instance removed, will get from ctx
 
-# Create Typer app for act commands
 act_app = typer.Typer(
     name="act",
     help="Manage acts in your games",
@@ -86,9 +85,7 @@ def create_act(
     console: "Console" = ctx.obj["console"]  # Needed for editor
     from sologm.database.session import get_db_context
 
-    # Use a single session for the entire command
     with get_db_context() as session:
-        # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
         if not active_game:
@@ -117,7 +114,7 @@ def create_act(
                     ),
                 ],
                 wrap_width=70,
-            )  # Add trailing comma
+            )
 
             # Create context information
             context_info = (
@@ -160,7 +157,6 @@ def create_act(
             title = result_data.get("title") or None
             summary = result_data.get("summary") or None
 
-        # Create the act
         try:
             act = game_manager.act_manager.create_act(
                 game_id=active_game.id,
@@ -201,19 +197,15 @@ def list_acts(ctx: typer.Context) -> None:
     renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
-    # Use a single session for the entire command
     with get_db_context() as session:
-        # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
         if not active_game:
             renderer.display_error("No active game. Activate a game first.")
             raise typer.Exit(1)
 
-        # Get all acts for the game
         acts = game_manager.act_manager.list_acts(active_game.id)
 
-        # Get active act ID
         active_act = game_manager.act_manager.get_active_act(active_game.id)
         active_act_id = active_act.id if active_act else None
 
@@ -237,9 +229,7 @@ def act_info(ctx: typer.Context) -> None:
     renderer: "Renderer" = ctx.obj["renderer"]
     from sologm.database.session import get_db_context
 
-    # Use a single session for the entire command
     with get_db_context() as session:
-        # Initialize manager with the session
         game_manager = GameManager(session=session)
         active_game = game_manager.get_active_game()
         if not active_game:
@@ -283,7 +273,7 @@ def _find_act_by_identifier(
 # --- Helper Function 2: Get Edit Data (Title/Summary) ---
 def _get_edit_data(
     act_to_edit: Act,
-    game_for_context: Game,  # Renamed parameter
+    game_for_context: Game,
     cli_title: Optional[str],
     cli_summary: Optional[str],
     console: "Console",
@@ -319,7 +309,7 @@ def _get_edit_data(
         title_display = act_to_edit.title or "Untitled Act"
         context_info = (
             f"Editing Act {act_to_edit.sequence}: {title_display}\n"
-            f"Game: {game_for_context.name}\n"  # Use renamed parameter
+            f"Game: {game_for_context.name}\n"
             f"ID: {act_to_edit.id}\n\n"
             "You can leave the title empty for an untitled act."
         )
@@ -380,7 +370,7 @@ def edit_act(
         None, "--summary", "-s", help="New summary for the act"
     ),
 ) -> None:
-    """[bold]Edit an act using its ID/slug or the active act.[/bold] # Docstring updated
+    """[bold]Edit an act using its ID/slug or the active act.[/bold]
 
     If an identifier (--id) is provided, edits that specific act regardless
     of active status. If no identifier is provided, edits the current active act
@@ -408,9 +398,8 @@ def edit_act(
     from sologm.database.session import get_db_context
 
     with get_db_context() as session:
-        # Initialize managers
         game_manager = GameManager(session=session)
-        act_manager = ActManager(session=session)  # Pass session explicitly
+        act_manager = ActManager(session=session)
 
         act_to_edit: Optional[Act] = None
         game_for_context: Optional[Game] = None
@@ -545,7 +534,6 @@ def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool
         logger.debug("Force flag is True, skipping content check and confirmation.")
         return True
 
-    # Define has_title here
     has_title = act.title is not None and act.title.strip() != ""
     has_summary = act.summary is not None and act.summary.strip() != ""
     logger.debug(f"Act has_title={has_title}, has_summary={has_summary}")
@@ -606,7 +594,7 @@ def _collect_user_context(
             ),
         ],
         wrap_width=70,
-    )  # Add trailing comma
+    )
 
     # Create context information header
     title_display = act.title or "Untitled Act"
@@ -628,7 +616,6 @@ def _collect_user_context(
         "context": "",
     }
 
-    # Open editor - this is like creating new context, so is_new=True
     logger.debug("Calling edit_structured_data for context collection")
     result_data, status = edit_structured_data(
         initial_data,
@@ -715,7 +702,7 @@ def _collect_regeneration_feedback(
             ),
         ],
         wrap_width=70,
-    )  # Add trailing comma
+    )
 
     # Create context information header
     title_display = act.title or "Untitled Act"
@@ -753,7 +740,7 @@ def _collect_regeneration_feedback(
     # Create initial data
     initial_data = {
         "feedback": "",
-        "context": original_context or "",  # Pre-fill context field
+        "context": original_context or "",
     }
     logger.debug(
         "[_collect_regeneration_feedback] Initial data for feedback editor: "
@@ -841,7 +828,7 @@ def _edit_ai_content(
             ),
         ],
         wrap_width=70,
-    )  # Add trailing comma
+    )
 
     # Create context information
     title_display = act.title or "Untitled Act"
@@ -1308,7 +1295,7 @@ def _handle_manual_completion(
             ),
         ],
         wrap_width=70,
-    )  # Add trailing comma
+    )
 
     # 2. Build context info
     title_display = active_act.title or "Untitled Act"
