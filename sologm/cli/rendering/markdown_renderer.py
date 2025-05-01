@@ -306,9 +306,7 @@ class MarkdownRenderer(Renderer):
         output_lines = []
 
         # Header (removed status indicator)
-        output_lines.append(
-            f"### Scene {scene.sequence}: {scene.title} (`{scene.id}`)"
-        )
+        output_lines.append(f"### Scene {scene.sequence}: {scene.title} (`{scene.id}`)")
         output_lines.append("")
 
         # Description

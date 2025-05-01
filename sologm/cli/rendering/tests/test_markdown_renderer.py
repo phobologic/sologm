@@ -385,8 +385,7 @@ def test_display_scenes_table_markdown(
     assert "### Scenes" in rendered_output_no_active
     # Updated header assertion
     assert (
-        "| ID | Title | Description | Current | Sequence |"
-        in rendered_output_no_active
+        "| ID | Title | Description | Current | Sequence |" in rendered_output_no_active
     )
     # Check first scene row (not active)
     assert f"| `{test_scene.id}`" in rendered_output_no_active
@@ -802,8 +801,7 @@ def test_display_act_info_markdown(
         assert "### Scenes" in rendered_scenes_table
         # Updated header check
         assert (
-            "| ID | Title | Description | Current | Sequence |"
-            in rendered_scenes_table
+            "| ID | Title | Description | Current | Sequence |" in rendered_scenes_table
         )
         assert (
             f"`{test_scene.id}`" in rendered_scenes_table
