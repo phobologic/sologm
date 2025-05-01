@@ -42,17 +42,13 @@ class Scene(Base, TimestampMixin):
     act_id: Mapped[str] = mapped_column(ForeignKey("acts.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    # --- Removed status column ---
-    # status: Mapped[SceneStatus] = mapped_column(
-    #     Enum(SceneStatus), nullable=False, default=SceneStatus.ACTIVE
-    # )
-    # --- End removal ---
+    # Status column removed, replaced by is_active flag
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(
-        default=False
+        default=False, index=True
     )  # Indicates if this is the current scene being played
 
-    # Relationships this model owns
+    # Relationships
     events: Mapped[List["Event"]] = relationship(
         "Event",
         back_populates="scene",
@@ -84,11 +80,8 @@ class Scene(Base, TimestampMixin):
 
         Requires the 'act' relationship (and its 'game' relationship) to be loaded.
         """
-        # Assumes self.act and self.act.game are loaded or loadable
         if not hasattr(self, "act") or self.act is None:
-            # Handle cases where act might not be loaded (e.g., detached object)
-            # This might indicate a programming error if accessed inappropriately.
-            # Consider raising an error or returning None based on expected usage.
+            # This typically indicates a programming error if accessed when not loaded.
             raise AttributeError(
                 "The 'act' relationship is not loaded on this Scene object."
             )
@@ -100,7 +93,6 @@ class Scene(Base, TimestampMixin):
 
         Requires the 'act' relationship to be loaded.
         """
-        # Assumes self.act is loaded or loadable
         if not hasattr(self, "act") or self.act is None:
             raise AttributeError(
                 "The 'act' relationship is not loaded on this Scene object."
@@ -118,7 +110,7 @@ class Scene(Base, TimestampMixin):
         """
         if not self.events:
             return None
-        # Sorts the already loaded collection in Python
+        # Sorts the already loaded collection in Python.
         return sorted(self.events, key=lambda event: event.created_at, reverse=True)[0]
 
     @property
@@ -130,7 +122,7 @@ class Scene(Base, TimestampMixin):
         """
         if not self.dice_rolls:
             return None
-        # Sorts the already loaded collection in Python
+        # Sorts the already loaded collection in Python.
         return sorted(self.dice_rolls, key=lambda roll: roll.created_at, reverse=True)[
             0
         ]
@@ -145,7 +137,7 @@ class Scene(Base, TimestampMixin):
         """
         if not self.interpretation_sets:
             return None
-        # Sorts the already loaded collection in Python
+        # Sorts the already loaded collection in Python.
         return sorted(
             self.interpretation_sets, key=lambda iset: iset.created_at, reverse=True
         )[0]
@@ -163,7 +155,7 @@ class Scene(Base, TimestampMixin):
         latest_interp = None
         latest_time = None
 
-        # Iterates through already loaded collections in Python
+        # Iterates through already loaded collections in Python.
         for interp_set in self.interpretation_sets:
             for interp in interp_set.interpretations:
                 if latest_time is None or interp.created_at > latest_time:
@@ -183,7 +175,7 @@ class Scene(Base, TimestampMixin):
         Returns:
             The current InterpretationSet object, or None if none is marked as current.
         """
-        # Filters the already loaded collection in Python
+        # Filters the already loaded collection in Python.
         for interp_set in self.interpretation_sets:
             if interp_set.is_current:
                 return interp_set
@@ -199,7 +191,7 @@ class Scene(Base, TimestampMixin):
             A list of selected Interpretation objects.
         """
         selected = []
-        # Iterates through already loaded collections in Python
+        # Iterates through already loaded collections in Python.
         for interp_set in self.interpretation_sets:
             for interp in interp_set.interpretations:
                 if interp.is_selected:
@@ -214,7 +206,7 @@ class Scene(Base, TimestampMixin):
             A list of all Interpretation objects associated with this scene.
         """
         all_interps = []
-        # Iterates through already loaded collections in Python
+        # Iterates through already loaded collections in Python.
         for interp_set in self.interpretation_sets:
             all_interps.extend(interp_set.interpretations)
         return all_interps
@@ -226,15 +218,15 @@ class Scene(Base, TimestampMixin):
         """Ensure the scene title is not empty or just whitespace."""
         if not title or not title.strip():
             raise ValueError("Scene title cannot be empty")
-        return title.strip()  # Return stripped title
+        return title.strip()
 
     @validates("slug")
     def validate_slug(self, _: str, slug: str) -> str:
         """Ensure the scene slug is not empty or just whitespace."""
         if not slug or not slug.strip():
             raise ValueError("Scene slug cannot be empty")
-        # Slugs should generally be lowercase and follow conventions
-        return slugify(slug)  # Ensure slug is properly formatted
+        # Ensure slug is properly formatted (lowercase, dashes, etc.).
+        return slugify(slug)
 
     # --- Hybrid Properties (for efficient querying) ---
 
@@ -244,12 +236,11 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (checks loaded 'events') and SQL (uses EXISTS subquery).
         """
-        return bool(self.events)  # More explicit check for non-empty list
+        return bool(self.events)
 
     @has_events.expression
     def has_events(cls):
         """SQL expression for checking the existence of related events."""
-        # Local import avoids potential circular dependency issues at module level
         from sologm.models.event import Event
 
         return select(Event.id).where(Event.scene_id == cls.id).exists()
@@ -270,7 +261,7 @@ class Scene(Base, TimestampMixin):
         return (
             select(func.count(Event.id))
             .where(Event.scene_id == cls.id)
-            .scalar_subquery()  # Use scalar_subquery for expressions
+            .scalar_subquery()
         )
 
     @hybrid_property
@@ -351,7 +342,7 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (checks loaded sets/interpretations) and SQL (uses EXISTS subquery).
         """
-        # Python implementation iterates through loaded relationships
+        # Python implementation iterates through loaded relationships.
         return any(iset.interpretations for iset in self.interpretation_sets)
 
     @has_interpretations.expression
@@ -359,7 +350,6 @@ class Scene(Base, TimestampMixin):
         """SQL expression for checking the existence of related interpretations."""
         from sologm.models.oracle import Interpretation, InterpretationSet
 
-        # Check if any Interpretation exists linked to an InterpretationSet linked to this Scene
         return (
             select(Interpretation.id)
             .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
@@ -373,7 +363,7 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (sums len of loaded 'interpretations') and SQL (uses COUNT query).
         """
-        # Python implementation iterates through loaded relationships
+        # Python implementation iterates through loaded relationships.
         return sum(len(iset.interpretations) for iset in self.interpretation_sets)
 
     @interpretation_count.expression
@@ -394,7 +384,7 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (checks loaded interpretations) and SQL (uses EXISTS subquery).
         """
-        # Python implementation iterates through loaded relationships
+        # Python implementation iterates through loaded relationships.
         return any(
             interp.is_selected
             for iset in self.interpretation_sets
@@ -410,7 +400,7 @@ class Scene(Base, TimestampMixin):
             select(Interpretation.id)
             .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
             .where(InterpretationSet.scene_id == cls.id)
-            .where(Interpretation.is_selected)  # Filter for selected interpretations
+            .where(Interpretation.is_selected)
             .exists()
         )
 
@@ -420,7 +410,7 @@ class Scene(Base, TimestampMixin):
 
         Works in Python (counts selected in loaded interpretations) and SQL (uses COUNT query).
         """
-        # Python implementation iterates through loaded relationships
+        # Python implementation iterates through loaded relationships.
         count = 0
         for iset in self.interpretation_sets:
             for interp in iset.interpretations:
@@ -437,7 +427,7 @@ class Scene(Base, TimestampMixin):
             select(func.count(Interpretation.id))
             .join(InterpretationSet, Interpretation.set_id == InterpretationSet.id)
             .where(InterpretationSet.scene_id == cls.id)
-            .where(Interpretation.is_selected)  # Filter for selected interpretations
+            .where(Interpretation.is_selected)
             .scalar_subquery()
         )
 
@@ -469,7 +459,6 @@ class Scene(Base, TimestampMixin):
 
         clean_description = description.strip() if description else None
 
-        # Generate a URL-friendly slug from the title and sequence
         scene_slug = f"scene-{sequence}-{slugify(clean_title)}"
 
         return cls(

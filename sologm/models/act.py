@@ -105,29 +105,7 @@ class Act(Base, TimestampMixin):
             .label("has_active_scene")
         )
 
-    @hybrid_property
-    def has_completed_scenes(self) -> bool:
-        """Check if the act has any completed scenes.
-
-        Works in both Python and SQL contexts:
-        - Python: Checks if completed_scenes is non-empty
-        - SQL: Performs a subquery to check for completed scenes
-        """
-        from sologm.models.scene import SceneStatus
-
-        return any(scene.status == SceneStatus.COMPLETED for scene in self.scenes)
-
-    @has_completed_scenes.expression
-    def has_completed_scenes(cls):  # noqa: N805
-        """SQL expression for has_completed_scenes."""
-        from sologm.models.scene import Scene, SceneStatus
-
-        return (
-            select(1)
-            .where((Scene.act_id == cls.id) & (Scene.status == SceneStatus.COMPLETED))
-            .exists()
-            .label("has_completed_scenes")
-        )
+    # Removed has_completed_scenes hybrid property
 
     @property
     def active_scene(self) -> Optional["Scene"]:
@@ -141,27 +119,8 @@ class Act(Base, TimestampMixin):
                 return scene
         return None
 
-    @property
-    def completed_scenes(self) -> List["Scene"]:
-        """Get all completed scenes for this act.
-
-        This property filters the already loaded scenes collection
-        and doesn't trigger a new database query.
-        """
-        from sologm.models.scene import SceneStatus
-
-        return [scene for scene in self.scenes if scene.status == SceneStatus.COMPLETED]
-
-    @property
-    def active_scenes(self) -> List["Scene"]:
-        """Get all active scenes for this act.
-
-        This property filters the already loaded scenes collection
-        and doesn't trigger a new database query.
-        """
-        from sologm.models.scene import SceneStatus
-
-        return [scene for scene in self.scenes if scene.status == SceneStatus.ACTIVE]
+    # Removed completed_scenes property
+    # Removed active_scenes property (use active_scene or filter scenes by is_active)
 
     @property
     def latest_scene(self) -> Optional["Scene"]:

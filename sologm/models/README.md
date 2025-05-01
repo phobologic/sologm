@@ -70,11 +70,10 @@ class Act(Base, TimestampMixin):
     slug: Mapped[str]
     game_id: Mapped[str]
     title: Mapped[Optional[str]]
-    description: Mapped[Optional[str]]
-    status: Mapped[ActStatus]  # Enum: ACTIVE, COMPLETED
+    summary: Mapped[Optional[str]] # Changed from description
     sequence: Mapped[int]
     is_active: Mapped[bool]
-    
+    # Removed status: Mapped[ActStatus]
     # Relationships
     game: Mapped["Game"]
     scenes: Mapped[List["Scene"]]
@@ -88,10 +87,9 @@ class Act(Base, TimestampMixin):
     
     @hybrid_property
     def has_active_scene(self) -> bool  # Checks if the act has an active scene
-    
-    @hybrid_property
-    def has_completed_scenes(self) -> bool  # Checks if the act has any completed scenes
-    
+
+    # Removed has_completed_scenes
+
     @hybrid_property
     def has_events(self) -> bool  # Checks if the act has any events across all scenes
     
@@ -113,13 +111,10 @@ class Act(Base, TimestampMixin):
     # Regular Properties (Python-only)
     @property
     def active_scene(self) -> Optional["Scene"]  # Returns the active scene for this act
-    
-    @property
-    def completed_scenes(self) -> List["Scene"]  # Returns all completed scenes
-    
-    @property
-    def active_scenes(self) -> List["Scene"]  # Returns all active scenes
-    
+
+    # Removed completed_scenes
+    # Removed active_scenes
+
     @property
     def latest_scene(self) -> Optional["Scene"]  # Returns the most recently created scene
     
@@ -155,11 +150,10 @@ class Scene(Base, TimestampMixin):
     slug: Mapped[str]
     act_id: Mapped[str]
     title: Mapped[str]
-    description: Mapped[str]
-    status: Mapped[SceneStatus]  # Enum: ACTIVE, COMPLETED
+    description: Mapped[Optional[str]] # Changed from str
     sequence: Mapped[int]
     is_active: Mapped[bool]
-    
+    # Removed status: Mapped[SceneStatus]
     # Relationships
     act: Mapped["Act"]
     events: Mapped[List["Event"]]
@@ -224,12 +218,9 @@ class Scene(Base, TimestampMixin):
     
     @property
     def all_interpretations(self) -> List["Interpretation"]  # Returns all interpretations
-    
-    @property
-    def is_completed(self) -> bool  # Checks if this scene is completed
-    
-    @property
-    def is_active_status(self) -> bool  # Checks if this scene has an active status
+
+    # Removed is_completed
+    # Removed is_active_status
 ```
 
 ### Event
@@ -438,4 +429,4 @@ class DiceRoll(Base, TimestampMixin):
 
 4. **Active Flags**: `is_active` flags track currently active game, act, and scene.
 
-5. **Status Enums**: Act and Scene use status enums (ACTIVE, COMPLETED).
+# Removed mention of Status Enums
