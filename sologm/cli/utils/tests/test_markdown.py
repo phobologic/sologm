@@ -166,7 +166,6 @@ def test_generate_game_markdown_with_hierarchy(
         scene1_2 = create_test_scene(
             act_id=act1.id,
             title="Completed Scene",
-            # SceneStatus is removed, this scene is just another regular scene now.
         )
         scene2_1 = create_test_scene(session, act_id=act2.id, title="Another Scene")
         event1 = create_test_event(
