@@ -18,13 +18,6 @@ if TYPE_CHECKING:
     from sologm.models.oracle import Interpretation, InterpretationSet
 
 
-class SceneStatus(enum.Enum):
-    """Enumeration of possible scene statuses."""
-
-    ACTIVE = "active"
-    COMPLETED = "completed"
-
-
 class Scene(Base, TimestampMixin):
     """SQLAlchemy model representing a scene in a game."""
 
