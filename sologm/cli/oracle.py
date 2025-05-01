@@ -310,83 +310,17 @@ def interpret_oracle(
         with get_db_context() as session:
             oracle_manager = OracleManager(session=session)
 
-            if context is None or results is None:
-                if show_prompt:
-                    renderer.display_error(
-                        "Cannot show prompt without providing both --context and "
-                        "--results."
-                    )
-                    raise typer.Exit(1)
-
-                renderer.display_message(
-                    "Context or results not provided. Opening editor...",
-                    style="italic yellow",
+            # Prompt for input via editor if needed
+            if not show_prompt:  # Don't prompt if only showing prompt
+                context, results = _prompt_for_oracle_input_if_needed(
+                    context, results, console, renderer
                 )
-
-                # Configure editor fields
-                field_configs = [
-                    FieldConfig(
-                        name="context",
-                        display_name="Oracle Context",
-                        help_text=(
-                            "The question or context for the oracle interpretation."
-                        ),
-                        required=True,
-                        multiline=True,
-                    ),
-                    FieldConfig(
-                        name="results",
-                        display_name="Oracle Results",
-                        help_text=(
-                            "The raw results from the oracle (e.g., dice roll, "
-                            "card draw)."
-                        ),
-                        required=True,
-                        multiline=False,  # Typically single line
-                    ),
-                ]
-                structured_config = StructuredEditorConfig(fields=field_configs)
-                editor_config = EditorConfig(
-                    edit_message="Enter Oracle Details:",
-                    success_message="Oracle details updated.",
-                    cancel_message="Interpretation cancelled.",
+            elif context is None or results is None:
+                # If showing prompt, context/results must be provided via options
+                renderer.display_error(
+                    "Cannot show prompt without providing both --context and --results."
                 )
-
-                # Prepare initial data (pre-fill if one option was provided)
-                initial_data: Dict[str, Any] = {
-                    "context": context or "",
-                    "results": results or "",
-                }
-
-                # Call the editor
-                edited_data, status = edit_structured_data(
-                    data=initial_data,
-                    console=console,
-                    config=structured_config,
-                    editor_config=editor_config,
-                    context_info=(
-                        "Please provide the context and results for the oracle."
-                    ),
-                    is_new=True,
-                )
-
-                # Handle editor outcome
-                if status in (
-                    EditorStatus.SAVED_MODIFIED,
-                    EditorStatus.SAVED_UNCHANGED,
-                ):
-                    context = edited_data.get("context")
-                    results = edited_data.get("results")
-                    # Basic check after editor, though validation should
-                    # catch empty required fields
-                    if not context or not results:
-                        renderer.display_error("Context and Results are required.")
-                        raise typer.Exit(1)
-                elif status == EditorStatus.ABORTED:
-                    raise typer.Exit(0)
-                else:  # VALIDATION_ERROR or EDITOR_ERROR
-                    raise typer.Exit(1)
-            # --- End Input Gathering / Editor Logic ---
+                raise typer.Exit(1)
 
             # Determine the number of interpretations
             if count is None:
@@ -689,63 +623,16 @@ def select_interpretation(
             renderer.display_interpretation(selected)
 
             if typer.confirm("\nAdd this interpretation as an event?"):
-                # Use the already fetched interpretation set
-                default_description = (
-                    f"Question: {target_interp_set.context}\n"
-                    f"Oracle: {target_interp_set.oracle_results}\n"
-                    f"Interpretation: {selected.title} - {selected.description}"
+                # Get event description, potentially editing it
+                event_description = _get_event_description_from_interpretation(
+                    selected_interpretation=selected,
+                    interpretation_set=target_interp_set,
+                    edit_flag=edit,
+                    console=console,
+                    renderer=renderer,
                 )
 
-                event_description = default_description
-                if edit or typer.confirm(
-                    "Would you like to edit the event description?"
-                ):
-                    editor_config = EditorConfig(
-                        edit_message="Edit the event description:",
-                        success_message="Event description updated.",
-                        cancel_message="Event description unchanged.",
-                        error_message="Could not open editor",
-                    )
-                    structured_config = StructuredEditorConfig(
-                        fields=[
-                            FieldConfig(
-                                name="description",
-                                display_name="Event Description",
-                                help_text="The detailed description of the event.",
-                                required=True,
-                                multiline=True,
-                            ),
-                        ]
-                    )
-                    event_data = {"description": default_description}
-                    edited_data, status = edit_structured_data(
-                        data=event_data,
-                        console=console,
-                        config=structured_config,
-                        context_info="Edit the event description below:\n",
-                        editor_config=editor_config,
-                        is_new=True,  # Treat as new input for description
-                    )
-
-                    if status in (
-                        EditorStatus.SAVED_MODIFIED,
-                        EditorStatus.SAVED_UNCHANGED,
-                    ):
-                        # Use edited data even if unchanged from default
-                        event_description = edited_data.get(
-                            "description", default_description
-                        )
-                        if not event_description:  # Ensure not empty
-                            renderer.display_error("Event description cannot be empty.")
-                            raise typer.Exit(1)
-                    elif status == EditorStatus.ABORTED:
-                        renderer.display_warning(
-                            "Event creation cancelled during edit."
-                        )
-                        raise typer.Exit(0)
-                    else:  # VALIDATION_ERROR or EDITOR_ERROR
-                        raise typer.Exit(1)
-
+                # Add the event
                 event = oracle_manager.add_interpretation_event(
                     selected, event_description
                 )
