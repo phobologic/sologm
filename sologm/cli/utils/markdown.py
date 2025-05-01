@@ -12,7 +12,7 @@ from sologm.core.scene import SceneManager
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game
-from sologm.models.scene import Scene  # SceneStatus removed from models
+from sologm.models.scene import Scene
 from sologm.utils.datetime_utils import format_datetime
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ def generate_concepts_header() -> List[str]:
         "- A sequence number within its act",
         "- A title",
         "- A description",
-        # Status field removed from Scene model
+        # Scene status field removed
         "",
         "## Events",
         "Individual moments, actions, or occurrences within a scene. Events can come from:",
@@ -55,7 +55,7 @@ def generate_concepts_header() -> List[str]:
         "- Manual entries (player-created events)",
         "",
         "Events form the core narrative of your game, showing what happened in each scene.",
-        # Completion indicator '✓' removed as Scene status is gone.
+        # Scene completion indicator removed
         "",
         "---",
         "",
@@ -90,7 +90,6 @@ def generate_game_markdown(
     if include_concepts:
         content.extend(generate_concepts_header())
 
-    # Game header
     content.append(f"# {game.name}")
     content.append("")
 
@@ -112,7 +111,7 @@ def generate_game_markdown(
                 act, scene_manager, event_manager, include_metadata
             )
             content.extend(act_content)
-            content.append("")  # Add extra line break between acts
+            content.append("")  # Ensure separation between acts.
 
     return "\n".join(content)
 
@@ -143,7 +142,6 @@ def generate_act_markdown(
     content.append(f"## Act {act.sequence}: {act_title}")
     content.append("")
 
-    # Add act description if available
     if act.summary:
         for line in act.summary.split("\n"):
             content.append(line)
@@ -158,11 +156,10 @@ def generate_act_markdown(
     scenes = scene_manager.list_scenes(act_id=act.id)
     scenes.sort(key=lambda s: s.sequence)
 
-    # Process each scene in this act
     for scene in scenes:
         scene_content = generate_scene_markdown(scene, event_manager, include_metadata)
         content.extend(scene_content)
-        content.append("")  # Add extra line break between scenes
+        content.append("")  # Ensure separation between scenes.
 
     return content
 
@@ -188,11 +185,9 @@ def generate_scene_markdown(
     """
     content = []
 
-    # Scene header - status indicator removed.
     content.append(f"### Scene {scene.sequence}: {scene.title}")
     content.append("")
 
-    # Handle multi-line scene description
     for line in scene.description.split("\n"):
         content.append(line)
     content.append("")
@@ -245,10 +240,9 @@ def generate_event_markdown(
     description_lines = event.description.split("\n")
 
     if description_lines:
-        # Format the first line with bullet and optional source indicator.
         content.append(f"-{source_indicator} {description_lines[0]}")
 
-        # Indent subsequent lines to align under the first line's content.
+        # Indent subsequent lines to align under the first line's content for list formatting.
         indent = "  " + " " * len(source_indicator)
         for line in description_lines[1:]:
             content.append(f"  {indent} {line}")
