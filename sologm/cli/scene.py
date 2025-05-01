@@ -301,23 +301,6 @@ def scene_info(
         renderer.display_error(f"Error: {str(e)}")
 
 
-@scene_app.command("complete")
-def complete_scene(ctx: typer.Context) -> None:
-    """Complete the active scene."""
-    renderer: "Renderer" = ctx.obj["renderer"]
-    try:
-        with get_db_context() as session:
-            scene_manager = SceneManager(session=session)
-
-            _, active_scene = scene_manager.validate_active_context()
-            completed_scene = scene_manager.complete_scene(active_scene.id)
-            renderer.display_success("Scene completed successfully!")
-            renderer.display_scene_info(completed_scene)
-    except (SceneError, ActError) as e:
-        renderer.display_error(f"Error: {str(e)}")
-        raise typer.Exit(1) from e
-
-
 @scene_app.command("edit")
 def edit_scene(
     ctx: typer.Context,
