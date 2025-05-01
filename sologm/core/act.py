@@ -167,6 +167,35 @@ class ActManager(BaseManager[Act, Act]):
         logger.debug(f"Found act: {result.id if result else 'None'}")
         return result
 
+    def get_act_by_identifier_or_error(self, identifier: str) -> Act:
+        """Get a specific act by its ID (UUID) or slug, raising GameError if not found.
+
+        Args:
+            identifier: ID or slug of the act to get.
+
+        Returns:
+            The Act instance.
+
+        Raises:
+            GameError: If the act is not found.
+        """
+        logger.debug(f"Getting act by identifier or error: {identifier}")
+
+        def _get_act(session: Session) -> Act:
+            return self.get_entity_by_identifier_or_error(
+                session,
+                Act,
+                identifier,
+                GameError,  # Use GameError for consistency, or create ActError if preferred
+                f"Act not found with identifier '{identifier}'",
+            )
+
+        act = self._execute_db_operation(
+            f"get act by identifier or error {identifier}", _get_act
+        )
+        logger.debug(f"Retrieved act by identifier: {act.id} (Input: '{identifier}')")
+        return act
+
     def list_acts(self, game_id: Optional[str] = None) -> List[Act]:
         """List all acts in a game.
 

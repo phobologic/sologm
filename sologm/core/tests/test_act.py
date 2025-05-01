@@ -203,6 +203,38 @@ class TestActManager:
 
             assert act is None
 
+    def test_get_act_by_identifier_or_error(
+        self,
+        session_context: SessionContext,
+        create_test_game: Callable,
+        create_test_act: Callable,
+    ):
+        """Test getting an act by ID or slug, raising error if not found."""
+        with session_context as session:
+            managers = create_all_managers(session)
+            test_game = create_test_game(session)
+            test_act = create_test_act(
+                session, game_id=test_game.id, title="Find Me"
+            )
+
+            # Get by ID
+            act_by_id = managers.act.get_act_by_identifier_or_error(test_act.id)
+            assert act_by_id is not None
+            assert act_by_id.id == test_act.id
+
+            # Get by slug
+            act_by_slug = managers.act.get_act_by_identifier_or_error(test_act.slug)
+            assert act_by_slug is not None
+            assert act_by_slug.id == test_act.id
+
+            # Get non-existent by ID
+            with pytest.raises(GameError, match="Act not found with identifier"):
+                managers.act.get_act_by_identifier_or_error("invalid-id")
+
+            # Get non-existent by slug
+            with pytest.raises(GameError, match="Act not found with identifier"):
+                managers.act.get_act_by_identifier_or_error("invalid-slug")
+
     def test_get_active_act(
         self,
         session_context: SessionContext,
@@ -250,37 +282,39 @@ class TestActManager:
         with session_context as session:
             managers = create_all_managers(session)
             test_game = create_test_game(session)
-            test_act = create_test_act(session, game_id=test_game.id)
+            test_act = create_test_act(
+                session, game_id=test_game.id, title="Original Title"
+            )
 
-            # Edit title only
-            updated_act = managers.act.edit_act(
+            # Edit title only using ID
+            updated_act_by_id = managers.act.edit_act(
                 act_id=test_act.id,
                 title="Updated Title",
             )
 
-            assert updated_act.title == "Updated Title"
-            assert updated_act.summary == test_act.summary
-            assert "updated-title" in updated_act.slug
+            assert updated_act_by_id.title == "Updated Title"
+            assert updated_act_by_id.summary == test_act.summary
+            assert "updated-title" in updated_act_by_id.slug
 
-            # Edit summary only
-            updated_act = managers.act.edit_act(
-                act_id=test_act.id,
+            # Edit summary only using slug
+            updated_act_by_slug = managers.act.edit_act(
+                act_id=updated_act_by_id.id, # Still need ID here for the edit method itself
                 summary="Updated summary",
             )
 
-            assert updated_act.title == "Updated Title"
-            assert updated_act.summary == "Updated summary"
+            assert updated_act_by_slug.title == "Updated Title" # Title from previous edit
+            assert updated_act_by_slug.summary == "Updated summary"
 
-            # Edit both title and summary
-            updated_act = managers.act.edit_act(
+            # Edit both title and summary using ID again
+            final_updated_act = managers.act.edit_act(
                 act_id=test_act.id,
                 title="Final Title",
                 summary="Final summary",
             )
 
-            assert updated_act.title == "Final Title"
-            assert updated_act.summary == "Final summary"
-            assert "final-title" in updated_act.slug
+            assert final_updated_act.title == "Final Title"
+            assert final_updated_act.summary == "Final summary"
+            assert "final-title" in final_updated_act.slug
 
             # Edit non-existent act
             with pytest.raises(GameError):

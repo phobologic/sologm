@@ -262,8 +262,8 @@ def act_info(ctx: typer.Context) -> None:
 @act_app.command("edit")
 def edit_act(
     ctx: typer.Context,
-    act_id: Optional[str] = typer.Option(
-        None, "--id", help="ID of the act to edit (defaults to active act)"
+    identifier: Optional[str] = typer.Option( # Renamed act_id to identifier
+        None, "--id", help="ID or slug of the act to edit (defaults to active act)" # Updated help text
     ),
     title: Optional[str] = typer.Option(
         None, "--title", "-t", help="New title for the act"
@@ -272,9 +272,9 @@ def edit_act(
         None, "--summary", "-s", help="New summary for the act"
     ),
 ) -> None:
-    """[bold]Edit an act in the current game.[/bold]
+    """[bold]Edit an act in the current game using its ID or slug.[/bold] # Updated docstring
 
-    If no act ID is provided, edits the current active act.
+    If no identifier is provided, edits the current active act.
     If title and summary are not provided, opens an editor to enter them.
     You can update the title and/or summary of the act, or remove them
     by leaving the fields empty.
@@ -283,16 +283,17 @@ def edit_act(
         [green]Edit active act with an interactive editor:[/green]
         $ sologm act edit
 
-        [green]Edit a specific act by ID:[/green]
+        [green]Edit a specific act by ID or slug:[/green]
         $ sologm act edit --id abc123
+        $ sologm act edit --id act-1-the-first-step
 
         [green]Update just the title:[/green]
         $ sologm act edit --title "New Title"
 
         [green]Update both title and summary for a specific act:[/green]
-        $ sologm act edit --id abc123 -t "New Title" -s "New summary"
+        $ sologm act edit --id act-1-the-first-step -t "New Title" -s "New summary"
     """
-    logger.debug("Editing act")
+    logger.debug(f"Editing act with identifier: {identifier}") # Updated log message
     renderer: "Renderer" = ctx.obj["renderer"]
     console: "Console" = ctx.obj["console"]  # Needed for editor
     from sologm.database.session import get_db_context
@@ -308,32 +309,36 @@ def edit_act(
 
         # Get the act to edit
         act_manager = ActManager(session=session)
+        act_to_edit: Optional[Act] = None # Initialize to None
 
-        if act_id:
-            # Get the specified act
-            act_to_edit = act_manager.get_act(act_id)
-            if not act_to_edit:
-                renderer.display_error(f"Act with ID '{act_id}' not found.")
-                raise typer.Exit(1)
+        try: # Add try block to catch GameError from get_act_by_identifier_or_error
+            if identifier:
+                # Get the specified act using the new method
+                act_to_edit = act_manager.get_act_by_identifier_or_error(identifier)
+                # Removed the manual check 'if not act_to_edit:' as the manager method handles it
 
-            # Verify the act belongs to the active game
-            if act_to_edit.game_id != active_game.id:
-                renderer.display_error(
-                    f"Act ID '{act_id}' does not belong to active game."
-                )
-                raise typer.Exit(1)
-        else:
-            # Get the active act
-            act_to_edit = act_manager.get_active_act(active_game.id)
-            if not act_to_edit:
-                renderer.display_error(f"No active act in game '{active_game.name}'.")
-                renderer.display_message("Create one with `sologm act create`.")
-                raise typer.Exit(1)
+                # Verify the act belongs to the active game
+                if act_to_edit.game_id != active_game.id:
+                    renderer.display_error(
+                        f"Act '{identifier}' does not belong to active game '{active_game.name}'." # Improved error message
+                    )
+                    raise typer.Exit(1)
+            else:
+                # Get the active act
+                act_to_edit = act_manager.get_active_act(active_game.id)
+                if not act_to_edit:
+                    renderer.display_error(f"No active act in game '{active_game.name}'.")
+                    renderer.display_message("Create one with `sologm act create`.")
+                    raise typer.Exit(1)
 
-        # If title/summary not provided via options, open editor
-        if title is None and summary is None:
-            # Create editor configuration
-            editor_config = StructuredEditorConfig(
+            # --- The rest of the function remains largely the same ---
+            # --- It uses act_to_edit which is now guaranteed to be found ---
+            # --- or an error would have been raised ---
+
+            # If title/summary not provided via options, open editor
+            if title is None and summary is None:
+                # Create editor configuration
+                editor_config = StructuredEditorConfig(
                 fields=[
                     FieldConfig(
                         name="title",
@@ -401,10 +406,9 @@ def edit_act(
             final_title = title
             final_summary = summary
 
-        # Update the act
-        try:
+            # Update the act using the actual ID from the found object
             updated_act = game_manager.act_manager.edit_act(
-                act_id=act_to_edit.id,
+                act_id=act_to_edit.id, # Pass the actual UUID here
                 title=final_title,
                 summary=final_summary,
             )
@@ -426,7 +430,7 @@ def edit_act(
                 renderer.display_message(f"Summary: {updated_act.summary}")
             # TODO: Consider adding renderer.display_act_details(updated_act)
 
-        except GameError as e:
+        except GameError as e: # Catch errors from get_act_by_identifier_or_error or edit_act
             renderer.display_error(f"Error: {str(e)}")
             raise typer.Exit(1) from e
 
