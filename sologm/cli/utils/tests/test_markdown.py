@@ -125,6 +125,7 @@ def test_generate_act_markdown(
         assert any(
             f"### Scene {scene1.sequence}: {scene1.title}" in line for line in result
         )
+        assert any(
             f"### Scene {scene2.sequence}: {scene2.title}" in line for line in result
         )
 
