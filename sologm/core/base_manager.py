@@ -177,7 +177,7 @@ class BaseManager(Generic[T, M]):
         if hasattr(model_class, "slug"):
             entity = (
                 session.query(model_class)
-                .filter(getattr(model_class, "slug") == identifier)
+                .filter(model_class.slug == identifier)
                 .first()
             )
             if entity:
