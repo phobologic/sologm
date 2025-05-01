@@ -318,8 +318,19 @@ def _get_edit_data(
         logger.debug("Using editor to get edit data.")
         editor_config = StructuredEditorConfig(
             fields=[
-                FieldConfig(name="title", display_name="Title", help_text="Title of the act (can be left empty for untitled acts)", required=False),
-                FieldConfig(name="summary", display_name="Summary", help_text="Summary of the act", multiline=True, required=False),
+                FieldConfig(
+                    name="title",
+                    display_name="Title",
+                    help_text="Title of the act (can be left empty for untitled acts)",
+                    required=False,
+                ),
+                FieldConfig(
+                    name="summary",
+                    display_name="Summary",
+                    help_text="Summary of the act",
+                    multiline=True,
+                    required=False,
+                ),
             ],
             wrap_width=70,
         )
@@ -330,10 +341,18 @@ def _get_edit_data(
             f"ID: {act_to_edit.id}\n\n"
             "You can leave the title empty for an untitled act."
         )
-        initial_data = {"title": act_to_edit.title or "", "summary": act_to_edit.summary or ""}
+        initial_data = {
+            "title": act_to_edit.title or "",
+            "summary": act_to_edit.summary or "",
+        }
 
         result_data, status = edit_structured_data(
-            initial_data, console, editor_config, context_info=context_info, is_new=False, original_data_for_comments=initial_data
+            initial_data,
+            console,
+            editor_config,
+            context_info=context_info,
+            is_new=False,
+            original_data_for_comments=initial_data,
         )
 
         if status == EditorStatus.SAVED_MODIFIED:
@@ -344,20 +363,22 @@ def _get_edit_data(
         elif status == EditorStatus.SAVED_UNCHANGED:
             logger.info("Editor saved, but no changes detected.")
             renderer.display_message("No changes detected. Act not updated.")
-            return None # Indicate no update needed
-        else: # Aborted or error
+            return None  # Indicate no update needed
+        else:  # Aborted or error
             # Message already displayed by edit_structured_data
-            logger.info(f"Act edit cancelled or failed due to editor status: {status.name}")
-            return None # Indicate cancellation/failure
+            logger.info(
+                f"Act edit cancelled or failed due to editor status: {status.name}"
+            )
+            return None  # Indicate cancellation/failure
     else:
         # CLI Args Path
         logger.debug("Using CLI arguments for edit data.")
         # Basic check: ensure at least one was provided if we took this path
         if cli_title is None and cli_summary is None:
-             # This case should ideally not be reachable if options were defined correctly
-             logger.warning("CLI path taken but both title and summary are None.")
-             renderer.display_warning("No changes specified via command line options.")
-             return None # Indicate no update needed
+            # This case should ideally not be reachable if options were defined correctly
+            logger.warning("CLI path taken but both title and summary are None.")
+            renderer.display_warning("No changes specified via command line options.")
+            return None  # Indicate no update needed
         logger.info("Proceeding with update using CLI arguments.")
         return {"title": cli_title, "summary": cli_summary}
 
@@ -365,8 +386,10 @@ def _get_edit_data(
 @act_app.command("edit")
 def edit_act(
     ctx: typer.Context,
-    identifier: Optional[str] = typer.Option( # Renamed act_id to identifier
-        None, "--id", help="ID or slug of the act to edit (defaults to active act)" # Updated help text
+    identifier: Optional[str] = typer.Option(  # Renamed act_id to identifier
+        None,
+        "--id",
+        help="ID or slug of the act to edit (defaults to active act)",  # Updated help text
     ),
     title: Optional[str] = typer.Option(
         None, "--title", "-t", help="New title for the act"
@@ -404,7 +427,7 @@ def edit_act(
     with get_db_context() as session:
         # Initialize managers
         game_manager = GameManager(session=session)
-        act_manager = ActManager(session=session) # Pass session explicitly
+        act_manager = ActManager(session=session)  # Pass session explicitly
 
         # --- Step 1: Get Active Game ---
         active_game = game_manager.get_active_game()
@@ -419,14 +442,18 @@ def edit_act(
 
         # --- Step 3: Get Edit Data (uses helper) ---
         # Helper handles editor interaction, cancellation messages, and returns None if no update needed
-        edit_data = _get_edit_data(act_to_edit, active_game, title, summary, console, renderer)
+        edit_data = _get_edit_data(
+            act_to_edit, active_game, title, summary, console, renderer
+        )
 
         # --- Step 4: Perform Update if data was obtained ---
         if edit_data is not None:
-            logger.debug(f"Proceeding to update act {act_to_edit.id} with data: {edit_data}")
+            logger.debug(
+                f"Proceeding to update act {act_to_edit.id} with data: {edit_data}"
+            )
             try:
                 # Call the manager method within its own try block
-                updated_act = act_manager.edit_act( # Use act_manager directly
+                updated_act = act_manager.edit_act(  # Use act_manager directly
                     act_id=act_to_edit.id,
                     title=edit_data["title"],
                     summary=edit_data["summary"],
@@ -434,7 +461,9 @@ def edit_act(
                 logger.info(f"Successfully updated act {updated_act.id}")
 
                 # Display success message using renderer
-                title_display = f"'{updated_act.title}'" if updated_act.title else "untitled"
+                title_display = (
+                    f"'{updated_act.title}'" if updated_act.title else "untitled"
+                )
                 renderer.display_success(f"Act {title_display} updated successfully!")
 
                 # Display updated act details using renderer
@@ -452,7 +481,9 @@ def edit_act(
                 renderer.display_error(f"Error updating act: {str(e)}")
                 raise typer.Exit(1) from e
         else:
-             logger.debug("No edit data returned, update skipped (cancelled or no changes).")
+            logger.debug(
+                "No edit data returned, update skipped (cancelled or no changes)."
+            )
 
     logger.debug("edit_act command finished.")
 
