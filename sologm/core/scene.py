@@ -1,4 +1,4 @@
-"""Scene management functionality."""
+sologm/core/scene.py"""Scene management functionality."""
 
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
