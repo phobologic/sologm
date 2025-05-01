@@ -152,6 +152,7 @@ def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
     def _run_with_context(test_func: Callable[[Session], Any]) -> Any:
         from sologm.database.session import get_db_context
 
+        with get_db_context() as session:
             return test_func(session)
 
     return _run_with_context
