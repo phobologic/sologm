@@ -22,7 +22,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene
+from sologm.models.scene import Scene  # SceneStatus removed implicitly
 
 
 # Add mock_console fixture if not already present globally
@@ -68,6 +68,10 @@ def test_display_dice_roll(
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
     assert isinstance(args[0], Panel)
+    # Verify border style based on is_active
+    assert args[0].border_style == BORDER_STYLES["current"]  # Scene is active by default
+    # Verify status is not in metadata (more complex assertion, maybe skip for now)
+    # assert "Status" not in args[0].renderable.plain # Example, might need refinement
 
 
 # --- End Tests for display_scene_info ---
@@ -391,7 +395,9 @@ def test_create_act_panel(
         assert panel_active.title is not None
         assert panel_active.border_style == BORDER_STYLES["current"]
         # Check if summary is present (might be truncated)
-        assert act.summary[:10] in panel_active.renderable  # Check start of summary
+        assert act.summary[:10] in str(
+            panel_active.renderable
+        )  # Check start of summary
 
         # Test with inactive act and specific truncation
         act.summary = "This is a very long summary that definitely needs to be truncated for the test."
@@ -403,9 +409,11 @@ def test_create_act_panel(
         assert panel_inactive_truncated is not None
         assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
         # Check if the summary is truncated (20 * 1.5 = 30 chars max)
-        assert "This is a very long summary..." in panel_inactive_truncated.renderable
+        assert "This is a very long summary..." in str(
+            panel_inactive_truncated.renderable
+        )
         assert (
-            "truncated for the test." not in panel_inactive_truncated.renderable
+            "truncated for the test." not in str(panel_inactive_truncated.renderable)
         )  # End should be cut off
 
         # Test with no active act
@@ -450,10 +458,23 @@ def test_create_scene_panels_grid(
         scene = create_test_scene(session, act_id=act.id)
 
         # Test with active scene and scene manager
-        grid = renderer._create_scene_panels_grid(
+        grid_active = renderer._create_scene_panels_grid(
             game, scene, mock_scene_manager, is_scene_active=True
         )
-        assert grid is not None
+        assert grid_active is not None
+        # Add assertion: Check border style of the first panel in the grid (latest scene)
+        latest_scene_panel_active = grid_active.renderables[0].renderables[0]
+        assert isinstance(latest_scene_panel_active, Panel)
+        assert latest_scene_panel_active.border_style == BORDER_STYLES["current"]
+
+        # Test with inactive scene and scene manager
+        grid_inactive = renderer._create_scene_panels_grid(
+            game, scene, mock_scene_manager, is_scene_active=False
+        )
+        assert grid_inactive is not None
+        latest_scene_panel_inactive = grid_inactive.renderables[0].renderables[0]
+        assert isinstance(latest_scene_panel_inactive, Panel)
+        assert latest_scene_panel_inactive.border_style == BORDER_STYLES["neutral"]
 
         # Test with active scene but no scene manager
         grid = renderer._create_scene_panels_grid(
@@ -462,10 +483,14 @@ def test_create_scene_panels_grid(
         assert grid is not None
 
         # Test with no active scene
-        grid = renderer._create_scene_panels_grid(
+        grid_no_scene = renderer._create_scene_panels_grid(
             game, None, None, is_scene_active=False
         )
-        assert grid is not None
+        assert grid_no_scene is not None
+        # Check the content of the first panel when no scene exists
+        no_scene_panel = grid_no_scene.renderables[0].renderables[0]
+        assert isinstance(no_scene_panel, Panel)
+        assert "No scenes found" in str(no_scene_panel.renderable)
 
 
 def test_create_events_panel(
@@ -528,7 +553,7 @@ def test_create_oracle_panel(
 
         panel = renderer._create_oracle_panel(game, scene, mock_oracle_manager, 60)
         assert panel is not None  # Should return empty panel in this case
-        assert "No oracle interpretations yet." in panel.renderable
+        assert "No oracle interpretations yet." in str(panel.renderable)
 
 
 def test_create_empty_oracle_panel(mock_console: MagicMock):
@@ -569,14 +594,14 @@ def test_create_dice_rolls_panel(
         # Test with no rolls
         panel = renderer._create_dice_rolls_panel([])
         assert panel is not None
-        assert "Recent Rolls" in panel.title
-        assert "No recent dice rolls" in panel.renderable
+        assert "Recent Rolls" in str(panel.title)
+        assert "No recent dice rolls" in str(panel.renderable)
 
         # Test with rolls
         panel = renderer._create_dice_rolls_panel(rolls)
         assert panel is not None
-        assert "Recent Rolls" in panel.title
-        assert dice_roll.notation in panel.renderable
+        assert "Recent Rolls" in str(panel.title)
+        assert dice_roll.notation in str(panel.renderable)
 
 
 # --- End Tests for display_game_status Helpers ---
@@ -748,6 +773,9 @@ def test_display_acts_table_with_acts(
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
     assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+    # Add assertion: Check number of columns in the table inside the panel
+    table = args[0].renderable
+    assert len(table.columns) == 5  # ID, Seq, Title, Summary, Current
 
 
 def test_display_acts_table_no_acts(mock_console: MagicMock):
@@ -795,6 +823,9 @@ def test_display_scenes_table_with_scenes(
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
     assert isinstance(args[0], Panel)  # Expecting a Panel containing the Table
+    # Add assertion: Check number of columns in the table inside the panel
+    table = args[0].renderable
+    assert len(table.columns) == 5  # ID, Title, Description, Current, Sequence
 
 
 def test_display_scenes_table_no_scenes(mock_console: MagicMock):
@@ -1192,8 +1223,11 @@ def test_display_act_info(
     assert mock_console.print.call_count == 2
     args1, _ = mock_console.print.call_args_list[0]
     args2, _ = mock_console.print.call_args_list[1]
-    assert isinstance(args1[0], Panel)
-    assert isinstance(args2[0], Panel)
+    assert isinstance(args1[0], Panel)  # Act info panel
+    assert isinstance(args2[0], Panel)  # Scenes table panel
+    # Add assertion: Check number of columns in the scenes table inside the second panel
+    scenes_table = args2[0].renderable
+    assert len(scenes_table.columns) == 5  # ID, Seq, Title, Summary, Current
 
 
 # --- End Tests for display_act_info ---
@@ -1263,3 +1297,7 @@ def test_display_scene_info(
     args, kwargs = mock_console.print.call_args
     assert len(args) == 1
     assert isinstance(args[0], Panel)
+    # Add assertion: Check border style based on is_active (default is True)
+    assert args[0].border_style == BORDER_STYLES["current"]
+    # Add assertion: Check that "Status" is not in the panel's content
+    assert "Status" not in str(args[0].renderable)

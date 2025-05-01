@@ -18,7 +18,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus
+from sologm.models.scene import Scene  # Removed SceneStatus import
 
 # Set up logging for tests
 logger = logging.getLogger(__name__)
