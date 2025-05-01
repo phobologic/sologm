@@ -36,7 +36,9 @@ class Scene(Base, TimestampMixin):
     # )
     # --- End removal ---
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
-    is_active: Mapped[bool] = mapped_column(default=False) # This is now the primary state indicator
+    is_active: Mapped[bool] = mapped_column(
+        default=False
+    )  # This is now the primary state indicator
 
     # Relationships this model owns
     events: Mapped[List["Event"]] = relationship(
