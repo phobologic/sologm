@@ -1308,11 +1308,20 @@ class RichRenderer(Renderer):
             act_title = act.title if act.title else "[italic]Untitled Act[/italic]"
             act_title_styled = st.title(act_title).plain if is_active else act_title
 
+            # Construct the ID cell content with ID and slug on separate lines
+            id_cell_content = Text()
+            id_cell_content.append(act.id)
+            id_cell_content.append("\n") # Add newline
+            id_cell_content.append(f"({act.slug})", style="dim") # Add slug in dim style
+
+            # Truncate summary
+            truncated_summary = truncate_text(act.summary or "", max_length=40)
+
             table.add_row(
-                act.id,
+                id_cell_content, # Pass the Text object here
                 str(act.sequence),
                 act_title_styled,
-                act.summary or "",
+                truncated_summary, # Use truncated summary
                 active_marker,
             )
 
