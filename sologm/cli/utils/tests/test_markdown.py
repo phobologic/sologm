@@ -77,7 +77,9 @@ def test_generate_scene_markdown(
             f"### Scene {scene.sequence}: {scene.title}" in line for line in result
         )
         assert any(scene.description in line for line in result)
-        assert not any("### Events" in line for line in result)  # Verify no events section yet.
+        assert not any(
+            "### Events" in line for line in result
+        )  # Verify no events section yet.
 
         result = generate_scene_markdown(scene, managers.event, include_metadata=True)
         assert any(f"*Scene ID: {scene.id}*" in line for line in result)
@@ -249,7 +251,7 @@ def test_generate_game_markdown_empty(session_context, create_test_game):
 
     assert "# Empty Game" in result
     assert "Game with no acts" in result
-    assert "## Act" not in result # Ensure no act headers are present.
+    assert "## Act" not in result  # Ensure no act headers are present.
 
 
 def test_generate_concepts_header():
