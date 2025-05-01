@@ -242,10 +242,8 @@ class SceneManager(BaseManager[Scene, Scene]):
         logger.debug(f"Getting scene by identifier or error: {identifier}")
 
         def _get_scene(session: Session) -> Scene:
+            # Call the base manager method correctly
             return self.get_entity_by_identifier_or_error(
-                session,
-                Scene,
-                identifier,
                 session=session,
                 model_class=Scene,
                 identifier=identifier,
@@ -347,12 +345,12 @@ class SceneManager(BaseManager[Scene, Scene]):
         act_id = self._get_act_id_or_active(act_id)
 
         def _create_scene(session: Session) -> Scene:
-            # Check if act exists
-            act = self.get_entity_or_error(
+            # Check if act exists using the ActManager
+            act = self.act_manager.get_entity_or_error(
                 session=session,
                 model_class=Act,
                 entity_id=act_id,
-                error_class=SceneError,
+                error_class=ActError,  # Use ActError if act not found
                 error_message=f"Act with ID '{act_id}' does not exist",
             )
             logger.debug(f"Found act: {act.id} ('{act.title}')")
