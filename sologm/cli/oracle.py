@@ -430,11 +430,9 @@ def show_interpretation_status(ctx: typer.Context) -> None:
 @oracle_app.command("select")
 def select_interpretation(
     ctx: typer.Context,
-    interpretation_id: str = typer.Option(
-        None,
-        "--id",
-        "-i",
-        help="Identifier of the interpretation to select (number, slug, or UUID)",
+    interpretation_identifier: str = typer.Argument(
+        ...,
+        help="Identifier of the interpretation to select (number, slug, or UUID).",
     ),
     interpretation_set_id: str = typer.Option(
         None,
@@ -451,15 +449,13 @@ def select_interpretation(
 ) -> None:
     """Select an interpretation to add as an event.
 
-    You can specify the interpretation using:
-    You can specify the interpretation using:
-    - A sequence number (1, 2, 3...)
-    - The slug (derived from the title)
-    - The full UUID
+    Specify the interpretation using its sequence number (1, 2, 3...),
+    slug (derived from the title), or the full UUID as a required argument.
 
     Args:
         ctx: Typer context.
-        interpretation_id: Identifier of the interpretation to select.
+        interpretation_identifier: Identifier (number, slug, UUID) of the
+                                   interpretation to select.
         interpretation_set_id: ID of the interpretation set (uses current if None).
         edit: Edit the event description before adding.
     """
@@ -488,15 +484,12 @@ def select_interpretation(
                 # Fetch the specified set if ID was provided
                 target_interp_set = oracle_manager.get_interpretation_set(target_set_id)
 
-            if not interpretation_id:
-                renderer.display_error(
-                    "Please specify which interpretation to select with --id. Use "
-                    "the number (1, 2, 3...), slug, or UUID."
-                )
-                raise typer.Exit(1)
+            # No need to check if interpretation_identifier is None,
+            # Typer handles required arguments.
 
+            # Use the argument name here
             selected = oracle_manager.select_interpretation(
-                target_set_id, interpretation_id
+                target_set_id, interpretation_identifier
             )
 
             renderer.display_message("\nSelected interpretation:")
