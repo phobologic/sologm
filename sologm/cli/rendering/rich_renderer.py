@@ -1311,17 +1311,19 @@ class RichRenderer(Renderer):
             # Construct the ID cell content with ID and slug on separate lines
             id_cell_content = Text()
             id_cell_content.append(act.id)
-            id_cell_content.append("\n") # Add newline
-            id_cell_content.append(f"({act.slug})", style="dim") # Add slug in dim style
+            id_cell_content.append("\n")  # Add newline
+            id_cell_content.append(
+                f"({act.slug})", style="dim"
+            )  # Add slug in dim style
 
             # Truncate summary
             truncated_summary = truncate_text(act.summary or "", max_length=40)
 
             table.add_row(
-                id_cell_content, # Pass the Text object here
+                id_cell_content,  # Pass the Text object here
                 str(act.sequence),
                 act_title_styled,
-                truncated_summary, # Use truncated summary
+                truncated_summary,  # Use truncated summary
                 active_marker,
             )
 
