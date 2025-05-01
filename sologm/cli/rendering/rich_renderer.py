@@ -174,7 +174,7 @@ class RichRenderer(Renderer):
             title_align="left",
         )
         self.console.print(panel)
-        self.console.print() # Ensure trailing newline for spacing.
+        self.console.print()  # Ensure trailing newline for spacing.
 
     def display_events_table(
         self,
@@ -505,7 +505,9 @@ class RichRenderer(Renderer):
 
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene using Rich."""
-        logger.debug(f"Displaying scene info for {scene.id} (active: {scene.is_active})")
+        logger.debug(
+            f"Displaying scene info for {scene.id} (active: {scene.is_active})"
+        )
         logger.debug(
             f"Scene details: title='{scene.title}', sequence={scene.sequence}, "
             f"act_id={scene.act_id if hasattr(scene, 'act_id') else 'unknown'}"
@@ -796,7 +798,7 @@ class RichRenderer(Renderer):
 
         # Add metadata with dim style
         metadata_text = st.format_metadata(metadata)
-        metadata_text.stylize("dim") # Dim the metadata for less emphasis.
+        metadata_text.stylize("dim")  # Dim the metadata for less emphasis.
         content.append(metadata_text)
 
         logger.debug("Game header panel created")
@@ -885,7 +887,7 @@ class RichRenderer(Renderer):
 
             # Add metadata including status.
             metadata = {
-                "Status": status_string, # Reflects active/inactive, not completion.
+                "Status": status_string,  # Reflects active/inactive, not completion.
                 "Sequence": latest_scene.sequence,
                 "Created": latest_scene.created_at.strftime("%Y-%m-%d")
                 if latest_scene.created_at
@@ -938,7 +940,9 @@ class RichRenderer(Renderer):
             )
             # Add metadata for previous scene.
             prev_metadata = {
-                "Status": "Active" if prev_scene.is_active else "Inactive", # Display active/inactive status.
+                "Status": "Active"
+                if prev_scene.is_active
+                else "Inactive",  # Display active/inactive status.
                 "Sequence": prev_scene.sequence,
                 "Created": prev_scene.created_at.strftime("%Y-%m-%d"),
             }
@@ -1021,7 +1025,9 @@ class RichRenderer(Renderer):
         return Panel(
             events_content,
             title=panel_title,
-            border_style=BORDER_STYLES["success"], # Events represent completed actions.
+            border_style=BORDER_STYLES[
+                "success"
+            ],  # Events represent completed actions.
             title_align="left",
         )
 
@@ -1638,7 +1644,7 @@ class RichRenderer(Renderer):
         metadata = {
             "ID": completed_act.id,
             "Sequence": f"Act {completed_act.sequence}",
-            "Status": "Completed", # Assuming completion implies inactive now.
+            "Status": "Completed",  # Assuming completion implies inactive now.
         }
         self.console.print(st.format_metadata(metadata))
 
@@ -1701,7 +1707,8 @@ class RichRenderer(Renderer):
         """Displays a simple informational message using Rich, optionally styled."""
         logger.debug(f"Displaying message: {message} (style: {style})")
         if style:
-            from rich.text import Text # Local import is fine here.
+            from rich.text import Text  # Local import is fine here.
+
             self.console.print(Text(message, style=style))
         else:
             self.console.print(message)
