@@ -16,7 +16,7 @@ from sologm.models.base import Base
 from sologm.models.event import Event  # Added Event import
 from sologm.models.event_source import EventSource
 from sologm.models.game import Game  # Added Game import
-from sologm.models.scene import Scene, SceneStatus  # Added Scene import
+from sologm.models.scene import Scene  # Removed SceneStatus import
 from sologm.utils.config import Config
 
 logger = logging.getLogger(__name__)
@@ -225,7 +225,7 @@ def create_test_scene() -> Callable[..., Scene]:
         title: str = "Test Scene",
         description: str = "A test scene",
         is_active: bool = True,
-        status: SceneStatus = SceneStatus.ACTIVE,
+        # Removed status parameter
     ) -> Scene:
         managers = create_all_managers(session)
         scene = managers.scene.create_scene(
@@ -234,17 +234,7 @@ def create_test_scene() -> Callable[..., Scene]:
             description=description,
             make_active=is_active,
         )
-        if status == SceneStatus.COMPLETED:
-            # Use manager for completion logic (it uses the correct session)
-            managers.scene.complete_scene(scene.id)
-            # Re-fetch the scene to get updated state
-            scene = managers.scene.get_scene(scene.id)
-            # Ensure the re-fetched scene is not None
-            if scene is None:
-                # Should not happen if complete_scene/get_scene work, but defensive check
-                raise RuntimeError(
-                    "Failed to re-fetch scene after completion in factory"
-                )
+        # Removed block checking for SceneStatus.COMPLETED
 
         # Add a refresh call here before returning, similar to create_test_event
         # This helps ensure relationships are loaded while the object is known
