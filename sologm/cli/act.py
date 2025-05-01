@@ -405,6 +405,7 @@ def edit_act(
             # If parameters were provided directly, use them
             final_title = title
             final_summary = summary
+            pass # Explicitly end the else block
 
         updated_act = game_manager.act_manager.edit_act(
             act_id=act_to_edit.id, # Pass the actual UUID here
