@@ -24,7 +24,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene, SceneStatus  # Added SceneStatus
+from sologm.models.scene import Scene  # Removed SceneStatus import
 
 # Corrected import based on file structure from Phase 1
 from .base import Renderer
