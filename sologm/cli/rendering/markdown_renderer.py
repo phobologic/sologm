@@ -13,7 +13,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene  # Removed SceneStatus import
+from sologm.models.scene import Scene
 
 # Import base class
 from .base import Renderer
@@ -204,10 +204,9 @@ class MarkdownRenderer(Renderer):
         output_lines = []
         output_lines.append("### Scenes")
         output_lines.append("")
-        output_lines.append(
-            "| ID | Title | Description | Status | Current | Sequence |"
-        )
-        output_lines.append("|---|---|---|---|---|---|")
+        # Removed Status column
+        output_lines.append("| ID | Title | Description | Current | Sequence |")
+        output_lines.append("|---|---|---|---|---|")
 
         for scene in scenes:
             is_active = active_scene_id and scene.id == active_scene_id
@@ -215,13 +214,13 @@ class MarkdownRenderer(Renderer):
             scene_title = f"**{scene.title}**" if is_active else scene.title
 
             # Escape pipe characters in description
-            description = scene.description.replace("|", "\\|")
+            description = (scene.description or "").replace("|", "\\|")
 
+            # Removed Status data
             row = (
                 f"| `{scene.id}` "
                 f"| {scene_title} "
                 f"| {description} "
-                f"| {scene.status.value} "
                 f"| {active_marker} "
                 f"| {scene.sequence} |"
             )
@@ -303,22 +302,17 @@ class MarkdownRenderer(Renderer):
 
     def display_scene_info(self, scene: Scene) -> None:
         """Displays detailed information about a specific scene as Markdown."""
-        logger.debug(
-            f"Displaying scene info as Markdown for {scene.id} (status: "
-            f"{scene.status.value})"
-        )
+        logger.debug(f"Displaying scene info as Markdown for {scene.id}")
         output_lines = []
 
-        # Header with status indicator
-        status_indicator = " ✓" if scene.status == SceneStatus.COMPLETED else ""
+        # Header (removed status indicator)
         output_lines.append(
-            f"### Scene {scene.sequence}: {scene.title}{status_indicator} "
-            f"(`{scene.id}`)"
+            f"### Scene {scene.sequence}: {scene.title} (`{scene.id}`)"
         )
         output_lines.append("")
 
         # Description
-        output_lines.append(scene.description)
+        output_lines.append(scene.description or "*No description provided.*")
         output_lines.append("")
 
         # Metadata
@@ -327,7 +321,7 @@ class MarkdownRenderer(Renderer):
             act_title = scene.act.title or "Untitled Act"
             act_info = f"Act {scene.act.sequence}: {act_title}"
 
-        output_lines.append(f"*   **Status:** {scene.status.value}")
+        # Removed Status line
         output_lines.append(f"*   **Act:** {act_info}")
         output_lines.append(f"*   **Created:** {scene.created_at.strftime('%Y-%m-%d')}")
         output_lines.append(
@@ -390,18 +384,17 @@ class MarkdownRenderer(Renderer):
             output_lines.append(
                 f"**Latest Scene:** {scene_title} (Scene {latest_scene.sequence})"
             )
-            if latest_scene.status == SceneStatus.COMPLETED:
-                status = "Completed"
-            elif is_scene_active:
+            # Simplified status based only on is_scene_active flag
+            if is_scene_active:
                 status = "**Active**"
             else:
                 status = "Inactive"
-            output_lines.append(f"*   Status: {status}")  # Use list item
+            output_lines.append(f"*   Status: {status}")
 
             if latest_scene.description:
                 # Use full description for latest scene
                 desc_preview = latest_scene.description
-                output_lines.append(f"*   Description: {desc_preview}")  # Use list item
+                output_lines.append(f"*   Description: {desc_preview}")
 
             # Previous Scene Logic
             prev_scene = None
@@ -417,10 +410,8 @@ class MarkdownRenderer(Renderer):
                 prev_title = prev_scene.title or "*Untitled Scene*"
                 output_lines.append(
                     f"*   Title: {prev_title} (Scene {prev_scene.sequence})"
-                )  # Use list item
-                output_lines.append(
-                    f"*   Status: {prev_scene.status.value}"
-                )  # Use list item
+                )
+                # Removed status line for previous scene
                 if prev_scene.description:
                     # Use full description for previous scene
                     prev_desc_preview = prev_scene.description
@@ -721,9 +712,7 @@ class MarkdownRenderer(Renderer):
                 output_lines.append(f"> {line}")
             output_lines.append("")
 
-        self._print_markdown(
-            "\n".join(output_lines).strip()
-        )  # Remove trailing newline if summary was last
+        self._print_markdown("\n".join(output_lines).strip())
 
     def display_act_ai_feedback_prompt(self, console: Console) -> None:
         """Displays instructions for AI feedback as Markdown."""

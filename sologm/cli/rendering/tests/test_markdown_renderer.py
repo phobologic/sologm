@@ -18,7 +18,7 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
-from sologm.models.scene import Scene  # Removed SceneStatus import
+from sologm.models.scene import Scene
 
 # Set up logging for tests
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ def test_display_interpretation_markdown(
     """Test displaying a single interpretation as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -147,7 +147,7 @@ def test_display_events_table_markdown(
     """Test displaying a list of events as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id, title="Event Scene")
@@ -216,7 +216,7 @@ def test_display_events_table_no_events_markdown(
 ):
     """Test displaying an empty list of events as Markdown."""
     renderer = MarkdownRenderer(mock_console)
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id, title="Empty Scene")
@@ -238,7 +238,7 @@ def test_display_games_table_markdown(
     """Test displaying a list of games as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         test_game = create_test_game(
             session, name="Active Game", description="The main game", is_active=True
         )
@@ -324,7 +324,7 @@ def test_display_scenes_table_markdown(
     """Test displaying a list of scenes as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         test_scene = create_test_scene(
@@ -333,7 +333,7 @@ def test_display_scenes_table_markdown(
             title="Active Scene",
             description="The current scene.",
             is_active=True,
-            status=SceneStatus.ACTIVE,
+            # Removed status
         )
         other_scene = create_test_scene(
             session,
@@ -341,7 +341,7 @@ def test_display_scenes_table_markdown(
             title="Other Scene",
             description="Another scene.",
             is_active=False,
-            status=SceneStatus.ACTIVE,
+            # Removed status
         )
         # Ensure sequences are different if needed by display logic (factory handles this)
         scenes = sorted(
@@ -355,26 +355,25 @@ def test_display_scenes_table_markdown(
         rendered_output_active = call_args[0]
 
         assert "### Scenes" in rendered_output_active
+        # Updated header assertion
         assert (
-            "| ID | Title | Description | Status | Current | Sequence |"
+            "| ID | Title | Description | Current | Sequence |"
             in rendered_output_active
         )
         # Check active scene row
         assert f"| `{test_scene.id}`" in rendered_output_active
         assert f"| **{test_scene.title}**" in rendered_output_active  # Bold
         assert f"| {test_scene.description}" in rendered_output_active
-        assert f"| {test_scene.status.value}" in rendered_output_active
-        assert (
-            f"| ✓ | {test_scene.sequence} |" in rendered_output_active
-        )  # Marker and sequence
+        # Removed status assertion
+        # Updated row assertion
+        assert f"| ✓ | {test_scene.sequence} |" in rendered_output_active
         # Check other scene row
         assert f"| `{other_scene.id}`" in rendered_output_active
         assert f"| {other_scene.title}" in rendered_output_active  # Not bold
         assert f"| {other_scene.description}" in rendered_output_active
-        assert f"| {other_scene.status.value}" in rendered_output_active
-        assert (
-            f"|  | {other_scene.sequence} |" in rendered_output_active
-        )  # Marker and sequence
+        # Removed status assertion
+        # Updated row assertion
+        assert f"|  | {other_scene.sequence} |" in rendered_output_active
         assert call_kwargs == {"highlight": False, "markup": False}
 
     # Test case 2: Without an active scene ID
@@ -384,26 +383,25 @@ def test_display_scenes_table_markdown(
     rendered_output_no_active = call_args[0]
 
     assert "### Scenes" in rendered_output_no_active
+    # Updated header assertion
     assert (
-        "| ID | Title | Description | Status | Current | Sequence |"
+        "| ID | Title | Description | Current | Sequence |"
         in rendered_output_no_active
     )
     # Check first scene row (not active)
     assert f"| `{test_scene.id}`" in rendered_output_no_active
     assert f"| {test_scene.title}" in rendered_output_no_active  # Not bold
     assert f"| {test_scene.description}" in rendered_output_no_active
-    assert f"| {test_scene.status.value}" in rendered_output_no_active
-    assert (
-        f"|  | {test_scene.sequence} |" in rendered_output_no_active
-    )  # Marker and sequence
+    # Removed status assertion
+    # Updated row assertion
+    assert f"|  | {test_scene.sequence} |" in rendered_output_no_active
     # Check second scene row (not active)
     assert f"| `{other_scene.id}`" in rendered_output_no_active
     assert f"| {other_scene.title}" in rendered_output_no_active  # Not bold
     assert f"| {other_scene.description}" in rendered_output_no_active
-    assert f"| {other_scene.status.value}" in rendered_output_no_active
-    assert (
-        f"|  | {other_scene.sequence} |" in rendered_output_no_active
-    )  # Marker and sequence
+    # Removed status assertion
+    # Updated row assertion
+    assert f"|  | {other_scene.sequence} |" in rendered_output_no_active
     assert call_kwargs == {"highlight": False, "markup": False}
 
 
@@ -430,7 +428,7 @@ def test_display_game_info_markdown(
     """Test displaying game info as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         test_game = create_test_game(session)
         test_act = create_test_act(session, game_id=test_game.id)
         test_scene = create_test_scene(session, act_id=test_act.id, is_active=True)
@@ -511,7 +509,7 @@ def test_display_interpretation_set_markdown(
     """Tests the Markdown rendering of an InterpretationSet."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -607,7 +605,7 @@ def test_display_scene_info_markdown(
     """Test displaying scene info as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id, sequence=1, title="Test Act")
         test_scene = create_test_scene(
@@ -615,14 +613,10 @@ def test_display_scene_info_markdown(
             act_id=act.id,
             title="Detailed Scene",
             description="Scene Description.",
-            status=SceneStatus.ACTIVE,
+            # Removed status
         )
-        # REMOVED: Refresh scene to load act relationship
-        # session.refresh(test_scene, attribute_names=["act"]) # <- Remove this line
-
-        # --- Add this line ---
-        session.flush()  # Ensure timestamps and relationships are loaded before display
-        # --- End of added line ---
+        # Ensure relationships are loaded before display
+        session.flush()
 
         renderer.display_scene_info(test_scene)
 
@@ -633,14 +627,14 @@ def test_display_scene_info_markdown(
         # Assert key components
         act_title = test_scene.act.title or "Untitled Act"
         act_info = f"Act {test_scene.act.sequence}: {act_title}"
-        status_indicator = " ✓" if test_scene.status == SceneStatus.COMPLETED else ""
 
+        # Updated header assertion (no status indicator)
         assert (
-            f"### Scene {test_scene.sequence}: {test_scene.title}{status_indicator} (`{test_scene.id}`)"
+            f"### Scene {test_scene.sequence}: {test_scene.title} (`{test_scene.id}`)"
             in rendered_output
         )
         assert test_scene.description in rendered_output
-        assert f"*   **Status:** {test_scene.status.value}" in rendered_output
+        # Removed status assertion
         assert f"*   **Act:** {act_info}" in rendered_output
         if test_scene.created_at:
             assert (
@@ -669,7 +663,7 @@ def test_display_acts_table_markdown(
     """Test displaying a list of acts as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         test_act = create_test_act(
             session,
@@ -755,7 +749,7 @@ def test_display_act_info_markdown(
     """Test displaying act info as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         test_game = create_test_game(session, name="Act Info Game")
         test_act = create_test_act(
             session, game_id=test_game.id, title="Act With Scene", sequence=1
@@ -806,8 +800,9 @@ def test_display_act_info_markdown(
         scenes_table_args, scenes_table_kwargs = calls[2]
         rendered_scenes_table = scenes_table_args[0]
         assert "### Scenes" in rendered_scenes_table
+        # Updated header check
         assert (
-            "| ID | Title | Description | Status | Current | Sequence |"
+            "| ID | Title | Description | Current | Sequence |"
             in rendered_scenes_table
         )
         assert (
@@ -825,7 +820,7 @@ def test_display_act_info_no_scenes_markdown(
     """Test displaying act info with no scenes as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         test_game = create_test_game(session, name="No Scene Game")
         test_act = create_test_act(
             session, game_id=test_game.id, title="Act Without Scene", sequence=1
@@ -893,7 +888,7 @@ def test_display_interpretation_sets_table_markdown(
     """Test displaying interpretation sets table as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         test_scene = create_test_scene(session, act_id=act.id, title="Interp Scene")
@@ -973,7 +968,7 @@ def test_display_interpretation_status_markdown(
     """Test displaying interpretation status as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -1029,7 +1024,7 @@ def test_display_act_ai_generation_results_markdown(
     renderer = MarkdownRenderer(mock_console)
     results = {"title": "AI Title", "summary": "AI Summary"}
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         test_act = create_test_act(
             session,
@@ -1072,7 +1067,7 @@ def test_display_act_completion_success_markdown(
     """Test displaying act completion success as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context as session:
+    with session_context() as session:
         game = create_test_game(session)
         test_act = create_test_act(
             session,
