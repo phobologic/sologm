@@ -2,7 +2,7 @@
 
 # Standard library imports
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 from unittest.mock import MagicMock
 
 # Third-party imports
@@ -49,12 +49,14 @@ def mock_config_no_api_key() -> MagicMock:
         )
         if key == "anthropic_api_key":
             logger.debug(
-                f"[Fixture mock_config_no_api_key] Mock config returning None for key: {key}"
+                f"[Fixture mock_config_no_api_key] Mock config returning None "
+                f"for key: {key}"
             )
             return None
         # For other keys, maybe return default or raise an error if unexpected
         logger.debug(
-            f"[Fixture mock_config_no_api_key] Mock config returning default for key: {key}"
+            f"[Fixture mock_config_no_api_key] Mock config returning default "
+            f"for key: {key}"
         )
         return default
 
@@ -77,9 +79,6 @@ def db_engine() -> Generator[Engine, None, None]:
     Base.metadata.create_all(engine)
     yield engine
     engine.dispose()
-
-
-# Step 4.1: Remove db_session Fixture
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -189,8 +188,9 @@ def create_test_game(
         session_context: Fixture to provide the database session context.
 
     Returns:
-        A callable function `_create_game(name="...", description="...", is_active=True)`
-        that creates and returns a persisted Game instance within the provided session.
+        A callable function `_create_game(name="...", description="...",
+        is_active=True)` that creates and returns a persisted Game instance
+        within the provided session.
     """
 
     def _create_game(
@@ -242,7 +242,8 @@ def create_test_act(
             if sequence is not None:
                 act.sequence = sequence
                 session.add(act)
-                session.flush()  # Keep flush here as sequence is manually set outside manager.
+                session.flush()  # Keep flush here as sequence is manually
+                # set outside manager.
 
             # No merge needed as the object is already session-bound via the manager.
             return act
@@ -281,14 +282,18 @@ def create_test_scene(
 
             # Refresh relationships to ensure they are loaded while the object is
             # known to be persistent within this session context.
-            # Flushing ensures the object state is synchronized with the DB before refresh.
+            # Flushing ensures the object state is synchronized with the DB
+            # before refresh.
             try:
-                session.flush()  # Flush *before* refresh to ensure state is synchronized.
-                # Refresh common relationships typically needed immediately after creation.
+                session.flush()  # Flush *before* refresh to ensure state is
+                # synchronized.
+                # Refresh common relationships typically needed immediately
+                # after creation.
                 session.refresh(scene, attribute_names=["act"])
             except Exception as e:
                 logger.warning(
-                    "Warning: Error refreshing relationships in create_test_scene factory: %s",
+                    "Warning: Error refreshing relationships in "
+                    "create_test_scene factory: %s",
                     e,
                 )
                 # Log and continue for now, but this might hide issues in tests.
@@ -335,7 +340,8 @@ def create_test_event(
                 )
             except Exception as e:
                 logger.warning(
-                    "Warning: Error refreshing relationships in create_test_event factory: %s",
+                    "Warning: Error refreshing relationships in "
+                    "create_test_event factory: %s",
                     e,
                 )
             return event
@@ -384,11 +390,13 @@ def create_test_interpretation_set(
                 )
             except Exception as e:
                 logger.warning(
-                    "Warning: Error refreshing relationships in create_test_interpretation_set factory: %s",
+                    "Warning: Error refreshing relationships in "
+                    "create_test_interpretation_set factory: %s",
                     e,
                 )
             logger.warning(
-                "create_test_interpretation_set fixture is using placeholder implementation."
+                "create_test_interpretation_set fixture is using placeholder "
+                "implementation."
             )
             return interp_set
 
@@ -432,11 +440,13 @@ def create_test_interpretation(
                 session.refresh(interp, attribute_names=["interpretation_set", "event"])
             except Exception as e:
                 logger.warning(
-                    "Warning: Error refreshing relationships in create_test_interpretation factory: %s",
+                    "Warning: Error refreshing relationships in "
+                    "create_test_interpretation factory: %s",
                     e,
                 )
             logger.warning(
-                "create_test_interpretation fixture is using placeholder implementation."
+                "create_test_interpretation fixture is using placeholder "
+                "implementation."
             )
             return interp
 
