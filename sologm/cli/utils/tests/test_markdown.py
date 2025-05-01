@@ -13,7 +13,7 @@ from sologm.cli.utils.markdown import (
 
 # Import factory function
 from sologm.core.factory import create_all_managers
-from sologm.models.scene import SceneStatus
+# SceneStatus removed from models
 
 
 def test_generate_event_markdown():
@@ -123,9 +123,7 @@ def test_generate_act_markdown(
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         # Add scenes to test their inclusion
-        # REMOVED sequence=1 argument
         scene1 = create_test_scene(session, act_id=act.id, title="First Scene")
-        # REMOVED sequence=2 argument
         scene2 = create_test_scene(session, act_id=act.id, title="Second Scene")
 
         # Test basic act markdown
@@ -135,8 +133,7 @@ def test_generate_act_markdown(
         assert isinstance(result, list)
         assert any(f"## Act {act.sequence}: {act.title}" in line for line in result)
         assert any(act.summary in line for line in result)
-        # Check if scenes are included (sequence will be assigned automatically)
-        # Refresh scene objects to ensure sequence numbers are loaded if needed for assertion
+        # Refresh scene objects to ensure sequence numbers are loaded before assertion.
         session.refresh(scene1)
         session.refresh(scene2)
         assert any(
@@ -184,10 +181,9 @@ def test_generate_game_markdown_with_hierarchy(
         )
         scene1_1 = create_test_scene(session, act_id=act1.id, title="Opening Scene")
         scene1_2 = create_test_scene(
-            session,
             act_id=act1.id,
             title="Completed Scene",
-            status=SceneStatus.COMPLETED,
+            # status=SceneStatus.COMPLETED, # Removed status argument
         )
         scene2_1 = create_test_scene(session, act_id=act2.id, title="Another Scene")
         event1 = create_test_event(
@@ -226,25 +222,23 @@ def test_generate_game_markdown_with_hierarchy(
     # Check that all scenes are included
     for scene in scenes:
         scene_title = f"### Scene {scene.sequence}: {scene.title}"
-        if scene.status == SceneStatus.COMPLETED:
-            scene_title += " ✓"
+        # Status indicator '✓' removed
         assert scene_title in result_str
 
-    # Check that all events are included (simple check)
+    # Check that all events are included
     for event in events:
-        # Check only the first line of the event description for simplicity
         first_line_desc = event.description.split("\n")[0]
         assert first_line_desc in result_str
-        # Check source indicators
+        # Check source indicators are present for relevant events
         if event.source == "oracle":
             assert f"🔮: {first_line_desc}" in result_str
         elif event.source == "dice":
             assert f"🎲: {first_line_desc}" in result_str
 
     # Test with metadata
-    with session_context as session:  # Re-enter context if needed for managers
+    with session_context as session:
         managers = create_all_managers(session)
-        # Re-fetch game if necessary, though it should still be in scope
+        # Re-fetch game to ensure it's attached to the current session if needed.
         game = session.get(type(game), game.id)
         result_str_meta = generate_game_markdown(
             game, managers.scene, managers.event, include_metadata=True
@@ -283,8 +277,7 @@ def test_generate_game_markdown_empty(session_context, create_test_game):
 
     assert "# Empty Game" in result
     assert "Game with no acts" in result
-    # No acts should be included
-    assert "## Act" not in result
+    assert "## Act" not in result # Ensure no act headers are present
 
 
 def test_generate_concepts_header():
@@ -305,7 +298,7 @@ def test_generate_concepts_header():
     # Check for specific content
     assert any("🔮 Oracle interpretations" in line for line in header)
     assert any("🎲 Dice rolls" in line for line in header)
-    assert any("✓ indicates completed scenes" in line for line in header)
+    # Removed check for completion indicator line
 
 
 # Updated test using session_context and factory fixtures

@@ -12,7 +12,7 @@ from sologm.core.scene import SceneManager
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game
-from sologm.models.scene import Scene, SceneStatus
+from sologm.models.scene import Scene  # SceneStatus removed from models
 from sologm.utils.datetime_utils import format_datetime
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ def generate_concepts_header() -> List[str]:
         "- A sequence number within its act",
         "- A title",
         "- A description",
-        "- A status (✓ indicates completed scenes)",
+        # Status field removed from Scene model
         "",
         "## Events",
         "Individual moments, actions, or occurrences within a scene. Events can come from:",
@@ -55,6 +55,7 @@ def generate_concepts_header() -> List[str]:
         "- Manual entries (player-created events)",
         "",
         "Events form the core narrative of your game, showing what happened in each scene.",
+        # Completion indicator '✓' removed as Scene status is gone.
         "",
         "---",
         "",
@@ -86,7 +87,6 @@ def generate_game_markdown(
     """
     content = []
 
-    # Add concepts header if requested
     if include_concepts:
         content.extend(generate_concepts_header())
 
@@ -94,7 +94,6 @@ def generate_game_markdown(
     content.append(f"# {game.name}")
     content.append("")
 
-    # Handle multi-line game description by ensuring each line is properly formatted
     for line in game.description.split("\n"):
         content.append(line)
     content.append("")
@@ -104,13 +103,11 @@ def generate_game_markdown(
         content.append(f"*Created: {format_datetime(game.created_at)}*")
         content.append("")
 
-    # Process each act in sequence order
+    # Process acts if they exist and are loaded.
     if hasattr(game, "acts") and game.acts:
-        # Sort acts by sequence
         acts = sorted(game.acts, key=lambda a: a.sequence)
 
         for act in acts:
-            # Generate markdown for this act
             act_content = generate_act_markdown(
                 act, scene_manager, event_manager, include_metadata
             )
@@ -142,7 +139,6 @@ def generate_act_markdown(
     """
     content = []
 
-    # Add act header
     act_title = act.title or "Untitled Act"
     content.append(f"## Act {act.sequence}: {act_title}")
     content.append("")
@@ -179,8 +175,8 @@ def generate_scene_markdown(
     """Generate markdown content for a scene with its events.
 
     Creates a markdown section for a single scene, including its title, description,
-    completion status, and all events that occurred within it. Events are sorted
-    chronologically by creation date.
+    and all events that occurred within it. Events are sorted chronologically by
+    creation date.
 
     Args:
         scene: The scene to export
@@ -192,9 +188,8 @@ def generate_scene_markdown(
     """
     content = []
 
-    # Scene header
-    status_indicator = " ✓" if scene.status == SceneStatus.COMPLETED else ""
-    content.append(f"### Scene {scene.sequence}: {scene.title}{status_indicator}")
+    # Scene header - status indicator removed.
+    content.append(f"### Scene {scene.sequence}: {scene.title}")
     content.append("")
 
     # Handle multi-line scene description
@@ -215,11 +210,9 @@ def generate_scene_markdown(
     events.sort(key=lambda e: e.created_at)
 
     if events:
-        # Ensure there's a line break before the Events header
         content.append("### Events")
         content.append("")
 
-        # Process each event without adding extra line breaks between them
         for event in events:
             content.extend(generate_event_markdown(event, include_metadata))
 
@@ -245,7 +238,6 @@ def generate_event_markdown(
     """
     content = []
 
-    # Format source indicator
     source_indicator = ""
     if event.source == "oracle":
         source_indicator = " 🔮:"
@@ -265,9 +257,7 @@ def generate_event_markdown(
             content.append(f"  {indent} {line}")
 
     if include_metadata:
-        # Format any metadata as indented content
         metadata_lines = []
-
         metadata_lines.append(f"  - Source: {event.source_name}")
 
         if metadata_lines:
