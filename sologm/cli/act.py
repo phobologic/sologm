@@ -406,8 +406,6 @@ def edit_act(
             final_title = title
             final_summary = summary
 
-        # Update the act using the actual ID from the found object
-        # This block is now correctly indented at the same level as the 'if' block above
         updated_act = game_manager.act_manager.edit_act(
             act_id=act_to_edit.id, # Pass the actual UUID here
             title=final_title,
