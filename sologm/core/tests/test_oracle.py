@@ -250,9 +250,13 @@ Test Description"""
         create_test_act: Callable,
         create_test_scene: Callable,
         mock_anthropic_client: MagicMock,
+        initialize_event_sources: Callable[[Session], None],  # Add this fixture
     ) -> None:
         """Test selecting an interpretation."""
         with session_context as session:
+            # Initialize event sources first
+            initialize_event_sources(session)  # Call the initializer here
+
             managers = create_all_managers(session)
             game, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -288,6 +292,10 @@ Test Description"""
             # Get the oracle source
             oracle_source = (
                 session.query(EventSource).filter(EventSource.name == "oracle").first()
+            )
+            # Add an assertion to ensure the source was found after initialization
+            assert oracle_source is not None, (
+                "Oracle event source not found after initialization"
             )
 
             events = (
