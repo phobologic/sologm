@@ -38,7 +38,7 @@ The feature will be implemented by adding a new command to `sologm.cli.act`. Thi
 *   **Context Validation:**
     *   Get `renderer` and `console` from `ctx.obj`.
     *   Use `with get_db_context() as session:` for session management.
-    *   Instantiate `GameManager` and `ActManager` with the session.
+    *   Inside the `with` block, instantiate `GameManager` and `ActManager` with the session.
     *   Validate active game using `game_manager.get_active_game()`. Display error via `renderer` and exit if none.
     *   Validate active act using `act_manager.validate_active_act()`. Display error via `renderer` and exit if none.
 *   **User Guidance Collection:**
@@ -62,10 +62,11 @@ The feature will be implemented by adding a new command to `sologm.cli.act`. Thi
     *   **Edit (`E`):**
         *   Call `click.edit(generated_markdown_string)`.
         *   If the result is not `None` and different from the original, update `generated_markdown_string`. Display the edited version using `renderer.display_markdown()`. Break the loop.
-        *   If `None` or unchanged, display a message via `renderer` and continue the loop.
+        *   If `None` or unchanged, display a message via `renderer` ("No changes detected.") and continue the loop.
     *   **Regenerate (`R`):**
-        *   Call a new helper function `_collect_narrative_regeneration_feedback(previous_narrative, act, game, console, renderer, original_guidance)` similar to the one in `complete --ai`. This function uses `edit_structured_data` to get feedback and potentially updated guidance. Return `None` if cancelled.
-        *   If feedback is collected:
+        *   Call a new helper function `_collect_narrative_regeneration_feedback(previous_narrative, act, game, console, renderer, original_guidance)` following the pattern of `_collect_regeneration_feedback` in `complete --ai`. This function uses `edit_structured_data` to get feedback and potentially updated guidance. Return `None` if cancelled.
+        *   If feedback is collected (feedback dictionary returned):
+            *   Extract `feedback` and potentially updated `guidance` from the dictionary.
             *   Call `act_manager.generate_act_narrative(act_id, updated_guidance, previous_narrative, feedback)`.
             *   Update `generated_markdown_string` with the new result.
             *   Display the new result via `renderer.display_markdown()`.
@@ -95,14 +96,15 @@ The feature will be implemented by adding a new command to `sologm.cli.act`. Thi
 ### 4.3. `sologm.core.act.ActManager`
 
 *   **New Method:** `prepare_act_data_for_narrative(self, act_id: str) -> Dict`:
-    *   Similar to `prepare_act_data_for_summary`, but fetches additional data:
-        *   Fetch the `Act` instance.
-        *   Fetch the associated `Game`.
-        *   Fetch the *previous* act in sequence for the same game (`session.query(Act).filter(...).order_by(Act.sequence.desc()).first()`). Get its summary.
-        *   Fetch all `Scenes` for the act, ordered by `sequence`.
-        *   For each scene, fetch all `Events`, ordered by `created_at`. Include `source_name` and `timestamp`.
+    *   Uses the manager's `self._session` directly for data fetching (similar pattern to `prepare_act_data_for_summary`). Does *not* need `_execute_db_operation`.
+    *   Fetches the target `Act` instance using `get_entity_or_error`.
+    *   Fetches the associated `Game` using `get_entity_or_error`.
+    *   Fetches the *previous* act in sequence for the same game (`self._session.query(Act).filter(...).order_by(Act.sequence.desc()).first()`). Get its summary.
+    *   Fetches all `Scenes` for the act using `scene_manager.list_scenes`, ordered by `sequence`.
+    *   For each scene, fetches all `Events` using `event_manager.list_events`, ordered by `created_at`. Include `source_name` and `timestamp`.
     *   Return a dictionary containing structured `game`, `act`, `previous_act_summary`, and `scenes` (with nested `events`).
 *   **New Method:** `generate_act_narrative(self, act_id: str, user_guidance: Optional[Dict] = None, previous_narrative: Optional[str] = None, feedback: Optional[str] = None) -> str`:
+    *   Orchestrates the narrative generation process. Does *not* need `_execute_db_operation` itself.
     *   Call `prepare_act_data_for_narrative(act_id)`.
     *   Add `user_guidance` to the prepared data dictionary.
     *   If `previous_narrative` and `feedback` are provided:
@@ -134,7 +136,7 @@ The feature will be implemented by adding a new command to `sologm.cli.act`. Thi
     *   Implement `display_markdown`:
         *   Simply print the `markdown_content` string directly using `_print_markdown`.
     *   Implement `display_narrative_feedback_prompt`:
-        *   Use `click.prompt()` with `type=click.Choice(...)` and `show_choices=True`. Handle potential `Abort`. Return the uppercase choice or `None`.
+        *   Use `click.prompt()` with `type=click.Choice(["A", "E", "R", "C"], case_sensitive=False)`, `prompt="Choose action [A]ccept/[E]dit/[R]egenerate/[C]ancel"`, `show_choices=True`, `default="A"`. Handle potential `click.Abort`. Return the uppercase choice or `None`.
 
 ## 5. Data Structures
 
@@ -154,17 +156,17 @@ The feature will be implemented by adding a new command to `sologm.cli.act`. Thi
         "act": {"id": str, "sequence": int, "title": Optional[str], "summary": Optional[str]},
         "previous_act_summary": Optional[str],
         "scenes": [
-            {
+            { # Scene dictionary
                 "id": str,
                 "sequence": int,
                 "title": Optional[str],
                 "description": Optional[str],
                 "events": [
-                    {
+                    { # Event dictionary
                         "id": str,
                         "description": str,
                         "source_name": str,
-                        "created_at": str # ISO format
+                        "created_at": str # ISO format string
                     },
                     # ... more events
                 ]
