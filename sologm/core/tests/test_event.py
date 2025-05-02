@@ -144,8 +144,12 @@ class TestEventManager:
             )
 
             # Add some events using the factory
-            create_test_event(session=session, scene_id=scene.id, description="First event")
-            create_test_event(session=session, scene_id=scene.id, description="Second event")
+            create_test_event(
+                session=session, scene_id=scene.id, description="First event"
+            )
+            create_test_event(
+                session=session, scene_id=scene.id, description="Second event"
+            )
 
             events = managers.event.list_events()  # Uses active scene by default
             assert len(events) == 2
@@ -171,8 +175,12 @@ class TestEventManager:
             )
 
             # Add some events
-            create_test_event(session=session, scene_id=scene.id, description="First event")
-            create_test_event(session=session, scene_id=scene.id, description="Second event")
+            create_test_event(
+                session=session, scene_id=scene.id, description="First event"
+            )
+            create_test_event(
+                session=session, scene_id=scene.id, description="Second event"
+            )
 
             events = managers.event.list_events(scene_id=scene.id)
             assert len(events) == 2
@@ -198,9 +206,15 @@ class TestEventManager:
             )
 
             # Add some events
-            create_test_event(session=session, scene_id=scene.id, description="First event")
-            create_test_event(session=session, scene_id=scene.id, description="Second event")
-            create_test_event(session=session, scene_id=scene.id, description="Third event")
+            create_test_event(
+                session=session, scene_id=scene.id, description="First event"
+            )
+            create_test_event(
+                session=session, scene_id=scene.id, description="Second event"
+            )
+            create_test_event(
+                session=session, scene_id=scene.id, description="Third event"
+            )
 
             events = managers.event.list_events(scene_id=scene.id, limit=2)
             assert len(events) == 2
