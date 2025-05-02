@@ -27,6 +27,10 @@ if TYPE_CHECKING:
     from sologm.models.oracle import Interpretation, InterpretationSet
 
 
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+
+
 logger = logging.getLogger(__name__)
 
 
