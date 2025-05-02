@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Callable
 import pytest
 from sqlalchemy.orm import Session
 
-import uuid # Added for dummy IDs
+import uuid  # Added for dummy IDs
 
 from sologm.core.factory import create_all_managers
 from sologm.database.session import SessionContext
@@ -57,7 +57,7 @@ class TestScene:
         with session_context as session:
             # Create prerequisite Game and Act records to satisfy FK constraints
             dummy_game_id = str(uuid.uuid4())
-            dummy_act_id = "test-act" # Use the ID needed by the scene
+            dummy_act_id = "test-act"  # Use the ID needed by the scene
 
             dummy_game = Game(id=dummy_game_id, name="Dummy Game", description="...")
             session.add(dummy_game)
@@ -68,7 +68,7 @@ class TestScene:
                 game_id=dummy_game_id,
                 title="Dummy Act",
                 sequence=1,
-                slug=f"act-1-dummy-act", # Generate a slug
+                slug=f"act-1-dummy-act",  # Generate a slug
             )
             session.add(dummy_act)
             # Flush prerequisites before creating the scene that depends on them
@@ -76,7 +76,7 @@ class TestScene:
 
             # Use Scene.create directly
             scene = Scene.create(
-                act_id=dummy_act_id, # Use the ID of the created dummy act
+                act_id=dummy_act_id,  # Use the ID of the created dummy act
                 title="Test Scene",
                 description="A test scene",
                 sequence=1,
