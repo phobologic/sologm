@@ -173,6 +173,7 @@ def test_generate_game_markdown_with_hierarchy(
         )
         scene1_1 = create_test_scene(session, act_id=act1.id, title="Opening Scene")
         scene1_2 = create_test_scene(
+            session,  # <-- Added session argument
             act_id=act1.id,
             title="Completed Scene",
         )
