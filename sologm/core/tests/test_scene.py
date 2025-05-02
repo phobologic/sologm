@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 # Helper function to create base test data within a session context
 def create_base_test_data(
-    session: Session, # Added session parameter
+    session: Session,  # Added session parameter
     create_test_game: Callable[..., Game],
     create_test_act: Callable[..., Act],
     game_active: bool = True,
@@ -87,7 +87,7 @@ class TestSceneManager:
     ) -> None:
         """Test creating a new scene using the manager (makes active by default)."""
         with session_context as session:
-            initialize_event_sources(session) # Initialize sources within the session
+            initialize_event_sources(session)  # Initialize sources within the session
             managers: "AllManagers" = create_all_managers(session)
             # Pass session to helper
             _, act = create_base_test_data(session, create_test_game, create_test_act)
@@ -522,7 +522,9 @@ class TestSceneManager:
             initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
             # Pass session to helper
-            game, act = create_base_test_data(session, create_test_game, create_test_act)
+            game, act = create_base_test_data(
+                session, create_test_game, create_test_act
+            )
             # Create a scene to be active using the manager
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Active Scene", description="Test Description"
@@ -959,6 +961,8 @@ class TestSceneManager:
             session.flush()  # Ensure the change is persisted before the next create call
 
             # Create the second act using the factory, passing the session
-            act2 = create_test_act(session=session, game_id=act.game_id, title="Act Two")
+            act2 = create_test_act(
+                session=session, game_id=act.game_id, title="Act Two"
+            )
             most_recent_act2 = managers.scene.get_most_recent_scene(act2.id)
             assert most_recent_act2 is None
