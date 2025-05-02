@@ -35,25 +35,8 @@ def upgrade() -> None:
     # --- Acts Table ---
     print("Modifying 'acts' table...")
     with op.batch_alter_table("acts", schema=None) as batch_op:
-        # Attempt to drop existing FK constraint (name might be inferred or default)
-        # If this fails, you might need to find the exact constraint name from your DB schema
-        try:
-            batch_op.drop_constraint(
-                "fk_acts_game_id_games", type_="foreignkey"
-            )  # Provide a potential name
-            print("Dropped existing FK constraint 'fk_acts_game_id_games' on 'acts'.")
-        except Exception:
-            # Try dropping with None if named drop failed
-            try:
-                batch_op.drop_constraint(None, type_="foreignkey")
-                print("Dropped existing FK constraint (using None) on 'acts'.")
-            except Exception as e_none:
-                print(
-                    f"Could not drop existing FK on 'acts' (tried named and None): {e_none}. Assuming it doesn't exist or has a different name."
-                )
-                pass  # Continue if drop fails, maybe constraint didn't exist or name is different
-
-        # Create the new FK constraint with ON DELETE CASCADE
+        # Define the target state: Create the FK constraint with ON DELETE CASCADE
+        # No need to explicitly drop the old one within the batch context for SQLite.
         batch_op.create_foreign_key(
             "fk_acts_game_id_games",  # Explicit constraint name
             "games",
@@ -68,23 +51,7 @@ def upgrade() -> None:
     # --- Dice Rolls Table ---
     print("Modifying 'dice_rolls' table...")
     with op.batch_alter_table("dice_rolls", schema=None) as batch_op:
-        try:
-            batch_op.drop_constraint(
-                "fk_dice_rolls_scene_id_scenes", type_="foreignkey"
-            )
-            print(
-                "Dropped existing FK constraint 'fk_dice_rolls_scene_id_scenes' on 'dice_rolls'."
-            )
-        except Exception:
-            try:
-                batch_op.drop_constraint(None, type_="foreignkey")
-                print("Dropped existing FK constraint (using None) on 'dice_rolls'.")
-            except Exception as e_none:
-                print(
-                    f"Could not drop existing FK on 'dice_rolls' (tried named and None): {e_none}. Assuming it doesn't exist or has a different name."
-                )
-                pass
-
+        # Define the target state: Create the FK constraint with ON DELETE CASCADE
         batch_op.create_foreign_key(
             "fk_dice_rolls_scene_id_scenes",  # Explicit constraint name
             "scenes",
@@ -99,26 +66,7 @@ def upgrade() -> None:
     # --- Events Table ---
     print("Modifying 'events' table...")
     with op.batch_alter_table("events", schema=None) as batch_op:
-        try:
-            # Assuming the original FK was on scene_id to scenes.id
-            batch_op.drop_constraint("fk_events_scene_id_scenes", type_="foreignkey")
-            print(
-                "Dropped existing FK constraint 'fk_events_scene_id_scenes' on 'events'."
-            )
-        except Exception:
-            try:
-                batch_op.drop_constraint(
-                    None, type_="foreignkey"
-                )  # Try dropping the scene_id FK
-                print(
-                    "Dropped existing FK constraint (using None for scene_id) on 'events'."
-                )
-            except Exception as e_none:
-                print(
-                    f"Could not drop existing FK on 'events' for scene_id (tried named and None): {e_none}. Assuming it doesn't exist or has a different name."
-                )
-                pass
-
+        # Define the target state: Create the FK constraint with ON DELETE CASCADE
         batch_op.create_foreign_key(
             "fk_events_scene_id_scenes",  # Explicit constraint name
             "scenes",
@@ -134,25 +82,7 @@ def upgrade() -> None:
     # --- Interpretation Sets Table ---
     print("Modifying 'interpretation_sets' table...")
     with op.batch_alter_table("interpretation_sets", schema=None) as batch_op:
-        try:
-            batch_op.drop_constraint(
-                "fk_interpretation_sets_scene_id_scenes", type_="foreignkey"
-            )
-            print(
-                "Dropped existing FK constraint 'fk_interpretation_sets_scene_id_scenes' on 'interpretation_sets'."
-            )
-        except Exception:
-            try:
-                batch_op.drop_constraint(None, type_="foreignkey")
-                print(
-                    "Dropped existing FK constraint (using None) on 'interpretation_sets'."
-                )
-            except Exception as e_none:
-                print(
-                    f"Could not drop existing FK on 'interpretation_sets' (tried named and None): {e_none}. Assuming it doesn't exist or has a different name."
-                )
-                pass
-
+        # Define the target state: Create the FK constraint with ON DELETE CASCADE
         batch_op.create_foreign_key(
             "fk_interpretation_sets_scene_id_scenes",  # Explicit constraint name
             "scenes",
@@ -167,25 +97,7 @@ def upgrade() -> None:
     # --- Interpretations Table ---
     print("Modifying 'interpretations' table...")
     with op.batch_alter_table("interpretations", schema=None) as batch_op:
-        try:
-            batch_op.drop_constraint(
-                "fk_interpretations_set_id_interpretation_sets", type_="foreignkey"
-            )
-            print(
-                "Dropped existing FK constraint 'fk_interpretations_set_id_interpretation_sets' on 'interpretations'."
-            )
-        except Exception:
-            try:
-                batch_op.drop_constraint(None, type_="foreignkey")
-                print(
-                    "Dropped existing FK constraint (using None) on 'interpretations'."
-                )
-            except Exception as e_none:
-                print(
-                    f"Could not drop existing FK on 'interpretations' (tried named and None): {e_none}. Assuming it doesn't exist or has a different name."
-                )
-                pass
-
+        # Define the target state: Create the FK constraint with ON DELETE CASCADE
         batch_op.create_foreign_key(
             "fk_interpretations_set_id_interpretation_sets",  # Explicit constraint name
             "interpretation_sets",
@@ -200,19 +112,7 @@ def upgrade() -> None:
     # --- Scenes Table ---
     print("Modifying 'scenes' table...")
     with op.batch_alter_table("scenes", schema=None) as batch_op:
-        try:
-            batch_op.drop_constraint("fk_scenes_act_id_acts", type_="foreignkey")
-            print("Dropped existing FK constraint 'fk_scenes_act_id_acts' on 'scenes'.")
-        except Exception:
-            try:
-                batch_op.drop_constraint(None, type_="foreignkey")
-                print("Dropped existing FK constraint (using None) on 'scenes'.")
-            except Exception as e_none:
-                print(
-                    f"Could not drop existing FK on 'scenes' (tried named and None): {e_none}. Assuming it doesn't exist or has a different name."
-                )
-                pass
-
+        # Define the target state: Create the FK constraint with ON DELETE CASCADE
         batch_op.create_foreign_key(
             "fk_scenes_act_id_acts",  # Explicit constraint name
             "acts",
@@ -257,11 +157,8 @@ def downgrade() -> None:
         )  # Added server_default for non-null column
         print("Added column 'status' back to 'scenes'.")
 
-        # Drop the CASCADE constraint
-        batch_op.drop_constraint("fk_scenes_act_id_acts", type_="foreignkey")
-        print("Dropped FK constraint 'fk_scenes_act_id_acts' from 'scenes'.")
-
-        # Recreate the original constraint without CASCADE
+        # Define the target state: Recreate the original constraint without CASCADE
+        # No need to explicitly drop the CASCADE one first within the batch context.
         batch_op.create_foreign_key(
             "fk_scenes_act_id_acts",  # Use the same name for consistency
             "acts",
@@ -276,12 +173,7 @@ def downgrade() -> None:
     # --- Interpretations Table ---
     print("Reverting 'interpretations' table...")
     with op.batch_alter_table("interpretations", schema=None) as batch_op:
-        batch_op.drop_constraint(
-            "fk_interpretations_set_id_interpretation_sets", type_="foreignkey"
-        )
-        print(
-            "Dropped FK constraint 'fk_interpretations_set_id_interpretation_sets' from 'interpretations'."
-        )
+        # Define the target state: Recreate the original constraint without CASCADE
         batch_op.create_foreign_key(
             "fk_interpretations_set_id_interpretation_sets",
             "interpretation_sets",
@@ -295,12 +187,7 @@ def downgrade() -> None:
     # --- Interpretation Sets Table ---
     print("Reverting 'interpretation_sets' table...")
     with op.batch_alter_table("interpretation_sets", schema=None) as batch_op:
-        batch_op.drop_constraint(
-            "fk_interpretation_sets_scene_id_scenes", type_="foreignkey"
-        )
-        print(
-            "Dropped FK constraint 'fk_interpretation_sets_scene_id_scenes' from 'interpretation_sets'."
-        )
+        # Define the target state: Recreate the original constraint without CASCADE
         batch_op.create_foreign_key(
             "fk_interpretation_sets_scene_id_scenes", "scenes", ["scene_id"], ["id"]
         )
@@ -311,8 +198,7 @@ def downgrade() -> None:
     # --- Events Table ---
     print("Reverting 'events' table...")
     with op.batch_alter_table("events", schema=None) as batch_op:
-        batch_op.drop_constraint("fk_events_scene_id_scenes", type_="foreignkey")
-        print("Dropped FK constraint 'fk_events_scene_id_scenes' from 'events'.")
+        # Define the target state: Recreate the original constraint without CASCADE
         batch_op.create_foreign_key(
             "fk_events_scene_id_scenes", "scenes", ["scene_id"], ["id"]
         )
@@ -323,10 +209,7 @@ def downgrade() -> None:
     # --- Dice Rolls Table ---
     print("Reverting 'dice_rolls' table...")
     with op.batch_alter_table("dice_rolls", schema=None) as batch_op:
-        batch_op.drop_constraint("fk_dice_rolls_scene_id_scenes", type_="foreignkey")
-        print(
-            "Dropped FK constraint 'fk_dice_rolls_scene_id_scenes' from 'dice_rolls'."
-        )
+        # Define the target state: Recreate the original constraint without CASCADE
         batch_op.create_foreign_key(
             "fk_dice_rolls_scene_id_scenes", "scenes", ["scene_id"], ["id"]
         )
@@ -337,8 +220,7 @@ def downgrade() -> None:
     # --- Acts Table ---
     print("Reverting 'acts' table...")
     with op.batch_alter_table("acts", schema=None) as batch_op:
-        batch_op.drop_constraint("fk_acts_game_id_games", type_="foreignkey")
-        print("Dropped FK constraint 'fk_acts_game_id_games' from 'acts'.")
+        # Define the target state: Recreate the original constraint without CASCADE
         batch_op.create_foreign_key(
             "fk_acts_game_id_games", "games", ["game_id"], ["id"]
         )
