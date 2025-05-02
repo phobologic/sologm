@@ -889,6 +889,12 @@ class TestSceneManager:
             assert most_recent.sequence == 3
 
             # Test with a different act that has no scenes
+            # --- FIX START ---
+            # Deactivate the first act before creating the second one in the same game
+            act.is_active = False
+            session.add(act)
+            session.flush() # Ensure the change is persisted before the next create call
+            # --- FIX END ---
             # Removed session argument from create_test_act call
             act2 = create_test_act(game_id=act.game_id, title="Act Two")
             most_recent_act2 = managers.scene.get_most_recent_scene(act2.id)
