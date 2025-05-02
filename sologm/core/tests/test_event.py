@@ -139,9 +139,9 @@ class TestEventManager:
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Add some events using the factory and session
-            create_test_event(session, scene.id, "First event")
-            create_test_event(session, scene.id, "Second event")
+            # Add some events using the factory
+            create_test_event(scene_id=scene.id, description="First event")
+            create_test_event(scene_id=scene.id, description="Second event")
 
             events = managers.event.list_events()  # Uses active scene by default
             assert len(events) == 2
@@ -165,8 +165,8 @@ class TestEventManager:
             )
 
             # Add some events
-            create_test_event(session, scene.id, "First event")
-            create_test_event(session, scene.id, "Second event")
+            create_test_event(scene_id=scene.id, description="First event")
+            create_test_event(scene_id=scene.id, description="Second event")
 
             events = managers.event.list_events(scene_id=scene.id)
             assert len(events) == 2
@@ -190,9 +190,9 @@ class TestEventManager:
             )
 
             # Add some events
-            create_test_event(session, scene.id, "First event")
-            create_test_event(session, scene.id, "Second event")
-            create_test_event(session, scene.id, "Third event")
+            create_test_event(scene_id=scene.id, description="First event")
+            create_test_event(scene_id=scene.id, description="Second event")
+            create_test_event(scene_id=scene.id, description="Third event")
 
             events = managers.event.list_events(scene_id=scene.id, limit=2)
             assert len(events) == 2
@@ -301,9 +301,9 @@ class TestEventManager:
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Create a test event using factory and session
+            # Create a test event using factory
             logger.debug(f"Creating test event with scene_id={scene.id}")
-            event = create_test_event(session, scene.id, "Test event to retrieve")
+            event = create_test_event(scene_id=scene.id, description="Test event to retrieve")
             logger.debug(
                 f"Created event with id={event.id}, description={event.description}"
             )
@@ -351,7 +351,7 @@ class TestEventManager:
 
             # Create a test event
             logger.debug(f"Creating test event with scene_id={scene.id}")
-            event = create_test_event(session, scene.id, "Original description")
+            event = create_test_event(scene_id=scene.id, description="Original description")
             logger.debug(
                 f"Created event with id={event.id}, description={event.description}"
             )
@@ -395,7 +395,7 @@ class TestEventManager:
 
             # Create a test event
             logger.debug(f"Creating test event with scene_id={scene.id}")
-            event = create_test_event(session, scene.id, "Original description")
+            event = create_test_event(scene_id=scene.id, description="Original description")
             logger.debug(
                 f"Created event with id={event.id}, description={event.description}"
             )
