@@ -3,6 +3,7 @@
 import uuid
 from typing import TYPE_CHECKING, Optional
 
+# Add ondelete="CASCADE" to the ForeignKey import if needed, but it's a string argument
 from sqlalchemy import ForeignKey, Text, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -21,7 +22,10 @@ class Event(Base, TimestampMixin):
     __tablename__ = "events"
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
-    scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
+    # Add ondelete="CASCADE" to the ForeignKey definition
+    scene_id: Mapped[str] = mapped_column(
+        ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False)
     source_id: Mapped[int] = mapped_column(
         ForeignKey("event_sources.id"), nullable=False
@@ -40,6 +44,9 @@ class Event(Base, TimestampMixin):
     @property
     def game(self) -> "Game":
         """Get the game this event belongs to through the scene relationship."""
+        # Add check for scene relationship being loaded
+        if not hasattr(self, "scene") or self.scene is None:
+             raise AttributeError("Scene relationship not loaded on Event object.")
         return self.scene.act.game
 
     @hybrid_property
@@ -50,7 +57,19 @@ class Event(Base, TimestampMixin):
         - Python: Returns the game ID through relationships
         - SQL: Performs a subquery to get the game ID
         """
-        return self.scene.act.game_id
+        # Add check for scene relationship being loaded in Python mode
+        if hasattr(self, "scene") and self.scene is not None:
+            if hasattr(self.scene, "act") and self.scene.act is not None:
+                return self.scene.act.game_id
+            else:
+                 # This path might indicate an issue if accessed when act isn't loaded
+                 # Consider raising or returning None/default based on expected usage
+                 raise AttributeError("Act relationship not loaded on Scene object within Event.")
+        # If accessed in a way where relationships aren't loaded (e.g., direct query)
+        # this part might not be hit directly, relying on the expression below.
+        # However, direct attribute access implies loaded state.
+        # Let's raise for clarity if relationships aren't ready.
+        raise AttributeError("Scene or Act relationship not loaded on Event object.")
 
     @game_id.expression
     def game_id(cls):  # noqa: N805
@@ -68,6 +87,9 @@ class Event(Base, TimestampMixin):
     @property
     def act(self) -> "Act":
         """Get the act this event belongs to through the scene relationship."""
+        # Add check for scene relationship being loaded
+        if not hasattr(self, "scene") or self.scene is None:
+             raise AttributeError("Scene relationship not loaded on Event object.")
         return self.scene.act
 
     @hybrid_property
@@ -78,7 +100,10 @@ class Event(Base, TimestampMixin):
         - Python: Returns the act ID through relationships
         - SQL: Performs a subquery to get the act ID
         """
-        return self.scene.act_id
+         # Add check for scene relationship being loaded in Python mode
+        if hasattr(self, "scene") and self.scene is not None:
+            return self.scene.act_id
+        raise AttributeError("Scene relationship not loaded on Event object.")
 
     @act_id.expression
     def act_id(cls):  # noqa: N805
@@ -109,8 +134,12 @@ class Event(Base, TimestampMixin):
         """Get the name of the event source.
 
         This property provides a convenient way to access the source name.
+        Requires the 'source' relationship to be loaded.
         """
-        return self.source.name if self.source else "unknown"
+        if not hasattr(self, "source") or self.source is None:
+             # This indicates a programming error if accessed when not loaded.
+             raise AttributeError("The 'source' relationship is not loaded on this Event object.")
+        return self.source.name # Removed unnecessary check now that AttributeError is raised
 
     @hybrid_property
     def is_manual(self) -> bool:
@@ -120,6 +149,7 @@ class Event(Base, TimestampMixin):
         - Python: Checks if source_name is 'manual'
         - SQL: Performs a join with EventSource and checks the name
         """
+        # Python implementation relies on source_name property, which checks loading
         return self.source_name.lower() == "manual"
 
     @is_manual.expression
@@ -143,6 +173,7 @@ class Event(Base, TimestampMixin):
         - Python: Checks if source_name is 'oracle'
         - SQL: Performs a join with EventSource and checks the name
         """
+        # Python implementation relies on source_name property
         return self.source_name.lower() == "oracle"
 
     @is_oracle_generated.expression
@@ -166,6 +197,7 @@ class Event(Base, TimestampMixin):
         - Python: Checks if source_name is 'dice'
         - SQL: Performs a join with EventSource and checks the name
         """
+         # Python implementation relies on source_name property
         return self.source_name.lower() == "dice"
 
     @is_dice_generated.expression
