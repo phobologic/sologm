@@ -232,10 +232,10 @@ def create_test_act() -> Callable[..., "Act"]:
         managers = create_all_managers(session)
         act = managers.act.create_act(
             game_id=game_id,
-                title=title,
-                summary=summary,
-                make_active=is_active,
-            )
+            title=title,
+            summary=summary,
+            make_active=is_active,
+        )
         # If sequence was specified, update it directly.
         # No need for add/flush here as the object is already managed by the
         # session passed in, and the manager call above likely flushed.
@@ -274,10 +274,10 @@ def create_test_scene() -> Callable[..., Scene]:
         managers = create_all_managers(session)
         scene = managers.scene.create_scene(
             act_id=act_id,
-                title=title,
-                description=description,
-                make_active=is_active,
-            )
+            title=title,
+            description=description,
+            make_active=is_active,
+        )
 
         # Refresh relationships to ensure they are loaded while the object is
         # known to be persistent within this session context.
@@ -327,10 +327,10 @@ def create_test_event() -> Callable[..., Event]:
         managers = create_all_managers(session)
         event = managers.event.add_event(
             description=description,
-                scene_id=scene_id,
-                source=source,
-                interpretation_id=interpretation_id,
-            )
+            scene_id=scene_id,
+            source=source,
+            interpretation_id=interpretation_id,
+        )
         # No merge needed as the object is already session-bound via the manager.
         try:
             # Refresh relationships to ensure they are loaded.
@@ -385,9 +385,7 @@ def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
         session.add(interp_set)
         session.flush()
         try:
-            session.refresh(
-                interp_set, attribute_names=["scene", "interpretations"]
-            )
+            session.refresh(interp_set, attribute_names=["scene", "interpretations"])
         except Exception as e:
             logger.warning(
                 "Warning: Error refreshing relationships in "
@@ -445,8 +443,7 @@ def create_test_interpretation() -> Callable[..., "Interpretation"]:
                 e,
             )
         logger.warning(
-            "create_test_interpretation fixture is using placeholder "
-            "implementation."
+            "create_test_interpretation fixture is using placeholder implementation."
         )
         return interp
 
@@ -463,7 +460,7 @@ def create_test_interpretation() -> Callable[..., "Interpretation"]:
 # A better approach might be to make this *not* autouse and call it explicitly
 # within the session block in tests that need it.
 # Let's remove session_context dependency and make it require session.
-@pytest.fixture() # Removed autouse=True for now, needs explicit call
+@pytest.fixture()  # Removed autouse=True for now, needs explicit call
 def initialize_event_sources() -> Callable[[Session], None]:
     """Initialize default event sources (manual, oracle, dice) for testing.
 
