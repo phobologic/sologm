@@ -104,39 +104,30 @@ sologm event list --limit 5
 ```
 *Output: Table showing the initial manual event and the event created from the oracle interpretation.*
 
-**13. Complete the first scene.**
-
-```bash
-sologm scene complete
-```
-*Output: Success message indicating Scene 1 is complete.*
-
----
-
 ## Act 1, Scene 2: Station Interior
 
-**14. Add the second scene.** It automatically becomes the current scene.
+**15. Add the second scene.** It automatically becomes the current scene.
 
 ```bash
 sologm scene add --title "Station Interior" --description "Boarding the station. Halls are dark, filled with floating debris and strange glyphs."
 ```
 *Output: Success message with scene details (Sequence 2, Active).*
 
-**15. List scenes in the current act.**
+**16. List scenes in the current act.**
 
 ```bash
 sologm scene list
 ```
 *Output: Table showing "Arrival at Xylar" (Completed) and "Station Interior" (Active).*
 
-**16. Roll dice to navigate the debris.**
+**17. Roll dice to navigate the debris.**
 
 ```bash
 sologm dice roll 1d6 --reason "Navigating debris field inside the station"
 ```
 *Output: Dice roll result.*
 
-**17. Add an event based on the dice roll outcome** (manual description).
+**18. Add an event based on the dice roll outcome** (manual description).
 
 ```bash
 sologm event add --description "Successfully navigated the debris, finding a partially sealed door covered in the strange markings." --source dice
