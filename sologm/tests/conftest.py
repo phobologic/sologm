@@ -331,18 +331,18 @@ def create_test_event() -> Callable[..., Event]:
                 source=source,
                 interpretation_id=interpretation_id,
             )
-            # No merge needed as the object is already session-bound via the manager.
-            try:
-                # Refresh relationships to ensure they are loaded.
-                session.refresh(
-                    event, attribute_names=["scene", "source", "interpretation"]
-                )
-            except Exception as e:
-                logger.warning(
-                    "Warning: Error refreshing relationships in "
-                    "create_test_event factory: %s",
-                    e,
-                )
+        # No merge needed as the object is already session-bound via the manager.
+        try:
+            # Refresh relationships to ensure they are loaded.
+            session.refresh(
+                event, attribute_names=["scene", "source", "interpretation"]
+            )
+        except Exception as e:
+            logger.warning(
+                "Warning: Error refreshing relationships in "
+                "create_test_event factory: %s",
+                e,
+            )
         # Object is already session-bound via the manager.
         return event
 
