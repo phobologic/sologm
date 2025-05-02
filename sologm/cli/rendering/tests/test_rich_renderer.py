@@ -406,7 +406,9 @@ def test_create_act_panel(
         assert panel_inactive_truncated is not None
         assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
         # Check if the summary is truncated (approx 20 chars + ellipsis).
-        assert "This is a very long summary..." in str(panel_inactive_truncated.renderable)
+        assert "This is a very long summary..." in str(
+            panel_inactive_truncated.renderable
+        )
         assert "truncated for the test." not in str(
             panel_inactive_truncated.renderable
         )  # End should be cut off.
