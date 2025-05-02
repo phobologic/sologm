@@ -148,7 +148,7 @@ class TestOraclePrompts:
             act = create_test_act(session, game_id=game.id)
             scene = create_test_scene(session, act_id=act.id)
             # Refresh if needed for nested access
-            session.refresh(scene, attribute_names=["act"])
+            session.refresh(scene, attribute_names=["act", "events"]) # Add 'events' if created
             session.refresh(act, attribute_names=["game"])
 
             # Call the method under test
