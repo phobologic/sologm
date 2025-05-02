@@ -1,11 +1,10 @@
 """Tests for cascade delete behavior in SQLAlchemy."""
 
 # Add necessary imports for models and factory fixtures
-import logging  # <-- Add this import
 from typing import Callable
+
 from sqlalchemy.orm import Session
 
-from sologm.database.session import SessionContext
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game  # Import Game model

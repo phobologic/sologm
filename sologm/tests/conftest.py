@@ -26,13 +26,7 @@ if TYPE_CHECKING:
     from sologm.models.act import Act
     from sologm.models.oracle import Interpretation, InterpretationSet
 
-
-logging.basicConfig()
-# Quieter engine logging unless specifically needed for debugging low-level issues
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO) # Changed from DEBUG
-# Keep test logger at DEBUG
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 @pytest.fixture
