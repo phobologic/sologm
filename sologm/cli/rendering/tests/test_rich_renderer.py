@@ -1,15 +1,15 @@
 """Tests for the RichRenderer class."""
 
 # Add necessary imports
-from typing import Callable, Any, List, Dict, Optional # Added List, Dict, Optional
+from typing import Callable, Any, List, Dict, Optional  # Added List, Dict, Optional
 from unittest.mock import MagicMock, patch  # Added patch
 
 import pytest
 from rich.console import Console
 from rich.panel import Panel  # Import Panel for assertion
-from rich.table import Table # Import Table for type checking if needed
-from rich.layout import Layout # Import Layout for type checking if needed
-from rich.grid import Grid # Import Grid for type checking if needed
+from rich.table import Table  # Import Table for type checking if needed
+from rich.layout import Layout  # Import Layout for type checking if needed
+from rich.grid import Grid  # Import Grid for type checking if needed
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
 
@@ -19,7 +19,7 @@ from sologm.cli.utils.styled_text import BORDER_STYLES
 # Import manager types for mocking/type hinting if needed by tests
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
-from sologm.database.session import SessionContext, Session # <-- Added Session import
+from sologm.database.session import SessionContext, Session  # <-- Added Session import
 from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
@@ -72,7 +72,9 @@ def test_display_dice_roll(
     assert len(args) == 1
     assert isinstance(args[0], Panel)
     # Verify border style for dice rolls.
-    assert args[0].border_style == BORDER_STYLES["dice_roll"] # FIX: Use correct style key
+    assert (
+        args[0].border_style == BORDER_STYLES["dice_roll"]
+    )  # FIX: Use correct style key
     # Verify status is not in metadata.
     assert "Status" not in str(args[0].renderable)
 
@@ -105,7 +107,7 @@ def test_display_game_status_full(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],
-    initialize_event_sources: Callable[[Session], None], # FIX: Add fixture
+    initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test displaying full game status with all components using RichRenderer."""
     renderer = RichRenderer(mock_console)
@@ -141,7 +143,7 @@ def test_display_game_status_full(
     # --- End Oracle Mock Setup ---
 
     with session_context as session:
-        initialize_event_sources(session) # FIX: Initialize sources
+        initialize_event_sources(session)  # FIX: Initialize sources
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -258,14 +260,14 @@ def test_display_game_status_no_interpretation(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],
-    initialize_event_sources: Callable[[Session], None], # FIX: Add fixture
+    initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test displaying game status without oracle manager using RichRenderer."""
     renderer = RichRenderer(mock_console)
     mock_scene_manager = MagicMock(spec=SceneManager)
 
     with session_context as session:
-        initialize_event_sources(session) # FIX: Initialize sources
+        initialize_event_sources(session)  # FIX: Initialize sources
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -294,7 +296,7 @@ def test_display_game_status_selected_interpretation(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],
-    initialize_event_sources: Callable[[Session], None], # FIX: Add fixture
+    initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
     # Interpretation/Set are created manually for mock setup
 ):
     """Test displaying game status with a selected interpretation using RichRenderer."""
@@ -303,7 +305,7 @@ def test_display_game_status_selected_interpretation(
     mock_oracle_manager = MagicMock(spec=OracleManager)
 
     with session_context as session:
-        initialize_event_sources(session) # FIX: Initialize sources
+        initialize_event_sources(session)  # FIX: Initialize sources
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -360,18 +362,18 @@ def test_calculate_truncation_length(mock_console: MagicMock):
 
     mock_console.width = 100
     result = renderer._calculate_truncation_length()
-    assert result == 40 # Expected: max(40, int(100 / 2) - 10) = 40
+    assert result == 40  # Expected: max(40, int(100 / 2) - 10) = 40
 
     mock_console.width = 30
     result = renderer._calculate_truncation_length()
-    assert result == 40 # Min value check.
+    assert result == 40  # Min value check.
 
     # Simulate console width not being available initially
     mock_console.width = None
     # Rich often defaults to 80 if detection fails, simulate this
-    with patch.object(mock_console, 'width', 80):
+    with patch.object(mock_console, "width", 80):
         result = renderer._calculate_truncation_length()
-    assert result == 40 # Expected: max(40, int(80 / 2) - 10) = 40
+    assert result == 40  # Expected: max(40, int(80 / 2) - 10) = 40
 
 
 def test_create_act_panel(
@@ -391,7 +393,9 @@ def test_create_act_panel(
         assert panel_active is not None
         assert panel_active.title is not None
         assert panel_active.border_style == BORDER_STYLES["current"]
-        assert act.summary[:10] in str(panel_active.renderable) # Check start of summary.
+        assert act.summary[:10] in str(
+            panel_active.renderable
+        )  # Check start of summary.
 
         # Test with inactive act and specific truncation
         act.summary = "This is a very long summary that definitely needs to be truncated for the test."
@@ -404,7 +408,9 @@ def test_create_act_panel(
         assert panel_inactive_truncated.border_style == BORDER_STYLES["neutral"]
         # Check if the summary is truncated (approx 20 chars + ellipsis).
         assert "This is a very long..." in str(panel_inactive_truncated.renderable)
-        assert "truncated for the test." not in str(panel_inactive_truncated.renderable) # End should be cut off.
+        assert "truncated for the test." not in str(
+            panel_inactive_truncated.renderable
+        )  # End should be cut off.
 
         # Test with no active act
         panel_no_act = renderer._create_act_panel(game, None)
@@ -451,7 +457,7 @@ def test_create_scene_panels_grid(
             game, scene, mock_scene_manager, is_scene_active=True
         )
         assert grid_active is not None
-        assert isinstance(grid_active, Grid) # Ensure it's a Grid
+        assert isinstance(grid_active, Grid)  # Ensure it's a Grid
         # Check border style of the first panel in the grid (latest scene).
         # FIX: Access the first renderable directly from the grid
         latest_scene_panel_active = grid_active.renderables[0]
@@ -479,7 +485,9 @@ def test_create_scene_panels_grid(
         )
         assert grid_no_manager is not None
         assert isinstance(grid_no_manager, Grid)
-        assert isinstance(grid_no_manager.renderables[0], Panel) # Should still contain the scene panel
+        assert isinstance(
+            grid_no_manager.renderables[0], Panel
+        )  # Should still contain the scene panel
 
         # Test with no scene
         grid_no_scene = renderer._create_scene_panels_grid(
@@ -501,12 +509,12 @@ def test_create_events_panel(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],
-    initialize_event_sources: Callable[[Session], None], # FIX: Add fixture
+    initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test creating the events panel using RichRenderer."""
     renderer = RichRenderer(mock_console)
     with session_context as session:
-        initialize_event_sources(session) # FIX: Initialize sources
+        initialize_event_sources(session)  # FIX: Initialize sources
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -555,7 +563,9 @@ def test_create_oracle_panel(
             return_value=None
         )
 
-        panel_with_manager = renderer._create_oracle_panel(game, scene, mock_oracle_manager, 60)
+        panel_with_manager = renderer._create_oracle_panel(
+            game, scene, mock_oracle_manager, 60
+        )
         assert panel_with_manager is not None  # Should return empty panel in this case
         assert "No oracle interpretations yet." in str(panel_with_manager.renderable)
 
@@ -745,7 +755,7 @@ def test_display_interpretation_sets_table(
     assert len(args) == 1
     assert isinstance(args[0], Panel)
     assert isinstance(args[0].renderable, Table)
-    assert isinstance(args[0].renderable, Table) # Check table is inside panel
+    assert isinstance(args[0].renderable, Table)  # Check table is inside panel
 
 
 # --- End Tests for display_interpretation_sets_table ---
@@ -777,7 +787,7 @@ def test_display_acts_table_with_acts(
     assert isinstance(args[0], Panel)
     table = args[0].renderable
     assert isinstance(table, Table)
-    assert len(table.columns) == 5 # ID, Seq, Title, Summary, Current
+    assert len(table.columns) == 5  # ID, Seq, Title, Summary, Current
 
 
 def test_display_acts_table_no_acts(mock_console: MagicMock):
@@ -825,7 +835,7 @@ def test_display_scenes_table_with_scenes(
     assert isinstance(args[0], Panel)
     table = args[0].renderable
     assert isinstance(table, Table)
-    assert len(table.columns) == 5 # ID, Title, Description, Current, Sequence
+    assert len(table.columns) == 5  # ID, Title, Description, Current, Sequence
 
 
 def test_display_scenes_table_no_scenes(mock_console: MagicMock):
@@ -851,12 +861,12 @@ def test_display_events_table_with_events(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],
-    initialize_event_sources: Callable[[Session], None], # FIX: Add fixture
+    initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test displaying events table with events using RichRenderer."""
     renderer = RichRenderer(mock_console)
     with session_context as session:
-        initialize_event_sources(session) # FIX: Initialize sources
+        initialize_event_sources(session)  # FIX: Initialize sources
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -878,12 +888,12 @@ def test_display_events_table_with_truncation(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],
-    initialize_event_sources: Callable[[Session], None], # FIX: Add fixture
+    initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test displaying events table with truncated descriptions using RichRenderer."""
     renderer = RichRenderer(mock_console)
     with session_context as session:
-        initialize_event_sources(session) # FIX: Initialize sources
+        initialize_event_sources(session)  # FIX: Initialize sources
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -895,9 +905,7 @@ def test_display_events_table_with_truncation(
         )
         events = [event1, event2]
 
-        renderer.display_events_table(
-            events, scene, max_description_length=20
-        )
+        renderer.display_events_table(events, scene, max_description_length=20)
         mock_console.print.assert_called_once()
         args1, _ = mock_console.print.call_args
         assert isinstance(args1[0], Panel)
@@ -1042,7 +1050,7 @@ def test_display_act_ai_generation_results(
 
         results_empty = {}
         renderer.display_act_ai_generation_results(results_empty, act)
-        assert mock_console.print.call_count == 0 # No panels should be printed.
+        assert mock_console.print.call_count == 0  # No panels should be printed.
         mock_console.reset_mock()
 
         act.title = "Existing Title"
@@ -1084,17 +1092,21 @@ def test_display_act_completion_success(
             game_id=game.id,
             title="Completed Act",
             summary="It is done.",
-            is_active=False, # Ensure this doesn't block the next create.
+            is_active=False,  # Ensure this doesn't block the next create.
         )
         renderer.display_act_completion_success(act_with_title)
-        assert mock_console.print.call_count >= 3 # Title message, metadata, title, summary.
+        assert (
+            mock_console.print.call_count >= 3
+        )  # Title message, metadata, title, summary.
         mock_console.reset_mock()
 
         act_untitled = create_test_act(
             session, game_id=game.id, title=None, summary="Summary only"
         )
         renderer.display_act_completion_success(act_untitled)
-        assert mock_console.print.call_count >= 2 # Title message, metadata, summary (no title print).
+        assert (
+            mock_console.print.call_count >= 2
+        )  # Title message, metadata, summary (no title print).
 
 
 # --- End Tests for display_act_completion_success ---
@@ -1200,7 +1212,7 @@ def test_display_act_info(
         game = create_test_game(session, name="My Game")
         act = create_test_act(session, game_id=game.id)
         create_test_scene(session, act_id=act.id)
-        session.refresh(act, attribute_names=["scenes"]) # Load scenes relationship.
+        session.refresh(act, attribute_names=["scenes"])  # Load scenes relationship.
 
     renderer.display_act_info(act, game.name)
 
@@ -1212,7 +1224,7 @@ def test_display_act_info(
     assert isinstance(args2[0], Panel)
     scenes_table = args2[0].renderable
     assert isinstance(scenes_table, Table)
-    assert len(scenes_table.columns) == 5 # ID, Seq, Title, Description, Current
+    assert len(scenes_table.columns) == 5  # ID, Seq, Title, Description, Current
 
 
 # --- End Tests for display_act_info ---
@@ -1265,17 +1277,17 @@ def test_display_scene_info(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],  # Needed to test event display
-    initialize_event_sources: Callable[[Session], None], # FIX: Add fixture
+    initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test displaying scene info using RichRenderer."""
     renderer = RichRenderer(mock_console)
     with session_context as session:
-        initialize_event_sources(session) # FIX: Initialize sources
+        initialize_event_sources(session)  # FIX: Initialize sources
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         create_test_event(session, scene_id=scene.id)
-        session.refresh(scene, attribute_names=["events", "act"]) # Load relationships.
+        session.refresh(scene, attribute_names=["events", "act"])  # Load relationships.
         renderer.display_scene_info(scene)
 
     mock_console.print.assert_called_once()
