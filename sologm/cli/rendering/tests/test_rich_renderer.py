@@ -5,7 +5,7 @@ from typing import Callable, Any, List, Dict, Optional  # Added List, Dict, Opti
 from unittest.mock import MagicMock, patch  # Added patch
 
 import pytest
-from rich.console import Console # Removed Grid import
+from rich.console import Console  # Removed Grid import
 from rich.panel import Panel  # Import Panel for assertion
 from rich.table import Table  # Import Table for type checking if needed
 from rich.layout import Layout  # Import Layout for type checking if needed
@@ -456,7 +456,7 @@ def test_create_scene_panels_grid(
             game, scene, mock_scene_manager, is_scene_active=True
         )
         assert grid_active is not None
-        assert isinstance(grid_active, Table) # FIX: Check for Table, not Grid
+        assert isinstance(grid_active, Table)  # FIX: Check for Table, not Grid
         # Removed checks for internal panel style/content via .renderables
 
         # Test with inactive scene and scene manager
@@ -464,7 +464,7 @@ def test_create_scene_panels_grid(
             game, scene, mock_scene_manager, is_scene_active=False
         )
         assert grid_inactive is not None
-        assert isinstance(grid_inactive, Table) # FIX: Check for Table, not Grid
+        assert isinstance(grid_inactive, Table)  # FIX: Check for Table, not Grid
         # Removed checks for internal panel style/content via .renderables
 
         # Test with active scene but no scene manager
@@ -472,7 +472,7 @@ def test_create_scene_panels_grid(
             game, scene, None, is_scene_active=True
         )
         assert grid_no_manager is not None
-        assert isinstance(grid_no_manager, Table) # FIX: Check for Table, not Grid
+        assert isinstance(grid_no_manager, Table)  # FIX: Check for Table, not Grid
         # Removed check for internal panel via .renderables
 
         # Test with no scene
@@ -480,7 +480,7 @@ def test_create_scene_panels_grid(
             game, None, None, is_scene_active=False
         )
         assert grid_no_scene is not None
-        assert isinstance(grid_no_scene, Table) # FIX: Check for Table, not Grid
+        assert isinstance(grid_no_scene, Table)  # FIX: Check for Table, not Grid
         # Removed checks for internal panel content via .renderables
 
 
