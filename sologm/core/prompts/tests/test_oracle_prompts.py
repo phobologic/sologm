@@ -5,7 +5,7 @@ from typing import Callable  # Import Callable for type hinting factory fixtures
 from sologm.core.prompts.oracle import OraclePrompts  # Import the class being tested
 
 # Import necessary model types for type hinting if needed
-from sologm.database.session import SessionContext  # Import SessionContext type hint
+from sologm.database.session import Session, SessionContext # Import Session type hint
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game
@@ -78,9 +78,13 @@ class TestOraclePrompts:
         create_test_act: Callable[..., Act],  # Request the fixture directly
         create_test_scene: Callable[..., Scene],  # Request the fixture directly
         create_test_event: Callable[..., Event],  # Request the fixture directly
+        initialize_event_sources: Callable[[Session], None], # Request the initializer fixture
     ):
         """Test building the complete interpretation prompt."""
         with session_context as session:
+            # Initialize default event sources needed by create_test_event
+            initialize_event_sources(session)
+
             # Create necessary data within the session context
             game = create_test_game(
                 session, name="Test Game", description="Test Game Description"
@@ -115,7 +119,8 @@ class TestOraclePrompts:
             assert f"Game: {game.description}" in result
             assert f"Act: {act.summary}" in result
             assert f"Current Scene: {scene.description}" in result
-            assert event1.description in result
+            # Ensure the event description is correctly formatted in the prompt's event list
+            assert f"- {event1.description}" in result # Check formatting if applicable
             assert "Player's Question/Context: What happens next?" in result
             assert "Oracle Results: Mystery, Danger" in result
             assert "Please provide 3 different interpretations" in result
@@ -127,12 +132,17 @@ class TestOraclePrompts:
         create_test_game: Callable[..., Game],  # Request the fixture directly
         create_test_act: Callable[..., Act],  # Request the fixture directly
         create_test_scene: Callable[..., Scene],  # Request the fixture directly
+        # Add initializer if events are created or might be needed by prompt logic
+        initialize_event_sources: Callable[[Session], None],
     ):
         """Test building the prompt with retry information."""
         previous_interpretations = [
             {"title": "Previous Title", "description": "Previous Description"},
         ]
         with session_context as session:
+            # Initialize default event sources if needed
+            initialize_event_sources(session)
+
             # Create necessary data
             game = create_test_game(session)
             act = create_test_act(session, game_id=game.id)
@@ -157,3 +167,5 @@ class TestOraclePrompts:
             assert "Previous Description" in result
             assert "retry attempt #2" in result
             assert "COMPLETELY DIFFERENT" in result
+            # Add assertion for event if created:
+            # assert "- Retry Test Event" in result
