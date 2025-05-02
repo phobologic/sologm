@@ -20,25 +20,36 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Create event_sources table
-    op.create_table(
-        "event_sources",
-        sa.Column("id", sa.String(50), primary_key=True),
-        sa.Column("name", sa.String(100), nullable=False, unique=True),
-    )
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
 
-    # Insert default event sources
-    op.execute(
-        """
-        INSERT INTO event_sources (id, name) VALUES
-        ('manual', 'Manual Entry'),
-        ('oracle', 'Oracle Interpretation'),
-        ('dice', 'Dice Roll')
-        """
-    )
+    # Check if the event_sources table already exists
+    if not inspector.has_table("event_sources"):
+        # Create event_sources table only if it doesn't exist
+        op.create_table(
+            "event_sources",
+            sa.Column("id", sa.String(50), primary_key=True),
+            sa.Column("name", sa.String(100), nullable=False, unique=True),
+        )
 
-    # For SQLite, we need to recreate the events table with the new foreign key
-    # Create a temporary table with the new schema
+        # Insert default event sources only if the table was just created
+        op.execute(
+            """
+            INSERT INTO event_sources (id, name) VALUES
+            ('manual', 'Manual Entry'),
+            ('oracle', 'Oracle Interpretation'),
+            ('dice', 'Dice Roll')
+            """
+        )
+    else:
+        print("Table 'event_sources' already exists, skipping creation and data insertion.")
+
+
+    # --- SQLite Specific Logic for 'events' table modification ---
+    # This part assumes the 'event_sources' table exists (either pre-existing or just created)
+    # and modifies the 'events' table. This logic remains unchanged as per the request.
+
+    # Create a temporary table with the new schema for 'events'
     op.execute(
         """
         CREATE TABLE events_new (
