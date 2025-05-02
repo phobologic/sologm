@@ -14,6 +14,8 @@ if TYPE_CHECKING:
     from sologm.models.act import Act
     from sologm.models.event_source import EventSource
     from sologm.models.game import Game
+    from sologm.models.scene import Scene  # Import Scene
+    from sologm.models.oracle import Interpretation # Added for relationship type hint
 
 
 class Event(Base, TimestampMixin):
