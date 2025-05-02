@@ -303,7 +303,9 @@ class TestEventManager:
 
             # Create a test event using factory
             logger.debug(f"Creating test event with scene_id={scene.id}")
-            event = create_test_event(scene_id=scene.id, description="Test event to retrieve")
+            event = create_test_event(
+                scene_id=scene.id, description="Test event to retrieve"
+            )
             logger.debug(
                 f"Created event with id={event.id}, description={event.description}"
             )
@@ -351,7 +353,9 @@ class TestEventManager:
 
             # Create a test event
             logger.debug(f"Creating test event with scene_id={scene.id}")
-            event = create_test_event(scene_id=scene.id, description="Original description")
+            event = create_test_event(
+                scene_id=scene.id, description="Original description"
+            )
             logger.debug(
                 f"Created event with id={event.id}, description={event.description}"
             )
@@ -395,7 +399,9 @@ class TestEventManager:
 
             # Create a test event
             logger.debug(f"Creating test event with scene_id={scene.id}")
-            event = create_test_event(scene_id=scene.id, description="Original description")
+            event = create_test_event(
+                scene_id=scene.id, description="Original description"
+            )
             logger.debug(
                 f"Created event with id={event.id}, description={event.description}"
             )
