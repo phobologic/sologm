@@ -62,10 +62,16 @@ def test_generate_event_markdown():
 
 # Test uses session_context and factory fixtures for realistic data.
 def test_generate_scene_markdown(
-    session_context, create_test_game, create_test_act, create_test_scene
+    session_context,
+    create_test_game,
+    create_test_act,
+    create_test_scene,
+    initialize_event_sources,  # Add the fixture here
 ):
     """Test generating markdown for a scene using real models."""
     with session_context as session:
+        initialize_event_sources(session)  # Call the initializer function
+
         managers = create_all_managers(session)
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
