@@ -143,14 +143,20 @@ def test_display_events_table_markdown(
     create_test_act: Callable[..., Act],
     create_test_scene: Callable[..., Scene],
     create_test_event: Callable[..., Event],
+    initialize_event_sources: Callable[[Session], None],  # Add the fixture here
 ):
     """Test displaying a list of events as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
     with session_context as session:
+        # Call the initializer function with the session *first*
+        initialize_event_sources(session)
+
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id, title="Event Scene")
+
+        # Now this should work because 'manual' exists
         event1 = create_test_event(
             session, scene_id=scene.id, description="First test event", source="manual"
         )
