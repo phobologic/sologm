@@ -86,7 +86,7 @@ def test_display_interpretation_markdown(
     """Test displaying a single interpretation as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -147,7 +147,7 @@ def test_display_events_table_markdown(
     """Test displaying a list of events as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id, title="Event Scene")
@@ -216,7 +216,7 @@ def test_display_events_table_no_events_markdown(
 ):
     """Test displaying an empty list of events as Markdown."""
     renderer = MarkdownRenderer(mock_console)
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id, title="Empty Scene")
@@ -238,7 +238,7 @@ def test_display_games_table_markdown(
     """Test displaying a list of games as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         test_game = create_test_game(
             session, name="Active Game", description="The main game", is_active=True
         )
@@ -324,7 +324,7 @@ def test_display_scenes_table_markdown(
     """Test displaying a list of scenes as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         test_scene = create_test_scene(
@@ -427,7 +427,7 @@ def test_display_game_info_markdown(
     """Test displaying game info as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         test_game = create_test_game(session)
         test_act = create_test_act(session, game_id=test_game.id)
         test_scene = create_test_scene(session, act_id=test_act.id, is_active=True)
@@ -508,7 +508,7 @@ def test_display_interpretation_set_markdown(
     """Tests the Markdown rendering of an InterpretationSet."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -604,7 +604,7 @@ def test_display_scene_info_markdown(
     """Test displaying scene info as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id, sequence=1, title="Test Act")
         test_scene = create_test_scene(
@@ -662,7 +662,7 @@ def test_display_acts_table_markdown(
     """Test displaying a list of acts as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         test_act = create_test_act(
             session,
@@ -748,7 +748,7 @@ def test_display_act_info_markdown(
     """Test displaying act info as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         test_game = create_test_game(session, name="Act Info Game")
         test_act = create_test_act(
             session, game_id=test_game.id, title="Act With Scene", sequence=1
@@ -818,7 +818,7 @@ def test_display_act_info_no_scenes_markdown(
     """Test displaying act info with no scenes as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         test_game = create_test_game(session, name="No Scene Game")
         test_act = create_test_act(
             session, game_id=test_game.id, title="Act Without Scene", sequence=1
@@ -886,7 +886,7 @@ def test_display_interpretation_sets_table_markdown(
     """Test displaying interpretation sets table as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         test_scene = create_test_scene(session, act_id=act.id, title="Interp Scene")
@@ -966,7 +966,7 @@ def test_display_interpretation_status_markdown(
     """Test displaying interpretation status as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
@@ -1022,7 +1022,7 @@ def test_display_act_ai_generation_results_markdown(
     renderer = MarkdownRenderer(mock_console)
     results = {"title": "AI Title", "summary": "AI Summary"}
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         test_act = create_test_act(
             session,
@@ -1065,7 +1065,7 @@ def test_display_act_completion_success_markdown(
     """Test displaying act completion success as Markdown."""
     renderer = MarkdownRenderer(mock_console)
 
-    with session_context() as session:
+    with session_context as session:
         game = create_test_game(session)
         test_act = create_test_act(
             session,
