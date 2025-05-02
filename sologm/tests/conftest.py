@@ -279,23 +279,23 @@ def create_test_scene() -> Callable[..., Scene]:
                 make_active=is_active,
             )
 
-            # Refresh relationships to ensure they are loaded while the object is
-            # known to be persistent within this session context.
-            # Flushing ensures the object state is synchronized with the DB
-            # before refresh.
-            try:
-                session.flush()  # Flush *before* refresh to ensure state is
-                # synchronized.
-                # Refresh common relationships typically needed immediately
-                # after creation.
-                session.refresh(scene, attribute_names=["act"])
-            except Exception as e:
-                logger.warning(
-                    "Warning: Error refreshing relationships in "
-                    "create_test_scene factory: %s",
-                    e,
-                )
-                # Log and continue for now, but this might hide issues in tests.
+        # Refresh relationships to ensure they are loaded while the object is
+        # known to be persistent within this session context.
+        # Flushing ensures the object state is synchronized with the DB
+        # before refresh.
+        try:
+            session.flush()  # Flush *before* refresh to ensure state is
+            # synchronized.
+            # Refresh common relationships typically needed immediately
+            # after creation.
+            session.refresh(scene, attribute_names=["act"])
+        except Exception as e:
+            logger.warning(
+                "Warning: Error refreshing relationships in "
+                "create_test_scene factory: %s",
+                e,
+            )
+            # Log and continue for now, but this might hide issues in tests.
 
         # Object is already session-bound via the manager.
         return scene
