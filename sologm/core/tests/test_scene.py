@@ -10,7 +10,7 @@ from sologm.database.session import SessionContext
 from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.models.scene import Scene
-from sologm.utils.errors import SceneError
+from sologm.utils.errors import ActError, SceneError
 
 # Type checking imports
 if TYPE_CHECKING:
