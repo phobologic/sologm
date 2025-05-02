@@ -5,11 +5,11 @@ from typing import Callable, Any, List, Dict, Optional  # Added List, Dict, Opti
 from unittest.mock import MagicMock, patch  # Added patch
 
 import pytest
-from rich.console import Console
+from rich.console import Console, Grid # Import Grid from rich.console
 from rich.panel import Panel  # Import Panel for assertion
 from rich.table import Table  # Import Table for type checking if needed
 from rich.layout import Layout  # Import Layout for type checking if needed
-from rich.grid import Grid  # Import Grid for type checking if needed
+# Removed: from rich.grid import Grid
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
 
