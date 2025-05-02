@@ -174,13 +174,14 @@ class TestSceneManager:
     def test_create_scene_nonexistent_act(
         self, session_context: SessionContext
     ) -> None:
-        """Test creating a scene in a nonexistent act raises SceneError."""
+        """Test creating a scene in a nonexistent act raises ActError."""
         with session_context as session:
             managers: "AllManagers" = create_all_managers(session)
             # Attempting to create a scene with an invalid act_id
             # The manager checks if the act exists before creating the scene.
+            # This check is done via ActManager, which raises ActError.
             with pytest.raises(
-                SceneError, match="Act with ID 'nonexistent-act' does not exist"
+                ActError, match="Act with ID 'nonexistent-act' does not exist"
             ):
                 managers.scene.create_scene(
                     title="Test Scene",
