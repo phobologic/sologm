@@ -179,16 +179,14 @@ def session_context() -> SessionContext:
 
 
 @pytest.fixture
-def create_test_game(
-    session_context: SessionContext,
-) -> Callable[..., Game]:
+def create_test_game() -> Callable[..., Game]:
     """Provide a factory function to create test Game instances.
 
     Args:
-        session_context: Fixture to provide the database session context.
+        session: The active SQLAlchemy session for the test.
 
     Returns:
-        A callable function `_create_game(name="...", description="...",
+        A callable function `_create_game(session, name="...", description="...",
         is_active=True)` that creates and returns a persisted Game instance
         within the provided session.
     """
@@ -196,85 +194,88 @@ def create_test_game(
     def _create_game(
         name: str = "Test Game",
         description: str = "A test game",
+        session: Session,
+        name: str = "Test Game",
+        description: str = "A test game",
         is_active: bool = True,
     ) -> Game:
-        with session_context as session:
-            managers = create_all_managers(session)
-            game = managers.game.create_game(name, description, is_active=is_active)
-            # No merge needed as the object is already session-bound via the manager.
-            return game
+        managers = create_all_managers(session)
+        game = managers.game.create_game(name, description, is_active=is_active)
+        # Object is already session-bound via the manager.
+        return game
 
     return _create_game
 
 
 @pytest.fixture
-def create_test_act(
-    session_context: SessionContext,
-) -> Callable[..., "Act"]:
+def create_test_act() -> Callable[..., "Act"]:
     """Provide a factory function to create test Act instances.
 
     Args:
-        session_context: Fixture to provide the database session context.
+        session: The active SQLAlchemy session for the test.
+        game_id: The ID of the game this act belongs to.
+        ... other args
 
     Returns:
-        A callable function `_create_act(game_id, title="...", ...)`
+        A callable function `_create_act(session, game_id, title="...", ...)`
         that creates and returns a persisted Act instance.
     """
     # Import Act locally to avoid potential circular dependency issues at module level.
     from sologm.models.act import Act
 
     def _create_act(
+        session: Session,
         game_id: str,
         title: Optional[str] = "Test Act",
         summary: Optional[str] = "A test act",
         is_active: bool = True,
         sequence: Optional[int] = None,
     ) -> Act:
-        with session_context as session:
-            managers = create_all_managers(session)
-            act = managers.act.create_act(
-                game_id=game_id,
+        managers = create_all_managers(session)
+        act = managers.act.create_act(
+            game_id=game_id,
                 title=title,
                 summary=summary,
                 make_active=is_active,
             )
-            # If sequence was specified, update it directly using the correct session
-            if sequence is not None:
-                act.sequence = sequence
-                session.add(act)
-                session.flush()  # Keep flush here as sequence is manually
-                # set outside manager.
+        # If sequence was specified, update it directly.
+        # No need for add/flush here as the object is already managed by the
+        # session passed in, and the manager call above likely flushed.
+        # If issues arise, a targeted flush might be needed, but start without.
+        if sequence is not None:
+            act.sequence = sequence
+            # session.flush([act]) # Consider if needed later
 
-            # No merge needed as the object is already session-bound via the manager.
-            return act
+        # Object is already session-bound via the manager.
+        return act
 
     return _create_act
 
 
 @pytest.fixture
-def create_test_scene(
-    session_context: SessionContext,
-) -> Callable[..., Scene]:
+def create_test_scene() -> Callable[..., Scene]:
     """Provide a factory function to create test Scene instances.
 
     Args:
-        session_context: Fixture to provide the database session context.
+        session: The active SQLAlchemy session for the test.
+        act_id: The ID of the act this scene belongs to.
+        ... other args
 
     Returns:
-        A callable function `_create_scene(act_id, title="...", ...)`
+        A callable function `_create_scene(session, act_id, title="...", ...)`
         that creates and returns a persisted Scene instance.
     """
 
     def _create_scene(
+        session: Session,
         act_id: str,
         title: str = "Test Scene",
         description: str = "A test scene",
         is_active: bool = True,
     ) -> Scene:
-        with session_context as session:
-            managers = create_all_managers(session)
-            scene = managers.scene.create_scene(
-                act_id=act_id,
+        managers = create_all_managers(session)
+        scene = managers.scene.create_scene(
+            act_id=act_id,
                 title=title,
                 description=description,
                 make_active=is_active,
@@ -298,36 +299,36 @@ def create_test_scene(
                 )
                 # Log and continue for now, but this might hide issues in tests.
 
-            # No merge needed as the object is already session-bound via the manager.
-            return scene
+        # Object is already session-bound via the manager.
+        return scene
 
     return _create_scene
 
 
 @pytest.fixture
-def create_test_event(
-    session_context: SessionContext,
-) -> Callable[..., Event]:
+def create_test_event() -> Callable[..., Event]:
     """Provide a factory function to create test Event instances.
 
     Args:
-        session_context: Fixture to provide the database session context.
+        session: The active SQLAlchemy session for the test.
+        scene_id: The ID of the scene this event belongs to.
+        ... other args
 
     Returns:
-        A callable function `_create_event(scene_id, description="...", ...)`
+        A callable function `_create_event(session, scene_id, description="...", ...)`
         that creates and returns a persisted Event instance.
     """
 
     def _create_event(
+        session: Session,
         scene_id: str,
         description: str = "Test event",
         source: str = "manual",
         interpretation_id: Optional[str] = None,
     ) -> Event:
-        with session_context as session:
-            managers = create_all_managers(session)
-            event = managers.event.add_event(
-                description=description,
+        managers = create_all_managers(session)
+        event = managers.event.add_event(
+            description=description,
                 scene_id=scene_id,
                 source=source,
                 interpretation_id=interpretation_id,
@@ -344,37 +345,38 @@ def create_test_event(
                     "create_test_event factory: %s",
                     e,
                 )
-            return event
+        # Object is already session-bound via the manager.
+        return event
 
     return _create_event
 
 
 @pytest.fixture
-def create_test_interpretation_set(
-    session_context: SessionContext,
-) -> Callable[..., "InterpretationSet"]:
+def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
     """Provide a factory function to create test InterpretationSet instances.
 
     Args:
-        session_context: Fixture to provide the database session context.
+        session: The active SQLAlchemy session for the test.
+        scene_id: The ID of the scene this set belongs to.
+        ... other args
 
     Returns:
-        A callable function `_create_interpretation_set(scene_id, context="...", ...)`
+        A callable function `_create_interpretation_set(session, scene_id, context="...", ...)`
         that creates and returns a persisted InterpretationSet instance.
     """
     from sologm.models.oracle import InterpretationSet
 
     def _create_interpretation_set(
+        session: Session,
         scene_id: str,
         context: str = "Test Context",
         oracle_results: str = "Test Oracle Results",
         retry_attempt: int = 0,
         is_current: bool = False,
     ) -> InterpretationSet:
-        with session_context as session:
-            # TODO: Replace direct model creation with manager call when available.
-            managers = create_all_managers(session)
-            # Example: interp_set = managers.oracle.create_interpretation_set(...)
+        # TODO: Replace direct model creation with manager call when available.
+        managers = create_all_managers(session)
+        # Example: interp_set = managers.oracle.create_interpretation_set(...)
             interp_set = InterpretationSet.create(
                 scene_id=scene_id,
                 context=context,
@@ -398,36 +400,36 @@ def create_test_interpretation_set(
                 "create_test_interpretation_set fixture is using placeholder "
                 "implementation."
             )
-            return interp_set
+        return interp_set
 
     return _create_interpretation_set
 
 
 @pytest.fixture
-def create_test_interpretation(
-    session_context: SessionContext,
-) -> Callable[..., "Interpretation"]:
+def create_test_interpretation() -> Callable[..., "Interpretation"]:
     """Provide a factory function to create test Interpretation instances.
 
     Args:
-        session_context: Fixture to provide the database session context.
+        session: The active SQLAlchemy session for the test.
+        set_id: The ID of the InterpretationSet this interpretation belongs to.
+        ... other args
 
     Returns:
-        A callable function `_create_interpretation(set_id, title="...", ...)`
+        A callable function `_create_interpretation(session, set_id, title="...", ...)`
         that creates and returns a persisted Interpretation instance.
     """
     from sologm.models.oracle import Interpretation
 
     def _create_interpretation(
+        session: Session,
         set_id: str,
         title: str = "Test Interpretation",
         description: str = "A test interpretation.",
         is_selected: bool = False,
     ) -> Interpretation:
-        with session_context as session:
-            # TODO: Replace direct model creation with manager call when available.
-            managers = create_all_managers(session)
-            # Example: interp = managers.oracle.create_interpretation(...)
+        # TODO: Replace direct model creation with manager call when available.
+        managers = create_all_managers(session)
+        # Example: interp = managers.oracle.create_interpretation(...)
             interp = Interpretation.create(
                 set_id=set_id,
                 title=title,
@@ -448,7 +450,7 @@ def create_test_interpretation(
                 "create_test_interpretation fixture is using placeholder "
                 "implementation."
             )
-            return interp
+        return interp
 
     return _create_interpretation
 
@@ -456,24 +458,36 @@ def create_test_interpretation(
 # --- Helper Fixtures ---
 
 
-@pytest.fixture(autouse=True)
-def initialize_event_sources(session_context: SessionContext) -> None:
+# Note: This fixture now requires a session to be passed if used directly,
+# but since it's autouse=True and depends on session_context, it might need
+# adjustment if tests *don't* use session_context.
+# For now, assuming all tests needing DB setup will use session_context.
+# A better approach might be to make this *not* autouse and call it explicitly
+# within the session block in tests that need it.
+# Let's remove session_context dependency and make it require session.
+@pytest.fixture() # Removed autouse=True for now, needs explicit call
+def initialize_event_sources() -> Callable[[Session], None]:
     """Initialize default event sources (manual, oracle, dice) for testing.
 
-    Ensures these sources exist in the test database before tests run.
+    Ensures these sources exist in the test database. Needs to be called
+    within an active session context.
 
     Args:
-        session_context: Fixture to provide the database session context.
+        session: The active SQLAlchemy session for the test.
     """
     sources = ["manual", "oracle", "dice"]
-    with session_context as session:
+
+    def _initialize(session: Session) -> None:
         for source_name in sources:
             existing = (
                 session.query(EventSource)
+                .filter(EventSource.name == source_name)
                 .filter(EventSource.name == source_name)
                 .first()
             )
             if not existing:
                 source = EventSource.create(name=source_name)
                 session.add(source)
-        # Session is committed automatically by the SessionContext manager upon exit.
+        # Rely on the calling context (test's session_context) to commit/rollback.
+
+    return _initialize

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 # Helper function to create base test data within a session context
 def create_base_test_data(
-    # session: Session, # Removed session parameter
+    session: Session, # Added session parameter
     create_test_game: Callable[..., Game],
     create_test_act: Callable[..., Act],
     game_active: bool = True,
@@ -28,7 +28,7 @@ def create_base_test_data(
     """Creates a standard game and act for testing.
 
     Args:
-        # session: The database session. # Removed session parameter description
+        session: The active SQLAlchemy session for the test.
         create_test_game: Factory fixture for creating games.
         create_test_act: Factory fixture for creating acts.
         game_active: Whether the created game should be active.
@@ -37,9 +37,9 @@ def create_base_test_data(
     Returns:
         A tuple containing the created Game and Act objects.
     """
-    # Removed session argument from calls
-    game = create_test_game(is_active=game_active)
-    act = create_test_act(game_id=game.id, is_active=act_active)
+    # Pass session to factory fixtures
+    game = create_test_game(session=session, is_active=game_active)
+    act = create_test_act(session=session, game_id=game.id, is_active=act_active)
     return game, act
 
 
@@ -83,12 +83,14 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test creating a new scene using the manager (makes active by default)."""
         with session_context as session:
+            initialize_event_sources(session) # Initialize sources within the session
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             scene = managers.scene.create_scene(
                 title="First Scene",
@@ -116,12 +118,14 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test creating a scene with a duplicate title fails."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             # Create first scene
             managers.scene.create_scene(
@@ -146,12 +150,14 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test creating a scene with a duplicate title in different case fails."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             # Create first scene
             managers.scene.create_scene(
@@ -172,10 +178,11 @@ class TestSceneManager:
                 )
 
     def test_create_scene_nonexistent_act(
-        self, session_context: SessionContext
+        self, session_context: SessionContext, initialize_event_sources: Callable
     ) -> None:
         """Test creating a scene in a nonexistent act raises ActError."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
             # Attempting to create a scene with an invalid act_id
             # The manager checks if the act exists before creating the scene.
@@ -194,14 +201,16 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test listing scenes in an act."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
-            # Create some test scenes using the manager (removed session=session)
+            # Create some test scenes using the manager
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="First Scene", description="Test Description"
             )
@@ -221,12 +230,14 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test listing scenes in an act with no scenes."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             scenes = managers.scene.list_scenes(act.id)
             assert len(scenes) == 0
@@ -236,13 +247,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting a specific scene by ID."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Removed session=session
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create scene using manager
             created_scene = managers.scene.create_scene(
                 act_id=act.id, title="Test Scene", description="Test Description"
             )
@@ -257,13 +270,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting a nonexistent scene returns None."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
             # Create base data to ensure active context exists if needed by manager
-            # Pass fixtures directly to helper
-            create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            create_base_test_data(session, create_test_game, create_test_act)
 
             scene = managers.scene.get_scene("nonexistent-scene")
             assert scene is None
@@ -273,13 +288,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting the active scene for an act."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create scene using manager (makes it active) (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create scene using manager (makes it active)
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Active Scene", description="Test Description"
             )
@@ -294,13 +311,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting active scene when none is set."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create a scene but ensure it's not active using the manager (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create a scene but ensure it's not active using the manager
             managers.scene.create_scene(
                 act_id=act.id,
                 title="Inactive Scene",
@@ -322,13 +341,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test setting which scene is current (active)."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create two scenes using the manager (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create two scenes using the manager
             # Scene1 will be created first, then Scene2 will be created and become active
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="First Scene", description="Test Description"
@@ -361,13 +382,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ):
         """Test that scene sequences are managed correctly and previous scene works."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create multiple scenes using the manager (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create multiple scenes using the manager
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="First Scene", description="Test Description"
             )
@@ -405,13 +428,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test updating a scene's title and description."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create a test scene using the manager (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create a test scene using the manager
             scene = managers.scene.create_scene(
                 act_id=act.id,
                 title="Original Title",
@@ -459,13 +484,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test updating a scene with a duplicate title fails."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create two scenes (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create two scenes
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="First Scene", description="Test Description"
             )
@@ -488,13 +515,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ):
         """Test getting active game, act, and scene context."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            game, act = create_base_test_data(create_test_game, create_test_act)
-            # Create a scene to be active using the manager (removed session=session)
+            # Pass session to helper
+            game, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create a scene to be active using the manager
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Active Scene", description="Test Description"
             )
@@ -509,13 +538,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ):
         """Test validating active game, act and scene context."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create a scene to be active using the manager (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create a scene to be active using the manager
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Active Scene", description="Test Description"
             )
@@ -529,13 +560,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting a specific scene within a specific act."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Removed session=session
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create scene using manager
             created_scene = managers.scene.create_scene(
                 act_id=act.id, title="Test Scene", description="Test Description"
             )
@@ -555,9 +588,12 @@ class TestSceneManager:
             wrong_scene = managers.scene.get_scene_in_act(act.id, "wrong-scene-id")
             assert wrong_scene is None
 
-    def test_validate_active_context_no_game(self, session_context: SessionContext):
+    def test_validate_active_context_no_game(
+        self, session_context: SessionContext, initialize_event_sources: Callable
+    ):
         """Test validation raises SceneError with no active game."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
             # Ensure no games are active
             session.query(Game).update({"is_active": False})
@@ -566,14 +602,18 @@ class TestSceneManager:
                 managers.scene.validate_active_context()
 
     def test_validate_active_context_no_act(
-        self, session_context: SessionContext, create_test_game: Callable
+        self,
+        session_context: SessionContext,
+        create_test_game: Callable,
+        initialize_event_sources: Callable,
     ):
         """Test validation raises SceneError with no active act."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
             # Create an active game, but no acts (or ensure acts are inactive)
-            # Removed session argument
-            create_test_game(is_active=True)
+            # Pass session to factory
+            create_test_game(session=session, is_active=True)
             session.query(Act).update({"is_active": False})
 
             with pytest.raises(SceneError, match="No active act"):
@@ -584,13 +624,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ):
         """Test validation raises SceneError with no active scene."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
             # Create active game and act, but ensure no scenes are active
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
             session.query(Scene).filter(Scene.act_id == act.id).update(
                 {"is_active": False}
             )
@@ -598,9 +640,12 @@ class TestSceneManager:
             with pytest.raises(SceneError, match="No active scene"):
                 managers.scene.validate_active_context()
 
-    def test_session_propagation(self, session_context: SessionContext):
+    def test_session_propagation(
+        self, session_context: SessionContext, initialize_event_sources: Callable
+    ):
         """Test that the session is properly propagated to lazy-initialized managers."""
         with session_context as session:
+            initialize_event_sources(session)
             # Use the factory which initializes all managers with the same session
             managers: "AllManagers" = create_all_managers(session)
 
@@ -633,12 +678,14 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test creating a scene using the active act (act_id omitted)."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             scene = managers.scene.create_scene(
                 title="Active Act Scene",
@@ -657,14 +704,16 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test listing scenes using the active act (act_id omitted)."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
-            # Create some test scenes using the manager (removed session=session)
+            # Create some test scenes using the manager
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="First Scene", description="Test Description"
             )
@@ -683,13 +732,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting the active scene without providing an act_id."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create a scene to be active using the manager (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create a scene to be active using the manager
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Active Scene", description="Test Description"
             )
@@ -703,19 +754,21 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test creating a scene with make_active=False."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
-            # Create a first scene that will be active (removed session=session)
+            # Create a first scene that will be active
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="First Scene", description="Test Description"
             )
 
-            # Create a second scene without making it active (removed session=session)
+            # Create a second scene without making it active
             scene2 = managers.scene.create_scene(
                 act_id=act.id,
                 title="Second Scene",
@@ -738,25 +791,28 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
-        create_test_scene: Callable,
+        # create_test_scene: Callable, # Not used directly
         create_test_event: Callable,
+        initialize_event_sources: Callable,
     ):
         """Test that scene relationships (like events) can be accessed.
 
         Note: This primarily tests SQLAlchemy relationship configuration.
         """
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Create a scene using the manager (removed session=session)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create a scene using the manager
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Scene with Events", description="Test Description"
             )
 
-            # Add events to the scene using the event manager or factory
-            # Removed session argument from create_test_event call
-            event = create_test_event(scene_id=scene.id, description="Test event")
+            # Add events to the scene using the event factory, passing the session
+            event = create_test_event(
+                session=session, scene_id=scene.id, description="Test event"
+            )
 
             # Refresh the scene to load relationships (essential after adding related items)
             session.refresh(scene, attribute_names=["events"])
@@ -772,12 +828,14 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test the internal _get_act_id_or_active helper method."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             # Test with provided act_id
             act_id_provided = managers.scene._get_act_id_or_active("test-act-id")
@@ -800,13 +858,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting a scene by ID or slug."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Removed session=session
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create scene using manager
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Find Me", description="Test Description"
             )
@@ -830,13 +890,15 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting a scene by ID/slug or raising an error."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
-            # Removed session=session
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
+            # Create scene using manager
             scene = managers.scene.create_scene(
                 act_id=act.id, title="Find Me Or Error", description="Test Description"
             )
@@ -860,18 +922,20 @@ class TestSceneManager:
         session_context: SessionContext,
         create_test_game: Callable,
         create_test_act: Callable,
+        initialize_event_sources: Callable,
     ) -> None:
         """Test getting the most recent scene (highest sequence) in an act."""
         with session_context as session:
+            initialize_event_sources(session)
             managers: "AllManagers" = create_all_managers(session)
-            # Pass fixtures directly to helper
-            _, act = create_base_test_data(create_test_game, create_test_act)
+            # Pass session to helper
+            _, act = create_base_test_data(session, create_test_game, create_test_act)
 
             # Test with no scenes
             most_recent = managers.scene.get_most_recent_scene(act.id)
             assert most_recent is None
 
-            # Create scenes (removed session=session)
+            # Create scenes using the manager
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="Scene One", description="Test Description"
             )
@@ -889,13 +953,12 @@ class TestSceneManager:
             assert most_recent.sequence == 3
 
             # Test with a different act that has no scenes
-            # --- FIX START ---
             # Deactivate the first act before creating the second one in the same game
             act.is_active = False
-            # session.add(act) # Object is already in session, no need to re-add
+            # The 'act' object is managed by this session now.
             session.flush()  # Ensure the change is persisted before the next create call
-            # --- FIX END ---
-            # Removed session argument from create_test_act call
-            act2 = create_test_act(game_id=act.game_id, title="Act Two")
+
+            # Create the second act using the factory, passing the session
+            act2 = create_test_act(session=session, game_id=act.game_id, title="Act Two")
             most_recent_act2 = managers.scene.get_most_recent_scene(act2.id)
             assert most_recent_act2 is None
