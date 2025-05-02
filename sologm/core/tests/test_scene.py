@@ -12,6 +12,7 @@ from sologm.database.session import SessionContext
 from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.models.scene import Scene
+from sologm.models.utils import slugify # Import slugify
 from sologm.utils.errors import ActError, SceneError
 
 # Type checking imports
@@ -58,8 +59,15 @@ class TestScene:
             # Create prerequisite Game and Act records to satisfy FK constraints
             dummy_game_id = str(uuid.uuid4())
             dummy_act_id = "test-act"  # Use the ID needed by the scene
+            dummy_game_name = "Dummy Game"
 
-            dummy_game = Game(id=dummy_game_id, name="Dummy Game", description="...")
+            # Provide a slug for the dummy game
+            dummy_game = Game(
+                id=dummy_game_id,
+                name=dummy_game_name,
+                slug=slugify(dummy_game_name), # Generate slug
+                description="..."
+            )
             session.add(dummy_game)
 
             # Act needs game_id and sequence
