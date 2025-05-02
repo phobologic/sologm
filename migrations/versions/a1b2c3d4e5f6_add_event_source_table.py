@@ -42,8 +42,9 @@ def upgrade() -> None:
             """
         )
     else:
-        print("Table 'event_sources' already exists, skipping creation and data insertion.")
-
+        print(
+            "Table 'event_sources' already exists, skipping creation and data insertion."
+        )
 
     # --- SQLite Specific Logic for 'events' table modification ---
     # This part assumes the 'event_sources' table exists (either pre-existing or just created)
