@@ -54,7 +54,6 @@ echo
 sleep 0.5
 
 run_cmd sologm event list --limit 5
-run_cmd sologm scene complete
 
 # --- Act 1, Scene 2: Station Interior ---
 
@@ -87,7 +86,6 @@ echo "# Skipping this step in the automated script as the ID is unknown."
 # run_cmd sologm event edit --id <event_id_from_list> # Requires manual interaction
 
 run_cmd sologm dice history --limit 5
-run_cmd sologm scene complete
 
 # --- Completing Act 1 ---
 
