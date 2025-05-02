@@ -153,9 +153,11 @@ def test_generate_game_markdown_with_hierarchy(
     create_test_act,
     create_test_scene,
     create_test_event,
+    initialize_event_sources,  # <-- Add fixture argument here
 ):
     """Test generating markdown for a game with a complete hierarchy."""
     with session_context as session:
+        initialize_event_sources(session)  # <-- Call the initializer here
         managers = create_all_managers(session)
 
         game = create_test_game(
