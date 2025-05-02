@@ -141,7 +141,7 @@ sleep 0.5
 
 echo "--- Act 2: Pursuit ---"
 
-echo "Creating the second act (requires editor)..."
+echo "Creating the second act \(requires editor\)..."
 echo "+ sologm act create"
 sleep 0.5
 # Note: 'act create' without title/summary opens an editor, requiring manual interaction.
