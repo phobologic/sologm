@@ -1,9 +1,10 @@
 """Tests for the Act manager."""
 
-from typing import Callable
+from typing import Callable, Optional # Make sure Optional is imported if needed
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sqlalchemy.orm import Session # Add Session import
 
 from sologm.core.act import ActManager
 from sologm.core.factory import create_all_managers
@@ -507,9 +508,13 @@ class TestActManager:
         create_test_act: Callable,
         create_test_scene: Callable,
         create_test_event: Callable,
+        initialize_event_sources: Callable[[Session], None], # Add fixture
     ):
         """Test preparing act data for summary."""
         with session_context as session:
+            # Initialize event sources first
+            initialize_event_sources(session) # Call initializer
+
             managers = create_all_managers(session)
             test_game = create_test_game(session)
             test_act = create_test_act(session, game_id=test_game.id)

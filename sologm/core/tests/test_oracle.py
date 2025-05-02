@@ -672,9 +672,13 @@ It also has multiple lines."""
         create_test_act: Callable,
         create_test_scene: Callable,
         mock_anthropic_client: MagicMock,
+        initialize_event_sources: Callable[[Session], None], # Add fixture
     ):
         """Test adding interpretation as event directly."""
         with session_context as session:
+            # Initialize event sources first
+            initialize_event_sources(session) # Call initializer
+
             managers = create_all_managers(session)
             game, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
@@ -703,6 +707,9 @@ It also has multiple lines."""
             oracle_source = (
                 session.query(EventSource).filter(EventSource.name == "oracle").first()
             )
+            # Add assertion to ensure oracle_source is found after initialization
+            assert oracle_source is not None, "Oracle event source not found after initialization"
+
 
             # Verify event was created
             events = (
