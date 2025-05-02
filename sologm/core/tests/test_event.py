@@ -29,9 +29,11 @@ def create_base_test_data(
     scene_active: bool = True,
 ) -> tuple[Game, Act, Scene]:
     """Creates a standard game, act, and scene for testing."""
-    game = create_test_game(session, is_active=game_active)
-    act = create_test_act(session, game_id=game.id, is_active=act_active)
-    scene = create_test_scene(session, act_id=act.id, is_active=scene_active)
+    # Call factory fixtures without passing session; they get it internally.
+    # Pass keyword arguments explicitly for clarity.
+    game = create_test_game(is_active=game_active) # NO session argument here
+    act = create_test_act(game_id=game.id, is_active=act_active) # NO session argument here
+    scene = create_test_scene(act_id=act.id, is_active=scene_active) # NO session argument here
     return game, act, scene
 
 
