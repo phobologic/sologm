@@ -1,4 +1,4 @@
-# Technical Design Document: Act Narrative Generation
+features/act_narrative/tdd.md# Technical Design Document: Act Narrative Generation
 
 **Version:** 1.0
 **Date:** 2025-05-02
