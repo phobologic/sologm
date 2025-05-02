@@ -49,7 +49,7 @@ class DiceRoll(Base, TimestampMixin):
 
     # Optional link to game and scene
     scene_id: Mapped[Optional[str]] = mapped_column(
-        ForeignKey("scenes.id"), nullable=True
+        ForeignKey("scenes.id", ondelete="CASCADE"), nullable=True
     )
 
     # Relationships will be defined in relationships.py

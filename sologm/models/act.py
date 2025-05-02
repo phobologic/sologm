@@ -25,7 +25,9 @@ class Act(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     slug: Mapped[str] = mapped_column(nullable=False, index=True)
-    game_id: Mapped[str] = mapped_column(ForeignKey("games.id"), nullable=False)
+    game_id: Mapped[str] = mapped_column(
+        ForeignKey("games.id", ondelete="CASCADE"), nullable=False
+    )
     title: Mapped[Optional[str]] = mapped_column(
         nullable=True
     )  # Can be null for untitled acts

@@ -35,7 +35,9 @@ class Scene(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     slug: Mapped[str] = mapped_column(nullable=False, index=True)
-    act_id: Mapped[str] = mapped_column(ForeignKey("acts.id"), nullable=False)
+    act_id: Mapped[str] = mapped_column(
+        ForeignKey("acts.id", ondelete="CASCADE"), nullable=False
+    )
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     # Status column was removed; is_active flag now indicates the current scene.
@@ -60,6 +62,7 @@ class Scene(Base, TimestampMixin):
     dice_rolls: Mapped[List["DiceRoll"]] = relationship(
         "DiceRoll",
         back_populates="scene",
+        cascade="all, delete-orphan",  # Added cascade to match ondelete
         lazy="selectin",  # Use selectin loading for potential performance gain.
     )
 

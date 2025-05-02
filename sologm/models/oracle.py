@@ -22,7 +22,9 @@ class InterpretationSet(Base, TimestampMixin):
     __tablename__ = "interpretation_sets"
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
-    scene_id: Mapped[str] = mapped_column(ForeignKey("scenes.id"), nullable=False)
+    scene_id: Mapped[str] = mapped_column(
+        ForeignKey("scenes.id", ondelete="CASCADE"), nullable=False
+    )
     context: Mapped[str] = mapped_column(Text, nullable=False)
     oracle_results: Mapped[str] = mapped_column(Text, nullable=False)
     retry_attempt: Mapped[int] = mapped_column(Integer, default=0)
@@ -151,7 +153,7 @@ class Interpretation(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid.uuid4()))
     set_id: Mapped[str] = mapped_column(
-        ForeignKey("interpretation_sets.id"), nullable=False
+        ForeignKey("interpretation_sets.id", ondelete="CASCADE"), nullable=False
     )
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
