@@ -37,8 +37,9 @@ def create_base_test_data(
     Returns:
         A tuple containing the created Game and Act objects.
     """
-    game = create_test_game(session, is_active=game_active)
-    act = create_test_act(session, game_id=game.id, is_active=act_active)
+    # Removed session argument from calls
+    game = create_test_game(is_active=game_active)
+    act = create_test_act(game_id=game.id, is_active=act_active)
     return game, act
 
 
