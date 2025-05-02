@@ -12,7 +12,7 @@ from sologm.database.session import SessionContext
 from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.models.scene import Scene
-from sologm.models.utils import slugify # Import slugify
+from sologm.models.utils import slugify  # Import slugify
 from sologm.utils.errors import ActError, SceneError
 
 # Type checking imports
@@ -65,8 +65,8 @@ class TestScene:
             dummy_game = Game(
                 id=dummy_game_id,
                 name=dummy_game_name,
-                slug=slugify(dummy_game_name), # Generate slug
-                description="..."
+                slug=slugify(dummy_game_name),  # Generate slug
+                description="...",
             )
             session.add(dummy_game)
 
