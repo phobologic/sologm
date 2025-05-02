@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from sologm.models.event_source import EventSource
     from sologm.models.game import Game
     from sologm.models.scene import Scene  # Import Scene
-    from sologm.models.oracle import Interpretation # Added for relationship type hint
+    from sologm.models.oracle import Interpretation  # Added for relationship type hint
 
 
 class Event(Base, TimestampMixin):
@@ -46,13 +46,12 @@ class Event(Base, TimestampMixin):
         scene: Mapped["Scene"]
         interpretation: Mapped[Optional["Interpretation"]]
 
-
     @property
     def game(self) -> "Game":
         """Get the game this event belongs to through the scene relationship."""
         # Add check for scene relationship being loaded
         if not hasattr(self, "scene") or self.scene is None:
-             raise AttributeError("Scene relationship not loaded on Event object.")
+            raise AttributeError("Scene relationship not loaded on Event object.")
         return self.scene.act.game
 
     @hybrid_property
@@ -68,9 +67,11 @@ class Event(Base, TimestampMixin):
             if hasattr(self.scene, "act") and self.scene.act is not None:
                 return self.scene.act.game_id
             else:
-                 # This path might indicate an issue if accessed when act isn't loaded
-                 # Consider raising or returning None/default based on expected usage
-                 raise AttributeError("Act relationship not loaded on Scene object within Event.")
+                # This path might indicate an issue if accessed when act isn't loaded
+                # Consider raising or returning None/default based on expected usage
+                raise AttributeError(
+                    "Act relationship not loaded on Scene object within Event."
+                )
         # If accessed in a way where relationships aren't loaded (e.g., direct query)
         # this part might not be hit directly, relying on the expression below.
         # However, direct attribute access implies loaded state.
@@ -95,7 +96,7 @@ class Event(Base, TimestampMixin):
         """Get the act this event belongs to through the scene relationship."""
         # Add check for scene relationship being loaded
         if not hasattr(self, "scene") or self.scene is None:
-             raise AttributeError("Scene relationship not loaded on Event object.")
+            raise AttributeError("Scene relationship not loaded on Event object.")
         return self.scene.act
 
     @hybrid_property
@@ -106,7 +107,7 @@ class Event(Base, TimestampMixin):
         - Python: Returns the act ID through relationships
         - SQL: Performs a subquery to get the act ID
         """
-         # Add check for scene relationship being loaded in Python mode
+        # Add check for scene relationship being loaded in Python mode
         if hasattr(self, "scene") and self.scene is not None:
             return self.scene.act_id
         raise AttributeError("Scene relationship not loaded on Event object.")
@@ -143,9 +144,13 @@ class Event(Base, TimestampMixin):
         Requires the 'source' relationship to be loaded.
         """
         if not hasattr(self, "source") or self.source is None:
-             # This indicates a programming error if accessed when not loaded.
-             raise AttributeError("The 'source' relationship is not loaded on this Event object.")
-        return self.source.name # Removed unnecessary check now that AttributeError is raised
+            # This indicates a programming error if accessed when not loaded.
+            raise AttributeError(
+                "The 'source' relationship is not loaded on this Event object."
+            )
+        return (
+            self.source.name
+        )  # Removed unnecessary check now that AttributeError is raised
 
     @hybrid_property
     def is_manual(self) -> bool:
@@ -203,7 +208,7 @@ class Event(Base, TimestampMixin):
         - Python: Checks if source_name is 'dice'
         - SQL: Performs a join with EventSource and checks the name
         """
-         # Python implementation relies on source_name property
+        # Python implementation relies on source_name property
         return self.source_name.lower() == "dice"
 
     @is_dice_generated.expression
