@@ -192,8 +192,6 @@ def create_test_game() -> Callable[..., Game]:
     """
 
     def _create_game(
-        name: str = "Test Game",
-        description: str = "A test game",
         session: Session,
         name: str = "Test Game",
         description: str = "A test game",
