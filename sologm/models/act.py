@@ -1,4 +1,4 @@
-sologm/models/act.py"""Act model for SoloGM."""
+"""Act model for SoloGM."""
 
 import uuid
 from typing import TYPE_CHECKING, List, Optional
