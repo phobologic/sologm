@@ -123,9 +123,6 @@ echo "# Skipping this step in the automated script as the ID is unknown."
 echo "Checking dice roll history for the current scene..."
 run_cmd sologm dice history --limit 5
 
-echo "Completing the second scene..."
-run_cmd sologm scene complete
-
 # --- Completing Act 1 ---
 
 echo "--- Completing Act 1 ---"
