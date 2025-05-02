@@ -893,7 +893,7 @@ class TestSceneManager:
             # Deactivate the first act before creating the second one in the same game
             act.is_active = False
             session.add(act)
-            session.flush() # Ensure the change is persisted before the next create call
+            session.flush()  # Ensure the change is persisted before the next create call
             # --- FIX END ---
             # Removed session argument from create_test_act call
             act2 = create_test_act(game_id=act.game_id, title="Act Two")
