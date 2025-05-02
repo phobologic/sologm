@@ -350,7 +350,7 @@ class TestSceneManager:
             # Pass session to helper
             _, act = create_base_test_data(session, create_test_game, create_test_act)
             # Create two scenes using the manager
-            # Scene1 will be created first, then Scene2 will be created and become active
+            # Scene1 is created first, then Scene2 becomes active by default.
             scene1 = managers.scene.create_scene(
                 act_id=act.id, title="First Scene", description="Test Description"
             )
@@ -493,7 +493,7 @@ class TestSceneManager:
             # Pass session to helper
             _, act = create_base_test_data(session, create_test_game, create_test_act)
             # Create two scenes
-            scene1 = managers.scene.create_scene(
+            managers.scene.create_scene(  # scene1 is unused
                 act_id=act.id, title="First Scene", description="Test Description"
             )
             scene2 = managers.scene.create_scene(
@@ -816,7 +816,8 @@ class TestSceneManager:
                 session=session, scene_id=scene.id, description="Test event"
             )
 
-            # Refresh the scene to load relationships (essential after adding related items)
+            # Refresh the scene to load relationships
+            # (essential after adding related items)
             session.refresh(scene, attribute_names=["events"])
 
             # Verify relationships
@@ -938,10 +939,10 @@ class TestSceneManager:
             assert most_recent is None
 
             # Create scenes using the manager
-            scene1 = managers.scene.create_scene(
+            managers.scene.create_scene(  # scene1 is unused
                 act_id=act.id, title="Scene One", description="Test Description"
             )
-            scene2 = managers.scene.create_scene(
+            managers.scene.create_scene(  # scene2 is unused
                 act_id=act.id, title="Scene Two", description="Test Description"
             )
             scene3 = managers.scene.create_scene(
@@ -958,7 +959,7 @@ class TestSceneManager:
             # Deactivate the first act before creating the second one in the same game
             act.is_active = False
             # The 'act' object is managed by this session now.
-            session.flush()  # Ensure the change is persisted before the next create call
+            session.flush()  # Persist change before the next create call
 
             # Create the second act using the factory, passing the session
             act2 = create_test_act(
