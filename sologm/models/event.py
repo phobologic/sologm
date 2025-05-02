@@ -40,6 +40,10 @@ class Event(Base, TimestampMixin):
     source: Mapped["EventSource"] = relationship("EventSource")
 
     # Relationships will be defined in relationships.py
+    if TYPE_CHECKING:
+        scene: Mapped["Scene"]
+        interpretation: Mapped[Optional["Interpretation"]]
+
 
     @property
     def game(self) -> "Game":
