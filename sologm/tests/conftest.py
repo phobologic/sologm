@@ -375,29 +375,29 @@ def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
         # TODO: Replace direct model creation with manager call when available.
         managers = create_all_managers(session)
         # Example: interp_set = managers.oracle.create_interpretation_set(...)
-            interp_set = InterpretationSet.create(
-                scene_id=scene_id,
-                context=context,
-                oracle_results=oracle_results,
-                retry_attempt=retry_attempt,
-                is_current=is_current,
+        interp_set = InterpretationSet.create(
+            scene_id=scene_id,
+            context=context,
+            oracle_results=oracle_results,
+            retry_attempt=retry_attempt,
+            is_current=is_current,
+        )
+        session.add(interp_set)
+        session.flush()
+        try:
+            session.refresh(
+                interp_set, attribute_names=["scene", "interpretations"]
             )
-            session.add(interp_set)
-            session.flush()
-            try:
-                session.refresh(
-                    interp_set, attribute_names=["scene", "interpretations"]
-                )
-            except Exception as e:
-                logger.warning(
-                    "Warning: Error refreshing relationships in "
-                    "create_test_interpretation_set factory: %s",
-                    e,
-                )
+        except Exception as e:
             logger.warning(
-                "create_test_interpretation_set fixture is using placeholder "
-                "implementation."
+                "Warning: Error refreshing relationships in "
+                "create_test_interpretation_set factory: %s",
+                e,
             )
+        logger.warning(
+            "create_test_interpretation_set fixture is using placeholder "
+            "implementation."
+        )
         return interp_set
 
     return _create_interpretation_set
