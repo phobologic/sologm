@@ -5,7 +5,7 @@ from typing import Callable  # Import Callable for type hinting factory fixtures
 from sologm.core.prompts.oracle import OraclePrompts  # Import the class being tested
 
 # Import necessary model types for type hinting if needed
-from sologm.database.session import Session, SessionContext # Import Session type hint
+from sologm.database.session import Session, SessionContext  # Import Session type hint
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.game import Game
@@ -78,7 +78,9 @@ class TestOraclePrompts:
         create_test_act: Callable[..., Act],  # Request the fixture directly
         create_test_scene: Callable[..., Scene],  # Request the fixture directly
         create_test_event: Callable[..., Event],  # Request the fixture directly
-        initialize_event_sources: Callable[[Session], None], # Request the initializer fixture
+        initialize_event_sources: Callable[
+            [Session], None
+        ],  # Request the initializer fixture
     ):
         """Test building the complete interpretation prompt."""
         with session_context as session:
@@ -120,7 +122,7 @@ class TestOraclePrompts:
             assert f"Act: {act.summary}" in result
             assert f"Current Scene: {scene.description}" in result
             # Ensure the event description is correctly formatted in the prompt's event list
-            assert f"- {event1.description}" in result # Check formatting if applicable
+            assert f"- {event1.description}" in result  # Check formatting if applicable
             assert "Player's Question/Context: What happens next?" in result
             assert "Oracle Results: Mystery, Danger" in result
             assert "Please provide 3 different interpretations" in result
@@ -148,7 +150,9 @@ class TestOraclePrompts:
             act = create_test_act(session, game_id=game.id)
             scene = create_test_scene(session, act_id=act.id)
             # Refresh if needed for nested access
-            session.refresh(scene, attribute_names=["act", "events"]) # Add 'events' if created
+            session.refresh(
+                scene, attribute_names=["act", "events"]
+            )  # Add 'events' if created
             session.refresh(act, attribute_names=["game"])
 
             # Call the method under test
