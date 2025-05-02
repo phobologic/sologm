@@ -264,12 +264,12 @@ class TestEventManager:
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Create interpretation data using factories and session
+            # Create interpretation data using factories
             interp_set = create_test_interpretation_set(
-                session, scene_id=scene.id, context="Test context"
+                scene_id=scene.id, context="Test context"
             )
             interpretation = create_test_interpretation(
-                session, set_id=interp_set.id, title="Test Interp"
+                set_id=interp_set.id, title="Test Interp"
             )
 
             event = managers.event.add_event(
