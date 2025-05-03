@@ -23,6 +23,7 @@ from sologm.cli.utils.structured_editor import (  # Updated import
 )
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
+from sologm.database.session import get_db_context  # Added
 from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.utils.errors import APIError, GameError
@@ -1604,6 +1605,169 @@ def _collect_narrative_guidance(
         f"[_collect_narrative_guidance] Collected guidance: {result_data}"
     )
     return result_data
+
+
+@act_app.command("narrative")
+def generate_narrative(ctx: typer.Context) -> None:
+    """[bold]Generate an AI-powered narrative for the active act.[/bold]
+
+    This command uses the scenes and events of the currently active act,
+    along with optional user guidance, to generate a prose narrative in
+    Markdown format using an AI model.
+
+    You will first be prompted to provide guidance on the desired tone,
+    style, point of view, and focus for the narrative.
+
+    After the narrative is generated, you can:
+    [A]ccept: Finalize the process with the current narrative.
+    [E]dit: Open the narrative in your default text editor for modifications.
+    [R]egenerate: Provide feedback and ask the AI to generate a new version.
+    [C]ancel: Discard the generated narrative and exit.
+
+    The AI will consider the summary of the previous act (if available) for
+    better continuity.
+
+    [yellow]Examples:[/yellow]
+        [green]Generate a narrative for the active act:[/green]
+        $ sologm act narrative
+    """
+    logger.debug("[generate_narrative] Entering command.")
+    renderer: "Renderer" = ctx.obj["renderer"]
+    console: "Console" = ctx.obj["console"]
+
+    logger.debug("[generate_narrative] Entering database session context")
+    with get_db_context() as session:
+        # Initialize managers
+        game_manager = GameManager(session=session)
+        act_manager = ActManager(session=session)
+
+        # Validate active game
+        logger.debug("Validating active game")
+        active_game = game_manager.get_active_game()
+        if not active_game:
+            logger.error("No active game found during narrative generation.")
+            renderer.display_error("No active game. Activate a game first.")
+            raise typer.Exit(1)
+        logger.debug(f"Active game found: {active_game.id} ({active_game.name})")
+
+        # Validate active act
+        logger.debug("Validating active act")
+        active_act = act_manager.get_active_act(active_game.id)
+        if not active_act:
+            logger.warning(f"No active act found in game '{active_game.name}'.")
+            renderer.display_error(f"No active act in game '{active_game.name}'.")
+            renderer.display_message("Create one with `sologm act create`.")
+            raise typer.Exit(1)
+        logger.debug(f"Active act found: {active_act.id}")
+
+        # Collect initial guidance
+        logger.debug("Calling _collect_narrative_guidance")
+        original_guidance = _collect_narrative_guidance(
+            active_act, active_game, console, renderer
+        )
+        if original_guidance is None:
+            # Message already displayed by helper or editor
+            logger.info("Narrative generation cancelled during initial guidance.")
+            # No need for another message here, helper handles it.
+            raise typer.Exit(0)
+        logger.debug(f"Initial guidance collected: {original_guidance}")
+
+        # Initial AI Generation
+        generated_narrative: Optional[str] = None
+        try:
+            renderer.display_message(
+                "Generating initial narrative with AI...", style="yellow"
+            )
+            logger.debug(
+                f"Calling generate_act_narrative for act {active_act.id}"
+            )
+            generated_narrative = act_manager.generate_act_narrative(
+                act_id=active_act.id, user_guidance=original_guidance
+            )
+            logger.info(f"Initial narrative generated for act {active_act.id}")
+        except APIError as e:
+            logger.error(f"APIError during initial narrative generation: {e}", exc_info=True)
+            renderer.display_error(f"AI Error: {str(e)}")
+            raise typer.Exit(1) from e
+
+        if not generated_narrative:
+            # Should not happen if API call succeeds, but handle defensively
+            logger.error("AI generation returned empty narrative unexpectedly.")
+            renderer.display_error("AI returned an empty narrative. Cannot proceed.")
+            raise typer.Exit(1)
+
+        # Display initial narrative
+        renderer.display_markdown(generated_narrative)
+        current_narrative = generated_narrative
+
+        # Feedback Loop
+        while True:
+            logger.debug("Entering narrative feedback loop prompt.")
+            choice = renderer.display_narrative_feedback_prompt(console=console)
+            logger.debug(f"User choice from feedback prompt: {choice}")
+
+            if choice == "A":  # Accept
+                logger.info(f"Narrative for act {active_act.id} accepted by user.")
+                renderer.display_success("Narrative accepted.")
+                # Optionally display the final narrative again here if desired
+                # renderer.display_markdown(current_narrative)
+                break
+            elif choice == "E":  # Edit
+                logger.debug("User chose to edit the narrative.")
+                edited_text = click.edit(current_narrative)
+                if edited_text is not None and edited_text != current_narrative:
+                    current_narrative = edited_text
+                    logger.info(f"Narrative for act {active_act.id} edited and accepted.")
+                    renderer.display_success("Narrative edited and accepted.")
+                    renderer.display_markdown(current_narrative) # Show final edited version
+                    break
+                else:
+                    logger.debug("Edit cancelled or no changes detected.")
+                    renderer.display_warning("No changes detected or edit cancelled.")
+                    continue # Go back to prompt
+            elif choice == "R":  # Regenerate
+                logger.debug("User chose to regenerate the narrative.")
+                feedback_data = _collect_narrative_regeneration_feedback(
+                    current_narrative, active_act, active_game, console, renderer, original_guidance
+                )
+                if feedback_data:
+                    feedback = feedback_data.get("feedback")
+                    # Extract updated guidance, excluding the 'feedback' key
+                    updated_guidance = {k: v for k, v in feedback_data.items() if k != 'feedback'}
+                    logger.debug(f"Regeneration feedback: '{feedback}'")
+                    logger.debug(f"Updated guidance for regeneration: {updated_guidance}")
+                    try:
+                        renderer.display_message("Regenerating narrative with AI...", style="yellow")
+                        logger.debug(f"Calling generate_act_narrative for regeneration (act {active_act.id})")
+                        new_narrative = act_manager.generate_act_narrative(
+                            act_id=active_act.id,
+                            user_guidance=updated_guidance, # Pass potentially updated guidance
+                            previous_narrative=current_narrative,
+                            feedback=feedback
+                        )
+                        logger.info(f"Narrative regenerated successfully for act {active_act.id}")
+                        current_narrative = new_narrative
+                        renderer.display_markdown(current_narrative) # Display new narrative
+                        # Update original_guidance for the *next* potential regeneration
+                        original_guidance = updated_guidance
+                        continue # Continue loop with new narrative
+                    except APIError as e:
+                        logger.error(f"APIError during narrative regeneration: {e}", exc_info=True)
+                        renderer.display_error(f"AI Error during regeneration: {str(e)}")
+                        renderer.display_warning("Returning to previous narrative.")
+                        # Display the *old* narrative again for clarity before prompting
+                        renderer.display_markdown(current_narrative)
+                        continue # Go back to prompt with old narrative
+                else:
+                    logger.debug("Regeneration feedback collection cancelled.")
+                    renderer.display_warning("Regeneration cancelled.")
+                    continue # Go back to prompt
+            elif choice == "C" or choice is None:  # Cancel or prompt aborted (e.g., Ctrl+C)
+                logger.info(f"Narrative generation for act {active_act.id} cancelled by user.")
+                renderer.display_warning("Narrative generation cancelled.")
+                break
+
+    logger.debug("[generate_narrative] Exiting command.")
 
 
 def _collect_narrative_regeneration_feedback(
