@@ -131,10 +131,8 @@ def test_display_narrative_feedback_prompt_markdown_renderer(
     assert result_cancel is None
     # Check that click.prompt was called
     mock_prompt.assert_called_once()
-    # Check that the cancellation message was printed via _print_markdown
-    mock_console.print.assert_called_once_with(
-        "\nOperation cancelled.", highlight=False, markup=False
-    )
+    # Note: We don't assert that a cancellation message is printed,
+    # as click handles the ^C feedback, and our method just returns None.
 
 
 # --- End Tests for display_narrative_feedback_prompt ---
