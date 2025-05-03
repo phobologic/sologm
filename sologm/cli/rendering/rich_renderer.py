@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from rich.console import Console
+from rich.markdown import Markdown  # Added Markdown import
 from rich.panel import Panel
 from rich.prompt import Prompt  # Added Prompt import
 from rich.table import Table
@@ -1712,3 +1713,43 @@ class RichRenderer(Renderer):
             self.console.print(Text(message, style=style))
         else:
             self.console.print(message)
+
+    # --- New methods for Act Narrative ---
+
+    def display_markdown(self, markdown_content: str) -> None:
+        """Displays Markdown content using Rich's Markdown rendering.
+
+        Args:
+            markdown_content: The Markdown content string to display.
+        """
+        logger.debug("Displaying Markdown content")
+        # Create a Markdown object from the content
+        markdown_renderable = Markdown(markdown_content)
+        # Print the Markdown object to the console
+        self.console.print(markdown_renderable)
+
+    def display_narrative_feedback_prompt(self, console: Console) -> Optional[str]:
+        """Displays the prompt asking for feedback on AI-generated narrative.
+
+        Uses Rich Prompt to get user input. Note: Cancellation (Ctrl+C)
+        will raise rich.prompt.Abort, which the caller should handle.
+
+        Args:
+            console: The Rich Console instance (required by base class,
+                     but Prompt.ask handles output).
+
+        Returns:
+            User's choice ("A", "E", "R", or "C") or None if cancelled by caller.
+            This implementation returns the uppercase choice directly.
+        """
+        logger.debug("Displaying narrative feedback prompt")
+        st = StyledText
+        prompt_message = st.warning(
+            "Choose action: [A]ccept / [E]dit / [R]egenerate / [C]ancel"
+        )
+        # Note: Prompt.ask raises Abort on Ctrl+C, caller must handle.
+        choice = Prompt.ask(
+            prompt_message, choices=["A", "E", "R", "C"], default="A"
+        ).upper()
+        logger.debug(f"User chose: {choice}")
+        return choice
