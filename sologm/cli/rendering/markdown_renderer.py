@@ -771,3 +771,47 @@ class MarkdownRenderer(Renderer):
             f"Displaying message as Markdown: {message} (style: {style} - ignored)"
         )
         self._print_markdown(message)
+
+    # --- Narrative Feature Methods ---
+
+    def display_markdown(self, markdown_content: str) -> None:
+        """
+        Displays raw Markdown content directly to the console.
+
+        Args:
+            markdown_content: The Markdown string to display.
+        """
+        logger.debug("Displaying raw markdown content")
+        self._print_markdown(markdown_content)
+
+    def display_narrative_feedback_prompt(
+        self, console: "Console"
+    ) -> Optional[str]:
+        """
+        Prompts the user for feedback on the generated narrative using click.prompt.
+
+        Args:
+            console: The Rich Console instance (unused in this implementation but
+                     required by the base class signature).
+
+        Returns:
+            The user's choice ("A", "E", "R", "C") in uppercase, or None if cancelled.
+        """
+        logger.debug("Displaying narrative feedback prompt using click")
+        prompt_text = "Choose action [A]ccept/[E]dit/[R]egenerate/[C]ancel"
+        choices = ["A", "E", "R", "C"]
+
+        try:
+            # Use click.prompt for non-Rich environments
+            choice = click.prompt(
+                prompt_text,
+                type=click.Choice(choices, case_sensitive=False),
+                show_choices=True,
+                show_default=True,
+                default="A",
+            )
+            return choice.upper()
+        except click.Abort:
+            logger.debug("Narrative feedback prompt cancelled by user (Ctrl+C)")
+            self._print_markdown("\nOperation cancelled.")
+            return None
