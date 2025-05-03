@@ -5,6 +5,7 @@ Renderer implementation for generating Markdown output.
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+import click
 from rich.console import Console
 
 # Import necessary models for type hinting
