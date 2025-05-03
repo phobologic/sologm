@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from rich.console import Console
 from rich.markdown import Markdown  # Added Markdown import
 from rich.panel import Panel
-from rich.prompt import Prompt  # Added Prompt import
+from rich.prompt import Abort, InvalidResponse, Prompt  # Added Abort, InvalidResponse
 from rich.table import Table
 from rich.text import Text
 
@@ -1742,14 +1742,38 @@ class RichRenderer(Renderer):
             User's choice ("A", "E", "R", or "C") or None if cancelled by caller.
             This implementation returns the uppercase choice directly.
         """
-        logger.debug("Displaying narrative feedback prompt")
-        st = StyledText
-        prompt_message = st.warning(
-            "Choose action: [A]ccept / [E]dit / [R]egenerate / [C]ancel"
+        """Prompts the user for feedback action using Rich, case-insensitively."""
+        logger.debug("Displaying narrative feedback prompt (RichRenderer)")
+        prompt_text = Text.assemble(
+            "Choose action: ",
+            ("A", "bold bright_green"), "ccept / ",
+            ("E", "bold bright_yellow"), "dit / ",
+            ("R", "bold bright_cyan"), "egenerate / ",
+            ("C", "bold bright_red"), "ancel",
         )
-        # Note: Prompt.ask raises Abort on Ctrl+C, caller must handle.
-        choice = Prompt.ask(
-            prompt_message, choices=["A", "E", "R", "C"], default="A"
-        ).upper()
-        logger.debug(f"User chose: {choice}")
-        return choice
+        valid_choices = ["A", "E", "R", "C"]
+
+        while True:
+            try:
+                # Ask without using the 'choices' argument for validation
+                raw_choice = Prompt.ask(
+                    prompt_text,
+                    default="A",
+                    console=console,
+                    show_default=True,
+                    # show_choices=False, # Not needed when not using 'choices' list
+                )
+                choice = raw_choice.strip().upper()
+                if choice in valid_choices:
+                    logger.debug(f"User chose: {choice} (validated)")
+                    return choice
+                else:
+                    # Manually display invalid choice message
+                    # Use Rich's standard style for invalid prompt input
+                    console.print(f"[prompt.invalid]'{raw_choice}' is not a valid choice {valid_choices}.")
+            except Abort:
+                # Handle Ctrl+C or other abort signals
+                logger.debug("Narrative feedback prompt aborted by user.")
+                console.print("\n[prompt.invalid]Prompt aborted.") # Provide feedback
+                return None
+            # No need to catch InvalidResponse here as we're not using 'choices' validation

@@ -796,21 +796,23 @@ class MarkdownRenderer(Renderer):
         Returns:
             The user's choice ("A", "E", "R", "C") in uppercase, or None if cancelled.
         """
-        logger.debug("Displaying narrative feedback prompt using click")
-        prompt_text = "Choose action [A]ccept/[E]dit/[R]egenerate/[C]ancel"
-        choices = ["A", "E", "R", "C"]
-
+        # The console parameter is unused here but required by the base class
+        logger.debug("Displaying narrative feedback prompt (MarkdownRenderer)")
         try:
-            # Use click.prompt for non-Rich environments
+            # Use click.prompt with case-insensitive Choice
             choice = click.prompt(
-                prompt_text,
-                type=click.Choice(choices, case_sensitive=False),
-                show_choices=True,
-                show_default=True,
+                "Choose action [A]ccept/[E]dit/[R]egenerate/[C]ancel",
+                type=click.Choice(["A", "E", "R", "C"], case_sensitive=False), # Ensure case_sensitive=False
                 default="A",
+                show_choices=True, # Shows choices like (A/E/R/C)
+                show_default=True,
+                err=False, # Print errors to stderr if needed, but Choice handles validation
             )
+            logger.debug(f"User chose: {choice} (case-insensitive)")
+            # click.Choice returns the matched value from the choices list (which is uppercase)
+            # but converting again ensures consistency.
             return choice.upper()
         except click.Abort:
-            logger.debug("Narrative feedback prompt cancelled by user (Ctrl+C)")
-            self._print_markdown("\nOperation cancelled.")
+            logger.debug("Narrative feedback prompt aborted by user.")
+            # No need to print a message here, click handles Ctrl+C feedback
             return None
