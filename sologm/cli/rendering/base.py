@@ -182,9 +182,7 @@ class Renderer(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def display_narrative_feedback_prompt(
-        self, console: Console
-    ) -> Optional[str]:
+    def display_narrative_feedback_prompt(self, console: Console) -> Optional[str]:
         """
         Displays the prompt asking for feedback on AI-generated narrative.
 
