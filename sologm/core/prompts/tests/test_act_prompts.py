@@ -78,7 +78,7 @@ class TestActPrompts:
         assert "TASK:" in prompt  # Updated assertion
         assert "Markdown format" in prompt
 
-        assert "PREVIOUS ACT SUMMARY (Context):" not in prompt # Updated assertion
+        assert "PREVIOUS ACT SUMMARY (Context):" not in prompt  # Updated assertion
         assert "USER GUIDANCE" not in prompt
         assert "Scene One" not in prompt  # No scenes in minimal data
 
@@ -90,7 +90,7 @@ class TestActPrompts:
         assert "master storyteller" in prompt
         assert "GAME INFORMATION" in prompt
         assert "Test Game" in prompt
-        assert "PREVIOUS ACT SUMMARY (Context):" in prompt # Updated assertion
+        assert "PREVIOUS ACT SUMMARY (Context):" in prompt  # Updated assertion
         assert "Previously, things happened." in prompt
         assert "CURRENT ACT" in prompt
         assert "Act One" in prompt
@@ -101,10 +101,16 @@ class TestActPrompts:
         assert "Scene Two" in prompt
         assert "USER GUIDANCE" in prompt
         assert "- Tone Style: Gritty noir" in prompt  # Updated assertion format
-        assert "- Point Of View: Third-person limited" in prompt # Updated assertion format
-        assert "- Key Focus: The detective's internal struggle." in prompt # Updated assertion format
-        assert "- Other Instructions: Mention the rain." in prompt # Updated assertion format
-        assert "TASK:" in prompt # Updated assertion
+        assert (
+            "- Point Of View: Third-person limited" in prompt
+        )  # Updated assertion format
+        assert (
+            "- Key Focus: The detective's internal struggle." in prompt
+        )  # Updated assertion format
+        assert (
+            "- Other Instructions: Mention the rain." in prompt
+        )  # Updated assertion format
+        assert "TASK:" in prompt  # Updated assertion
         assert "Markdown format" in prompt
 
     def test_build_narrative_prompt_no_previous_act(self):
@@ -112,7 +118,7 @@ class TestActPrompts:
         data = self._get_full_narrative_data()
         data["previous_act_summary"] = None
         prompt = ActPrompts.build_narrative_prompt(data)
-        assert "PREVIOUS ACT SUMMARY (Context):" not in prompt # Updated assertion
+        assert "PREVIOUS ACT SUMMARY (Context):" not in prompt  # Updated assertion
 
     def test_build_narrative_prompt_no_guidance(self):
         """Test prompt generation without user guidance."""
@@ -137,15 +143,15 @@ class TestActPrompts:
 
         # Check all sections from initial prompt are still there
         assert "GAME INFORMATION" in prompt
-        assert "PREVIOUS ACT SUMMARY (Context):" in prompt # Updated assertion
+        assert "PREVIOUS ACT SUMMARY (Context):" in prompt  # Updated assertion
         assert "CURRENT ACT" in prompt
         assert "SCENES" in prompt
         assert "USER GUIDANCE" in prompt
 
         # Check new sections
-        assert "PREVIOUS NARRATIVE:" in prompt # Added colon for precision
+        assert "PREVIOUS NARRATIVE:" in prompt  # Added colon for precision
         assert previous_narrative in prompt
-        assert "USER FEEDBACK ON PREVIOUS NARRATIVE:" in prompt # Updated assertion
+        assert "USER FEEDBACK ON PREVIOUS NARRATIVE:" in prompt  # Updated assertion
         assert feedback in prompt
 
         # Check modified task instruction
