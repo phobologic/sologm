@@ -119,11 +119,10 @@ def test_display_narrative_feedback_prompt(
     # It does *not* pass 'choices' directly to Prompt.ask anymore.
     expected_kwargs = {
         "default": expected_default,
-        "console": renderer.console, # Check that the console object is passed
+        "console": renderer.console,  # Check that the console object is passed
         "show_default": True,
         # "choices" is no longer passed directly to ask in the implementation
     }
-
 
     # Test each valid choice
     for choice_val in ["A", "E", "R", "C", "a", "e", "r", "c"]:
@@ -145,7 +144,7 @@ def test_display_narrative_feedback_prompt(
         # Assert the keyword arguments are correct
         # FIX: Update the assertion for kwargs
         # Remove 'choices' check and add checks for console, show_default
-        assert "choices" not in call_kwargs # choices is handled internally now
+        assert "choices" not in call_kwargs  # choices is handled internally now
         assert call_kwargs.get("default") == expected_default
         assert call_kwargs.get("console") == renderer.console
         assert call_kwargs.get("show_default") is True
