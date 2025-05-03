@@ -1602,9 +1602,7 @@ def _collect_narrative_guidance(
         return None
 
     # Return the collected guidance (empty strings if fields were left blank)
-    logger.debug(
-        f"[_collect_narrative_guidance] Collected guidance: {result_data}"
-    )
+    logger.debug(f"[_collect_narrative_guidance] Collected guidance: {result_data}")
     return result_data
 
 
@@ -1679,15 +1677,15 @@ def generate_narrative(ctx: typer.Context) -> None:
             renderer.display_message(
                 "Generating initial narrative with AI...", style="yellow"
             )
-            logger.debug(
-                f"Calling generate_act_narrative for act {active_act.id}"
-            )
+            logger.debug(f"Calling generate_act_narrative for act {active_act.id}")
             generated_narrative = act_manager.generate_act_narrative(
                 act_id=active_act.id, user_guidance=original_guidance
             )
             logger.info(f"Initial narrative generated for act {active_act.id}")
         except APIError as e:
-            logger.error(f"APIError during initial narrative generation: {e}", exc_info=True)
+            logger.error(
+                f"APIError during initial narrative generation: {e}", exc_info=True
+            )
             renderer.display_error(f"AI Error: {str(e)}")
             raise typer.Exit(1) from e
 
@@ -1718,53 +1716,83 @@ def generate_narrative(ctx: typer.Context) -> None:
                 edited_text = click.edit(current_narrative)
                 if edited_text is not None and edited_text != current_narrative:
                     current_narrative = edited_text
-                    logger.info(f"Narrative for act {active_act.id} edited and accepted.")
+                    logger.info(
+                        f"Narrative for act {active_act.id} edited and accepted."
+                    )
                     renderer.display_success("Narrative edited and accepted.")
-                    renderer.display_markdown(current_narrative) # Show final edited version
+                    renderer.display_markdown(
+                        current_narrative
+                    )  # Show final edited version
                     break
                 else:
                     logger.debug("Edit cancelled or no changes detected.")
                     renderer.display_warning("No changes detected or edit cancelled.")
-                    continue # Go back to prompt
+                    continue  # Go back to prompt
             elif choice == "R":  # Regenerate
                 logger.debug("User chose to regenerate the narrative.")
                 feedback_data = _collect_narrative_regeneration_feedback(
-                    current_narrative, active_act, active_game, console, renderer, original_guidance
+                    current_narrative,
+                    active_act,
+                    active_game,
+                    console,
+                    renderer,
+                    original_guidance,
                 )
                 if feedback_data:
                     feedback = feedback_data.get("feedback")
                     # Extract updated guidance, excluding the 'feedback' key
-                    updated_guidance = {k: v for k, v in feedback_data.items() if k != 'feedback'}
+                    updated_guidance = {
+                        k: v for k, v in feedback_data.items() if k != "feedback"
+                    }
                     logger.debug(f"Regeneration feedback: '{feedback}'")
-                    logger.debug(f"Updated guidance for regeneration: {updated_guidance}")
+                    logger.debug(
+                        f"Updated guidance for regeneration: {updated_guidance}"
+                    )
                     try:
-                        renderer.display_message("Regenerating narrative with AI...", style="yellow")
-                        logger.debug(f"Calling generate_act_narrative for regeneration (act {active_act.id})")
+                        renderer.display_message(
+                            "Regenerating narrative with AI...", style="yellow"
+                        )
+                        logger.debug(
+                            f"Calling generate_act_narrative for regeneration (act {active_act.id})"
+                        )
                         new_narrative = act_manager.generate_act_narrative(
                             act_id=active_act.id,
-                            user_guidance=updated_guidance, # Pass potentially updated guidance
+                            user_guidance=updated_guidance,  # Pass potentially updated guidance
                             previous_narrative=current_narrative,
-                            feedback=feedback
+                            feedback=feedback,
                         )
-                        logger.info(f"Narrative regenerated successfully for act {active_act.id}")
+                        logger.info(
+                            f"Narrative regenerated successfully for act {active_act.id}"
+                        )
                         current_narrative = new_narrative
-                        renderer.display_markdown(current_narrative) # Display new narrative
+                        renderer.display_markdown(
+                            current_narrative
+                        )  # Display new narrative
                         # Update original_guidance for the *next* potential regeneration
                         original_guidance = updated_guidance
-                        continue # Continue loop with new narrative
+                        continue  # Continue loop with new narrative
                     except APIError as e:
-                        logger.error(f"APIError during narrative regeneration: {e}", exc_info=True)
-                        renderer.display_error(f"AI Error during regeneration: {str(e)}")
+                        logger.error(
+                            f"APIError during narrative regeneration: {e}",
+                            exc_info=True,
+                        )
+                        renderer.display_error(
+                            f"AI Error during regeneration: {str(e)}"
+                        )
                         renderer.display_warning("Returning to previous narrative.")
                         # Display the *old* narrative again for clarity before prompting
                         renderer.display_markdown(current_narrative)
-                        continue # Go back to prompt with old narrative
+                        continue  # Go back to prompt with old narrative
                 else:
                     logger.debug("Regeneration feedback collection cancelled.")
                     renderer.display_warning("Regeneration cancelled.")
-                    continue # Go back to prompt
-            elif choice == "C" or choice is None:  # Cancel or prompt aborted (e.g., Ctrl+C)
-                logger.info(f"Narrative generation for act {active_act.id} cancelled by user.")
+                    continue  # Go back to prompt
+            elif (
+                choice == "C" or choice is None
+            ):  # Cancel or prompt aborted (e.g., Ctrl+C)
+                logger.info(
+                    f"Narrative generation for act {active_act.id} cancelled by user."
+                )
                 renderer.display_warning("Narrative generation cancelled.")
                 break
 
@@ -1796,9 +1824,7 @@ def _collect_narrative_regeneration_feedback(
         A dictionary containing 'feedback' and updated guidance fields,
         or None if the user cancels.
     """
-    original_guidance_log = (
-        f"{original_guidance}" if original_guidance else "None"
-    )
+    original_guidance_log = f"{original_guidance}" if original_guidance else "None"
     logger.debug(
         f"[_collect_narrative_regeneration_feedback] Entering for act {act.id}. "
         f"Original guidance: {original_guidance_log}"
@@ -1864,7 +1890,7 @@ def _collect_narrative_regeneration_feedback(
         "The AI will use your feedback and the updated guidance to generate a new narrative.\n\n"
         "PREVIOUS NARRATIVE (Preview):\n"
         f"{textwrap.indent(preview_text, '  ')}\n\n"
-        "---" # Separator
+        "---"  # Separator
     )
 
     # Prepare initial data: empty feedback, guidance from original_guidance
