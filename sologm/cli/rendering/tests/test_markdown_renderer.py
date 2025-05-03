@@ -5,8 +5,9 @@ Unit tests for the MarkdownRenderer class.
 import logging
 from datetime import UTC, datetime  # Import datetime and UTC for DiceRoll creation
 from typing import Callable  # Import Callable for factory types
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+import click  # Import click for prompt and Abort
 import pytest
 from rich.console import Console
 from sqlalchemy.orm import Session  # Import Session for type hinting
@@ -69,6 +70,72 @@ def test_display_dice_roll_markdown(mock_console: MagicMock):
 
     # Assert the markdown flags
     assert call_kwargs == {"highlight": False, "markup": False}
+
+
+# --- Tests for display_markdown (New Method) ---
+
+def test_display_markdown_markdown_renderer(mock_console: MagicMock):
+    """Test displaying markdown content using MarkdownRenderer."""
+    renderer = MarkdownRenderer(mock_console)
+    test_markdown = "# Header\n* List item\n`code`"
+    renderer.display_markdown(test_markdown)
+
+    # MarkdownRenderer's display_markdown calls _print_markdown, which calls print
+    mock_console.print.assert_called_once_with(
+        test_markdown, highlight=False, markup=False
+    )
+
+# --- End Tests for display_markdown ---
+
+
+# --- Tests for display_narrative_feedback_prompt (New Method) ---
+
+@patch("click.prompt")
+def test_display_narrative_feedback_prompt_markdown_renderer(
+    mock_prompt: MagicMock, mock_console: MagicMock
+):
+    """Test displaying narrative feedback prompt using MarkdownRenderer."""
+    renderer = MarkdownRenderer(mock_console)
+    expected_prompt_text = "Choose action [A]ccept/[E]dit/[R]egenerate/[C]ancel"
+    expected_choices = ["A", "E", "R", "C"]
+
+    # Test each valid choice (case-insensitive)
+    for choice_val in ["A", "E", "R", "C", "a", "e", "r", "c"]:
+        mock_prompt.reset_mock()
+        mock_console.reset_mock() # Reset console mock too for cancellation check later
+        mock_prompt.return_value = choice_val
+        result = renderer.display_narrative_feedback_prompt(renderer.console)
+
+        assert result == choice_val.upper()
+        # Check that click.prompt was called correctly
+        call_args, call_kwargs = mock_prompt.call_args
+        assert call_args[0] == expected_prompt_text
+        assert isinstance(call_kwargs.get("type"), click.Choice)
+        assert call_kwargs.get("type").choices == expected_choices
+        assert call_kwargs.get("type").case_sensitive is False
+        assert call_kwargs.get("show_choices") is True
+        assert call_kwargs.get("show_default") is True
+        assert call_kwargs.get("default") == "A"
+        # Ensure no cancellation message was printed
+        mock_console.print.assert_not_called()
+
+
+    # Test cancellation (Ctrl+C raises click.Abort)
+    mock_prompt.reset_mock()
+    mock_console.reset_mock()
+    mock_prompt.side_effect = click.Abort()
+    result_cancel = renderer.display_narrative_feedback_prompt(renderer.console)
+
+    assert result_cancel is None
+    # Check that click.prompt was called
+    mock_prompt.assert_called_once()
+    # Check that the cancellation message was printed via _print_markdown
+    mock_console.print.assert_called_once_with(
+        "\nOperation cancelled.", highlight=False, markup=False
+    )
+
+
+# --- End Tests for display_narrative_feedback_prompt ---
 
 
 # --- Test for display_interpretation ---

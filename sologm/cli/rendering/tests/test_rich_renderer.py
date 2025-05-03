@@ -4,8 +4,10 @@
 from typing import Callable, Any, List, Dict, Optional  # Added List, Dict, Optional
 from unittest.mock import MagicMock, patch  # Added patch
 
+import click  # Import click for Abort exception
 import pytest
 from rich.console import Console  # Removed Grid import
+from rich.markdown import Markdown
 from rich.panel import Panel  # Import Panel for assertion
 from rich.table import Table  # Import Table for type checking if needed
 from rich.layout import Layout  # Import Layout for type checking if needed
@@ -76,6 +78,48 @@ def test_display_dice_roll(
     )  # Use the style actually applied by the renderer
     # Verify status is not in metadata.
     assert "Status" not in str(args[0].renderable)
+
+
+# --- Tests for display_markdown (New Method) ---
+
+def test_display_markdown(mock_console: MagicMock):
+    """Test displaying markdown content using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    test_markdown = "# Header\n* List item\n`code`"
+    renderer.display_markdown(test_markdown)
+
+    mock_console.print.assert_called_once()
+    args, kwargs = mock_console.print.call_args
+    assert len(args) == 1
+    assert isinstance(args[0], Markdown)
+    assert args[0].markup == test_markdown
+
+# --- End Tests for display_markdown ---
+
+
+# --- Tests for display_narrative_feedback_prompt (New Method) ---
+
+@patch("rich.prompt.Prompt.ask")
+def test_display_narrative_feedback_prompt(
+    mock_ask: MagicMock, mock_console: MagicMock
+):
+    """Test displaying narrative feedback prompt using RichRenderer."""
+    renderer = RichRenderer(mock_console)
+    expected_prompt_message = "[warning]Choose action: [A]ccept / [E]dit / [R]egenerate / [C]ancel[/warning]"
+    expected_choices = ["A", "E", "R", "C"]
+    expected_default = "A"
+
+    # Test each valid choice
+    for choice_val in ["A", "E", "R", "C", "a", "e", "r", "c"]:
+        mock_ask.reset_mock()
+        mock_ask.return_value = choice_val
+        result = renderer.display_narrative_feedback_prompt(renderer.console)
+        assert result == choice_val.upper()
+        mock_ask.assert_called_once_with(
+            expected_prompt_message, choices=expected_choices, default=expected_default
+        )
+
+# --- End Tests for display_narrative_feedback_prompt ---
 
 
 # --- End Tests for display_scene_info ---
