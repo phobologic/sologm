@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.models.act import Act
+from sologm.models.game import Game
+from sologm.models.scene import Scene
 
 # Ensure Session is imported if not already (it is in the provided snippet)
 # from sqlalchemy.orm import Session
@@ -813,3 +815,109 @@ class ActManager(BaseManager[Act, Act]):
             "summary": updated_act.summary,
             "act": updated_act,
         }
+
+    def prepare_act_data_for_narrative(self, act_id: str) -> Dict:
+        """Prepare act data for the narrative generation prompt.
+
+        Fetches the target act, its game, the summary of the previous act (if any),
+        all scenes within the act (ordered by sequence), and all events within
+        each scene (ordered chronologically).
+
+        Args:
+            act_id: ID of the act to prepare data for.
+
+        Returns:
+            Dict containing structured data about the act, game, previous act
+            summary, scenes, and events, suitable for AI narrative generation.
+
+        Raises:
+            GameError: If the act or its associated game doesn't exist.
+            SceneError: If there's an issue retrieving scenes.
+            EventError: If there's an issue retrieving events.
+        """
+        logger.debug(f"Preparing data for act {act_id} narrative generation")
+
+        def _prepare_data(session: Session) -> Dict:
+            # Get the target act
+            act = self.get_entity_or_error(
+                session, Act, act_id, GameError, f"Act with ID {act_id} not found"
+            )
+            logger.debug(f"Found act: {act.id} ({act.title or 'Untitled'})")
+
+            # Get the associated game
+            game = self.get_entity_or_error(
+                session,
+                Game,
+                act.game_id,
+                GameError,
+                f"Game with ID {act.game_id} not found for act {act_id}",
+            )
+            logger.debug(f"Found game: {game.id} ({game.name})")
+
+            # Get the previous act's summary (if exists)
+            previous_act = (
+                session.query(Act)
+                .filter(Act.game_id == act.game_id, Act.sequence < act.sequence)
+                .order_by(Act.sequence.desc())
+                .first()
+            )
+            previous_act_summary = previous_act.summary if previous_act else None
+            logger.debug(
+                f"Previous act summary found: {'Yes' if previous_act_summary else 'No'}"
+            )
+
+            # Get all scenes in the act (ordered by sequence)
+            # Assuming scene_manager.list_scenes orders by sequence
+            scenes = self.scene_manager.list_scenes(act_id=act.id)
+            logger.debug(f"Found {len(scenes)} scenes for act {act.id}")
+
+            # Prepare scene and event data
+            scene_list_data = []
+            for scene in scenes:
+                # Assuming event_manager.list_events orders by created_at
+                events = self.scene_manager.event_manager.list_events(scene_id=scene.id)
+                logger.debug(f"Found {len(events)} events for scene {scene.id}")
+                event_list_data = [
+                    {
+                        "id": event.id,
+                        "description": event.description,
+                        "source_name": event.source_name,
+                        "created_at": event.created_at.isoformat()
+                        if event.created_at
+                        else None,
+                    }
+                    for event in events
+                ]
+                scene_list_data.append(
+                    {
+                        "id": scene.id,
+                        "sequence": scene.sequence,
+                        "title": scene.title,
+                        "description": scene.description,
+                        "events": event_list_data,
+                    }
+                )
+
+            # Construct the final data structure
+            narrative_data = {
+                "game": {
+                    "id": game.id,
+                    "name": game.name,
+                    "description": game.description,
+                },
+                "act": {
+                    "id": act.id,
+                    "sequence": act.sequence,
+                    "title": act.title,
+                    "summary": act.summary,
+                },
+                "previous_act_summary": previous_act_summary,
+                "scenes": scene_list_data,
+            }
+
+            logger.debug("Successfully prepared act data for narrative generation")
+            return narrative_data
+
+        return self._execute_db_operation(
+            "prepare_act_data_for_narrative", _prepare_data
+        )
