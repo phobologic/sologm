@@ -149,8 +149,16 @@ class Renderer(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def display_act_ai_feedback_prompt(self, console: Console) -> None:
-        """Displays the prompt asking for feedback on AI generation."""
+    def display_act_ai_feedback_prompt(self, console: Console) -> Optional[str]:
+        """
+        Displays the prompt asking for feedback on AI generation for act completion.
+
+        Args:
+            console: The Rich Console instance for interaction.
+
+        Returns:
+            The user's choice ("A", "E", "R", "C") or None if cancelled.
+        """
         # Note: Implementation might differ based on Rich vs Markdown
         raise NotImplementedError
 
@@ -160,6 +168,42 @@ class Renderer(abc.ABC):
     ) -> None:
         """Displays a preview of edited AI-generated content."""
         raise NotImplementedError
+
+    # --- New Methods for Step 1 ---
+
+    @abc.abstractmethod
+    def display_markdown(self, markdown_content: str) -> None:
+        """
+        Displays content formatted as Markdown.
+
+        Args:
+            markdown_content: A string containing Markdown text.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def display_narrative_feedback_prompt(
+        self, console: Console
+    ) -> Optional[str]:
+        """
+        Displays the prompt asking for feedback on AI-generated narrative.
+
+        Expected choices:
+        - A: Accept the narrative.
+        - E: Edit the narrative manually.
+        - R: Regenerate the narrative with feedback.
+        - C: Cancel and discard the narrative.
+
+        Args:
+            console: The Rich Console instance for interaction (primarily for RichRenderer).
+
+        Returns:
+            The user's choice ("A", "E", "R", "C") in uppercase, or None if the
+            user cancels the operation (e.g., via Ctrl+C).
+        """
+        raise NotImplementedError
+
+    # --- End New Methods ---
 
     @abc.abstractmethod
     def display_error(self, message: str) -> None:
