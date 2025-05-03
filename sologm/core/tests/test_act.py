@@ -891,12 +891,8 @@ class TestActManager:
             )
             # Create scenes out of order to test sorting
             # Sequence is assigned automatically by the manager
-            scene2_act2 = create_test_scene(
-                session, act_id=act2.id, title="Scene 2.2"
-            )
-            scene1_act2 = create_test_scene(
-                session, act_id=act2.id, title="Scene 2.1"
-            )
+            scene2_act2 = create_test_scene(session, act_id=act2.id, title="Scene 2.2")
+            scene1_act2 = create_test_scene(session, act_id=act2.id, title="Scene 2.1")
 
             # Create events for scenes in Act 2 (assume sequential creation implies time order)
             event1_s1 = create_test_event(
