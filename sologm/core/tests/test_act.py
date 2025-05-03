@@ -890,11 +890,12 @@ class TestActManager:
                 is_active=True,
             )
             # Create scenes out of order to test sorting
+            # Sequence is assigned automatically by the manager
             scene2_act2 = create_test_scene(
-                session, act_id=act2.id, title="Scene 2.2", sequence=2
+                session, act_id=act2.id, title="Scene 2.2"
             )
             scene1_act2 = create_test_scene(
-                session, act_id=act2.id, title="Scene 2.1", sequence=1
+                session, act_id=act2.id, title="Scene 2.1"
             )
 
             # Create events for scenes in Act 2 (assume sequential creation implies time order)
@@ -972,8 +973,9 @@ class TestActManager:
             # Mock AnthropicClient
             mock_anthropic_instance = MagicMock()
             mock_anthropic_instance.send_message.return_value = "Mocked AI Narrative"
+            # Patch the client where it's looked up (in the module under test)
             monkeypatch.setattr(
-                "sologm.integrations.anthropic.AnthropicClient",
+                "sologm.core.act.AnthropicClient",
                 lambda: mock_anthropic_instance,
             )
 
@@ -1073,8 +1075,9 @@ class TestActManager:
             mock_anthropic_instance.send_message.side_effect = Exception(
                 "Anthropic API down"
             )
+            # Patch the client where it's looked up (in the module under test)
             monkeypatch.setattr(
-                "sologm.integrations.anthropic.AnthropicClient",
+                "sologm.core.act.AnthropicClient",
                 lambda: mock_anthropic_instance,
             )
 
