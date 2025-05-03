@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
+from sologm.core.prompts.act import ActPrompts
+from sologm.integrations.anthropic import NARRATIVE_MAX_TOKENS, AnthropicClient
 from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.models.scene import Scene
@@ -14,7 +16,7 @@ from sologm.models.scene import Scene
 # from sqlalchemy.orm import Session
 # Ensure Optional is imported if not already (it is in the provided snippet)
 # from typing import Optional
-from sologm.utils.errors import GameError
+from sologm.utils.errors import APIError, GameError
 
 if TYPE_CHECKING:
     from sologm.core.game import GameManager
@@ -921,3 +923,59 @@ class ActManager(BaseManager[Act, Act]):
         return self._execute_db_operation(
             "prepare_act_data_for_narrative", _prepare_data
         )
+
+    def generate_act_narrative(
+        self,
+        act_id: str,
+        user_guidance: Optional[Dict] = None,
+        previous_narrative: Optional[str] = None,
+        feedback: Optional[str] = None,
+    ) -> str:
+        """Generate a narrative for an act using AI, optionally incorporating feedback.
+
+        Args:
+            act_id: ID of the act to generate the narrative for.
+            user_guidance: Optional dictionary containing user guidance (tone, focus, etc.).
+            previous_narrative: Optional previously generated narrative (for regeneration).
+            feedback: Optional user feedback on the previous narrative.
+
+        Returns:
+            The generated narrative string in Markdown format.
+
+        Raises:
+            GameError: If the act or its associated data cannot be found.
+            APIError: If there's an error communicating with the AI service.
+        """
+        logger.debug(
+            f"Generating narrative for act {act_id}. "
+            f"Regeneration: {'Yes' if previous_narrative else 'No'}"
+        )
+
+        # 1. Prepare the data
+        narrative_data = self.prepare_act_data_for_narrative(act_id)
+        narrative_data["user_guidance"] = user_guidance or {}
+        logger.debug("Act data prepared for narrative generation.")
+
+        # 2. Build the appropriate prompt
+        if previous_narrative and feedback:
+            logger.debug("Building narrative regeneration prompt.")
+            prompt = ActPrompts.build_narrative_regeneration_prompt(
+                narrative_data=narrative_data,
+                previous_narrative=previous_narrative,
+                feedback=feedback,
+            )
+        else:
+            logger.debug("Building initial narrative prompt.")
+            prompt = ActPrompts.build_narrative_prompt(narrative_data=narrative_data)
+
+        # 3. Call the AI service
+        try:
+            logger.debug("Instantiating AnthropicClient.")
+            client = AnthropicClient()
+            logger.info(f"Sending narrative prompt to AI for act {act_id}...")
+            response = client.send_message(prompt=prompt, max_tokens=NARRATIVE_MAX_TOKENS)
+            logger.info(f"Received narrative response from AI for act {act_id}.")
+            return response
+        except Exception as e:
+            logger.error(f"Error generating act narrative: {str(e)}", exc_info=True)
+            raise APIError(f"Failed to generate act narrative: {str(e)}") from e

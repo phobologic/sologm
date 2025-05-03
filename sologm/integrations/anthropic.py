@@ -11,6 +11,9 @@ from sologm.utils.errors import APIError
 
 logger = logging.getLogger(__name__)
 
+# Default max tokens for narrative generation (can be overridden)
+NARRATIVE_MAX_TOKENS = 2048
+
 
 class AnthropicClient:
     """Client for interacting with Anthropic's Claude API."""
