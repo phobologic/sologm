@@ -802,11 +802,13 @@ class MarkdownRenderer(Renderer):
             # Use click.prompt with case-insensitive Choice
             choice = click.prompt(
                 "Choose action [A]ccept/[E]dit/[R]egenerate/[C]ancel",
-                type=click.Choice(["A", "E", "R", "C"], case_sensitive=False), # Ensure case_sensitive=False
+                type=click.Choice(
+                    ["A", "E", "R", "C"], case_sensitive=False
+                ),  # Ensure case_sensitive=False
                 default="A",
-                show_choices=True, # Shows choices like (A/E/R/C)
+                show_choices=True,  # Shows choices like (A/E/R/C)
                 show_default=True,
-                err=False, # Print errors to stderr if needed, but Choice handles validation
+                err=False,  # Print errors to stderr if needed, but Choice handles validation
             )
             logger.debug(f"User chose: {choice} (case-insensitive)")
             # click.Choice returns the matched value from the choices list (which is uppercase)

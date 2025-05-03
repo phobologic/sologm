@@ -1746,10 +1746,14 @@ class RichRenderer(Renderer):
         logger.debug("Displaying narrative feedback prompt (RichRenderer)")
         prompt_text = Text.assemble(
             "Choose action: ",
-            ("A", "bold bright_green"), "ccept / ",
-            ("E", "bold bright_yellow"), "dit / ",
-            ("R", "bold bright_cyan"), "egenerate / ",
-            ("C", "bold bright_red"), "ancel",
+            ("A", "bold bright_green"),
+            "ccept / ",
+            ("E", "bold bright_yellow"),
+            "dit / ",
+            ("R", "bold bright_cyan"),
+            "egenerate / ",
+            ("C", "bold bright_red"),
+            "ancel",
         )
         valid_choices = ["A", "E", "R", "C"]
 
@@ -1770,10 +1774,12 @@ class RichRenderer(Renderer):
                 else:
                     # Manually display invalid choice message
                     # Use Rich's standard style for invalid prompt input
-                    console.print(f"[prompt.invalid]'{raw_choice}' is not a valid choice {valid_choices}.")
+                    console.print(
+                        f"[prompt.invalid]'{raw_choice}' is not a valid choice {valid_choices}."
+                    )
             except Abort:
                 # Handle Ctrl+C or other abort signals
                 logger.debug("Narrative feedback prompt aborted by user.")
-                console.print("\n[prompt.invalid]Prompt aborted.") # Provide feedback
+                console.print("\n[prompt.invalid]Prompt aborted.")  # Provide feedback
                 return None
             # No need to catch InvalidResponse here as we're not using 'choices' validation
