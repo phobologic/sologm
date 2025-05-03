@@ -973,7 +973,9 @@ class ActManager(BaseManager[Act, Act]):
             logger.debug("Instantiating AnthropicClient.")
             client = AnthropicClient()
             logger.info(f"Sending narrative prompt to AI for act {act_id}...")
-            response = client.send_message(prompt=prompt, max_tokens=NARRATIVE_MAX_TOKENS)
+            response = client.send_message(
+                prompt=prompt, max_tokens=NARRATIVE_MAX_TOKENS
+            )
             logger.info(f"Received narrative response from AI for act {act_id}.")
             return response
         except Exception as e:
