@@ -53,7 +53,7 @@ class TestActPrompts:
                 "sequence": 2,
                 "title": "Scene Two",
                 "description": "The second scene.",
-                "events": [], # Scene with no events
+                "events": [],  # Scene with no events
             },
         ]
         data["user_guidance"] = {
@@ -69,7 +69,7 @@ class TestActPrompts:
         data = self._get_base_narrative_data()
         prompt = ActPrompts.build_narrative_prompt(data)
 
-        assert "master storyteller" in prompt # System instruction
+        assert "master storyteller" in prompt  # System instruction
         assert "GAME INFORMATION" in prompt
         assert "Test Game" in prompt
         assert "CURRENT ACT" in prompt
@@ -80,7 +80,7 @@ class TestActPrompts:
 
         assert "PREVIOUS ACT CONTEXT" not in prompt
         assert "USER GUIDANCE" not in prompt
-        assert "Scene One" not in prompt # No scenes in minimal data
+        assert "Scene One" not in prompt  # No scenes in minimal data
 
     def test_build_narrative_prompt_complete(self):
         """Test prompt generation with complete data."""
@@ -100,7 +100,7 @@ class TestActPrompts:
         assert "Event 2 followed." in prompt
         assert "Scene Two" in prompt
         assert "USER GUIDANCE" in prompt
-        assert "Tone/Style: Gritty noir" in prompt # Assuming label format
+        assert "Tone/Style: Gritty noir" in prompt  # Assuming label format
         assert "Point of View: Third-person limited" in prompt
         assert "Key Focus: The detective's internal struggle." in prompt
         assert "Other Instructions: Mention the rain." in prompt
@@ -121,9 +121,9 @@ class TestActPrompts:
         prompt = ActPrompts.build_narrative_prompt(data)
         assert "USER GUIDANCE" not in prompt
 
-        data["user_guidance"] = {} # Empty dict
+        data["user_guidance"] = {}  # Empty dict
         prompt = ActPrompts.build_narrative_prompt(data)
-        assert "USER GUIDANCE" not in prompt # Should also be omitted if empty
+        assert "USER GUIDANCE" not in prompt  # Should also be omitted if empty
 
     def test_build_narrative_regeneration_prompt(self):
         """Test prompt generation for regeneration with feedback."""
@@ -149,6 +149,6 @@ class TestActPrompts:
         assert feedback in prompt
 
         # Check modified task instruction
-        assert "Generate a *new* narrative" in prompt # Or similar wording
-        assert "incorporating the user feedback" in prompt # Or similar wording
-        assert "Markdown format" in prompt # Still required
+        assert "Generate a *new* narrative" in prompt  # Or similar wording
+        assert "incorporating the user feedback" in prompt  # Or similar wording
+        assert "Markdown format" in prompt  # Still required
