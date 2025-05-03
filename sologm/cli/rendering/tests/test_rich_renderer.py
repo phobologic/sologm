@@ -11,6 +11,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel  # Import Panel for assertion
 from rich.table import Table  # Import Table for type checking if needed
 from rich.layout import Layout  # Import Layout for type checking if needed
+from rich.text import Text # Add this import
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
 
