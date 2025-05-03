@@ -8,6 +8,7 @@ or problems that unfold through multiple connected Scenes.
 import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
+import click  # Added for click.edit
 import typer
 
 # Console import removed, will get from ctx
