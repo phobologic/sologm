@@ -958,18 +958,25 @@ class ActManager(BaseManager[Act, Act]):
         # 1. Prepare the data
         narrative_data = self.prepare_act_data_for_narrative(act_id)
         narrative_data["user_guidance"] = user_guidance or {}
-        logger.debug("Act data prepared for narrative generation.")
+        act_title = narrative_data.get("act", {}).get("title")
+        logger.debug(
+            f"Act data prepared for narrative generation. Existing title: '{act_title}'"
+        )
 
-        # 2. Build the appropriate prompt
+        # 2. Build the appropriate prompt (prompt logic now depends on act_title)
         if previous_narrative and feedback:
-            logger.debug("Building narrative regeneration prompt.")
+            logger.debug(
+                f"Building narrative regeneration prompt (Act has title: {bool(act_title)})."
+            )
             prompt = ActPrompts.build_narrative_regeneration_prompt(
                 narrative_data=narrative_data,
                 previous_narrative=previous_narrative,
                 feedback=feedback,
             )
         else:
-            logger.debug("Building initial narrative prompt.")
+            logger.debug(
+                f"Building initial narrative prompt (Act has title: {bool(act_title)})."
+            )
             prompt = ActPrompts.build_narrative_prompt(narrative_data=narrative_data)
 
         # 3. Call the AI service
@@ -977,11 +984,25 @@ class ActManager(BaseManager[Act, Act]):
             logger.debug("Instantiating AnthropicClient.")
             client = AnthropicClient()
             logger.info(f"Sending narrative prompt to AI for act {act_id}...")
-            response = client.send_message(
+            ai_response = client.send_message(
                 prompt=prompt, max_tokens=NARRATIVE_MAX_TOKENS
             )
             logger.info(f"Received narrative response from AI for act {act_id}.")
-            return response
+
+            # 4. Format the final response based on whether the act had a title
+            if act_title:
+                logger.debug(
+                    "Act had an existing title. Prepending it to the AI response."
+                )
+                # Prepend the existing title as H1 Markdown
+                final_narrative = f"# {act_title}\n\n{ai_response.strip()}"
+                return final_narrative
+            else:
+                logger.debug(
+                    "Act did not have an existing title. Returning AI response directly (should include title)."
+                )
+                # AI was instructed to include the title, return its response directly
+                return ai_response
         except Exception as e:
             logger.error(f"Error generating act narrative: {str(e)}", exc_info=True)
             raise APIError(f"Failed to generate act narrative: {str(e)}") from e
