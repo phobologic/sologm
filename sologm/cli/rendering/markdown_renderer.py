@@ -785,9 +785,7 @@ class MarkdownRenderer(Renderer):
         logger.debug("Displaying raw markdown content")
         self._print_markdown(markdown_content)
 
-    def display_narrative_feedback_prompt(
-        self, console: "Console"
-    ) -> Optional[str]:
+    def display_narrative_feedback_prompt(self, console: "Console") -> Optional[str]:
         """
         Prompts the user for feedback on the generated narrative using click.prompt.
 
