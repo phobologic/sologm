@@ -1375,6 +1375,11 @@ def complete_act(
             "(overwrites existing)"
         ),
     ),
+    show_prompt: bool = typer.Option(
+        False,
+        "--show-prompt",
+        help="Show the prompt that would be sent to the AI without sending it (requires --ai)",
+    ),
 ) -> None:
     """[bold]Complete the current active act.[/bold]
 
@@ -1387,6 +1392,9 @@ def complete_act(
     content. You can provide additional guidance with `--context`. Use `--force`
     with `--ai` to proceed even if the act already has a title or summary
     (they will be replaced by the AI generation).
+
+    Use `--show-prompt` with `--ai` to view the generated prompt without
+    sending it to the AI.
 
     [yellow]Examples:[/yellow]
         [green]Complete act using the interactive editor:[/green]
@@ -1401,6 +1409,9 @@ def complete_act(
 
         [green]Force AI regeneration, overwriting existing title/summary:[/green]
         $ sologm act complete --ai --force
+
+        [green]Show the prompt that would be sent to the AI:[/green]
+        $ sologm act complete --ai --show-prompt
     """
     context_log_str = (
         f"'{context[:100]}{'...' if context and len(context) > 100 else ''}'"
@@ -1445,6 +1456,46 @@ def complete_act(
             completed_act: Optional[Act] = None
             if ai:
                 logger.debug("[complete_act] AI completion path chosen.")
+
+                # Handle --show-prompt for AI completion
+                if show_prompt:
+                    logger.debug("[complete_act] --show-prompt flag detected.")
+                    # Collect context if needed (similar logic to _handle_ai_completion)
+                    if not context:
+                        logger.debug(
+                            "[complete_act] No context provided via CLI for show-prompt, "
+                            "collecting from user."
+                        )
+                        context = _collect_user_context(
+                            active_act, active_game.name, console, renderer
+                        )
+                        if context is None:
+                            logger.warning(
+                                "[complete_act] Prompt display cancelled during user context collection."
+                            )
+                            raise typer.Exit(0)
+                    try:
+                        # Prepare data and build prompt
+                        act_data = act_manager.prepare_act_data_for_summary(
+                            active_act.id, context
+                        )
+                        prompt = ActPrompts.build_summary_prompt(act_data)
+                        renderer.display_message(
+                            "\nPrompt that would be sent to AI:", style="bold blue"
+                        )
+                        renderer.display_message(prompt)
+                        raise typer.Exit(0)
+                    except (GameError, APIError) as e:  # Catch potential errors during prep
+                        logger.error(
+                            f"Error preparing data/prompt for --show-prompt: {e}",
+                            exc_info=True,
+                        )
+                        renderer.display_error(
+                            f"Error preparing prompt display: {str(e)}"
+                        )
+                        raise typer.Exit(1) from e
+
+                # Proceed with normal AI completion if --show-prompt is not set
                 logger.debug("[complete_act] Calling _handle_ai_completion")
                 completed_act = _handle_ai_completion(
                     act_manager,
@@ -1608,7 +1659,14 @@ def _collect_narrative_guidance(
 
 
 @act_app.command("narrative")
-def generate_narrative(ctx: typer.Context) -> None:
+def generate_narrative(
+    ctx: typer.Context,
+    show_prompt: bool = typer.Option(
+        False,
+        "--show-prompt",
+        help="Show the prompt that would be sent to the AI without sending it",
+    ),
+) -> None:
     """[bold]Generate an AI-powered narrative for the active act.[/bold]
 
     This command uses the scenes and events of the currently active act,
@@ -1627,9 +1685,14 @@ def generate_narrative(ctx: typer.Context) -> None:
     The AI will consider the summary of the previous act (if available) for
     better continuity.
 
+    Use `--show-prompt` to view the generated prompt without sending it to the AI.
+
     [yellow]Examples:[/yellow]
         [green]Generate a narrative for the active act:[/green]
         $ sologm act narrative
+
+        [green]Show the prompt that would be sent to the AI:[/green]
+        $ sologm act narrative --show-prompt
     """
     logger.debug("[generate_narrative] Entering command.")
     renderer: "Renderer" = ctx.obj["renderer"]
@@ -1660,7 +1723,7 @@ def generate_narrative(ctx: typer.Context) -> None:
             raise typer.Exit(1)
         logger.debug(f"Active act found: {active_act.id}")
 
-        # Collect initial guidance
+        # Collect initial guidance (needed for both generation and showing prompt)
         logger.debug("Calling _collect_narrative_guidance")
         original_guidance = _collect_narrative_guidance(
             active_act, active_game, console, renderer
@@ -1672,7 +1735,29 @@ def generate_narrative(ctx: typer.Context) -> None:
             raise typer.Exit(0)
         logger.debug(f"Initial guidance collected: {original_guidance}")
 
-        # Initial AI Generation
+        # Handle --show-prompt
+        if show_prompt:
+            logger.debug("[generate_narrative] --show-prompt flag detected.")
+            try:
+                # Prepare data and build prompt
+                narrative_data = act_manager.prepare_act_data_for_narrative(
+                    active_act.id
+                )
+                narrative_data["user_guidance"] = original_guidance or {}
+                prompt = ActPrompts.build_narrative_prompt(narrative_data)
+                renderer.display_message(
+                    "\nPrompt that would be sent to AI:", style="bold blue"
+                )
+                renderer.display_message(prompt)
+                raise typer.Exit(0)
+            except (GameError, APIError) as e:  # Catch potential errors during prep
+                logger.error(
+                    f"Error preparing data/prompt for --show-prompt: {e}", exc_info=True
+                )
+                renderer.display_error(f"Error preparing prompt display: {str(e)}")
+                raise typer.Exit(1) from e
+
+        # Initial AI Generation (only if not showing prompt)
         generated_narrative: Optional[str] = None
         try:
             renderer.display_message(
