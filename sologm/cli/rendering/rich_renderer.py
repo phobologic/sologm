@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from rich.console import Console
 from rich.markdown import Markdown  # Added Markdown import
 from rich.panel import Panel
-from rich.prompt import Abort, InvalidResponse, Prompt  # Added Abort, InvalidResponse
+# Removed Abort from import, InvalidResponse might not be needed either if not used
+from rich.prompt import InvalidResponse, Prompt
 from rich.table import Table
 from rich.text import Text
 
@@ -1777,9 +1778,7 @@ class RichRenderer(Renderer):
                     console.print(
                         f"[prompt.invalid]'{raw_choice}' is not a valid choice {valid_choices}."
                     )
-            except Abort:
-                # Handle Ctrl+C or other abort signals
-                logger.debug("Narrative feedback prompt aborted by user.")
-                console.print("\n[prompt.invalid]Prompt aborted.")  # Provide feedback
-                return None
+            # Removed specific except Abort block.
+            # Prompt.ask handles KeyboardInterrupt internally and raises Abort.
+            # If Abort propagates, Typer/Click should handle it gracefully.
             # No need to catch InvalidResponse here as we're not using 'choices' validation
