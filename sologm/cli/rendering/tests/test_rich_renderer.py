@@ -82,6 +82,7 @@ def test_display_dice_roll(
 
 # --- Tests for display_markdown (New Method) ---
 
+
 def test_display_markdown(mock_console: MagicMock):
     """Test displaying markdown content using RichRenderer."""
     renderer = RichRenderer(mock_console)
@@ -94,10 +95,12 @@ def test_display_markdown(mock_console: MagicMock):
     assert isinstance(args[0], Markdown)
     assert args[0].markup == test_markdown
 
+
 # --- End Tests for display_markdown ---
 
 
 # --- Tests for display_narrative_feedback_prompt (New Method) ---
+
 
 @patch("rich.prompt.Prompt.ask")
 def test_display_narrative_feedback_prompt(
@@ -105,7 +108,9 @@ def test_display_narrative_feedback_prompt(
 ):
     """Test displaying narrative feedback prompt using RichRenderer."""
     renderer = RichRenderer(mock_console)
-    expected_prompt_message = "[warning]Choose action: [A]ccept / [E]dit / [R]egenerate / [C]ancel[/warning]"
+    expected_prompt_message = (
+        "[warning]Choose action: [A]ccept / [E]dit / [R]egenerate / [C]ancel[/warning]"
+    )
     expected_choices = ["A", "E", "R", "C"]
     expected_default = "A"
 
@@ -118,6 +123,7 @@ def test_display_narrative_feedback_prompt(
         mock_ask.assert_called_once_with(
             expected_prompt_message, choices=expected_choices, default=expected_default
         )
+
 
 # --- End Tests for display_narrative_feedback_prompt ---
 

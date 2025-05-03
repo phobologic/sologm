@@ -74,6 +74,7 @@ def test_display_dice_roll_markdown(mock_console: MagicMock):
 
 # --- Tests for display_markdown (New Method) ---
 
+
 def test_display_markdown_markdown_renderer(mock_console: MagicMock):
     """Test displaying markdown content using MarkdownRenderer."""
     renderer = MarkdownRenderer(mock_console)
@@ -85,10 +86,12 @@ def test_display_markdown_markdown_renderer(mock_console: MagicMock):
         test_markdown, highlight=False, markup=False
     )
 
+
 # --- End Tests for display_markdown ---
 
 
 # --- Tests for display_narrative_feedback_prompt (New Method) ---
+
 
 @patch("click.prompt")
 def test_display_narrative_feedback_prompt_markdown_renderer(
@@ -102,7 +105,7 @@ def test_display_narrative_feedback_prompt_markdown_renderer(
     # Test each valid choice (case-insensitive)
     for choice_val in ["A", "E", "R", "C", "a", "e", "r", "c"]:
         mock_prompt.reset_mock()
-        mock_console.reset_mock() # Reset console mock too for cancellation check later
+        mock_console.reset_mock()  # Reset console mock too for cancellation check later
         mock_prompt.return_value = choice_val
         result = renderer.display_narrative_feedback_prompt(renderer.console)
 
@@ -118,7 +121,6 @@ def test_display_narrative_feedback_prompt_markdown_renderer(
         assert call_kwargs.get("default") == "A"
         # Ensure no cancellation message was printed
         mock_console.print.assert_not_called()
-
 
     # Test cancellation (Ctrl+C raises click.Abort)
     mock_prompt.reset_mock()
