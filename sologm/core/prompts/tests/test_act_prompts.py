@@ -156,5 +156,5 @@ class TestActPrompts:
 
         # Check modified task instruction
         assert "Generate a *new* narrative" in prompt  # Or similar wording
-        assert "incorporating the user feedback" in prompt  # Or similar wording
+        assert "consider the user's feedback" in prompt  # Updated assertion wording
         assert "Markdown format" in prompt  # Still required
