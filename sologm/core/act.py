@@ -876,9 +876,13 @@ class ActManager(BaseManager[Act, Act]):
             # Prepare scene and event data
             scene_list_data = []
             for scene in scenes:
-                # Assuming event_manager.list_events orders by created_at
-                events = self.scene_manager.event_manager.list_events(scene_id=scene.id)
-                logger.debug(f"Found {len(events)} events for scene {scene.id}")
+                # Fetch events for the scene, ensuring chronological order (oldest first)
+                events = self.scene_manager.event_manager.list_events(
+                    scene_id=scene.id, order_direction="asc"
+                )
+                logger.debug(
+                    f"Found {len(events)} events for scene {scene.id} (chronological)"
+                )
                 event_list_data = [
                     {
                         "id": event.id,
@@ -888,7 +892,7 @@ class ActManager(BaseManager[Act, Act]):
                         if event.created_at
                         else None,
                     }
-                    for event in events
+                    for event in events # Already sorted correctly
                 ]
                 scene_list_data.append(
                     {
