@@ -6,6 +6,7 @@ or problems that unfold through multiple connected Scenes.
 """
 
 import logging
+import textwrap  # Added for indenting narrative preview
 from typing import TYPE_CHECKING, Dict, Optional
 
 import click  # Added for click.edit
