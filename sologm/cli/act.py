@@ -25,7 +25,8 @@ from sologm.cli.utils.structured_editor import (  # Updated import
 )
 from sologm.core.act import ActManager
 from sologm.core.game import GameManager
-from sologm.database.session import get_db_context  # Added
+from sologm.core.prompts.act import ActPrompts  # Added for --show-prompt
+from sologm.database.session import get_db_context
 from sologm.models.act import Act
 from sologm.models.game import Game
 from sologm.utils.errors import APIError, GameError
