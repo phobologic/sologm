@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from rich.console import Console
 from rich.markdown import Markdown  # Added Markdown import
 from rich.panel import Panel
+
 # Removed Abort from import, InvalidResponse might not be needed either if not used
 from rich.prompt import InvalidResponse, Prompt
 from rich.table import Table
@@ -1780,7 +1781,9 @@ class RichRenderer(Renderer):
                     )
             except KeyboardInterrupt:
                 # Handle Ctrl+C directly
-                logger.debug("Narrative feedback prompt aborted by user (KeyboardInterrupt).")
-                console.print("\n[prompt.invalid]Prompt aborted.") # Provide feedback
+                logger.debug(
+                    "Narrative feedback prompt aborted by user (KeyboardInterrupt)."
+                )
+                console.print("\n[prompt.invalid]Prompt aborted.")  # Provide feedback
                 return None
             # No need to catch InvalidResponse here as we're not using 'choices' validation
