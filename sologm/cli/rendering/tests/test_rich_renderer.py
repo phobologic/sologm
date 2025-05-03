@@ -11,7 +11,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel  # Import Panel for assertion
 from rich.table import Table  # Import Table for type checking if needed
 from rich.layout import Layout  # Import Layout for type checking if needed
-from rich.text import Text # Add this import
+from rich.text import Text  # Add this import
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
 
@@ -113,7 +113,7 @@ def test_display_narrative_feedback_prompt(
     expected_plain_text = "Choose action: [A]ccept / [E]dit / [R]egenerate / [C]ancel"
     expected_choices = ["A", "E", "R", "C"]
     expected_default = "A"
-    expected_kwargs = {'choices': expected_choices, 'default': expected_default}
+    expected_kwargs = {"choices": expected_choices, "default": expected_default}
 
     # Test each valid choice
     for choice_val in ["A", "E", "R", "C", "a", "e", "r", "c"]:
