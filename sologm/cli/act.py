@@ -1485,7 +1485,10 @@ def complete_act(
                         )
                         renderer.display_message(prompt)
                         raise typer.Exit(0)
-                    except (GameError, APIError) as e:  # Catch potential errors during prep
+                    except (
+                        GameError,
+                        APIError,
+                    ) as e:  # Catch potential errors during prep
                         logger.error(
                             f"Error preparing data/prompt for --show-prompt: {e}",
                             exc_info=True,
