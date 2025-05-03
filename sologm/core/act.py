@@ -892,7 +892,7 @@ class ActManager(BaseManager[Act, Act]):
                         if event.created_at
                         else None,
                     }
-                    for event in events # Already sorted correctly
+                    for event in events  # Already sorted correctly
                 ]
                 scene_list_data.append(
                     {
