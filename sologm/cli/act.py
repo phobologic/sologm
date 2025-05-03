@@ -1486,3 +1486,275 @@ def complete_act(
             renderer.display_error(f"Error: {str(e)}")
             raise typer.Exit(1) from e
     logger.debug("[complete_act] Exiting command")
+
+
+# --- Helper Functions for `act narrative` ---
+
+
+def _collect_narrative_guidance(
+    act: Act, game: Game, console: "Console", renderer: "Renderer"
+) -> Optional[Dict[str, str]]:
+    """Collect initial user guidance for AI narrative generation.
+
+    Opens a structured editor to allow the user to provide guidance on tone,
+    style, point of view, focus, and other instructions for the AI.
+
+    Args:
+        act: The act for which the narrative is being generated.
+        game: The game the act belongs to.
+        console: The console instance for the editor.
+        renderer: The renderer instance for displaying messages.
+
+    Returns:
+        A dictionary containing the user's guidance, or None if the user cancels.
+    """
+    logger.debug(f"[_collect_narrative_guidance] Entering function for act {act.id}.")
+
+    # Define fields for the editor
+    guidance_fields = [
+        FieldConfig(
+            name="tone_style",
+            display_name="Tone & Style",
+            help_text=(
+                "Describe the desired tone and writing style (e.g., 'Gritty noir', "
+                "'High fantasy epic', 'Humorous', 'Journalistic')"
+            ),
+            required=False,
+            multiline=False,
+        ),
+        FieldConfig(
+            name="point_of_view",
+            display_name="Point of View",
+            help_text=(
+                "Specify the narrative perspective (e.g., 'Third-person limited on protagonist', "
+                "'Omniscient narrator', 'First-person from character X')"
+            ),
+            required=False,
+            multiline=False,
+        ),
+        FieldConfig(
+            name="key_focus",
+            display_name="Key Focus",
+            help_text=(
+                "What aspects should the narrative emphasize? (e.g., 'Internal conflicts', "
+                "'The mystery element', 'Character relationships', 'World-building details')"
+            ),
+            required=False,
+            multiline=True,
+        ),
+        FieldConfig(
+            name="other_instructions",
+            display_name="Other Instructions",
+            help_text=(
+                "Any other specific instructions for the AI (e.g., 'Include weather descriptions', "
+                "'Minimize dialogue', 'Start with a specific scene')"
+            ),
+            required=False,
+            multiline=True,
+        ),
+    ]
+    editor_config = StructuredEditorConfig(fields=guidance_fields, wrap_width=70)
+
+    # Create context information header
+    title_display = act.title or f"Act {act.sequence}"
+    context_info = (
+        f"AI Narrative Generation Guidance for: {title_display}\n"
+        f"Game: {game.name}\n"
+        f"ID: {act.id}\n\n"
+        "Provide guidance for the AI storyteller. The AI will use the act's scenes "
+        "and events, along with your instructions, to write a narrative in Markdown.\n\n"
+        "You can leave any field empty if you don't have specific preferences."
+    )
+
+    # Initial data is empty for the first collection, except for POV default
+    initial_data = {
+        field.name: ("Third-person limited" if field.name == "point_of_view" else "")
+        for field in guidance_fields
+    }
+
+    logger.debug("Calling edit_structured_data for initial narrative guidance")
+    result_data, status = edit_structured_data(
+        initial_data,
+        console,
+        editor_config,
+        context_info=context_info,
+        is_new=True,  # Collecting guidance for the first time
+        editor_config=EditorConfig(
+            edit_message="Provide your narrative guidance below:",
+            success_message="Narrative guidance collected.",
+            cancel_message="Narrative generation cancelled.",
+            error_message="Could not open editor.",
+        ),
+    )
+    logger.debug(
+        f"[_collect_narrative_guidance] Editor returned status: {status.name}, "
+        f"data: {result_data}"
+    )
+
+    # Check status: Proceed only if saved
+    if status not in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+        logger.debug(
+            "[_collect_narrative_guidance] User cancelled guidance collection "
+            f"(status: {status.name})"
+        )
+        return None
+
+    # Return the collected guidance (empty strings if fields were left blank)
+    logger.debug(
+        f"[_collect_narrative_guidance] Collected guidance: {result_data}"
+    )
+    return result_data
+
+
+def _collect_narrative_regeneration_feedback(
+    previous_narrative: str,
+    act: Act,
+    game: Game,
+    console: "Console",
+    renderer: "Renderer",
+    original_guidance: Optional[Dict[str, str]],
+) -> Optional[Dict[str, str]]:
+    """Collect feedback and updated guidance for regenerating an AI narrative.
+
+    Opens a structured editor allowing the user to provide feedback on the
+    `previous_narrative` and optionally modify the `original_guidance`.
+
+    Args:
+        previous_narrative: The previously generated narrative text.
+        act: The act for which the narrative is being generated.
+        game: The game the act belongs to.
+        console: The console instance for the editor.
+        renderer: The renderer instance for displaying messages.
+        original_guidance: The guidance dictionary used for the previous generation.
+
+    Returns:
+        A dictionary containing 'feedback' and updated guidance fields,
+        or None if the user cancels.
+    """
+    original_guidance_log = (
+        f"{original_guidance}" if original_guidance else "None"
+    )
+    logger.debug(
+        f"[_collect_narrative_regeneration_feedback] Entering for act {act.id}. "
+        f"Original guidance: {original_guidance_log}"
+    )
+
+    # Define fields for feedback and guidance
+    feedback_fields = [
+        FieldConfig(
+            name="feedback",
+            display_name="Regeneration Feedback",
+            help_text=(
+                "What did you like or dislike? How should the new narrative differ? "
+                "(Leave empty for a completely new attempt based on guidance)"
+            ),
+            multiline=True,
+            required=False,
+        ),
+        FieldConfig(
+            name="tone_style",
+            display_name="Tone & Style",
+            help_text="Update the desired tone and style if needed.",
+            required=False,
+            multiline=False,
+        ),
+        FieldConfig(
+            name="point_of_view",
+            display_name="Point of View",
+            help_text="Update the narrative perspective if needed.",
+            required=False,
+            multiline=False,
+        ),
+        FieldConfig(
+            name="key_focus",
+            display_name="Key Focus",
+            help_text="Update the narrative emphasis if needed.",
+            required=False,
+            multiline=True,
+        ),
+        FieldConfig(
+            name="other_instructions",
+            display_name="Other Instructions",
+            help_text="Update any other specific instructions if needed.",
+            required=False,
+            multiline=True,
+        ),
+    ]
+    editor_config = StructuredEditorConfig(fields=feedback_fields, wrap_width=70)
+
+    # Create context information header, including previous narrative preview
+    title_display = act.title or f"Act {act.sequence}"
+    # Truncate previous narrative for display
+    preview_lines = previous_narrative.splitlines()
+    max_preview_lines = 15
+    preview_text = "\n".join(preview_lines[:max_preview_lines])
+    if len(preview_lines) > max_preview_lines:
+        preview_text += "\n... (narrative truncated)"
+
+    context_info = (
+        f"Narrative Regeneration Feedback for: {title_display}\n"
+        f"Game: {game.name}\n"
+        f"ID: {act.id}\n\n"
+        "Provide feedback on the previous narrative and/or update the guidance below.\n"
+        "The AI will use your feedback and the updated guidance to generate a new narrative.\n\n"
+        "PREVIOUS NARRATIVE (Preview):\n"
+        f"{textwrap.indent(preview_text, '  ')}\n\n"
+        "---" # Separator
+    )
+
+    # Prepare initial data: empty feedback, guidance from original_guidance
+    initial_data = {"feedback": ""}
+    guidance_keys = [
+        "tone_style",
+        "point_of_view",
+        "key_focus",
+        "other_instructions",
+    ]
+    if original_guidance:
+        for key in guidance_keys:
+            initial_data[key] = original_guidance.get(key, "")
+    else:
+        for key in guidance_keys:
+            initial_data[key] = ""
+
+    logger.debug(
+        "[_collect_narrative_regeneration_feedback] Initial data for feedback editor: "
+        f"{initial_data}"
+    )
+
+    # Call editor
+    logger.debug("Calling edit_structured_data for narrative regeneration feedback")
+    result_data, status = edit_structured_data(
+        initial_data,
+        console,
+        editor_config,
+        context_info=context_info,
+        is_new=True,  # Collecting new feedback/guidance
+        # Show original guidance values as comments for reference
+        original_data_for_comments=original_guidance,
+        editor_config=EditorConfig(
+            edit_message="Provide feedback and/or update guidance below:",
+            success_message="Regeneration feedback collected.",
+            cancel_message="Regeneration cancelled.",
+            error_message="Could not open editor.",
+        ),
+    )
+    logger.debug(
+        f"[_collect_narrative_regeneration_feedback] Editor returned status: {status.name}, "
+        f"data: {result_data}"
+    )
+
+    # Check status
+    if status not in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
+        logger.debug(
+            "[_collect_narrative_regeneration_feedback] User cancelled feedback collection "
+            f"(status: {status.name})"
+        )
+        return None
+
+    # Return the collected data (feedback + updated guidance)
+    logger.debug(
+        "[_collect_narrative_regeneration_feedback] Returning collected feedback data: "
+        f"{result_data}"
+    )
+    return result_data
