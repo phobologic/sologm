@@ -919,26 +919,30 @@ class TestActManager:
             assert len(narrative_data["scenes"]) == 2
 
             # Verify scene ordering (should be by sequence: 1, 2)
-            assert narrative_data["scenes"][0]["id"] == scene1_act2.id
+            # scene2_act2 was created first, so it gets sequence 1
+            # scene1_act2 was created second, so it gets sequence 2
+            assert narrative_data["scenes"][0]["id"] == scene2_act2.id
             assert narrative_data["scenes"][0]["sequence"] == 1
-            assert narrative_data["scenes"][1]["id"] == scene2_act2.id
+            assert narrative_data["scenes"][0]["title"] == "Scene 2.2"
+            assert narrative_data["scenes"][1]["id"] == scene1_act2.id
             assert narrative_data["scenes"][1]["sequence"] == 2
+            assert narrative_data["scenes"][1]["title"] == "Scene 2.1"
 
-            # Verify events in Scene 1 (Act 2) - check ordering by creation
-            scene1_events = narrative_data["scenes"][0]["events"]
+            # Verify events in Scene 2.2 (Act 2, sequence 1) - check ordering by creation
+            scene2_events = narrative_data["scenes"][0]["events"]
+            assert len(scene2_events) == 1
+            assert scene2_events[0]["id"] == event1_s2.id
+            assert scene2_events[0]["description"] == "Event 2.2.1"
+            assert "created_at" in scene2_events[0]
+            assert "source_name" in scene2_events[0]
+
+            # Verify events in Scene 2.1 (Act 2, sequence 2)
+            scene1_events = narrative_data["scenes"][1]["events"]
             assert len(scene1_events) == 2
             assert scene1_events[0]["id"] == event1_s1.id
             assert scene1_events[0]["description"] == "Event 2.1.1"
             assert scene1_events[1]["id"] == event2_s1.id
             assert scene1_events[1]["description"] == "Event 2.1.2"
-            assert "created_at" in scene1_events[0]
-            assert "source_name" in scene1_events[0]
-
-            # Verify events in Scene 2 (Act 2)
-            scene2_events = narrative_data["scenes"][1]["events"]
-            assert len(scene2_events) == 1
-            assert scene2_events[0]["id"] == event1_s2.id
-            assert scene2_events[0]["description"] == "Event 2.2.1"
 
             # --- Test data preparation for Act 1 (no previous act) ---
             narrative_data_act1 = managers.act.prepare_act_data_for_narrative(act1.id)
