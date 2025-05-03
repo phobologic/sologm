@@ -158,3 +158,33 @@ class TestActPrompts:
         assert "Generate a *new* narrative" in prompt  # Or similar wording
         assert "consider the user's feedback" in prompt  # Updated assertion wording
         assert "Markdown format" in prompt  # Still required
+
+    def test_build_narrative_regeneration_prompt_empty_feedback(self):
+        """Test prompt generation for regeneration with empty feedback."""
+        data = self._get_full_narrative_data()
+        previous_narrative = "This was the first attempt."
+        feedback = ""  # Empty feedback
+
+        prompt = ActPrompts.build_narrative_regeneration_prompt(
+            data, previous_narrative, feedback
+        )
+
+        # Check all sections from initial prompt are still there
+        assert "GAME INFORMATION" in prompt
+        assert "PREVIOUS ACT SUMMARY (Context):" in prompt
+        assert "CURRENT ACT" in prompt
+        assert "SCENES" in prompt
+        assert "USER GUIDANCE" in prompt
+
+        # Check new sections
+        assert "PREVIOUS NARRATIVE:" in prompt
+        assert previous_narrative in prompt
+        # Ensure the feedback header is present even if feedback is empty
+        assert "USER FEEDBACK ON PREVIOUS NARRATIVE:" in prompt
+        # Check that the feedback string itself (empty) is after the header
+        assert "USER FEEDBACK ON PREVIOUS NARRATIVE:\n\n" in prompt
+
+        # Check modified task instruction
+        assert "Generate a *new* narrative" in prompt
+        assert "consider the user's feedback" in prompt
+        assert "Markdown format" in prompt
