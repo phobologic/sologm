@@ -1778,7 +1778,9 @@ class RichRenderer(Renderer):
                     console.print(
                         f"[prompt.invalid]'{raw_choice}' is not a valid choice {valid_choices}."
                     )
-            # Removed specific except Abort block.
-            # Prompt.ask handles KeyboardInterrupt internally and raises Abort.
-            # If Abort propagates, Typer/Click should handle it gracefully.
+            except KeyboardInterrupt:
+                # Handle Ctrl+C directly
+                logger.debug("Narrative feedback prompt aborted by user (KeyboardInterrupt).")
+                console.print("\n[prompt.invalid]Prompt aborted.") # Provide feedback
+                return None
             # No need to catch InvalidResponse here as we're not using 'choices' validation
