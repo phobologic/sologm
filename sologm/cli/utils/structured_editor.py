@@ -214,31 +214,33 @@ class TextParser:
 
         # Create a mapping of display names to field names
         field_map = {field.display_name.upper(): field.name for field in config.fields}
-        logger.debug(f"Parser field map: {field_map}") # Added debug log
+        logger.debug(f"Parser field map: {field_map}")  # Added debug log
 
         # Find all blocks using regex
         # Allow uppercase, lowercase, space, &, maybe others like ' -
         # Use re.IGNORECASE flag
-        pattern = r"--- ([A-Z &'-]+) ---\n(.*?)--- END \1 ---" # Allow ' and - as well
-        logger.debug(f"Using regex pattern: {pattern}") # Added debug log
+        pattern = r"--- ([A-Z &'-]+) ---\n(.*?)--- END \1 ---"  # Allow ' and - as well
+        logger.debug(f"Using regex pattern: {pattern}")  # Added debug log
         try:
             # Add re.IGNORECASE flag
             matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
-            logger.debug(f"Regex found {len(matches)} matches.") # Added debug log
+            logger.debug(f"Regex found {len(matches)} matches.")  # Added debug log
             for i, (display_name, content) in enumerate(matches):
-                 # Log the raw display name as captured by the regex
-                 logger.debug(f"Match {i+1}: raw display_name='{display_name}', raw_content='{content[:50]}...'") # Added debug log
+                # Log the raw display name as captured by the regex
+                logger.debug(
+                    f"Match {i + 1}: raw display_name='{display_name}', raw_content='{content[:50]}...'"
+                )  # Added debug log
         except Exception as e:
             logger.error(f"Regex error: {e}", exc_info=True)
-            matches = [] # Ensure matches is iterable on error
+            matches = []  # Ensure matches is iterable on error
 
         # Process each matched block
-        processed_display_names = set() # Keep track of processed names
+        processed_display_names = set()  # Keep track of processed names
         for display_name, content in matches:
             # Normalize the matched display name (uppercase, strip whitespace)
             # BEFORE looking it up in the map
             normalized_display_name = display_name.strip().upper()
-            processed_display_names.add(normalized_display_name) # Mark as processed
+            processed_display_names.add(normalized_display_name)  # Mark as processed
 
             if normalized_display_name in field_map:
                 field_name = field_map[normalized_display_name]
@@ -248,15 +250,21 @@ class TextParser:
                     line.rstrip() for line in content.split("\n")
                 ).strip()
                 result[field_name] = cleaned_content
-                logger.debug(f"Parsed field '{field_name}' with value: '{cleaned_content[:50]}...'") # Added debug log
+                logger.debug(
+                    f"Parsed field '{field_name}' with value: '{cleaned_content[:50]}...'"
+                )  # Added debug log
             else:
-                 logger.warning(f"Matched display name '{normalized_display_name}' (from raw '{display_name}') not found in field_map {list(field_map.keys())}.") # Added warning
+                logger.warning(
+                    f"Matched display name '{normalized_display_name}' (from raw '{display_name}') not found in field_map {list(field_map.keys())}."
+                )  # Added warning
 
         # Check if all expected fields were found by the regex
         expected_display_names = set(field_map.keys())
         missing_from_regex = expected_display_names - processed_display_names
         if missing_from_regex:
-            logger.warning(f"Regex did not find blocks for expected display names: {missing_from_regex}")
+            logger.warning(
+                f"Regex did not find blocks for expected display names: {missing_from_regex}"
+            )
 
         # Validate required fields (this part seems okay)
         missing_fields = []
@@ -264,12 +272,16 @@ class TextParser:
             # Check if required and not present OR present but empty/whitespace only
             if f.required and (f.name not in result or not result[f.name].strip()):
                 missing_fields.append(f.display_name)
-                logger.warning(f"Validation failed: Required field '{f.name}' is missing or empty.") # Added warning
+                logger.warning(
+                    f"Validation failed: Required field '{f.name}' is missing or empty."
+                )  # Added warning
 
         if missing_fields:
             field_list = ", ".join(missing_fields)
             # Log the error before raising
-            logger.error(f"Validation Error: Required field(s) {field_list} cannot be empty.")
+            logger.error(
+                f"Validation Error: Required field(s) {field_list} cannot be empty."
+            )
             raise ValidationError(f"Required field(s) {field_list} cannot be empty.")
 
         # Validate enum values
@@ -278,16 +290,18 @@ class TextParser:
                 f.enum_values
                 and f.name in result
                 and result[f.name]
-                and result[f.name] # Check if there's a value to validate
+                and result[f.name]  # Check if there's a value to validate
                 and result[f.name] not in f.enum_values
             ):
-                 logger.warning(f"Validation failed: Field '{f.name}' has invalid enum value '{result[f.name]}'. Expected: {f.enum_values}") # Added warning
-                 raise ValidationError(
+                logger.warning(
+                    f"Validation failed: Field '{f.name}' has invalid enum value '{result[f.name]}'. Expected: {f.enum_values}"
+                )  # Added warning
+                raise ValidationError(
                     f"Invalid value for {f.display_name}. "
                     f"Must be one of: {', '.join(f.enum_values)}"
                 )
 
-        logger.debug(f"Final parsed result: {result}") # Added debug log
+        logger.debug(f"Final parsed result: {result}")  # Added debug log
         return result
 
 
