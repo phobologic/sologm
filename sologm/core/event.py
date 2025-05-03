@@ -281,13 +281,19 @@ class EventManager(BaseManager[Event, Event]):
         return event
 
     def list_events(
-        self, scene_id: Optional[str] = None, limit: Optional[int] = None
+        self,
+        scene_id: Optional[str] = None,
+        limit: Optional[int] = None,
+        order_by: str = "created_at",
+        order_direction: str = "desc",
     ) -> List[Event]:
         """List events for a scene.
 
         Args:
             scene_id: ID of the scene (uses active scene if None)
             limit: Maximum number of events to return
+            order_by: Field to sort events by. Defaults to 'created_at'.
+            order_direction: Sort direction ('asc' or 'desc'). Defaults to 'desc'.
 
         Returns:
             List of Event objects
@@ -321,8 +327,8 @@ class EventManager(BaseManager[Event, Event]):
         events = self.list_entities(
             Event,
             filters={"scene_id": scene_id},
-            order_by="created_at",
-            order_direction="desc",
+            order_by=order_by,
+            order_direction=order_direction,
             limit=limit,
         )
 
