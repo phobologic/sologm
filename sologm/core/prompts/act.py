@@ -224,7 +224,12 @@ PREVIOUS NARRATIVE:
 USER FEEDBACK ON PREVIOUS NARRATIVE:
 {feedback}
 """
-            prompt = base_prompt + regeneration_context + task_marker + """Generate a *new* narrative for the act. Carefully consider the user's feedback provided above and incorporate it into the revised narrative, while still adhering to the original context and user guidance. Output the *entire new* narrative in **Markdown format**. Do not just describe the changes. Do not include any introductory phrases. Just provide the new Markdown narrative."""
+            prompt = (
+                base_prompt
+                + regeneration_context
+                + task_marker
+                + """Generate a *new* narrative for the act. Carefully consider the user's feedback provided above and incorporate it into the revised narrative, while still adhering to the original context and user guidance. Output the *entire new* narrative in **Markdown format**. Do not just describe the changes. Do not include any introductory phrases. Just provide the new Markdown narrative."""
+            )
         else:
             regeneration_context = f"""
 PREVIOUS NARRATIVE:
