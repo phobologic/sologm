@@ -9,8 +9,10 @@ from sqlalchemy.orm import Session  # Add Session import
 from sologm.core.act import ActManager
 from sologm.core.factory import create_all_managers
 from sologm.core.game import GameManager
+from sologm.core.prompts.act import ActPrompts  # Added
 from sologm.core.scene import SceneManager
 from sologm.database.session import SessionContext
+from sologm.integrations.anthropic import NARRATIVE_MAX_TOKENS  # Added
 from sologm.utils.errors import APIError, GameError
 
 
@@ -847,3 +849,249 @@ class TestActManager:
             mock_complete.assert_called_once_with(
                 act_id=test_act.id, title="AI Title", summary="AI Summary"
             )
+
+    def test_prepare_act_data_for_narrative(
+        self,
+        session_context: SessionContext,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        create_test_scene: Callable,
+        create_test_event: Callable,
+        initialize_event_sources: Callable[[Session], None],
+    ):
+        """Test preparing act data for narrative generation."""
+        with session_context as session:
+            initialize_event_sources(session)
+            managers = create_all_managers(session)
+            test_game = create_test_game(session, name="Narrative Game")
+
+            # Create Act 1 (completed)
+            act1 = create_test_act(
+                session,
+                game_id=test_game.id,
+                title="Act the First",
+                summary="Summary of Act 1",
+                sequence=1,
+                is_active=True,
+            )
+            scene1_act1 = create_test_scene(session, act_id=act1.id, title="Scene 1.1")
+            create_test_event(
+                session, scene_id=scene1_act1.id, description="Event 1.1.1"
+            )
+            managers.act.complete_act(act_id=act1.id)  # Complete Act 1
+
+            # Create Act 2 (active)
+            act2 = create_test_act(
+                session,
+                game_id=test_game.id,
+                title="Act the Second",
+                summary="Summary of Act 2",
+                sequence=2,
+                is_active=True,
+            )
+            # Create scenes out of order to test sorting
+            scene2_act2 = create_test_scene(
+                session, act_id=act2.id, title="Scene 2.2", sequence=2
+            )
+            scene1_act2 = create_test_scene(
+                session, act_id=act2.id, title="Scene 2.1", sequence=1
+            )
+
+            # Create events for scenes in Act 2 (assume sequential creation implies time order)
+            event1_s1 = create_test_event(
+                session, scene_id=scene1_act2.id, description="Event 2.1.1"
+            )
+            # import time; time.sleep(0.01) # Add slight delay if needed for timestamp ordering
+            event2_s1 = create_test_event(
+                session, scene_id=scene1_act2.id, description="Event 2.1.2"
+            )
+            event1_s2 = create_test_event(
+                session, scene_id=scene2_act2.id, description="Event 2.2.1"
+            )
+
+            # --- Test data preparation for Act 2 (has previous act) ---
+            narrative_data = managers.act.prepare_act_data_for_narrative(act2.id)
+
+            # Verify top-level structure
+            assert narrative_data["game"]["id"] == test_game.id
+            assert narrative_data["game"]["name"] == "Narrative Game"
+            assert narrative_data["act"]["id"] == act2.id
+            assert narrative_data["act"]["title"] == "Act the Second"
+            assert narrative_data["previous_act_summary"] == "Summary of Act 1"
+            assert "scenes" in narrative_data
+            assert len(narrative_data["scenes"]) == 2
+
+            # Verify scene ordering (should be by sequence: 1, 2)
+            assert narrative_data["scenes"][0]["id"] == scene1_act2.id
+            assert narrative_data["scenes"][0]["sequence"] == 1
+            assert narrative_data["scenes"][1]["id"] == scene2_act2.id
+            assert narrative_data["scenes"][1]["sequence"] == 2
+
+            # Verify events in Scene 1 (Act 2) - check ordering by creation
+            scene1_events = narrative_data["scenes"][0]["events"]
+            assert len(scene1_events) == 2
+            assert scene1_events[0]["id"] == event1_s1.id
+            assert scene1_events[0]["description"] == "Event 2.1.1"
+            assert scene1_events[1]["id"] == event2_s1.id
+            assert scene1_events[1]["description"] == "Event 2.1.2"
+            assert "created_at" in scene1_events[0]
+            assert "source_name" in scene1_events[0]
+
+            # Verify events in Scene 2 (Act 2)
+            scene2_events = narrative_data["scenes"][1]["events"]
+            assert len(scene2_events) == 1
+            assert scene2_events[0]["id"] == event1_s2.id
+            assert scene2_events[0]["description"] == "Event 2.2.1"
+
+            # --- Test data preparation for Act 1 (no previous act) ---
+            narrative_data_act1 = managers.act.prepare_act_data_for_narrative(act1.id)
+            assert narrative_data_act1["act"]["id"] == act1.id
+            assert narrative_data_act1["previous_act_summary"] is None
+            assert len(narrative_data_act1["scenes"]) == 1
+            assert len(narrative_data_act1["scenes"][0]["events"]) == 1
+
+            # --- Test invalid act_id ---
+            with pytest.raises(GameError, match="Act with ID invalid-act-id not found"):
+                managers.act.prepare_act_data_for_narrative("invalid-act-id")
+
+    def test_generate_act_narrative(
+        self,
+        session_context: SessionContext,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        initialize_event_sources: Callable[[Session], None],
+        monkeypatch,
+    ):
+        """Test generating act narrative using mocked AI."""
+        with session_context as session:
+            initialize_event_sources(session)
+            managers = create_all_managers(session)
+            test_game = create_test_game(session)
+            test_act = create_test_act(session, game_id=test_game.id)
+
+            # Mock AnthropicClient
+            mock_anthropic_instance = MagicMock()
+            mock_anthropic_instance.send_message.return_value = "Mocked AI Narrative"
+            monkeypatch.setattr(
+                "sologm.integrations.anthropic.AnthropicClient",
+                lambda: mock_anthropic_instance,
+            )
+
+            # Mock ActPrompts methods
+            mock_build_narrative = MagicMock(return_value="Initial Prompt")
+            mock_build_regen = MagicMock(return_value="Regen Prompt")
+            monkeypatch.setattr(
+                ActPrompts, "build_narrative_prompt", mock_build_narrative
+            )
+            monkeypatch.setattr(
+                ActPrompts, "build_narrative_regeneration_prompt", mock_build_regen
+            )
+
+            # Mock prepare_act_data_for_narrative to simplify test focus
+            mock_prepared_data = {
+                "game": {"id": test_game.id},
+                "act": {"id": test_act.id},
+                "previous_act_summary": None,
+                "scenes": [],
+                # user_guidance will be added by generate_act_narrative
+            }
+            monkeypatch.setattr(
+                managers.act,
+                "prepare_act_data_for_narrative",
+                MagicMock(return_value=mock_prepared_data),
+            )
+
+            user_guidance = {"tone_style": "epic"}
+            previous_narrative = "Once upon a time..."
+            feedback = "Make it better."
+
+            # --- Test initial generation ---
+            result_initial = managers.act.generate_act_narrative(
+                act_id=test_act.id, user_guidance=user_guidance
+            )
+
+            assert result_initial == "Mocked AI Narrative"
+            managers.act.prepare_act_data_for_narrative.assert_called_once_with(
+                test_act.id
+            )
+            expected_data_for_prompt = mock_prepared_data.copy()
+            expected_data_for_prompt["user_guidance"] = user_guidance
+            mock_build_narrative.assert_called_once_with(
+                narrative_data=expected_data_for_prompt
+            )
+            mock_build_regen.assert_not_called()
+            mock_anthropic_instance.send_message.assert_called_once_with(
+                prompt="Initial Prompt", max_tokens=NARRATIVE_MAX_TOKENS
+            )
+
+            # Reset mocks for next call
+            managers.act.prepare_act_data_for_narrative.reset_mock()
+            mock_build_narrative.reset_mock()
+            mock_anthropic_instance.send_message.reset_mock()
+
+            # --- Test regeneration ---
+            result_regen = managers.act.generate_act_narrative(
+                act_id=test_act.id,
+                user_guidance=user_guidance,
+                previous_narrative=previous_narrative,
+                feedback=feedback,
+            )
+
+            assert result_regen == "Mocked AI Narrative"
+            managers.act.prepare_act_data_for_narrative.assert_called_once_with(
+                test_act.id
+            )
+            expected_data_for_prompt = mock_prepared_data.copy()
+            expected_data_for_prompt["user_guidance"] = user_guidance
+            mock_build_regen.assert_called_once_with(
+                narrative_data=expected_data_for_prompt,
+                previous_narrative=previous_narrative,
+                feedback=feedback,
+            )
+            mock_build_narrative.assert_not_called()
+            mock_anthropic_instance.send_message.assert_called_once_with(
+                prompt="Regen Prompt", max_tokens=NARRATIVE_MAX_TOKENS
+            )
+
+    def test_generate_act_narrative_api_error(
+        self,
+        session_context: SessionContext,
+        create_test_game: Callable,
+        create_test_act: Callable,
+        initialize_event_sources: Callable[[Session], None],
+        monkeypatch,
+    ):
+        """Test handling API errors during narrative generation."""
+        with session_context as session:
+            initialize_event_sources(session)
+            managers = create_all_managers(session)
+            test_game = create_test_game(session)
+            test_act = create_test_act(session, game_id=test_game.id)
+
+            # Mock AnthropicClient to raise an error
+            mock_anthropic_instance = MagicMock()
+            mock_anthropic_instance.send_message.side_effect = Exception(
+                "Anthropic API down"
+            )
+            monkeypatch.setattr(
+                "sologm.integrations.anthropic.AnthropicClient",
+                lambda: mock_anthropic_instance,
+            )
+
+            # Mock ActPrompts (needed for the call path)
+            monkeypatch.setattr(
+                ActPrompts, "build_narrative_prompt", MagicMock(return_value="Prompt")
+            )
+
+            # Mock prepare_act_data_for_narrative
+            monkeypatch.setattr(
+                managers.act,
+                "prepare_act_data_for_narrative",
+                MagicMock(return_value={}),
+            )
+
+            # Assert APIError is raised
+            with pytest.raises(APIError, match="Failed to generate act narrative"):
+                managers.act.generate_act_narrative(act_id=test_act.id)
+
+            mock_anthropic_instance.send_message.assert_called_once()
