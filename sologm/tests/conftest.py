@@ -145,6 +145,280 @@ def mock_anthropic_client() -> MagicMock:
     return MagicMock(spec=AnthropicClient)
 
 
+@pytest.fixture(autouse=True)
+def auto_mock_anthropic_client(
+    monkeypatch: pytest.MonkeyPatch, mock_anthropic_client: MagicMock
+) -> None:
+    """
+    Automatically mock the AnthropicClient for all tests.
+
+    This fixture replaces the AnthropicClient class in the modules where it's
+    likely to be instantiated (factory fallback, manager fallbacks) with a
+    lambda function that always returns the `mock_anthropic_client` instance.
+    This prevents real API calls during tests.
+    """
+    logger.debug("[Fixture auto_mock_anthropic_client] Applying mock globally")
+
+    # Target 1: Patch the client import/usage within the factory's fallback logic
+    # This prevents the factory from creating a real client if none is passed.
+    try:
+        monkeypatch.setattr(
+            "sologm.core.factory.AnthropicClient",
+            lambda *args, **kwargs: mock_anthropic_client,
+            raising=False, # Don't raise error if factory doesn't directly import it
+        )
+        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in factory")
+    except AttributeError:
+         logger.debug("[Fixture auto_mock_anthropic_client] AnthropicClient not directly in factory, skipping patch there.")
+
+
+    # Target 2: Patch the client import/usage within ActManager's fallback logic
+    # This prevents the manager from creating a real client if none is injected.
+    try:
+        monkeypatch.setattr(
+            "sologm.core.act.AnthropicClient",
+            lambda *args, **kwargs: mock_anthropic_client,
+            raising=False,
+        )
+        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in act module")
+    except AttributeError:
+         logger.debug("[Fixture auto_mock_anthropic_client] AnthropicClient not directly in act module, skipping patch there.")
+
+
+    # Target 3: Patch the client import/usage within OracleManager's fallback logic
+    try:
+        monkeypatch.setattr(
+            "sologm.core.oracle.AnthropicClient",
+            lambda *args, **kwargs: mock_anthropic_client,
+            raising=False,
+        )
+        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in oracle module")
+    except AttributeError:
+         logger.debug("[Fixture auto_mock_anthropic_client] AnthropicClient not directly in oracle module, skipping patch there.")
+
+    # Target 4: Patch the client where it's defined, as a fallback safety net
+    # This covers cases where it might be imported differently.
+    try:
+        monkeypatch.setattr(
+            "sologm.integrations.anthropic.AnthropicClient",
+            lambda *args, **kwargs: mock_anthropic_client,
+            raising=True, # Should exist here
+        )
+        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in integrations.anthropic")
+    except AttributeError:
+         logger.error("[Fixture auto_mock_anthropic_client] FAILED to patch AnthropicClient in integrations.anthropic!")
+
+
+    # No yield needed, monkeypatch handles teardown automatically
+
+
+@pytest.fixture
+def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
+    """Provide a helper function to run test code within a DB session context.
+
+    Mimics the pattern used by CLI commands where operations are wrapped
+    in a database session context.
+
+    Returns:
+        A function that takes another function (the test logic) as input.
+        The input function must accept a Session object as its argument.
+        The helper executes the input function within a `get_db_context()` block.
+
+    Example:
+        def test_cli_pattern(cli_test):
+            def _logic_using_session(session: Session):
+                # ... use session ...
+                return result
+
+            result = cli_test(_logic_using_session)
+            # ... assert result ...
+    """
+    logger.debug("[Fixture cli_test] Creating context runner function")
+
+    def _run_with_context(test_func: Callable[[Session], Any]) -> Any:
+        from sologm.database.session import get_db_context
+
+        logger.debug(
+            f"[Fixture cli_test] Running function {test_func.__name__} within DB context"
+        )
+        with get_db_context() as session:
+            result = test_func(session)
+        logger.debug(
+            f"[Fixture cli_test] Finished running function {test_func.__name__}"
+        )
+        return result
+
+    return _run_with_context
+
+
+# --- Session Context Fixture ---
+
+
+@pytest.fixture
+def session_context() -> SessionContext:
+    """Provide a SessionContext instance for managing test database sessions.
+
+    This allows tests to use the same `with session_context as session:` pattern
+    as the application code.
+
+    Returns:
+        A SessionContext instance connected to the test database.
+    """
+    # Import locally to avoid potential issues if this file is imported early
+    from sologm.database.session import SessionContext
+
+    logger.debug("[Fixture session_context] Creating SessionContext instance")
+    return SessionContext()
+
+
+# --- Factory Fixtures ---
+
+
+# Standard library imports
+import logging
+from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
+from unittest.mock import MagicMock
+
+# Third-party imports
+import pytest
+from sqlalchemy import Engine, create_engine, event  # Import event
+from sqlalchemy.orm import Session
+
+# Local application/library imports
+from sologm.core.factory import create_all_managers
+from sologm.database.session import DatabaseManager, SessionContext
+from sologm.integrations.anthropic import AnthropicClient
+from sologm.models.base import Base
+from sologm.models.event import Event
+from sologm.models.event_source import EventSource
+from sologm.models.game import Game
+from sologm.models.scene import Scene
+from sologm.utils.config import Config
+
+# Conditional imports for type checking
+if TYPE_CHECKING:
+    from sologm.models.act import Act
+    from sologm.models.oracle import Interpretation, InterpretationSet
+
+logger = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def mock_config_no_api_key() -> MagicMock:
+    """Create a mock Config object simulating a missing API key.
+
+    This mock returns None when `get("anthropic_api_key")` is called.
+
+    Returns:
+        A configured MagicMock object simulating the Config class.
+    """
+    logger.debug("[Fixture mock_config_no_api_key] Creating mock Config object")
+    mock_config = MagicMock(spec=Config)
+
+    # Define the behavior for the mock's get method
+    def mock_get(key: str, default: Any = None) -> Any:
+        logger.debug(
+            f"[Fixture mock_config_no_api_key] Mock config.get called with key: {key}"
+        )
+        if key == "anthropic_api_key":
+            logger.debug(
+                f"[Fixture mock_config_no_api_key] Mock config returning None "
+                f"for key: {key}"
+            )
+            return None
+        # For other keys, maybe return default or raise an error if unexpected
+        logger.debug(
+            f"[Fixture mock_config_no_api_key] Mock config returning default "
+            f"for key: {key}"
+        )
+        return default
+
+    mock_config.get.side_effect = mock_get
+    logger.debug("[Fixture mock_config_no_api_key] Returning configured mock object")
+    return mock_config
+
+
+# --- Database Fixtures ---
+
+
+@pytest.fixture
+def db_engine() -> Generator[Engine, None, None]:
+    """Create a new in-memory SQLite database engine for each test.
+
+    Enables foreign key support for SQLite.
+
+    Yields:
+        An SQLAlchemy Engine connected to an in-memory SQLite database.
+    """
+    logger.debug("Creating in-memory SQLite engine for test")
+    engine = create_engine("sqlite:///:memory:")
+
+    # --- Enable Foreign Key support for SQLite ---
+    # This is crucial for cascade deletes to work correctly in tests
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_con, connection_record):
+        logger.debug("Executing PRAGMA foreign_keys=ON for new SQLite connection")
+        cursor = dbapi_con.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
+
+    # --- End Foreign Key support ---
+
+    logger.debug("Creating all tables on the test engine")
+    Base.metadata.create_all(engine)
+    yield engine
+    logger.debug("Disposing of the test engine")
+    engine.dispose()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def database_manager(db_engine: Engine) -> Generator[DatabaseManager, None, None]:
+    """Provide a test-specific DatabaseManager instance using an in-memory DB.
+
+    Replaces the singleton DatabaseManager instance for the duration of a test,
+    ensuring test isolation by using a dedicated in-memory SQLite database.
+    The original instance is restored after the test.
+
+    Args:
+        db_engine: The in-memory SQLite engine fixture.
+
+    Yields:
+        A DatabaseManager instance configured for the test database.
+    """
+    # Import locally to avoid potential issues if this file is imported early
+    from sologm.database.session import DatabaseManager
+
+    logger.debug("Saving original DatabaseManager instance")
+    # Save original instance to restore it after the test.
+    # This prevents tests from affecting each other or the real application state.
+    old_instance = DatabaseManager._instance
+
+    # Create a new DatabaseManager instance using the test engine.
+    logger.debug("Creating new DatabaseManager instance for test")
+    db_manager = DatabaseManager(engine=db_engine)
+    DatabaseManager._instance = db_manager
+
+    yield db_manager
+
+    # Restore the original singleton instance to prevent test pollution.
+    logger.debug("Restoring original DatabaseManager instance")
+    DatabaseManager._instance = old_instance
+
+
+# --- Mock Fixtures ---
+
+
+@pytest.fixture
+def mock_anthropic_client() -> MagicMock:
+    """Create a mock Anthropic client.
+
+    Returns:
+        A MagicMock object simulating the AnthropicClient.
+    """
+    logger.debug("Creating mock AnthropicClient")
+    return MagicMock(spec=AnthropicClient)
+
+
 @pytest.fixture
 def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
     """Provide a helper function to run test code within a DB session context.
@@ -208,11 +482,14 @@ def session_context() -> SessionContext:
 
 
 @pytest.fixture
-def create_test_game() -> Callable[..., Game]:
+def create_test_game(
+    mock_anthropic_client: MagicMock,
+) -> Callable[..., Game]:  # Add mock client
     """Provide a factory function to create test Game instances.
 
     Args:
         session: The active SQLAlchemy session for the test.
+        mock_anthropic_client: Mock client to inject into managers.
 
     Returns:
         A callable function `_create_game(session, name="...", description="...",
@@ -228,7 +505,8 @@ def create_test_game() -> Callable[..., Game]:
         is_active: bool = True,
     ) -> Game:
         logger.debug(f"[Factory create_test_game] Creating game: name='{name}'")
-        managers = create_all_managers(session)
+        # Pass the mock client to the factory
+        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
         game = managers.game.create_game(name, description, is_active=is_active)
         # Object is already session-bound via the manager.
         logger.debug(f"[Factory create_test_game] Created game ID: {game.id}")
@@ -238,12 +516,15 @@ def create_test_game() -> Callable[..., Game]:
 
 
 @pytest.fixture
-def create_test_act() -> Callable[..., "Act"]:
+def create_test_act(
+    mock_anthropic_client: MagicMock,
+) -> Callable[..., "Act"]:  # Add mock client
     """Provide a factory function to create test Act instances.
 
     Args:
         session: The active SQLAlchemy session for the test.
         game_id: The ID of the game this act belongs to.
+        mock_anthropic_client: Mock client to inject into managers.
         ... other args
 
     Returns:
@@ -265,7 +546,8 @@ def create_test_act() -> Callable[..., "Act"]:
         logger.debug(
             f"[Factory create_test_act] Creating act: title='{title}', game_id='{game_id}'"
         )
-        managers = create_all_managers(session)
+        # Pass the mock client to the factory
+        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
         act = managers.act.create_act(
             game_id=game_id,
             title=title,
@@ -291,12 +573,15 @@ def create_test_act() -> Callable[..., "Act"]:
 
 
 @pytest.fixture
-def create_test_scene() -> Callable[..., Scene]:
+def create_test_scene(
+    mock_anthropic_client: MagicMock,
+) -> Callable[..., Scene]:  # Add mock client
     """Provide a factory function to create test Scene instances.
 
     Args:
         session: The active SQLAlchemy session for the test.
         act_id: The ID of the act this scene belongs to.
+        mock_anthropic_client: Mock client to inject into managers.
         ... other args
 
     Returns:
@@ -315,7 +600,8 @@ def create_test_scene() -> Callable[..., Scene]:
         logger.debug(
             f"[Factory create_test_scene] Creating scene: title='{title}', act_id='{act_id}'"
         )
-        managers = create_all_managers(session)
+        # Pass the mock client to the factory
+        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
         scene = managers.scene.create_scene(
             act_id=act_id,
             title=title,
@@ -353,12 +639,15 @@ def create_test_scene() -> Callable[..., Scene]:
 
 
 @pytest.fixture
-def create_test_event() -> Callable[..., Event]:
+def create_test_event(
+    mock_anthropic_client: MagicMock,
+) -> Callable[..., Event]:  # Add mock client
     """Provide a factory function to create test Event instances.
 
     Args:
         session: The active SQLAlchemy session for the test.
         scene_id: The ID of the scene this event belongs to.
+        mock_anthropic_client: Mock client to inject into managers.
         ... other args
 
     Returns:
@@ -377,7 +666,8 @@ def create_test_event() -> Callable[..., Event]:
         logger.debug(
             f"[Factory create_test_event] Creating event: description='{description[:20]}...', scene_id='{scene_id}'"
         )
-        managers = create_all_managers(session)
+        # Pass the mock client to the factory
+        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
         event = managers.event.add_event(
             description=description,
             scene_id=scene_id,
@@ -406,12 +696,15 @@ def create_test_event() -> Callable[..., Event]:
 
 
 @pytest.fixture
-def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
+def create_test_interpretation_set(
+    mock_anthropic_client: MagicMock,
+) -> Callable[..., "InterpretationSet"]:  # Add mock client
     """Provide a factory function to create test InterpretationSet instances.
 
     Args:
         session: The active SQLAlchemy session for the test.
         scene_id: The ID of the scene this set belongs to.
+        mock_anthropic_client: Mock client to inject into managers.
         ... other args
 
     Returns:
@@ -432,9 +725,10 @@ def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
         logger.debug(
             f"[Factory create_test_interpretation_set] Creating set: scene_id='{scene_id}'"
         )
-        # TODO: Replace direct model creation with manager call when available.
-        managers = create_all_managers(session)
-        # Example: interp_set = managers.oracle.create_interpretation_set(...)
+        # Pass mock client even if managers aren't used by this specific factory's logic
+        # (Good practice in case manager usage is added later)
+        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
+        # Current implementation uses direct model creation:
         interp_set = InterpretationSet.create(
             scene_id=scene_id,
             context=context,
@@ -466,12 +760,15 @@ def create_test_interpretation_set() -> Callable[..., "InterpretationSet"]:
 
 
 @pytest.fixture
-def create_test_interpretation() -> Callable[..., "Interpretation"]:
+def create_test_interpretation(
+    mock_anthropic_client: MagicMock,
+) -> Callable[..., "Interpretation"]:  # Add mock client
     """Provide a factory function to create test Interpretation instances.
 
     Args:
         session: The active SQLAlchemy session for the test.
         set_id: The ID of the InterpretationSet this interpretation belongs to.
+        mock_anthropic_client: Mock client to inject into managers.
         ... other args
 
     Returns:
@@ -491,9 +788,9 @@ def create_test_interpretation() -> Callable[..., "Interpretation"]:
         logger.debug(
             f"[Factory create_test_interpretation] Creating interpretation: title='{title}', set_id='{set_id}'"
         )
-        # TODO: Replace direct model creation with manager call when available.
-        managers = create_all_managers(session)
-        # Example: interp = managers.oracle.create_interpretation(...)
+        # Pass mock client
+        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
+        # Current implementation uses direct model creation:
         interp = Interpretation.create(
             set_id=set_id,
             title=title,

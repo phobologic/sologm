@@ -653,16 +653,17 @@ class TestActManager:
         create_test_game: Callable,
         create_test_act: Callable,
         monkeypatch,
+        mock_anthropic_client: MagicMock,  # Add fixture for interaction
     ):
         """Test generating act summary."""
         with session_context as session:
-            managers = create_all_managers(session)
+            managers = create_all_managers(session)  # No client needed here
             test_game = create_test_game(session)
             test_act = create_test_act(session, game_id=test_game.id)
 
-            # Mock the AnthropicClient and ActPrompts to avoid actual API calls
-            mock_client = MagicMock()
-            mock_client.send_message.return_value = (
+            # Configure the mock client provided by the fixture
+            # mock_client = MagicMock() # Removed local mock
+            mock_anthropic_client.send_message.return_value = (
                 "TITLE: Test Title\n\nSUMMARY:\nTest summary paragraph."
             )
 
@@ -678,11 +679,7 @@ class TestActManager:
             monkeypatch.setattr(
                 managers.act, "prepare_act_data_for_summary", mock_prepare_data
             )
-            # Mock the AnthropicClient class in its original module
-            # When AnthropicClient() is called inside generate_act_summary, it will use this patched version
-            monkeypatch.setattr(
-                "sologm.integrations.anthropic.AnthropicClient", lambda: mock_client
-            )
+            # Removed monkeypatch for AnthropicClient class (handled by autouse fixture)
 
             # Test the method
             result = managers.act.generate_act_summary(
@@ -695,7 +692,8 @@ class TestActManager:
 
             # Verify mocks were called correctly
             mock_prepare_data.assert_called_once_with(test_act.id, "Additional context")
-            mock_client.send_message.assert_called_once()
+            # Assert against the fixture mock
+            mock_anthropic_client.send_message.assert_called_once()
 
     def test_generate_act_summary_api_error(
         self,
@@ -703,16 +701,19 @@ class TestActManager:
         create_test_game: Callable,
         create_test_act: Callable,
         monkeypatch,
+        mock_anthropic_client: MagicMock,  # Add fixture for interaction
     ):
         """Test handling of API errors during summary generation."""
         with session_context as session:
-            managers = create_all_managers(session)
+            managers = create_all_managers(session)  # No client needed here
             test_game = create_test_game(session)
             test_act = create_test_act(session, game_id=test_game.id)
 
-            # Mock the AnthropicClient to raise an error
-            mock_client = MagicMock()
-            mock_client.send_message.side_effect = Exception("API connection failed")
+            # Configure the mock client provided by the fixture to raise an error
+            # mock_client = MagicMock() # Removed local mock
+            mock_anthropic_client.send_message.side_effect = Exception(
+                "API connection failed"
+            )
 
             mock_prepare_data = MagicMock()
             mock_prepare_data.return_value = {
@@ -726,10 +727,7 @@ class TestActManager:
             monkeypatch.setattr(
                 managers.act, "prepare_act_data_for_summary", mock_prepare_data
             )
-            # Mock the AnthropicClient class in its original module
-            monkeypatch.setattr(
-                "sologm.integrations.anthropic.AnthropicClient", lambda: mock_client
-            )
+            # Removed monkeypatch for AnthropicClient class (handled by autouse fixture)
 
             # Test the method and assert APIError is raised
             with pytest.raises(APIError, match="Failed to generate act summary"):
@@ -962,22 +960,19 @@ class TestActManager:
         create_test_act: Callable,
         initialize_event_sources: Callable[[Session], None],
         monkeypatch,
+        mock_anthropic_client: MagicMock,  # Add fixture for interaction
     ):
         """Test generating act narrative using mocked AI."""
         with session_context as session:
             initialize_event_sources(session)
-            managers = create_all_managers(session)
+            managers = create_all_managers(session)  # No client needed here
             test_game = create_test_game(session)
             test_act = create_test_act(session, game_id=test_game.id)
 
-            # Mock AnthropicClient
-            mock_anthropic_instance = MagicMock()
-            mock_anthropic_instance.send_message.return_value = "Mocked AI Narrative"
-            # Patch the client where it's looked up (in the module under test)
-            monkeypatch.setattr(
-                "sologm.core.act.AnthropicClient",
-                lambda: mock_anthropic_instance,
-            )
+            # Configure the mock client provided by the fixture
+            # mock_anthropic_instance = MagicMock() # Removed local mock
+            mock_anthropic_client.send_message.return_value = "Mocked AI Narrative"
+            # Removed monkeypatch for AnthropicClient class (handled by autouse fixture)
 
             # Mock ActPrompts methods
             mock_build_narrative = MagicMock(return_value="Initial Prompt")
@@ -1022,14 +1017,16 @@ class TestActManager:
                 narrative_data=expected_data_for_prompt
             )
             mock_build_regen.assert_not_called()
-            mock_anthropic_instance.send_message.assert_called_once_with(
+            # Assert against the fixture mock
+            mock_anthropic_client.send_message.assert_called_once_with(
                 prompt="Initial Prompt", max_tokens=NARRATIVE_MAX_TOKENS
             )
 
             # Reset mocks for next call
             managers.act.prepare_act_data_for_narrative.reset_mock()
             mock_build_narrative.reset_mock()
-            mock_anthropic_instance.send_message.reset_mock()
+            # Reset the fixture mock
+            mock_anthropic_client.send_message.reset_mock()
 
             # --- Test regeneration ---
             result_regen = managers.act.generate_act_narrative(
@@ -1051,7 +1048,8 @@ class TestActManager:
                 feedback=feedback,
             )
             mock_build_narrative.assert_not_called()
-            mock_anthropic_instance.send_message.assert_called_once_with(
+            # Assert against the fixture mock
+            mock_anthropic_client.send_message.assert_called_once_with(
                 prompt="Regen Prompt", max_tokens=NARRATIVE_MAX_TOKENS
             )
 
@@ -1062,24 +1060,21 @@ class TestActManager:
         create_test_act: Callable,
         initialize_event_sources: Callable[[Session], None],
         monkeypatch,
+        mock_anthropic_client: MagicMock,  # Add fixture for interaction
     ):
         """Test handling API errors during narrative generation."""
         with session_context as session:
             initialize_event_sources(session)
-            managers = create_all_managers(session)
+            managers = create_all_managers(session)  # No client needed here
             test_game = create_test_game(session)
             test_act = create_test_act(session, game_id=test_game.id)
 
-            # Mock AnthropicClient to raise an error
-            mock_anthropic_instance = MagicMock()
-            mock_anthropic_instance.send_message.side_effect = Exception(
+            # Configure the mock client provided by the fixture to raise an error
+            # mock_anthropic_instance = MagicMock() # Removed local mock
+            mock_anthropic_client.send_message.side_effect = Exception(
                 "Anthropic API down"
             )
-            # Patch the client where it's looked up (in the module under test)
-            monkeypatch.setattr(
-                "sologm.core.act.AnthropicClient",
-                lambda: mock_anthropic_instance,
-            )
+            # Removed monkeypatch for AnthropicClient class (handled by autouse fixture)
 
             # Mock ActPrompts (needed for the call path)
             monkeypatch.setattr(
@@ -1097,4 +1092,5 @@ class TestActManager:
             with pytest.raises(APIError, match="Failed to generate act narrative"):
                 managers.act.generate_act_narrative(act_id=test_act.id)
 
-            mock_anthropic_instance.send_message.assert_called_once()
+            # Assert against the fixture mock
+            mock_anthropic_client.send_message.assert_called_once()

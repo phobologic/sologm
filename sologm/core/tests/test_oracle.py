@@ -128,35 +128,58 @@ class TestOracle:
         create_test_act: Callable,
         create_test_scene: Callable,
         monkeypatch,
+        # mock_anthropic_client is not needed here as we mock lower-level methods
     ) -> None:
-        """Test building prompts for Claude."""
+        """Test building interpretation prompt for active context with acts."""
         with session_context as session:
             managers = create_all_managers(session)
-            _, _, scene = create_base_test_data(
+            # Create data, but we'll mock the method that fetches it
+            game, act, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Mock the OraclePrompts.build_interpretation_prompt method
-            from sologm.core.prompts.oracle import OraclePrompts
+            # --- Mock the methods called *within* the tested method ---
+            # 1. Mock get_active_context to return the known test data directly
+            mock_get_context = MagicMock(return_value=(scene, act, game))
+            monkeypatch.setattr(managers.oracle, "get_active_context", mock_get_context)
 
-            def mock_build_prompt(*args, **kwargs):
-                # Check that the first argument is the scene object
-                assert isinstance(args[0], Scene)
-                assert args[0].id == scene.id
-                return "Mocked prompt"
+            # 2. Mock _build_prompt to capture arguments
+            mock_build_prompt_args = {}  # Store args passed to the mock
 
-            monkeypatch.setattr(
-                OraclePrompts, "build_interpretation_prompt", mock_build_prompt
+            def mock_build_prompt_spy(*args, **kwargs):
+                # Capture args passed to this mock
+                mock_build_prompt_args["args"] = args
+                mock_build_prompt_args["kwargs"] = kwargs
+                # Return a dummy value, its content doesn't matter for this test
+                return "Mocked Prompt String"
+
+            monkeypatch.setattr(managers.oracle, "_build_prompt", mock_build_prompt_spy)
+            # --- End Mocking ---
+
+            # Call the method under test
+            prompt_result = (
+                managers.oracle.build_interpretation_prompt_for_active_context(
+                    "Test context",
+                    "Test results",
+                    3,
+                )
             )
 
-            prompt = managers.oracle._build_prompt(
-                scene,  # Pass the actual scene object
-                "What happens next?",
-                "Mystery, Danger",
-                3,
-            )
+            # --- Assertions ---
+            # Verify get_active_context was called
+            mock_get_context.assert_called_once()
 
-            assert prompt == "Mocked prompt"
+            # Verify _build_prompt was called with the correct arguments
+            assert "args" in mock_build_prompt_args  # Check mock was called
+            passed_args = mock_build_prompt_args.get("args", ())
+            # args[0] should be the scene object returned by the mocked get_active_context
+            assert len(passed_args) > 0 and passed_args[0].id == scene.id
+            assert len(passed_args) > 1 and passed_args[1] == "Test context"
+            assert len(passed_args) > 2 and passed_args[2] == "Test results"
+            assert len(passed_args) > 3 and passed_args[3] == 3
+
+            # Assert the final return value (optional, depends on what _build_prompt returns)
+            assert prompt_result == "Mocked Prompt String"  # Matches the mock return
 
     def test_parse_interpretations(self, session_context: SessionContext) -> None:
         """Test parsing Claude's response."""
@@ -182,17 +205,17 @@ Test Description 2"""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ) -> None:
         """Test getting interpretations."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Configure mock to return string response
             response_text = """## Test Title
@@ -221,17 +244,18 @@ Test Description"""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ) -> None:
         """Test handling errors when getting interpretations."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
+            # Configure mock side effect
             mock_anthropic_client.send_message.side_effect = Exception("API Error")
 
             with pytest.raises(OracleError) as exc:
@@ -257,13 +281,13 @@ Test Description"""
             # Initialize event sources first
             initialize_event_sources(session)  # Call the initializer here
 
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             game, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Configure mock to return string response
             response_text = """## Test Title
@@ -356,17 +380,17 @@ Test Description"""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ) -> None:
         """Test finding interpretations by different identifier types."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Configure mock to return string response with multiple interpretations
             response_text = """## First Option
@@ -416,17 +440,17 @@ Description of second option"""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ) -> None:
         """Test getting interpretations with retry attempt."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Configure mock to return string response
             response_text = """## Test Title
@@ -469,17 +493,17 @@ Test Description"""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ):
         """Test automatic retry when parsing fails."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # First response has no interpretations (bad format)
             # Second response has valid interpretations
@@ -509,17 +533,17 @@ Retry Description""",  # Second call - good format
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ):
         """Test that we don't exceed max retry attempts."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # All responses have bad format
             mock_anthropic_client.send_message.side_effect = [
@@ -547,17 +571,17 @@ Retry Description""",  # Second call - good format
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ):
         """Test custom max_retries parameter."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # First two responses have bad format, third is good
             mock_anthropic_client.send_message.side_effect = [
@@ -587,17 +611,17 @@ Custom Description""",  # Third call
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ):
         """Test detailed interpretation generation and parsing."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Configure mock with a more complex response
             response_text = """## First Interpretation
@@ -631,17 +655,17 @@ It also has multiple lines."""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ):
         """Test getting most recent interpretation."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Create an interpretation set
             response_text = """## Test Title\nTest Description"""
@@ -687,13 +711,13 @@ It also has multiple lines."""
             # Initialize event sources first
             initialize_event_sources(session)  # Call initializer
 
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             game, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Create an interpretation set
             response_text = """## Test Title\nTest Description"""
@@ -762,17 +786,17 @@ It also has multiple lines."""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ):
         """Test managing multiple interpretation sets."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Create multiple interpretation sets
             mock_anthropic_client.send_message.side_effect = [
@@ -811,17 +835,17 @@ It also has multiple lines."""
         create_test_game: Callable,
         create_test_act: Callable,
         create_test_scene: Callable,
-        mock_anthropic_client: MagicMock,
+        mock_anthropic_client: MagicMock,  # Keep fixture for interaction
     ):
         """Test getting current interpretation set."""
         with session_context as session:
+            # Factory call no longer needs the client passed explicitly
             managers = create_all_managers(session)
             _, _, scene = create_base_test_data(
                 session, create_test_game, create_test_act, create_test_scene
             )
 
-            # Manually set the mock client on the manager instance
-            managers.oracle.anthropic_client = mock_anthropic_client
+            # Removed manual setting of mock client
 
             # Create an interpretation set
             response_text = """## Test Title\nTest Description"""

@@ -2,6 +2,7 @@
 
 import logging
 from types import SimpleNamespace
+from typing import Optional # Add Optional
 
 from sqlalchemy.orm import Session
 
@@ -11,43 +12,59 @@ from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
-from sologm.integrations.anthropic import AnthropicClient
+from sologm.integrations.anthropic import AnthropicClient # Ensure import
 from sologm.utils.config import get_config
 
 logger = logging.getLogger(__name__)
 
 
-def create_all_managers(session: Session) -> SimpleNamespace:
-    """Create instances of all core managers with the given session.
-
-    This helper function centralizes the instantiation of managers, ensuring they
-    all share the same database session and dependencies are correctly injected.
-    It's primarily intended for use in tests and potentially complex CLI commands
-    to reduce boilerplate.
+def create_all_managers(
+    session: Session,
+    anthropic_client: Optional[AnthropicClient] = None, # Add parameter
+) -> SimpleNamespace:
+    """Create instances of all core managers, sharing a session and optionally a client.
 
     Args:
-        session: The active SQLAlchemy session to be used by all managers.
+        session: The SQLAlchemy session to be used by all managers.
+        anthropic_client: Optional pre-configured Anthropic client instance.
+            If None, managers requiring it will create their own default instance
+            using the configured API key.
 
     Returns:
-        A SimpleNamespace object containing instances of all managers.
-        Access managers like `managers.game`, `managers.act`, etc.
+        A SimpleNamespace containing instances of all managers.
     """
-    logger.debug(f"Creating all managers with session ID: {id(session)}")
+    logger.debug(
+        f"Creating all managers with session ID: {id(session)} and "
+        f"AnthropicClient: {'Provided' if anthropic_client else 'Default'}"
+    )
 
-    # Instantiate managers in dependency order
+    # Determine the client to use - prioritize passed-in client
+    client_to_use = anthropic_client
+    if client_to_use is None:
+        # Fallback: Create a default client if none was provided
+        logger.debug("No AnthropicClient provided to factory, creating default.")
+        config = get_config() # Keep config import if using this fallback
+        client_to_use = AnthropicClient(api_key=config.get("anthropic_api_key"))
+    else:
+        logger.debug("Using provided AnthropicClient in factory.")
+
+
+    # Instantiate managers, passing the session and client
     game_manager = GameManager(session=session)
-    act_manager = ActManager(session=session, game_manager=game_manager)
+    act_manager = ActManager(
+        session=session,
+        game_manager=game_manager,
+        anthropic_client=client_to_use, # Pass the determined client
+    )
     scene_manager = SceneManager(session=session, act_manager=act_manager)
     event_manager = EventManager(session=session, scene_manager=scene_manager)
-    dice_manager = DiceManager(session=session, scene_manager=scene_manager)
+    dice_manager = DiceManager(session=session, scene_manager=scene_manager) # Assuming DiceManager exists
 
-    # OracleManager requires AnthropicClient, which needs config
-    config = get_config()
-    anthropic_client = AnthropicClient(api_key=config.get("anthropic_api_key"))
     oracle_manager = OracleManager(
         session=session,
         scene_manager=scene_manager,
-        anthropic_client=anthropic_client,
+        event_manager=event_manager, # Pass event_manager if needed
+        anthropic_client=client_to_use, # Pass the determined client
     )
 
     managers = SimpleNamespace(

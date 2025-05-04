@@ -174,7 +174,23 @@ def test_display_error(mock_console: MagicMock):
 # --- Tests for display_game_status (Moved & Adapted) ---
 
 
+@patch.object(RichRenderer, "_create_dice_rolls_panel")
+@patch.object(RichRenderer, "_create_empty_oracle_panel")
+@patch.object(RichRenderer, "_create_oracle_panel")
+@patch.object(RichRenderer, "_create_events_panel")
+@patch.object(RichRenderer, "_create_scene_panels_grid")
+@patch.object(RichRenderer, "_create_act_panel")
+@patch.object(RichRenderer, "_create_game_header_panel")
+@patch.object(RichRenderer, "_calculate_truncation_length")
 def test_display_game_status_full(
+    mock_calculate_truncation: MagicMock,
+    mock_create_game_header: MagicMock,
+    mock_create_act_panel: MagicMock,
+    mock_create_scene_grid: MagicMock,
+    mock_create_events_panel: MagicMock,
+    mock_create_oracle_panel: MagicMock,
+    mock_create_empty_oracle_panel: MagicMock,
+    mock_create_dice_panel: MagicMock,
     mock_console: MagicMock,
     session_context: SessionContext,
     create_test_game: Callable[..., Game],
@@ -184,37 +200,29 @@ def test_display_game_status_full(
     initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test displaying full game status with all components using RichRenderer."""
+    # --- Mock Setup ---
+    # Configure mocks to return simple identifiable objects/values
+    mock_truncation_length = 50
+    mock_calculate_truncation.return_value = mock_truncation_length
+    mock_game_header_panel = MagicMock(spec=Panel, name="GameHeaderPanel")
+    mock_create_game_header.return_value = mock_game_header_panel
+    mock_act_panel = MagicMock(spec=Panel, name="ActPanel")
+    mock_create_act_panel.return_value = mock_act_panel
+    mock_scene_grid = MagicMock(
+        spec=Table, name="SceneGrid"
+    )  # Use Table based on implementation
+    mock_create_scene_grid.return_value = mock_scene_grid
+    mock_events_panel = MagicMock(spec=Panel, name="EventsPanel")
+    mock_create_events_panel.return_value = mock_events_panel
+    # Simulate oracle manager returning data, so _create_oracle_panel is called
+    mock_oracle_panel = MagicMock(spec=Panel, name="OraclePanel")
+    mock_create_oracle_panel.return_value = mock_oracle_panel
+    mock_dice_panel = MagicMock(spec=Panel, name="DicePanel")
+    mock_create_dice_panel.return_value = mock_dice_panel
+
     renderer = RichRenderer(mock_console)
     mock_scene_manager = MagicMock(spec=SceneManager)
     mock_oracle_manager = MagicMock(spec=OracleManager)
-
-    # --- Setup Mocks for Oracle ---
-    # Create mock interpretations with string attributes
-    mock_interp1 = MagicMock(spec=Interpretation)
-    mock_interp1.id = "mock-interp-1"
-    mock_interp1.title = "Mock Interpretation 1"
-    mock_interp1.description = "Description for mock 1."
-    mock_interp1.is_selected = False
-
-    mock_interp2 = MagicMock(spec=Interpretation)
-    mock_interp2.id = "mock-interp-2"
-    mock_interp2.title = "Mock Interpretation 2"
-    mock_interp2.description = "Description for mock 2."
-    mock_interp2.is_selected = False
-
-    # Create a mock interpretation set with string context and list of mock interpretations
-    mock_interp_set = MagicMock(spec=InterpretationSet)
-    mock_interp_set.id = "mock-set-1"
-    mock_interp_set.context = "This is the mock context."  # Ensure context is a string
-    mock_interp_set.oracle_results = "Mock oracle results."
-    mock_interp_set.interpretations = [mock_interp1, mock_interp2]
-    mock_interp_set.retry_attempt = 0
-
-    # Configure the mock manager's methods
-    # For this test, assume there's a pending set and no recent selected one
-    mock_oracle_manager.get_current_interpretation_set.return_value = mock_interp_set
-    mock_oracle_manager.get_most_recent_interpretation.return_value = None
-    # --- End Oracle Mock Setup ---
 
     with session_context as session:
         initialize_event_sources(session)  # FIX: Initialize sources
@@ -249,10 +257,64 @@ def test_display_game_status_full(
             is_scene_active=True,
         )
 
-    assert mock_console.print.called
+    # --- Assertions ---
+    # Verify helpers were called with correct arguments
+    mock_calculate_truncation.assert_called_once()
+    mock_create_game_header.assert_called_once_with(game)
+    mock_create_act_panel.assert_called_once_with(
+        game,
+        act,
+        True,
+        truncation_length=mock_truncation_length,  # Pass True positionally
+    )
+    mock_create_scene_grid.assert_called_once_with(
+        game,
+        scene,
+        mock_scene_manager,
+        True,  # Pass True positionally
+    )
+    mock_create_events_panel.assert_called_once_with(events, mock_truncation_length)
+    # Check oracle panel call (assuming oracle_manager leads to this path)
+    mock_create_oracle_panel.assert_called_once_with(
+        game, scene, mock_oracle_manager, mock_truncation_length
+    )
+    mock_create_empty_oracle_panel.assert_not_called()  # Ensure the empty one wasn't called
+    mock_create_dice_panel.assert_called_once_with(rolls)
+
+    # Verify console output includes the mocked return values
+    print_calls = mock_console.print.call_args_list
+    # Check that the mocked panels/grids were printed
+    printed_objects = [
+        call[0][0] for call in print_calls if call[0]
+    ]  # Get first arg if exists
+
+    assert mock_game_header_panel in printed_objects
+    assert mock_act_panel in printed_objects
+    # The scene grid and events panel are added to a Table.grid, check that grid was printed
+    # The oracle panel and dice panel are added to another Table.grid, check that grid was printed
+    assert any(
+        isinstance(obj, Table) for obj in printed_objects
+    )  # Check if Table grids were printed
+    # More specific checks could verify the structure of the printed grids if needed
 
 
+@patch.object(RichRenderer, "_create_dice_rolls_panel")
+@patch.object(RichRenderer, "_create_empty_oracle_panel")
+@patch.object(RichRenderer, "_create_oracle_panel")
+@patch.object(RichRenderer, "_create_events_panel")
+@patch.object(RichRenderer, "_create_scene_panels_grid")
+@patch.object(RichRenderer, "_create_act_panel")
+@patch.object(RichRenderer, "_create_game_header_panel")
+@patch.object(RichRenderer, "_calculate_truncation_length")
 def test_display_game_status_no_scene(
+    mock_calculate_truncation: MagicMock,
+    mock_create_game_header: MagicMock,
+    mock_create_act_panel: MagicMock,
+    mock_create_scene_grid: MagicMock,
+    mock_create_events_panel: MagicMock,
+    mock_create_oracle_panel: MagicMock,
+    mock_create_empty_oracle_panel: MagicMock,
+    mock_create_dice_panel: MagicMock,
     mock_console: MagicMock,
     session_context: SessionContext,
     create_test_game: Callable[..., Game],
@@ -260,6 +322,25 @@ def test_display_game_status_no_scene(
 ):
     """Test displaying game status without an active scene using RichRenderer."""
     renderer = RichRenderer(mock_console)
+    # --- Mock Setup ---
+    mock_truncation_length = 50
+    mock_calculate_truncation.return_value = mock_truncation_length
+    mock_game_header_panel = MagicMock(spec=Panel, name="GameHeaderPanel")
+    mock_create_game_header.return_value = mock_game_header_panel
+    mock_act_panel = MagicMock(spec=Panel, name="ActPanel")
+    mock_create_act_panel.return_value = mock_act_panel
+    mock_scene_grid = MagicMock(spec=Table, name="SceneGrid")
+    mock_create_scene_grid.return_value = mock_scene_grid
+    mock_events_panel = MagicMock(spec=Panel, name="EventsPanel")
+    mock_create_events_panel.return_value = mock_events_panel
+    # Simulate no oracle data, so _create_empty_oracle_panel is called
+    mock_create_oracle_panel.return_value = (
+        None  # Simulate no panel created by this path
+    )
+    mock_empty_oracle_panel = MagicMock(spec=Panel, name="EmptyOraclePanel")
+    mock_create_empty_oracle_panel.return_value = mock_empty_oracle_panel
+    mock_dice_panel = MagicMock(spec=Panel, name="DicePanel")
+    mock_create_dice_panel.return_value = mock_dice_panel
     mock_oracle_manager = MagicMock(spec=OracleManager)
 
     with session_context as session:
@@ -278,10 +359,56 @@ def test_display_game_status_no_scene(
             is_scene_active=False,
         )
 
-    assert mock_console.print.called
+    # --- Assertions ---
+    mock_calculate_truncation.assert_called_once()
+    mock_create_game_header.assert_called_once_with(game)
+    mock_create_act_panel.assert_called_once_with(
+        game,
+        act,
+        True,
+        truncation_length=mock_truncation_length,  # Pass True positionally
+    )
+    # Expect scene grid to be called with None for scene and manager
+    mock_create_scene_grid.assert_called_once_with(
+        game,
+        None,
+        None,
+        False,  # Pass False positionally
+    )
+    mock_create_events_panel.assert_called_once_with([], mock_truncation_length)
+    # Expect oracle panel to be called, but return None, leading to empty panel call
+    mock_create_oracle_panel.assert_called_once_with(
+        game, None, mock_oracle_manager, mock_truncation_length
+    )
+    mock_create_empty_oracle_panel.assert_called_once()
+    mock_create_dice_panel.assert_called_once_with([])  # Called with empty list
+
+    # Verify console output includes the mocked return values
+    print_calls = mock_console.print.call_args_list
+    printed_objects = [call[0][0] for call in print_calls if call[0]]
+
+    assert mock_game_header_panel in printed_objects
+    assert mock_act_panel in printed_objects
+    assert any(isinstance(obj, Table) for obj in printed_objects)  # Check grids printed
 
 
+@patch.object(RichRenderer, "_create_dice_rolls_panel")
+@patch.object(RichRenderer, "_create_empty_oracle_panel")
+@patch.object(RichRenderer, "_create_oracle_panel")
+@patch.object(RichRenderer, "_create_events_panel")
+@patch.object(RichRenderer, "_create_scene_panels_grid")
+@patch.object(RichRenderer, "_create_act_panel")
+@patch.object(RichRenderer, "_create_game_header_panel")
+@patch.object(RichRenderer, "_calculate_truncation_length")
 def test_display_game_status_no_events(
+    mock_calculate_truncation: MagicMock,
+    mock_create_game_header: MagicMock,
+    mock_create_act_panel: MagicMock,
+    mock_create_scene_grid: MagicMock,
+    mock_create_events_panel: MagicMock,
+    mock_create_oracle_panel: MagicMock,
+    mock_create_empty_oracle_panel: MagicMock,
+    mock_create_dice_panel: MagicMock,
     mock_console: MagicMock,
     session_context: SessionContext,
     create_test_game: Callable[..., Game],
@@ -290,22 +417,32 @@ def test_display_game_status_no_events(
 ):
     """Test displaying game status without any events using RichRenderer."""
     renderer = RichRenderer(mock_console)
+    # --- Mock Setup ---
+    mock_truncation_length = 50
+    mock_calculate_truncation.return_value = mock_truncation_length
+    mock_game_header_panel = MagicMock(spec=Panel, name="GameHeaderPanel")
+    mock_create_game_header.return_value = mock_game_header_panel
+    mock_act_panel = MagicMock(spec=Panel, name="ActPanel")
+    mock_create_act_panel.return_value = mock_act_panel
+    mock_scene_grid = MagicMock(spec=Table, name="SceneGrid")
+    mock_create_scene_grid.return_value = mock_scene_grid
+    mock_events_panel = MagicMock(
+        spec=Panel, name="EventsPanel"
+    )  # Will be called with []
+    mock_create_events_panel.return_value = mock_events_panel
+    # Simulate oracle manager returning data, so _create_oracle_panel is called
+    mock_oracle_panel = MagicMock(spec=Panel, name="OraclePanel")
+    mock_create_oracle_panel.return_value = mock_oracle_panel
+
+    # Define mock_empty_oracle_panel even if not expected to be called/printed in this test
+    mock_empty_oracle_panel = MagicMock(spec=Panel, name="EmptyOraclePanel")
+    mock_create_empty_oracle_panel.return_value = mock_empty_oracle_panel
+
+    mock_dice_panel = MagicMock(spec=Panel, name="DicePanel")  # Will be called with []
+    mock_create_dice_panel.return_value = mock_dice_panel
+
     mock_scene_manager = MagicMock(spec=SceneManager)
     mock_oracle_manager = MagicMock(spec=OracleManager)
-
-    # --- Setup Mocks for Oracle (Pending State) ---
-    # Create a mock interpretation set with string context and empty interpretations list
-    mock_interp_set = MagicMock(spec=InterpretationSet)
-    mock_interp_set.id = "mock-set-pending"
-    mock_interp_set.context = "Mock pending context."  # Ensure context is a string
-    mock_interp_set.oracle_results = "Mock pending results."
-    mock_interp_set.interpretations = []  # Empty list for no selection path
-    mock_interp_set.retry_attempt = 0
-
-    # Configure the mock manager's methods for the pending scenario
-    mock_oracle_manager.get_current_interpretation_set.return_value = mock_interp_set
-    mock_oracle_manager.get_most_recent_interpretation.return_value = None
-    # --- End Oracle Mock Setup ---
 
     with session_context as session:
         game = create_test_game(session)
@@ -324,10 +461,60 @@ def test_display_game_status_no_events(
             is_scene_active=True,
         )
 
-    assert mock_console.print.called
+    # --- Assertions ---
+    mock_calculate_truncation.assert_called_once()
+    mock_create_game_header.assert_called_once_with(game)
+    mock_create_act_panel.assert_called_once_with(
+        game,
+        act,
+        True,
+        truncation_length=mock_truncation_length,  # Pass True positionally
+    )
+    mock_create_scene_grid.assert_called_once_with(
+        game,
+        scene,
+        mock_scene_manager,
+        True,  # Pass True positionally
+    )
+    # Expect events panel to be called with an empty list
+    mock_create_events_panel.assert_called_once_with([], mock_truncation_length)
+    # Expect oracle panel to be called
+    mock_create_oracle_panel.assert_called_once_with(
+        game, scene, mock_oracle_manager, mock_truncation_length
+    )
+    mock_create_empty_oracle_panel.assert_not_called()  # Correct: empty panel shouldn't be created
+    # Expect dice panel to be called with None converted to []
+    mock_create_dice_panel.assert_called_once_with([])
+
+    # Verify console output includes the mocked return values
+    print_calls = mock_console.print.call_args_list
+    printed_objects = [call[0][0] for call in print_calls if call[0]]
+
+    assert mock_game_header_panel in printed_objects
+    assert mock_act_panel in printed_objects
+    # Check that two Table objects (grids) were printed, representing the main layout structure.
+    # The individual panels (like oracle) are inside these grids.
+    table_prints = [obj for obj in printed_objects if isinstance(obj, Table)]
+    assert len(table_prints) == 2
 
 
+@patch.object(RichRenderer, "_create_dice_rolls_panel")
+@patch.object(RichRenderer, "_create_empty_oracle_panel")
+@patch.object(RichRenderer, "_create_oracle_panel")
+@patch.object(RichRenderer, "_create_events_panel")
+@patch.object(RichRenderer, "_create_scene_panels_grid")
+@patch.object(RichRenderer, "_create_act_panel")
+@patch.object(RichRenderer, "_create_game_header_panel")
+@patch.object(RichRenderer, "_calculate_truncation_length")
 def test_display_game_status_no_interpretation(
+    mock_calculate_truncation: MagicMock,
+    mock_create_game_header: MagicMock,
+    mock_create_act_panel: MagicMock,
+    mock_create_scene_grid: MagicMock,
+    mock_create_events_panel: MagicMock,
+    mock_create_oracle_panel: MagicMock,
+    mock_create_empty_oracle_panel: MagicMock,
+    mock_create_dice_panel: MagicMock,
     mock_console: MagicMock,
     session_context: SessionContext,
     create_test_game: Callable[..., Game],
@@ -337,6 +524,25 @@ def test_display_game_status_no_interpretation(
     initialize_event_sources: Callable[[Session], None],  # FIX: Add fixture
 ):
     """Test displaying game status without oracle manager using RichRenderer."""
+    # --- Mock Setup ---
+    mock_truncation_length = 50
+    mock_calculate_truncation.return_value = mock_truncation_length
+    mock_game_header_panel = MagicMock(spec=Panel, name="GameHeaderPanel")
+    mock_create_game_header.return_value = mock_game_header_panel
+    mock_act_panel = MagicMock(spec=Panel, name="ActPanel")
+    mock_create_act_panel.return_value = mock_act_panel
+    mock_scene_grid = MagicMock(spec=Table, name="SceneGrid")
+    mock_create_scene_grid.return_value = mock_scene_grid
+    mock_events_panel = MagicMock(spec=Panel, name="EventsPanel")
+    mock_create_events_panel.return_value = mock_events_panel
+    # Explicitly set the oracle panel mock to return None for this test case
+    mock_create_oracle_panel.return_value = None
+    # Return an actual Panel, not just a mock, to avoid NotRenderableError
+    mock_empty_oracle_panel = Panel("Empty Oracle", title="EmptyOraclePanel")
+    mock_create_empty_oracle_panel.return_value = mock_empty_oracle_panel
+    mock_dice_panel = MagicMock(spec=Panel, name="DicePanel")
+    mock_create_dice_panel.return_value = mock_dice_panel
+
     renderer = RichRenderer(mock_console)
     mock_scene_manager = MagicMock(spec=SceneManager)
 
@@ -360,10 +566,57 @@ def test_display_game_status_no_interpretation(
             is_scene_active=True,
         )
 
-    assert mock_console.print.called
+    # --- Assertions ---
+    mock_calculate_truncation.assert_called_once()
+    mock_create_game_header.assert_called_once_with(game)
+    mock_create_act_panel.assert_called_once_with(
+        game,
+        act,
+        True,
+        truncation_length=mock_truncation_length,  # Pass True positionally
+    )
+    mock_create_scene_grid.assert_called_once_with(
+        game,
+        scene,
+        mock_scene_manager,
+        True,  # Pass True positionally
+    )
+    mock_create_events_panel.assert_called_once_with(events, mock_truncation_length)
+    # Expect _create_oracle_panel to be called with None manager, returning None
+    mock_create_oracle_panel.assert_called_once_with(
+        game, scene, None, mock_truncation_length
+    )
+    # Expect _create_empty_oracle_panel to be called as fallback
+    mock_create_empty_oracle_panel.assert_called_once()
+    # Expect dice panel to be called with None converted to []
+    mock_create_dice_panel.assert_called_once_with([])
+
+    # Verify console output includes the mocked return values
+    print_calls = mock_console.print.call_args_list
+    printed_objects = [call[0][0] for call in print_calls if call[0]]
+
+    assert mock_game_header_panel in printed_objects
+    assert mock_act_panel in printed_objects
+    assert any(isinstance(obj, Table) for obj in printed_objects)  # Check grids printed
 
 
+@patch.object(RichRenderer, "_create_dice_rolls_panel")
+@patch.object(RichRenderer, "_create_empty_oracle_panel")
+@patch.object(RichRenderer, "_create_oracle_panel")
+@patch.object(RichRenderer, "_create_events_panel")
+@patch.object(RichRenderer, "_create_scene_panels_grid")
+@patch.object(RichRenderer, "_create_act_panel")
+@patch.object(RichRenderer, "_create_game_header_panel")
+@patch.object(RichRenderer, "_calculate_truncation_length")
 def test_display_game_status_selected_interpretation(
+    mock_calculate_truncation: MagicMock,
+    mock_create_game_header: MagicMock,
+    mock_create_act_panel: MagicMock,
+    mock_create_scene_grid: MagicMock,
+    mock_create_events_panel: MagicMock,
+    mock_create_oracle_panel: MagicMock,
+    mock_create_empty_oracle_panel: MagicMock,
+    mock_create_dice_panel: MagicMock,
     mock_console: MagicMock,
     session_context: SessionContext,
     create_test_game: Callable[..., Game],
@@ -374,6 +627,24 @@ def test_display_game_status_selected_interpretation(
     # Interpretation/Set are created manually for mock setup
 ):
     """Test displaying game status with a selected interpretation using RichRenderer."""
+    # --- Mock Setup ---
+    mock_truncation_length = 50
+    mock_calculate_truncation.return_value = mock_truncation_length
+    mock_game_header_panel = MagicMock(spec=Panel, name="GameHeaderPanel")
+    mock_create_game_header.return_value = mock_game_header_panel
+    mock_act_panel = MagicMock(spec=Panel, name="ActPanel")
+    mock_create_act_panel.return_value = mock_act_panel
+    mock_scene_grid = MagicMock(spec=Table, name="SceneGrid")
+    mock_create_scene_grid.return_value = mock_scene_grid
+    mock_events_panel = MagicMock(spec=Panel, name="EventsPanel")
+    mock_create_events_panel.return_value = mock_events_panel
+    mock_oracle_panel = MagicMock(
+        spec=Panel, name="OraclePanel"
+    )  # Expect this to be called
+    mock_create_oracle_panel.return_value = mock_oracle_panel
+    mock_dice_panel = MagicMock(spec=Panel, name="DicePanel")
+    mock_create_dice_panel.return_value = mock_dice_panel
+
     renderer = RichRenderer(mock_console)
     mock_scene_manager = MagicMock(spec=SceneManager)
     mock_oracle_manager = MagicMock(spec=OracleManager)
@@ -386,7 +657,8 @@ def test_display_game_status_selected_interpretation(
         event = create_test_event(session, scene_id=scene.id)
         events = [event]
 
-        # Setup: Create interpretation data and configure mock oracle_manager
+        # Setup: Configure mock oracle_manager to simulate a selected interpretation
+        # This data is only needed to ensure the correct path in display_game_status
         selected_interp = Interpretation(
             id="interp-selected",
             set_id="set-1",
@@ -401,7 +673,7 @@ def test_display_game_status_selected_interpretation(
             oracle_results="Test Results",
             interpretations=[selected_interp],
         )
-        # Mock the methods on the mock_oracle_manager instance directly
+        # Mock the manager methods to guide display_game_status logic
         mock_oracle_manager.get_current_interpretation_set = MagicMock(
             return_value=None
         )
@@ -421,7 +693,37 @@ def test_display_game_status_selected_interpretation(
             is_scene_active=True,
         )
 
-    assert mock_console.print.called
+    # --- Assertions ---
+    mock_calculate_truncation.assert_called_once()
+    mock_create_game_header.assert_called_once_with(game)
+    mock_create_act_panel.assert_called_once_with(
+        game,
+        act,
+        True,
+        truncation_length=mock_truncation_length,  # Positional True
+    )
+    mock_create_scene_grid.assert_called_once_with(
+        game,
+        scene,
+        mock_scene_manager,
+        True,  # Positional True
+    )
+    mock_create_events_panel.assert_called_once_with(events, mock_truncation_length)
+    # Expect _create_oracle_panel to be called because manager returns recent interp
+    mock_create_oracle_panel.assert_called_once_with(
+        game, scene, mock_oracle_manager, mock_truncation_length
+    )
+    mock_create_empty_oracle_panel.assert_not_called()
+    # Expect dice panel to be called with None converted to []
+    mock_create_dice_panel.assert_called_once_with([])
+
+    # Verify console output includes the mocked return values
+    print_calls = mock_console.print.call_args_list
+    printed_objects = [call[0][0] for call in print_calls if call[0]]
+
+    assert mock_game_header_panel in printed_objects
+    assert mock_act_panel in printed_objects
+    assert any(isinstance(obj, Table) for obj in printed_objects)  # Check grids printed
 
 
 # --- End Tests for display_game_status ---

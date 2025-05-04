@@ -1,13 +1,17 @@
 """Act manager for SoloGM."""
 
 import logging
+import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
 from sologm.core.base_manager import BaseManager
 from sologm.core.prompts.act import ActPrompts
-from sologm.integrations.anthropic import NARRATIVE_MAX_TOKENS, AnthropicClient
+from sologm.integrations.anthropic import (
+    NARRATIVE_MAX_TOKENS,
+    AnthropicClient,  # Ensure AnthropicClient is imported
+)
 from sologm.models.act import Act
 from sologm.models.game import Game
 
@@ -32,15 +36,24 @@ class ActManager(BaseManager[Act, Act]):
         self,
         game_manager: Optional["GameManager"] = None,
         session: Optional[Session] = None,
+        anthropic_client: Optional[AnthropicClient] = None,  # Add parameter
     ):
         """Initialize the act manager.
 
         Args:
             game_manager: Optional GameManager instance.
             session: Optional database session for testing or CLI command injection.
+            anthropic_client: Optional Anthropic client instance. If None, a default
+                instance will be created. # Add docstring
         """
         super().__init__(session=session)
         self._game_manager = game_manager
+        # Store the provided client or create a default one
+        self.anthropic_client = anthropic_client or AnthropicClient()
+        logger.debug(
+            f"ActManager initialized with AnthropicClient: "
+            f"{'Provided' if anthropic_client else 'Created Default'}"
+        )
 
     # Parent manager access
     @property
@@ -642,25 +655,25 @@ class ActManager(BaseManager[Act, Act]):
         act_data = self.prepare_act_data_for_summary(act_id, additional_context)
         logger.debug("Act data prepared successfully")
 
-        # Import here to avoid circular imports
+        # Import prompts locally if needed (or move to top if preferred)
         from sologm.core.prompts.act import ActPrompts
-        from sologm.integrations.anthropic import AnthropicClient
         from sologm.utils.errors import APIError
 
-        # Build the prompt
+        # Build the prompt (no change here)
         prompt = ActPrompts.build_summary_prompt(act_data)
         logger.debug("Built summary prompt")
 
-        # Create Anthropic client
-        client = AnthropicClient()
-        logger.debug("Created Anthropic client")
+        # Remove local client creation:
+        # client = AnthropicClient()
+        # logger.debug("Created Anthropic client")
 
         try:
-            # Send to Anthropic
-            response = client.send_message(
+            # Use the instance client:
+            logger.debug("Sending summary prompt using self.anthropic_client")
+            response = self.anthropic_client.send_message(
                 prompt=prompt,
-                max_tokens=1000,
-                temperature=0.7,
+                max_tokens=1000,  # Consider making these configurable
+                temperature=0.7,  # Consider making these configurable
             )
             logger.debug("Received response from Anthropic")
 
@@ -980,10 +993,14 @@ class ActManager(BaseManager[Act, Act]):
 
         # 3. Call the AI service
         try:
-            logger.debug("Instantiating AnthropicClient.")
-            client = AnthropicClient()
+            # Remove local client creation:
+            # logger.debug("Instantiating AnthropicClient.")
+            # client = AnthropicClient()
+
             logger.info(f"Sending narrative prompt to AI for act {act_id}...")
-            ai_response = client.send_message(
+            # Use the instance client:
+            logger.debug("Sending narrative prompt using self.anthropic_client")
+            ai_response = self.anthropic_client.send_message(
                 prompt=prompt, max_tokens=NARRATIVE_MAX_TOKENS
             )
             logger.info(f"Received narrative response from AI for act {act_id}.")
@@ -1001,7 +1018,10 @@ class ActManager(BaseManager[Act, Act]):
                     "Act did not have an existing title. Returning AI response directly (should include title)."
                 )
                 # AI was instructed to include the title, return its response directly
+                # AI was instructed to include the title, return its response directly
                 return ai_response
         except Exception as e:
             logger.error(f"Error generating act narrative: {str(e)}", exc_info=True)
+            # Import APIError if not already imported at top
+            from sologm.utils.errors import APIError
             raise APIError(f"Failed to generate act narrative: {str(e)}") from e
