@@ -10,7 +10,6 @@ from sologm.core.prompts.act import ActPrompts
 from sologm.integrations.anthropic import NARRATIVE_MAX_TOKENS, AnthropicClient
 from sologm.models.act import Act
 from sologm.models.game import Game
-from sologm.models.scene import Scene
 
 # Ensure Session is imported if not already (it is in the provided snippet)
 # from sqlalchemy.orm import Session
