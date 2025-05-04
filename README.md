@@ -14,6 +14,7 @@ A command-line application designed to assist players of solo or GM-less rolepla
 - **Event Recording**: Log important events that occur during gameplay, associating them with scenes. Edit existing events and manage event sources.
 - **Dice Rolling**: Roll dice using standard notation (e.g., 2d6+1) with optional reasons and scene association. View roll history.
 - **Oracle Interpretation**: Use AI (e.g., Claude) to interpret oracle results in the context of your game. Manage interpretation sets, retry interpretations, and select interpretations to become events.
+- **AI Narrative Generation**: Generate prose narratives for acts based on their scenes and events, guided by user input.
 
 ## Core Concepts
 
@@ -49,6 +50,17 @@ SoloGM integrates AI (currently Anthropic's Claude) to assist your creative proc
     *   **Edit (E):** Modify the generated title and/or summary in your text editor.
     *   **Regenerate (R):** Ask the AI to try again, optionally providing specific feedback on what to change or keep.
 *   **Benefit:** Saves significant time compared to manually reviewing all act content. Provides a consistent narrative summary, useful for tracking the story's progression and for later review (e.g., using `sologm game dump`).
+
+### AI Narrative Generation (`sologm act narrative`)
+
+*   **Purpose:** Creates a prose narrative (story) in Markdown format for the currently active act, based on its recorded scenes and events.
+*   **How it Works:** The command gathers the data from the active act (scenes, events) and the summary of the previous act (if available). It then prompts you to provide guidance on the desired tone, style, point of view, and key focus for the narrative. This information is sent to the AI, which writes the story.
+*   **Interaction:** After the initial narrative is generated, you enter an interactive loop:
+    *   **Accept (A):** Finalize the process with the current narrative.
+    *   **Edit (E):** Open the narrative in your default text editor for modifications.
+    *   **Regenerate (R):** Provide feedback on the previous version and ask the AI to generate a new one, potentially adjusting the guidance.
+    *   **Cancel (C):** Discard the generated narrative and exit.
+*   **Benefit:** Helps transform structured game events into engaging story text, useful for creating session recaps, actual play reports, or simply enjoying a more narrative version of your game.
 
 *Note: The AI acts as a creative assistant and summarizer; it does not make decisions or play the game for you.*
 
@@ -210,6 +222,12 @@ sologm act complete --ai --context "Focus on the betrayal by the informant, make
 
 # Force AI generation, overwriting any existing title/summary without prompting.
 sologm act complete --ai --force
+
+# Generate an AI-powered narrative for the active act (prompts for guidance)
+sologm act narrative
+
+# Show the prompt that would be sent to the AI for narrative generation
+sologm act narrative --show-prompt
 ```
 
 ### Scene Management

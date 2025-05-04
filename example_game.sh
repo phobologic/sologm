@@ -155,6 +155,15 @@ run_cmd sologm scene add --title "Nebula Run" --description "Fleeing through a d
 echo "Adding an event to the new scene..."
 run_cmd sologm event add --description "The 'Stardust Drifter' takes minor hull damage from weapon fire."
 
+echo "Generating narrative for Act 2 (requires interaction)..."
+echo "+ sologm act narrative"
+sleep 0.5
+# Note: 'act narrative' requires manual interaction for the guidance editor
+#       and the Accept/Edit/Regenerate/Cancel feedback loop.
+sologm act narrative
+echo
+sleep 0.5
+
 # --- Status Checks and Export ---
 
 echo "--- Status Checks and Export ---"

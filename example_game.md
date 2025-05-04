@@ -197,6 +197,12 @@ sologm act complete --ai --context "Focus on the discovery of the Precursor stat
 *        Let's assume we Accept 'A'.*
 *Output: Success message indicating Act 1 is complete with the chosen title/summary.*
 
+**Generate a narrative for the completed Act 1.** Note: Act 1 is no longer active, so we first need to create Act 2 to make Act 1 the *previous* act, which `narrative` can then target. (Alternatively, if `narrative` is updated to take an ID, we could target Act 1 directly). Assuming `narrative` targets the *active* act, we'll demonstrate it on Act 2 later. *Correction:* The `narrative` command currently targets the *active* act. Let's add it after creating and adding some content to Act 2 instead.
+
+---
+
+## Act 2: Pursuit
+
 ---
 
 ## Act 2: Pursuit
@@ -222,6 +228,17 @@ sologm scene add --title "Nebula Run" --description "Fleeing through a dense neb
 sologm event add --description "The 'Stardust Drifter' takes minor hull damage from weapon fire."
 ```
 *Output: Success message.*
+
+**Generate a narrative for the current active act (Act 2).** This requires interaction for guidance and feedback.
+
+```bash
+sologm act narrative
+```
+*Output: Prompts for narrative guidance (Tone, POV, Focus, etc.) via editor. Save and close.*
+*Output: "Generating initial narrative with AI...". Displays the generated Markdown narrative.*
+*        Prompts: "[A]ccept / [E]dit / [R]egenerate / [C]ancel?".*
+*        Choose an option (e.g., 'A' to accept).*
+*Output: Success/confirmation message.*
 
 ---
 
