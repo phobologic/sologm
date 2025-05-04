@@ -315,7 +315,7 @@ python -c "from sologm.core.act import ActManager; from sologm.database import g
 ## Step 6: Implement Narrative Generation Method
 **Files to modify:**
 - `sologm/core/act.py`
-- `sologm/integrations/anthropic_integration.py` (minor update)
+- `sologm/integrations/anthropic.py` (minor update)
 
 ### Sub-step 6.1: Add generate_act_narrative Method
 **File:** `sologm/core/act.py`  
@@ -332,7 +332,7 @@ python -c "from sologm.core.act import ActManager; from sologm.database import g
 - Return raw string response from AI
 
 ### Sub-step 6.2: Update AnthropicClient Token Limits
-**File:** `sologm/integrations/anthropic_integration.py`  
+**File:** `sologm/integrations/anthropic.py`  
 **Change:** Ensure max_tokens parameter supports narrative generation needs  
 **Rationale:** Narratives require more tokens than typical summaries  
 **Context:**
@@ -448,7 +448,7 @@ python -m sologm.cli.main act narrative
 - Call act_manager.generate_act_narrative with try/except for APIError
 - Display generated narrative using renderer.display_markdown
 - Implement while True feedback loop with proper choice handling
-- Choice handling: Accept (break), Edit (click.edit), Regenerate (feedback collection), Cancel (break)
+- Choice handling: Accept (break), Edit (open editor to edit narrative), Regenerate (feedback collection), Cancel (break)
 - For Edit: check if result changed before updating
 - For Regenerate: call _collect_narrative_regeneration_feedback and generate again
 - Include appropriate status messages throughout
