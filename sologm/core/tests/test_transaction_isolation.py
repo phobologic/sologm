@@ -71,4 +71,5 @@ def test_cascade_delete_game(
         event_count = session.query(Event).filter(Event.id.in_(event_ids)).count()
         assert event_count == 0, f"Expected 0 Events, found {event_count}"
 
-    # The session is automatically committed or rolled back upon exiting the 'with' block
+    # The session is automatically committed or rolled back upon exiting the
+    # 'with' block

@@ -187,18 +187,21 @@ class SessionContext:
                 logger.debug(f"Exception in session context: {exc_val}. Rolling back")
                 self.session.rollback()
             else:
-                # No exception, commit *only if the session is active and in a transaction*
+                # No exception, commit *only if the session is active and
+                # in a transaction*
                 # (i.e., hasn't been rolled back explicitly within the context)
                 is_in_transaction = self.session.in_transaction()
                 logger.debug(
-                    f"Session active: {self.session.is_active}, In transaction: {is_in_transaction}"
+                    f"Session active: {self.session.is_active}, "
+                    f"In transaction: {is_in_transaction}"
                 )
                 if self.session.is_active and is_in_transaction:
                     logger.debug("Committing session")
                     self.session.commit()
                 elif self.session.is_active:
                     logger.debug(
-                        "Transaction is not active (likely rolled back), skipping commit."
+                        "Transaction is not active (likely rolled back), "
+                        "skipping commit."
                     )
                 else:
                     logger.debug("Session is not active, skipping commit.")

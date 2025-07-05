@@ -121,7 +121,8 @@ class TestOraclePrompts:
             assert f"Game: {game.description}" in result
             assert f"Act: {act.summary}" in result
             assert f"Current Scene: {scene.description}" in result
-            # Ensure the event description is correctly formatted in the prompt's event list
+            # Ensure the event description is correctly formatted in the prompt's
+            # event list
             assert f"- {event1.description}" in result  # Check formatting if applicable
             assert "Player's Question/Context: What happens next?" in result
             assert "Oracle Results: Mystery, Danger" in result

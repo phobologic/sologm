@@ -2,7 +2,7 @@
 
 import logging
 from types import SimpleNamespace
-from typing import Optional # Add Optional
+from typing import Optional  # Add Optional
 
 from sqlalchemy.orm import Session
 
@@ -12,7 +12,7 @@ from sologm.core.event import EventManager
 from sologm.core.game import GameManager
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
-from sologm.integrations.anthropic import AnthropicClient # Ensure import
+from sologm.integrations.anthropic import AnthropicClient  # Ensure import
 from sologm.utils.config import get_config
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def create_all_managers(
     session: Session,
-    anthropic_client: Optional[AnthropicClient] = None, # Add parameter
+    anthropic_client: Optional[AnthropicClient] = None,  # Add parameter
 ) -> SimpleNamespace:
     """Create instances of all core managers, sharing a session and optionally a client.
 
@@ -43,28 +43,29 @@ def create_all_managers(
     if client_to_use is None:
         # Fallback: Create a default client if none was provided
         logger.debug("No AnthropicClient provided to factory, creating default.")
-        config = get_config() # Keep config import if using this fallback
+        config = get_config()  # Keep config import if using this fallback
         client_to_use = AnthropicClient(api_key=config.get("anthropic_api_key"))
     else:
         logger.debug("Using provided AnthropicClient in factory.")
-
 
     # Instantiate managers, passing the session and client
     game_manager = GameManager(session=session)
     act_manager = ActManager(
         session=session,
         game_manager=game_manager,
-        anthropic_client=client_to_use, # Pass the determined client
+        anthropic_client=client_to_use,  # Pass the determined client
     )
     scene_manager = SceneManager(session=session, act_manager=act_manager)
     event_manager = EventManager(session=session, scene_manager=scene_manager)
-    dice_manager = DiceManager(session=session, scene_manager=scene_manager) # Assuming DiceManager exists
+    dice_manager = DiceManager(
+        session=session, scene_manager=scene_manager
+    )  # Assuming DiceManager exists
 
     oracle_manager = OracleManager(
         session=session,
         scene_manager=scene_manager,
-        event_manager=event_manager, # Pass event_manager if needed
-        anthropic_client=client_to_use, # Pass the determined client
+        event_manager=event_manager,  # Pass event_manager if needed
+        anthropic_client=client_to_use,  # Pass the determined client
     )
 
     managers = SimpleNamespace(

@@ -49,7 +49,8 @@ class BaseManager(Generic[T, M]):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._session = session
         self.logger.debug(
-            f"Initialized {self.__class__.__name__} with session ID: {id(self._session)}"
+            f"Initialized {self.__class__.__name__} with session ID: "
+            f"{id(self._session)}"
         )
 
     def _convert_to_domain(self, db_model: M) -> T:
@@ -66,7 +67,7 @@ class BaseManager(Generic[T, M]):
         """
         return db_model  # type: ignore
 
-    def _convert_to_db_model(self, domain_model: T, db_model: Optional[M] = None) -> M:
+    def _convert_to_db_model(self, domain_model: T, db_model: Optional[M] = None) -> M:  # noqa: ARG002
         """Convert domain model to database model.
 
         Default implementation assumes the domain model is the database model.
@@ -255,10 +256,7 @@ class BaseManager(Generic[T, M]):
 
             # Apply ordering
             if order_by:
-                if isinstance(order_by, str):
-                    order_attrs = [order_by]
-                else:
-                    order_attrs = order_by
+                order_attrs = [order_by] if isinstance(order_by, str) else order_by
 
                 for attr in order_attrs:
                     direction_func = asc if order_direction == "asc" else desc
@@ -295,7 +293,8 @@ class BaseManager(Generic[T, M]):
             # Ensure the current manager's session is passed to the new manager
             kwargs["session"] = self._session
             self.logger.debug(
-                f"Lazy initializing {class_name} with session ID: {id(kwargs['session'])}"
+                f"Lazy initializing {class_name} with session ID: "
+                f"{id(kwargs['session'])}"
             )
 
             setattr(self, attr_name, manager_class(**kwargs))
@@ -304,7 +303,8 @@ class BaseManager(Generic[T, M]):
             new_manager = getattr(self, attr_name)
             if hasattr(new_manager, "_session"):
                 self.logger.debug(
-                    f"Newly created {class_name} has session ID: {id(new_manager._session)}"
+                    f"Newly created {class_name} has session ID: "
+                    f"{id(new_manager._session)}"
                 )
             else:
                 self.logger.warning(

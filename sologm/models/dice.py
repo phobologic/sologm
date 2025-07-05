@@ -118,8 +118,40 @@ class DiceRoll(Base, TimestampMixin):
 
     @has_reason.expression
     def has_reason(cls):  # noqa: N805
-        """SQL expression for has_reason."""
-        return ((cls.reason is not None) & (cls.reason != "")).label("has_reason")
+        """SQL expression for has_reason.
+
+        Note: This complex expression manually replicates Python's .strip() behavior
+        in SQL context. We can't use simple SQL TRIM() because it only handles spaces
+        by default, not all whitespace characters (tabs, newlines, carriage returns).
+
+        The nested func.replace() calls remove all whitespace characters:
+        - ' ' (space)
+        - '\t' (tab)
+        - '\n' (newline)
+        - '\r' (carriage return)
+
+        Then func.length() > 0 checks if any non-whitespace characters remain,
+        matching the Python context behavior of `reason.strip() != ""`.
+        """
+        from sqlalchemy import func
+
+        return (
+            cls.reason.is_not(None)
+            & (
+                func.length(
+                    func.replace(
+                        func.replace(
+                            func.replace(func.replace(cls.reason, " ", ""), "\t", ""),
+                            "\n",
+                            "",
+                        ),
+                        "\r",
+                        "",
+                    )
+                )
+                > 0
+            )
+        ).label("has_reason")
 
     @classmethod
     def create(

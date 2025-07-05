@@ -9,12 +9,15 @@ from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
 from sologm.models.game import Game
+from sologm.models.mixins import ExistenceCheckMixin, ExistenceConfig
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene
 
 __all__ = [
     "Base",
     "TimestampMixin",
+    "ExistenceCheckMixin",
+    "ExistenceConfig",
     "Game",
     "Scene",
     "Act",

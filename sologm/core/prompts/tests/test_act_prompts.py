@@ -1,7 +1,5 @@
 """Unit tests for the ActPrompts class."""
 
-import pytest
-
 from sologm.core.prompts.act import ActPrompts
 
 

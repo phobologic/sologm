@@ -81,18 +81,23 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
 
         # --- Determine final log file path ---
         log_file_path = Path(log_file_path_str)
-        # Check if the configured path is absolute. If not, make it relative to config.base_dir
+        # Check if the configured path is absolute.
+        # If not, make it relative to config.base_dir
         if not log_file_path.is_absolute():
             log_file_path = config.base_dir / log_file_path
-            # Log this resolution only if logger is already partially configured or use print
-            # print(f"DEBUG: Relative log path configured. Resolved to: {log_file_path}")
+            # Log this resolution only if logger is already
+            # partially configured or use print
+            # print(f"DEBUG: Relative log path configured. "
+            #       f"Resolved to: {log_file_path}")
 
         # Ensure log directory exists
         try:
             log_file_path.parent.mkdir(parents=True, exist_ok=True)
         except OSError as e:
             sys.stderr.write(
-                f"Warning: Could not create log directory {log_file_path.parent}. Logging to stderr instead. Error: {e}\n"
+                f"Warning: Could not create log directory "
+                f"{log_file_path.parent}. Logging to stderr instead. "
+                f"Error: {e}\n"
             )
             # Fallback to basic stderr logging for errors only
             logger.setLevel(logging.ERROR)
@@ -120,7 +125,10 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
             OSError,
         ) as e:  # Catch potential errors during handler creation/config parsing
             sys.stderr.write(
-                f"Warning: Could not create log file handler for {log_file_path} (maxBytes={log_max_bytes}, backupCount={log_backup_count}). Logging to stderr instead. Error: {e}\n"
+                f"Warning: Could not create log file handler for "
+                f"{log_file_path} (maxBytes={log_max_bytes}, "
+                f"backupCount={log_backup_count}). Logging to stderr "
+                f"instead. Error: {e}\n"
             )
             # Fallback to basic stderr logging for errors only
             logger.setLevel(logging.ERROR)
@@ -136,7 +144,10 @@ def setup_root_logger(debug: Optional[bool] = None) -> None:
     if not debug:
         # Use the resolved log_file_path here
         logger.info(
-            f"--- Starting sologm session (Log Level: INFO, File: {log_file_path}, MaxBytes: {log_max_bytes}, Backups: {log_backup_count}) ---"
+            f"--- Starting sologm session (Log Level: INFO, "
+            f"File: {log_file_path}, MaxBytes: {log_max_bytes}, "
+            f"Backups: {log_backup_count}) ---"
         )
     # else: # Debug logging already goes to stdout
-    #     logger.debug("--- Starting sologm session (Log Level: DEBUG, Output: stdout) ---")
+    #     logger.debug("--- Starting sologm session "
+    #                  "(Log Level: DEBUG, Output: stdout) ---")

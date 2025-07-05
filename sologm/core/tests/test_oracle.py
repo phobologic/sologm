@@ -10,11 +10,6 @@ from sqlalchemy.orm import Session  # Added for type hinting
 # Import factory and models needed for test setup
 from sologm.core.factory import create_all_managers
 from sologm.database.session import SessionContext
-
-# Create a dedicated logger for the test module
-logger = logging.getLogger(__name__)
-
-# Import models needed for test setup and assertions
 from sologm.models.act import Act
 from sologm.models.event import Event
 from sologm.models.event_source import EventSource
@@ -22,6 +17,9 @@ from sologm.models.game import Game
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.models.scene import Scene
 from sologm.utils.errors import OracleError
+
+# Create a dedicated logger for the test module
+logger = logging.getLogger(__name__)
 
 
 # Helper function to create base test data within a session context
@@ -172,13 +170,15 @@ class TestOracle:
             # Verify _build_prompt was called with the correct arguments
             assert "args" in mock_build_prompt_args  # Check mock was called
             passed_args = mock_build_prompt_args.get("args", ())
-            # args[0] should be the scene object returned by the mocked get_active_context
+            # args[0] should be the scene object returned by the mocked
+            # get_active_context
             assert len(passed_args) > 0 and passed_args[0].id == scene.id
             assert len(passed_args) > 1 and passed_args[1] == "Test context"
             assert len(passed_args) > 2 and passed_args[2] == "Test results"
             assert len(passed_args) > 3 and passed_args[3] == 3
 
-            # Assert the final return value (optional, depends on what _build_prompt returns)
+            # Assert the final return value (optional, depends on what
+            # _build_prompt returns)
             assert prompt_result == "Mocked Prompt String"  # Matches the mock return
 
     def test_parse_interpretations(self, session_context: SessionContext) -> None:
@@ -335,7 +335,7 @@ Test Description"""
             assert len(events) == 0
 
             # Now explicitly add an event
-            event = managers.oracle.add_interpretation_event(selected)
+            managers.oracle.add_interpretation_event(selected)
 
             # Verify event was created
             events = (
@@ -549,7 +549,8 @@ Retry Description""",  # Second call - good format
             mock_anthropic_client.send_message.side_effect = [
                 "Bad format 1",  # First call
                 "Bad format 2",  # Second call
-                "Bad format 3",  # Third call (shouldn't be reached with default max_retries=2)
+                "Bad format 3",  # Third call (shouldn't be reached with
+                # default max_retries=2)
             ]
 
             # This should try the original + 2 retries, then fail
@@ -920,9 +921,8 @@ It also has multiple lines."""
             )
 
             # Mock the _build_prompt method to avoid actual prompt generation
-            original_build_prompt = managers.oracle._build_prompt
 
-            def mock_build_prompt(*args, **kwargs):
+            def mock_build_prompt(*args, **kwargs):  # noqa: ARG001
                 # Just return the arguments to verify they're correct
                 return {
                     "scene": args[0],

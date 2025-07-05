@@ -193,7 +193,8 @@ class Renderer(abc.ABC):
         - C: Cancel and discard the narrative.
 
         Args:
-            console: The Rich Console instance for interaction (primarily for RichRenderer).
+            console: The Rich Console instance for interaction
+                (primarily for RichRenderer).
 
         Returns:
             The user's choice ("A", "E", "R", "C") in uppercase, or None if the

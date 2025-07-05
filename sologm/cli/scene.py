@@ -307,7 +307,7 @@ def edit_scene(
     identifier: Optional[str] = typer.Option(  # Rename scene_id to identifier
         None,
         "--id",  # Keep the option name as --id for user convenience
-        help="ID or slug of the scene to edit (defaults to active scene)",  # Updated help text
+        help="ID or slug of the scene to edit (defaults to active scene)",
     ),
 ) -> None:
     """[bold]Edit the title and description of a scene using its ID or slug.[/bold]
@@ -385,7 +385,8 @@ def edit_scene(
             )
 
             editor_config_obj = EditorConfig(
-                edit_message=f"Editing Scene: {scene_to_edit.title} ({scene_to_edit.id})",  # Use actual ID
+                edit_message=f"Editing Scene: {scene_to_edit.title} "
+                f"({scene_to_edit.id})",
                 success_message="Scene updated successfully.",
                 cancel_message="Edit cancelled. Scene unchanged.",
                 error_message="Could not open editor.",
@@ -467,7 +468,8 @@ def set_current_scene(
             # This handles the "not found" case automatically by raising SceneError
             target_scene = scene_manager.get_scene_by_identifier_or_error(identifier)
             logger.debug(
-                "Found target scene %s ('%s') using identifier '%s'. Belongs to act %s.",
+                "Found target scene %s ('%s') using identifier '%s'. Belongs to "
+                "act %s.",
                 target_scene.id,
                 target_scene.title,
                 identifier,

@@ -1,11 +1,10 @@
 """Tests for the scene management functionality."""
 
+import uuid  # Added for dummy IDs
 from typing import TYPE_CHECKING, Callable
 
 import pytest
 from sqlalchemy.orm import Session
-
-import uuid  # Added for dummy IDs
 
 from sologm.core.factory import create_all_managers
 from sologm.database.session import SessionContext
@@ -76,7 +75,7 @@ class TestScene:
                 game_id=dummy_game_id,
                 title="Dummy Act",
                 sequence=1,
-                slug=f"act-1-dummy-act",  # Generate a slug
+                slug="act-1-dummy-act",  # Generate a slug
             )
             session.add(dummy_act)
             # Flush prerequisites before creating the scene that depends on them

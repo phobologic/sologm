@@ -24,10 +24,12 @@ from sologm.cli.utils.styled_text import StyledText
 # --- test_display_interpretation_set removed, moved to test_rich_renderer.py ---
 
 
-# --- test_display_interpretation_set_no_context removed, moved to test_rich_renderer.py ---
+# --- test_display_interpretation_set_no_context removed, moved to
+# test_rich_renderer.py ---
 
 
-# --- test_display_game_status_* and helper tests removed, moved to test_rich_renderer.py ---
+# --- test_display_game_status_* and helper tests removed, moved to
+# test_rich_renderer.py ---
 
 
 def test_truncate_text():
@@ -86,7 +88,8 @@ def test_format_metadata():
 # --- test_display_act_completion_success removed, moved to test_rich_renderer.py ---
 
 
-# --- test_display_act_edited_content_preview removed, moved to test_rich_renderer.py ---
+# --- test_display_act_edited_content_preview removed, moved to
+# test_rich_renderer.py ---
 
 
 # --- test_display_act_ai_feedback_prompt removed, moved to test_rich_renderer.py ---

@@ -91,10 +91,11 @@ def test_generate_scene_markdown(
         assert any(f"*Scene ID: {scene.id}*" in line for line in result)
         assert any("*Created:" in line for line in result)
 
-        event = managers.event.add_event(
+        managers.event.add_event(
             description="Test event for markdown", scene_id=scene.id, source="manual"
         )
-        session.flush()  # Ensure event is persisted before querying again by generate_scene_markdown.
+        # Ensure event is persisted before querying again by generate_scene_markdown
+        session.flush()
 
         result = generate_scene_markdown(scene, managers.event, include_metadata=False)
         assert any("### Events" in line for line in result)
@@ -171,7 +172,8 @@ def test_generate_game_markdown_with_hierarchy(
             game_id=game.id,
             title="The Second Act",
             sequence=2,
-            is_active=False,  # Ensure this act isn't set active during creation for test variety.
+            # Ensure this act isn't set active during creation for test variety
+            is_active=False,
         )
         scene1_1 = create_test_scene(session, act_id=act1.id, title="Opening Scene")
         scene1_2 = create_test_scene(

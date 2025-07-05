@@ -13,7 +13,7 @@ def test_config_initialization():
     """Test that Config initializes correctly."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir) / "config.yaml"
-        config = Config(temp_path)
+        Config(temp_path)  # Initialize config to create the file
 
         # Check that the config file was created
         assert temp_path.exists()

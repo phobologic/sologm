@@ -1,7 +1,6 @@
 """Database package for SoloGM."""
 
 import logging
-import os
 from typing import Optional
 
 from sqlalchemy.engine import Engine
@@ -13,7 +12,6 @@ from sologm.database.session import (
     # get_session, # Removed in Phase 1
     # initialize_database,
 )
-from sologm.utils.config import Config
 
 logger = logging.getLogger(__name__)
 

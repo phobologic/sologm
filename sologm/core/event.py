@@ -126,7 +126,10 @@ class EventManager(BaseManager[Event, Event]):
         # If not found, provide helpful error with valid sources
         if not source:
             valid_sources = [s.name for s in session.query(EventSource).all()]
-            error_msg = f"Invalid source '{source_name}'. Valid sources: {', '.join(valid_sources)}"
+            error_msg = (
+                f"Invalid source '{source_name}'. Valid sources: "
+                f"{', '.join(valid_sources)}"
+            )
             self.logger.error(error_msg)
             raise EventError(error_msg)
 
@@ -318,7 +321,7 @@ class EventManager(BaseManager[Event, Event]):
             self.logger.debug(f"Found scene: {scene.title} (ID: {scene.id})")
             return scene
 
-        scene = self._execute_db_operation("validate scene", _validate_scene)
+        self._execute_db_operation("validate scene", _validate_scene)
 
         # If we have a scene with events, we could potentially use the model directly
         # But for consistency and to handle the limit parameter, we'll use list_entities

@@ -118,10 +118,14 @@ Important:
             Example interpretations to show the AI the expected format
         """
         return """## The Mysterious Footprints
-The footprints suggest someone sneaked into the cellar during the night. Based on their size and depth, they likely belong to a heavier individual carrying something substantial - possibly the stolen brandy barrel.
+The footprints suggest someone sneaked into the cellar during the night. Based on
+their size and depth, they likely belong to a heavier individual carrying something
+substantial - possibly the stolen brandy barrel.
 
 ## An Inside Job
-The lack of forced entry and the selective theft of only the special brandy barrel suggests this was done by someone familiar with the cellar layout and the value of that specific barrel."""
+The lack of forced entry and the selective theft of only the special brandy barrel
+suggests this was done by someone familiar with the cellar layout and the value of
+that specific barrel."""
 
     @staticmethod
     def _format_previous_interpretations(
@@ -130,7 +134,8 @@ The lack of forced entry and the selective theft of only the special brandy barr
         """Format previous interpretations for the prompt.
 
         Args:
-            previous_interpretations: List of previous interpretations to avoid repeating
+            previous_interpretations: List of previous interpretations to avoid
+                repeating
             retry_attempt: Current retry attempt number
 
         Returns:
@@ -157,4 +162,7 @@ The lack of forced entry and the selective theft of only the special brandy barr
         """
         if retry_attempt <= 0:
             return ""
-        return f"This is retry attempt #{retry_attempt + 1}. Please provide COMPLETELY DIFFERENT interpretations than those listed above."
+        return (
+            f"This is retry attempt #{retry_attempt + 1}. Please provide COMPLETELY "
+            f"DIFFERENT interpretations than those listed above."
+        )

@@ -79,4 +79,5 @@ dev = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
 
-
+[tool.ruff]
+line-length = 88

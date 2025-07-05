@@ -38,10 +38,8 @@ class GameManager(BaseManager[Game, Game]):
             "_act_manager", "sologm.core.act.ActManager", game_manager=self
         )
 
-    def create_game(self,
-                    name: str,
-                    description: str,
-                    is_active: bool = True
+    def create_game(
+        self, name: str, description: str, is_active: bool = True
     ) -> Optional[Game]:
         """Create a new game.
 
@@ -389,7 +387,7 @@ class GameManager(BaseManager[Game, Game]):
                 session.delete(game)
                 session.flush()
                 return True
-            except GameError: # Catch the specific error if not found
+            except GameError:  # Catch the specific error if not found
                 logger.debug(f"Cannot delete nonexistent game: {game_id}")
                 return False
 

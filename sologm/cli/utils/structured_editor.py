@@ -228,7 +228,8 @@ class TextParser:
             for i, (display_name, content) in enumerate(matches):
                 # Log the raw display name as captured by the regex
                 logger.debug(
-                    f"Match {i + 1}: raw display_name='{display_name}', raw_content='{content[:50]}...'"
+                    f"Match {i + 1}: raw display_name='{display_name}', "
+                    f"raw_content='{content[:50]}...'"
                 )  # Added debug log
         except Exception as e:
             logger.error(f"Regex error: {e}", exc_info=True)
@@ -251,11 +252,14 @@ class TextParser:
                 ).strip()
                 result[field_name] = cleaned_content
                 logger.debug(
-                    f"Parsed field '{field_name}' with value: '{cleaned_content[:50]}...'"
+                    f"Parsed field '{field_name}' with value: "
+                    f"'{cleaned_content[:50]}...'"
                 )  # Added debug log
             else:
                 logger.warning(
-                    f"Matched display name '{normalized_display_name}' (from raw '{display_name}') not found in field_map {list(field_map.keys())}."
+                    f"Matched display name '{normalized_display_name}' "
+                    f"(from raw '{display_name}') not found in field_map "
+                    f"{list(field_map.keys())}."
                 )  # Added warning
 
         # Check if all expected fields were found by the regex
@@ -263,7 +267,8 @@ class TextParser:
         missing_from_regex = expected_display_names - processed_display_names
         if missing_from_regex:
             logger.warning(
-                f"Regex did not find blocks for expected display names: {missing_from_regex}"
+                f"Regex did not find blocks for expected display names: "
+                f"{missing_from_regex}"
             )
 
         # Validate required fields (this part seems okay)
@@ -294,7 +299,8 @@ class TextParser:
                 and result[f.name] not in f.enum_values
             ):
                 logger.warning(
-                    f"Validation failed: Field '{f.name}' has invalid enum value '{result[f.name]}'. Expected: {f.enum_values}"
+                    f"Validation failed: Field '{f.name}' has invalid enum value "
+                    f"'{result[f.name]}'. Expected: {f.enum_values}"
                 )  # Added warning
                 raise ValidationError(
                     f"Invalid value for {f.display_name}. "
@@ -313,8 +319,8 @@ class EditorStrategy(Protocol):
         text: str,
         console: Optional[Console] = None,
         message: str = "Edit the text below:",
-        success_message: str = "Text updated.",
-        cancel_message: str = "Text unchanged.",
+        success_message: str = "Text updated.",  # noqa: ARG002
+        cancel_message: str = "Text unchanged.",  # noqa: ARG002
         error_message: str = "Could not open editor.",
     ) -> Tuple[str, bool]:
         """Open an editor to modify text.
@@ -341,8 +347,8 @@ class ClickEditorStrategy:
         text: str,
         console: Optional[Console] = None,
         message: str = "Edit the text below:",
-        success_message: str = "Text updated.",
-        cancel_message: str = "Text unchanged.",
+        success_message: str = "Text updated.",  # noqa: ARG002
+        cancel_message: str = "Text unchanged.",  # noqa: ARG002
         error_message: str = "Could not open editor.",
     ) -> Tuple[str, bool]:
         """Open an editor to modify text using click.edit.
@@ -373,7 +379,8 @@ class ClickEditorStrategy:
                 # User saved the editor
                 edited_text = new_text
                 content_changed = edited_text != text
-                # Success/cancel messages are handled by StructuredEditor after validation
+                # Success/cancel messages are handled by StructuredEditor
+                # after validation
                 return edited_text, content_changed
 
         except click.UsageError as e:
@@ -458,7 +465,8 @@ class StructuredEditor:
             console: Rich console for output
             context_info: Context information to include at the top
             is_new: Whether this is a new item (affects validation and comments).
-            original_data_for_comments: Optional data to show as comments (e.g., AI results).
+            original_data_for_comments: Optional data to show as comments
+                (e.g., AI results).
 
         Returns:
             Tuple of (result_data, status).
@@ -524,7 +532,8 @@ class StructuredEditor:
                         console.print(
                             f"[yellow]{self.editor_config.cancel_message}[/yellow]"
                         )  # Or "No changes detected."
-                        # Return the parsed data (which is same as original), but signal unchanged
+                        # Return the parsed data (which is same as original),
+                        # but signal unchanged
                         return parsed_data, EditorStatus.SAVED_UNCHANGED
 
                 except ValidationError as e:

@@ -1,16 +1,14 @@
 """Tests for the RichRenderer class."""
 
 # Add necessary imports
-from typing import Callable, Any, List, Dict, Optional  # Added List, Dict, Optional
+from typing import Callable  # Added List, Dict, Optional
 from unittest.mock import MagicMock, patch  # Added patch
 
-import click  # Import click for Abort exception
 import pytest
 from rich.console import Console  # Removed Grid import
 from rich.markdown import Markdown
 from rich.panel import Panel  # Import Panel for assertion
 from rich.table import Table  # Import Table for type checking if needed
-from rich.layout import Layout  # Import Layout for type checking if needed
 from rich.text import Text  # Add this import
 
 from sologm.cli.rendering.rich_renderer import RichRenderer
@@ -21,7 +19,7 @@ from sologm.cli.utils.styled_text import BORDER_STYLES
 # Import manager types for mocking/type hinting if needed by tests
 from sologm.core.oracle import OracleManager
 from sologm.core.scene import SceneManager
-from sologm.database.session import SessionContext, Session  # <-- Added Session import
+from sologm.database.session import Session, SessionContext  # <-- Added Session import
 from sologm.models.act import Act
 from sologm.models.dice import DiceRoll
 from sologm.models.event import Event
@@ -112,17 +110,10 @@ def test_display_narrative_feedback_prompt(
     # The expected plain text content, without markup
     # FIX: Correct the expected plain text to match Text.assemble's output
     expected_plain_text = "Choose action: Accept / Edit / Regenerate / Cancel"
-    expected_choices = ["A", "E", "R", "C"]
     expected_default = "A"
     # FIX: Update expected_kwargs to reflect the actual call signature
     # The implementation now passes console, default, and show_default
     # It does *not* pass 'choices' directly to Prompt.ask anymore.
-    expected_kwargs = {
-        "default": expected_default,
-        "console": renderer.console,  # Check that the console object is passed
-        "show_default": True,
-        # "choices" is no longer passed directly to ask in the implementation
-    }
 
     # Test each valid choice
     for choice_val in ["A", "E", "R", "C", "a", "e", "r", "c"]:
@@ -278,7 +269,8 @@ def test_display_game_status_full(
     mock_create_oracle_panel.assert_called_once_with(
         game, scene, mock_oracle_manager, mock_truncation_length
     )
-    mock_create_empty_oracle_panel.assert_not_called()  # Ensure the empty one wasn't called
+    # Ensure the empty one wasn't called
+    mock_create_empty_oracle_panel.assert_not_called()
     mock_create_dice_panel.assert_called_once_with(rolls)
 
     # Verify console output includes the mocked return values
@@ -290,8 +282,9 @@ def test_display_game_status_full(
 
     assert mock_game_header_panel in printed_objects
     assert mock_act_panel in printed_objects
-    # The scene grid and events panel are added to a Table.grid, check that grid was printed
-    # The oracle panel and dice panel are added to another Table.grid, check that grid was printed
+    # The scene grid and events panel are added to a Table.grid, check that
+    # grid was printed. The oracle panel and dice panel are added to another
+    # Table.grid, check that grid was printed
     assert any(
         isinstance(obj, Table) for obj in printed_objects
     )  # Check if Table grids were printed
@@ -434,7 +427,8 @@ def test_display_game_status_no_events(
     mock_oracle_panel = MagicMock(spec=Panel, name="OraclePanel")
     mock_create_oracle_panel.return_value = mock_oracle_panel
 
-    # Define mock_empty_oracle_panel even if not expected to be called/printed in this test
+    # Define mock_empty_oracle_panel even if not expected to be
+    # called/printed in this test
     mock_empty_oracle_panel = MagicMock(spec=Panel, name="EmptyOraclePanel")
     mock_create_empty_oracle_panel.return_value = mock_empty_oracle_panel
 
@@ -482,7 +476,8 @@ def test_display_game_status_no_events(
     mock_create_oracle_panel.assert_called_once_with(
         game, scene, mock_oracle_manager, mock_truncation_length
     )
-    mock_create_empty_oracle_panel.assert_not_called()  # Correct: empty panel shouldn't be created
+    # Correct: empty panel shouldn't be created
+    mock_create_empty_oracle_panel.assert_not_called()
     # Expect dice panel to be called with None converted to []
     mock_create_dice_panel.assert_called_once_with([])
 
@@ -492,7 +487,8 @@ def test_display_game_status_no_events(
 
     assert mock_game_header_panel in printed_objects
     assert mock_act_panel in printed_objects
-    # Check that two Table objects (grids) were printed, representing the main layout structure.
+    # Check that two Table objects (grids) were printed, representing the
+    # main layout structure.
     # The individual panels (like oracle) are inside these grids.
     table_prints = [obj for obj in printed_objects if isinstance(obj, Table)]
     assert len(table_prints) == 2
@@ -774,7 +770,10 @@ def test_create_act_panel(
         )  # Check start of summary.
 
         # Test with inactive act and specific truncation
-        act.summary = "This is a very long summary that definitely needs to be truncated for the test."
+        act.summary = (
+            "This is a very long summary that definitely needs "
+            "to be truncated for the test."
+        )
         session.add(act)
         session.flush()
         panel_inactive_truncated = renderer._create_act_panel(
@@ -1000,18 +999,15 @@ def test_display_interpretation_set(
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         interp_set = create_test_interpretation_set(session, scene_id=scene.id)
-        interp1 = create_test_interpretation(
-            session, set_id=interp_set.id, title="Interp 1"
-        )
-        interp2 = create_test_interpretation(
-            session, set_id=interp_set.id, title="Interp 2"
-        )
+        create_test_interpretation(session, set_id=interp_set.id, title="Interp 1")
+        create_test_interpretation(session, set_id=interp_set.id, title="Interp 2")
         # Refresh the set to load interpretations relationship.
         session.refresh(interp_set, attribute_names=["interpretations"])
 
     renderer.display_interpretation_set(interp_set)
 
-    # Expect calls for context panel, each interpretation (panel + newline), and instruction panel.
+    # Expect calls for context panel, each interpretation (panel + newline),
+    # and instruction panel.
     assert mock_console.print.call_count >= len(interp_set.interpretations) * 2 + 2
 
 
@@ -1031,12 +1027,8 @@ def test_display_interpretation_set_no_context(
         act = create_test_act(session, game_id=game.id)
         scene = create_test_scene(session, act_id=act.id)
         interp_set = create_test_interpretation_set(session, scene_id=scene.id)
-        interp1 = create_test_interpretation(
-            session, set_id=interp_set.id, title="Interp 1"
-        )
-        interp2 = create_test_interpretation(
-            session, set_id=interp_set.id, title="Interp 2"
-        )
+        create_test_interpretation(session, set_id=interp_set.id, title="Interp 1")
+        create_test_interpretation(session, set_id=interp_set.id, title="Interp 2")
         # Refresh the set to load interpretations relationship.
         session.refresh(interp_set, attribute_names=["interpretations"])
 
@@ -1483,7 +1475,8 @@ def test_display_act_ai_feedback_prompt(mock_ask: MagicMock, mock_console: Magic
 
     mock_ask.return_value = "A"
 
-    # The 'console' parameter is passed to match the base class, even if unused internally.
+    # The 'console' parameter is passed to match the base class, even if
+    # unused internally.
     result = renderer.display_act_ai_feedback_prompt(renderer.console)
 
     assert result == "A"

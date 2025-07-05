@@ -1,6 +1,6 @@
 """Tests for the Act manager."""
 
-from typing import Callable, Optional  # Make sure Optional is imported if needed
+from typing import Callable  # Make sure Optional is imported if needed
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -179,9 +179,11 @@ class TestActManager:
                 assert acts[1].id == second_act.id
 
             # Test listing acts with no active game
-            with patch.object(managers.game, "get_active_game", return_value=None):
-                with pytest.raises(GameError, match="No active game"):
-                    managers.act.list_acts()
+            with (
+                patch.object(managers.game, "get_active_game", return_value=None),
+                pytest.raises(GameError, match="No active game"),
+            ):
+                managers.act.list_acts()
 
     def test_get_act(
         self,
@@ -269,9 +271,11 @@ class TestActManager:
             assert active_act is None
 
             # Test getting active act with no active game
-            with patch.object(managers.game, "get_active_game", return_value=None):
-                with pytest.raises(GameError, match="No active game"):
-                    managers.act.get_active_act()
+            with (
+                patch.object(managers.game, "get_active_game", return_value=None),
+                pytest.raises(GameError, match="No active game"),
+            ):
+                managers.act.get_active_act()
 
     def test_edit_act(
         self,
@@ -299,7 +303,8 @@ class TestActManager:
 
             # Edit summary only using slug
             updated_act_by_slug = managers.act.edit_act(
-                act_id=updated_act_by_id.id,  # Still need ID here for the edit method itself
+                act_id=updated_act_by_id.id,  # Still need ID here for the edit
+                # method itself
                 summary="Updated summary",
             )
 
@@ -425,7 +430,8 @@ class TestActManager:
                 sequence=1,
             )
 
-            # Set act from different game as active (should work now since we don't validate game_id)
+            # Set act from different game as active (should work now since we
+            # don't validate game_id)
             other_activated_act = managers.act.set_active(other_act.id)
             assert other_activated_act.id == other_act.id
             assert other_activated_act.is_active is True
@@ -499,9 +505,11 @@ class TestActManager:
                 managers.act.validate_active_act(test_game.id)
 
             # Test validating with no active game
-            with patch.object(managers.game, "get_active_game", return_value=None):
-                with pytest.raises(GameError, match="No active game"):
-                    managers.act.validate_active_act()
+            with (
+                patch.object(managers.game, "get_active_game", return_value=None),
+                pytest.raises(GameError, match="No active game"),
+            ):
+                managers.act.validate_active_act()
 
     def test_prepare_act_data_for_summary(
         self,
@@ -523,10 +531,10 @@ class TestActManager:
             test_scene = create_test_scene(session, act_id=test_act.id)
 
             # Create some events for the scene
-            event1 = create_test_event(
+            create_test_event(
                 session, scene_id=test_scene.id, description="First event"
             )
-            event2 = create_test_event(
+            create_test_event(
                 session, scene_id=test_scene.id, description="Second event"
             )
 
@@ -605,7 +613,7 @@ class TestActManager:
             monkeypatch.setattr(
                 managers.act,
                 "generate_act_summary",
-                lambda *args, **kwargs: mock_summary,
+                lambda *args, **kwargs: mock_summary,  # noqa: ARG005
             )
 
             # Test the method
@@ -619,7 +627,8 @@ class TestActManager:
             assert result["act"].id == test_act.id
 
             # Verify act was updated *in the session*
-            # REMOVED: session.refresh(test_act) - Verify state within the session before commit
+            # REMOVED: session.refresh(test_act) - Verify state within the session
+            # before commit
             assert test_act.title == "Generated Title"
             assert test_act.summary == "Generated summary"
 
@@ -892,11 +901,13 @@ class TestActManager:
             scene2_act2 = create_test_scene(session, act_id=act2.id, title="Scene 2.2")
             scene1_act2 = create_test_scene(session, act_id=act2.id, title="Scene 2.1")
 
-            # Create events for scenes in Act 2 (assume sequential creation implies time order)
+            # Create events for scenes in Act 2 (assume sequential creation
+            # implies time order)
             event1_s1 = create_test_event(
                 session, scene_id=scene1_act2.id, description="Event 2.1.1"
             )
-            # import time; time.sleep(0.01) # Add slight delay if needed for timestamp ordering
+            # import time; time.sleep(0.01) # Add slight delay if needed for
+            # timestamp ordering
             event2_s1 = create_test_event(
                 session, scene_id=scene1_act2.id, description="Event 2.1.2"
             )
@@ -926,7 +937,8 @@ class TestActManager:
             assert narrative_data["scenes"][1]["sequence"] == 2
             assert narrative_data["scenes"][1]["title"] == "Scene 2.1"
 
-            # Verify events in Scene 2.2 (Act 2, sequence 1) - check ordering by creation
+            # Verify events in Scene 2.2 (Act 2, sequence 1) - check ordering
+            # by creation
             scene2_events = narrative_data["scenes"][0]["events"]
             assert len(scene2_events) == 1
             assert scene2_events[0]["id"] == event1_s2.id

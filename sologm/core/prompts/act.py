@@ -22,7 +22,9 @@ class ActPrompts:
         additional_context = act_data.get("additional_context")
 
         # Build the prompt
-        prompt = f"""You are an expert storyteller and narrative analyst. I need you to create a concise summary and title for an act in a tabletop roleplaying game.
+        prompt = f"""You are an expert storyteller and narrative analyst.
+I need you to create a concise summary and title for an act in a tabletop
+roleplaying game.
 
 GAME INFORMATION:
 Title: {game["name"]}
@@ -48,7 +50,8 @@ SCENES IN THIS ACT:
             else:
                 prompt += "No events recorded for this scene.\n"
 
-        # Add additional context if provided, with special handling for regeneration requests
+        # Add additional context if provided, with special handling for
+        # regeneration requests
         if additional_context:
             # Check if this is a regeneration request (contains PREVIOUS GENERATION)
             if "PREVIOUS GENERATION:" in additional_context:
@@ -95,7 +98,7 @@ Do not include any other text or explanations outside this format.
         lines = response.strip().split("\n")
 
         # Extract title
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             if line.startswith("TITLE:"):
                 title = line[6:].strip()
                 break
@@ -136,7 +139,9 @@ Do not include any other text or explanations outside this format.
         scenes = narrative_data["scenes"]
         user_guidance = narrative_data.get("user_guidance")
 
-        prompt = """You are a master storyteller tasked with writing a narrative chapter based on the following game events. Your goal is to weave the structured information into a compelling prose story in Markdown format.
+        prompt = """You are a master storyteller tasked with writing a narrative chapter
+based on the following game events. Your goal is to weave the structured information
+into a compelling prose story in Markdown format.
 
 GAME INFORMATION:
 Title: {game_name}
@@ -165,7 +170,9 @@ SCENES IN THIS ACT:
             prompt += "No scenes recorded for this act.\n"
         else:
             for scene in scenes:
-                prompt += f"\nSCENE {scene.get('sequence', '?')}: {scene.get('title', 'Untitled Scene')}\n"
+                scene_seq = scene.get("sequence", "?")
+                scene_title = scene.get("title", "Untitled Scene")
+                prompt += f"\nSCENE {scene_seq}: {scene_title}\n"
                 prompt += f"Description: {scene.get('description', 'No description')}\n"
 
                 events = scene.get("events", [])
@@ -188,21 +195,30 @@ SCENES IN THIS ACT:
         prompt += "\nTASK:\n"
         if act.get("title"):
             # Act has a title, instruct AI to only write the body
-            prompt += """Write a compelling narrative body for the current act based on all the information provided (game context, previous act summary, current act scenes/events, and user guidance).
+            prompt += """Write a compelling narrative body for the current act
+based on all the information provided (game context, previous act summary,
+current act scenes/events, and user guidance).
 The narrative should flow logically, connecting the events into a coherent story.
 Use the user guidance to shape the tone, style, focus, and point of view.
 Output the narrative body in **Markdown format**.
-**Do not include a title or main heading in your response.** The title is already known and will be added separately.
-Do not include any introductory phrases like "Here is the narrative:" or summaries of your own work. Just provide the Markdown narrative body itself.
+**Do not include a title or main heading in your response.**
+The title is already known and will be added separately.
+Do not include any introductory phrases like "Here is the narrative:" or
+summaries of your own work. Just provide the Markdown narrative body itself.
 """
         else:
             # Act does not have a title, instruct AI to include one
-            prompt += """Write a compelling narrative for the current act based on all the information provided (game context, previous act summary, current act scenes/events, and user guidance).
+            prompt += """Write a compelling narrative for the current act based on all
+the information provided (game context, previous act summary, current act
+scenes/events, and user guidance).
 The narrative should flow logically, connecting the events into a coherent story.
 Use the user guidance to shape the tone, style, focus, and point of view.
 Output the entire narrative in **Markdown format**.
-**Start your response with a suitable title for the narrative as a Level 1 Markdown heading (e.g., `# Narrative Title`).**
-Do not include any other introductory phrases like "Here is the narrative:" or summaries of your own work. Just provide the Markdown narrative itself, starting with the title heading.
+**Start your response with a suitable title for the narrative as a Level 1
+Markdown heading (e.g., `# Narrative Title`).**
+Do not include any other introductory phrases like "Here is the narrative:"
+or summaries of your own work. Just provide the Markdown narrative itself,
+starting with the title heading.
 """
         return prompt
 
@@ -240,7 +256,11 @@ USER FEEDBACK ON PREVIOUS NARRATIVE:
                 base_prompt
                 + regeneration_context
                 + task_marker
-                + """Generate a *new* narrative for the act. Carefully consider the user's feedback provided above and incorporate it into the revised narrative, while still adhering to the original context and user guidance. Output the *entire new* narrative in **Markdown format**. Do not just describe the changes. Do not include any introductory phrases. Just provide the new Markdown narrative."""
+                + """Generate a *new* narrative for the act. Carefully consider the
+user's feedback provided above and incorporate it into the revised narrative,
+while still adhering to the original context and user guidance. Output the
+*entire new* narrative in **Markdown format**. Do not just describe the changes.
+Do not include any introductory phrases. Just provide the new Markdown narrative."""
             )
         else:
             regeneration_context = f"""
@@ -251,13 +271,31 @@ USER FEEDBACK ON PREVIOUS NARRATIVE:
 {feedback}
 """
             # --- Task Instruction (Conditional based on Act Title) ---
-            task_instruction = "Generate a *new* narrative for the act. Carefully consider the user's feedback provided above and incorporate it into the revised narrative, while still adhering to the original context and user guidance (unless the feedback specifically overrides it).\n"
+            task_instruction = (
+                "Generate a *new* narrative for the act. "
+                "Carefully consider the user's feedback provided above and "
+                "incorporate it into the revised narrative, while still adhering "
+                "to the original context and user guidance (unless the feedback "
+                "specifically overrides it).\n"
+            )
             if narrative_data.get("act", {}).get("title"):
                 # Act has a title, instruct AI to only write the body
-                task_instruction += "Output the *entire new* narrative body in **Markdown format**. **Do not include a title or main heading.** Do not just describe the changes. Do not include any introductory phrases. Just provide the new Markdown narrative body."
+                task_instruction += (
+                    "Output the *entire new* narrative body in "
+                    "**Markdown format**. **Do not include a title or main heading.** "
+                    "Do not just describe the changes. Do not include any introductory "
+                    "phrases. Just provide the new Markdown narrative body."
+                )
             else:
                 # Act does not have a title, instruct AI to include one
-                task_instruction += "Output the *entire new* narrative in **Markdown format**. **Start your response with a suitable title for the narrative as a Level 1 Markdown heading (e.g., `# Narrative Title`).** Do not just describe the changes. Do not include any introductory phrases. Just provide the new Markdown narrative itself, starting with the title heading."
+                task_instruction += (
+                    "Output the *entire new* narrative in "
+                    "**Markdown format**. **Start your response with a suitable title "
+                    "for the narrative as a Level 1 Markdown heading (e.g., "
+                    "`# Narrative Title`).** Do not just describe the changes. "
+                    "Do not include any introductory phrases. Just provide the new "
+                    "Markdown narrative itself, starting with the title heading."
+                )
 
             prompt = (
                 base_prompt[:task_index]

@@ -32,7 +32,7 @@ class MarkdownRenderer(Renderer):
     Renders CLI output using standard Markdown formatting.
     """
 
-    def __init__(self, console: Console, markdown_mode: bool = True):
+    def __init__(self, console: Console, markdown_mode: bool = True):  # noqa: ARG002
         """
         Initializes the MarkdownRenderer.
 
@@ -384,10 +384,7 @@ class MarkdownRenderer(Renderer):
                 f"**Latest Scene:** {scene_title} (Scene {latest_scene.sequence})"
             )
             # Simplified status based only on is_scene_active flag
-            if is_scene_active:
-                status = "**Active**"
-            else:
-                status = "Inactive"
+            status = "**Active**" if is_scene_active else "Inactive"
             output_lines.append(f"*   Status: {status}")
 
             if latest_scene.description:
@@ -494,7 +491,8 @@ class MarkdownRenderer(Renderer):
                 reason_text = f" (Reason: {roll.reason})" if roll.reason else ""
                 timestamp = roll.created_at.strftime("%Y-%m-%d %H:%M")
                 output_lines.append(
-                    f"*   `{timestamp}`: {roll.notation} = **{roll.total}**{reason_text}"
+                    f"*   `{timestamp}`: {roll.notation} = "
+                    f"**{roll.total}**{reason_text}"
                 )
             if len(recent_rolls) > max_rolls_to_show:
                 output_lines.append(
@@ -584,7 +582,8 @@ class MarkdownRenderer(Renderer):
     ) -> None:
         """Displays a table of interpretation sets as Markdown."""
         logger.debug(
-            f"Displaying interpretation sets table as Markdown with {len(interp_sets)} sets"
+            f"Displaying interpretation sets table as Markdown with "
+            f"{len(interp_sets)} sets"
         )
 
         if not interp_sets:
@@ -713,7 +712,7 @@ class MarkdownRenderer(Renderer):
 
         self._print_markdown("\n".join(output_lines).strip())
 
-    def display_act_ai_feedback_prompt(self, console: Console) -> None:
+    def display_act_ai_feedback_prompt(self, console: Console) -> None:  # noqa: ARG002
         """Displays instructions for AI feedback as Markdown."""
         # Note: This doesn't actually prompt interactively in Markdown mode.
         logger.debug("Displaying AI feedback instructions as Markdown")
@@ -785,7 +784,7 @@ class MarkdownRenderer(Renderer):
         logger.debug("Displaying raw markdown content")
         self._print_markdown(markdown_content)
 
-    def display_narrative_feedback_prompt(self, console: "Console") -> Optional[str]:
+    def display_narrative_feedback_prompt(self, console: "Console") -> Optional[str]:  # noqa: ARG002
         """
         Prompts the user for feedback on the generated narrative using click.prompt.
 
@@ -808,11 +807,11 @@ class MarkdownRenderer(Renderer):
                 default="A",
                 show_choices=True,  # Shows choices like (A/E/R/C)
                 show_default=True,
-                err=False,  # Print errors to stderr if needed, but Choice handles validation
+                err=False,  # Print errors to stderr if needed, Choice validates
             )
             logger.debug(f"User chose: {choice} (case-insensitive)")
-            # click.Choice returns the matched value from the choices list (which is uppercase)
-            # but converting again ensures consistency.
+            # click.Choice returns the matched value from the choices list
+            # (which is uppercase) but converting again ensures consistency.
             return choice.upper()
         except click.Abort:
             logger.debug("Narrative feedback prompt aborted by user.")

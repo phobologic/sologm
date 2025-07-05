@@ -416,7 +416,8 @@ def test_display_scenes_table_markdown(
             is_active=False,
             # Removed status
         )
-        # Ensure sequences are different if needed by display logic (factory handles this)
+        # Ensure sequences are different if needed by display logic
+        # (factory handles this)
         scenes = sorted(
             [test_scene, other_scene], key=lambda s: s.sequence
         )  # Sort by sequence for predictable table order
@@ -607,7 +608,8 @@ def test_display_interpretation_set_markdown(
         mock_console.reset_mock()
         renderer.display_interpretation_set(test_interpretation_set, show_context=True)
 
-        # Expected calls: context(1) + N interpretations + N blank lines + instruction(1) = 2*N + 2
+        # Expected calls: context(1) + N interpretations + N blank lines +
+        # instruction(1) = 2*N + 2
         expected_call_count_true = num_interpretations * 2 + 2
         assert mock_console.print.call_count == expected_call_count_true
 
@@ -634,7 +636,8 @@ def test_display_interpretation_set_markdown(
         assert "(Use 'sologm oracle select' to choose)" in rendered_instruction
         assert instruction_call_kwargs == {"highlight": False, "markup": False}
 
-        # We don't assert the exact interpretation calls here, as that's tested elsewhere
+        # We don't assert the exact interpretation calls here, as that's
+        # tested elsewhere
 
         # --- Test case 2: Hide context ---
         mock_console.reset_mock()
@@ -1050,7 +1053,7 @@ def test_display_interpretation_status_markdown(
             oracle_results="Status Results",
             retry_attempt=1,
         )
-        interp1 = create_test_interpretation(
+        create_test_interpretation(
             session, set_id=test_interpretation_set.id, is_selected=True
         )
         # Refresh set to load interpretations

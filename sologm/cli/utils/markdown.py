@@ -30,13 +30,15 @@ def generate_concepts_header() -> List[str]:
     return [
         "# Game Structure Guide",
         "",
-        "This document follows a specific structure to organize your solo roleplaying game:",
+        "This document follows a specific structure to organize your solo"
+        " roleplaying game:",
         "",
         "## Game",
         "The overall container for your adventure, with a name and description.",
         "",
         "## Acts",
-        "Major divisions of your game, similar to acts in a play or chapters in a book. Each act has:",
+        "Major divisions of your game, similar to acts in a play or chapters"
+        " in a book. Each act has:",
         "- A sequence number (Act 1, Act 2, etc.)",
         "- A title",
         "- An optional summary describing the overall events or themes",
@@ -49,12 +51,14 @@ def generate_concepts_header() -> List[str]:
         # Scene status field removed
         "",
         "## Events",
-        "Individual moments, actions, or occurrences within a scene. Events can come from:",
+        "Individual moments, actions, or occurrences within a scene. Events"
+        " can come from:",
         "- 🔮 Oracle interpretations (AI-assisted random events)",
         "- 🎲 Dice rolls (random outcomes)",
         "- Manual entries (player-created events)",
         "",
-        "Events form the core narrative of your game, showing what happened in each scene.",
+        "Events form the core narrative of your game, showing what happened"
+        " in each scene.",
         # Scene completion indicator removed
         "",
         "---",
@@ -242,7 +246,8 @@ def generate_event_markdown(
     if description_lines:
         content.append(f"-{source_indicator} {description_lines[0]}")
 
-        # Indent subsequent lines to align under the first line's content for list formatting.
+        # Indent subsequent lines to align under the first line's content
+        # for list formatting.
         indent = "  " + " " * len(source_indicator)
         for line in description_lines[1:]:
             content.append(f"  {indent} {line}")

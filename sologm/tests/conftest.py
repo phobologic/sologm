@@ -2,6 +2,8 @@
 
 # Standard library imports
 import logging
+import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 from unittest.mock import MagicMock
 
@@ -29,6 +31,79 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# --- Database Fixtures ---
+
+
+@pytest.fixture
+def db_engine() -> Generator[Engine, None, None]:
+    """Create a new in-memory SQLite database engine for each test.
+
+    Enables foreign key support for SQLite.
+
+    Yields:
+        An SQLAlchemy Engine connected to an in-memory SQLite database.
+    """
+    logger.debug("Creating in-memory SQLite engine for test")
+    engine = create_engine("sqlite:///:memory:")
+
+    # --- Enable Foreign Key support for SQLite ---
+    # This is crucial for cascade deletes to work correctly in tests
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_con, _connection_record):
+        logger.debug("Executing PRAGMA foreign_keys=ON for new SQLite connection")
+        cursor = dbapi_con.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
+
+    # --- End Foreign Key support ---
+
+    logger.debug("Creating all tables on the test engine")
+    Base.metadata.create_all(engine)
+    yield engine
+    logger.debug("Disposing of the test engine")
+    engine.dispose()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def database_manager(
+    db_engine: Engine,
+) -> Generator[DatabaseManager, None, None]:
+    """Provide a test-specific DatabaseManager instance using an in-memory DB.
+
+    Replaces the singleton DatabaseManager instance for the duration of a test,
+    ensuring test isolation by using a dedicated in-memory SQLite database.
+    The original instance is restored after the test.
+
+    Args:
+        db_engine: The in-memory SQLite engine fixture.
+
+    Yields:
+        A DatabaseManager instance configured for the test database.
+    """
+    # Import locally to avoid potential issues if this file is imported early
+    from sologm.database.session import DatabaseManager
+
+    logger.debug("Saving original DatabaseManager instance")
+    # Save original instance to restore it after the test.
+    # This prevents tests from affecting each other or the real application
+    # state.
+    old_instance = DatabaseManager._instance
+
+    # Create a new DatabaseManager instance using the test engine.
+    logger.debug("Creating new DatabaseManager instance for test")
+    db_manager = DatabaseManager(engine=db_engine)
+    DatabaseManager._instance = db_manager
+
+    yield db_manager
+
+    # Restore the original singleton instance to prevent test pollution.
+    logger.debug("Restoring original DatabaseManager instance")
+    DatabaseManager._instance = old_instance
+
+
+# --- Mock Fixtures ---
+
+
 @pytest.fixture
 def mock_config_no_api_key() -> MagicMock:
     """Create a mock Config object simulating a missing API key.
@@ -52,7 +127,8 @@ def mock_config_no_api_key() -> MagicMock:
                 f"for key: {key}"
             )
             return None
-        # For other keys, maybe return default or raise an error if unexpected
+        # For other keys, maybe return default or raise an error if
+        # unexpected
         logger.debug(
             f"[Fixture mock_config_no_api_key] Mock config returning default "
             f"for key: {key}"
@@ -62,76 +138,6 @@ def mock_config_no_api_key() -> MagicMock:
     mock_config.get.side_effect = mock_get
     logger.debug("[Fixture mock_config_no_api_key] Returning configured mock object")
     return mock_config
-
-
-# --- Database Fixtures ---
-
-
-@pytest.fixture
-def db_engine() -> Generator[Engine, None, None]:
-    """Create a new in-memory SQLite database engine for each test.
-
-    Enables foreign key support for SQLite.
-
-    Yields:
-        An SQLAlchemy Engine connected to an in-memory SQLite database.
-    """
-    logger.debug("Creating in-memory SQLite engine for test")
-    engine = create_engine("sqlite:///:memory:")
-
-    # --- Enable Foreign Key support for SQLite ---
-    # This is crucial for cascade deletes to work correctly in tests
-    @event.listens_for(engine, "connect")
-    def _enable_sqlite_foreign_keys(dbapi_con, connection_record):
-        logger.debug("Executing PRAGMA foreign_keys=ON for new SQLite connection")
-        cursor = dbapi_con.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON;")
-        cursor.close()
-
-    # --- End Foreign Key support ---
-
-    logger.debug("Creating all tables on the test engine")
-    Base.metadata.create_all(engine)
-    yield engine
-    logger.debug("Disposing of the test engine")
-    engine.dispose()
-
-
-@pytest.fixture(scope="function", autouse=True)
-def database_manager(db_engine: Engine) -> Generator[DatabaseManager, None, None]:
-    """Provide a test-specific DatabaseManager instance using an in-memory DB.
-
-    Replaces the singleton DatabaseManager instance for the duration of a test,
-    ensuring test isolation by using a dedicated in-memory SQLite database.
-    The original instance is restored after the test.
-
-    Args:
-        db_engine: The in-memory SQLite engine fixture.
-
-    Yields:
-        A DatabaseManager instance configured for the test database.
-    """
-    # Import locally to avoid potential issues if this file is imported early
-    from sologm.database.session import DatabaseManager
-
-    logger.debug("Saving original DatabaseManager instance")
-    # Save original instance to restore it after the test.
-    # This prevents tests from affecting each other or the real application state.
-    old_instance = DatabaseManager._instance
-
-    # Create a new DatabaseManager instance using the test engine.
-    logger.debug("Creating new DatabaseManager instance for test")
-    db_manager = DatabaseManager(engine=db_engine)
-    DatabaseManager._instance = db_manager
-
-    yield db_manager
-
-    # Restore the original singleton instance to prevent test pollution.
-    logger.debug("Restoring original DatabaseManager instance")
-    DatabaseManager._instance = old_instance
-
-
-# --- Mock Fixtures ---
 
 
 @pytest.fixture
@@ -164,259 +170,75 @@ def auto_mock_anthropic_client(
     try:
         monkeypatch.setattr(
             "sologm.core.factory.AnthropicClient",
-            lambda *args, **kwargs: mock_anthropic_client,
-            raising=False, # Don't raise error if factory doesn't directly import it
+            lambda *_args, **_kwargs: mock_anthropic_client,
+            raising=False,  # Don't raise error if factory doesn't directly
+            # import it
         )
-        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in factory")
+        logger.debug(
+            "[Fixture auto_mock_anthropic_client] Patched AnthropicClient in factory"
+        )
     except AttributeError:
-         logger.debug("[Fixture auto_mock_anthropic_client] AnthropicClient not directly in factory, skipping patch there.")
-
+        logger.debug(
+            "[Fixture auto_mock_anthropic_client] AnthropicClient not directly "
+            "in factory, skipping patch there."
+        )
 
     # Target 2: Patch the client import/usage within ActManager's fallback logic
     # This prevents the manager from creating a real client if none is injected.
     try:
         monkeypatch.setattr(
             "sologm.core.act.AnthropicClient",
-            lambda *args, **kwargs: mock_anthropic_client,
+            lambda *_args, **_kwargs: mock_anthropic_client,
             raising=False,
         )
-        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in act module")
+        logger.debug(
+            "[Fixture auto_mock_anthropic_client] Patched AnthropicClient in act module"
+        )
     except AttributeError:
-         logger.debug("[Fixture auto_mock_anthropic_client] AnthropicClient not directly in act module, skipping patch there.")
-
+        logger.debug(
+            "[Fixture auto_mock_anthropic_client] AnthropicClient not directly "
+            "in act module, skipping patch there."
+        )
 
     # Target 3: Patch the client import/usage within OracleManager's fallback logic
     try:
         monkeypatch.setattr(
             "sologm.core.oracle.AnthropicClient",
-            lambda *args, **kwargs: mock_anthropic_client,
+            lambda *_args, **_kwargs: mock_anthropic_client,
             raising=False,
         )
-        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in oracle module")
+        logger.debug(
+            "[Fixture auto_mock_anthropic_client] Patched AnthropicClient in "
+            "oracle module"
+        )
     except AttributeError:
-         logger.debug("[Fixture auto_mock_anthropic_client] AnthropicClient not directly in oracle module, skipping patch there.")
+        logger.debug(
+            "[Fixture auto_mock_anthropic_client] AnthropicClient not "
+            "directly in oracle module, skipping patch there."
+        )
 
     # Target 4: Patch the client where it's defined, as a fallback safety net
     # This covers cases where it might be imported differently.
     try:
         monkeypatch.setattr(
             "sologm.integrations.anthropic.AnthropicClient",
-            lambda *args, **kwargs: mock_anthropic_client,
-            raising=True, # Should exist here
+            lambda *_args, **_kwargs: mock_anthropic_client,
+            raising=True,  # Should exist here
         )
-        logger.debug("[Fixture auto_mock_anthropic_client] Patched AnthropicClient in integrations.anthropic")
+        logger.debug(
+            "[Fixture auto_mock_anthropic_client] Patched AnthropicClient in "
+            "integrations.anthropic"
+        )
     except AttributeError:
-         logger.error("[Fixture auto_mock_anthropic_client] FAILED to patch AnthropicClient in integrations.anthropic!")
-
+        logger.error(
+            "[Fixture auto_mock_anthropic_client] FAILED to patch "
+            "AnthropicClient in integrations.anthropic!"
+        )
 
     # No yield needed, monkeypatch handles teardown automatically
 
 
-@pytest.fixture
-def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
-    """Provide a helper function to run test code within a DB session context.
-
-    Mimics the pattern used by CLI commands where operations are wrapped
-    in a database session context.
-
-    Returns:
-        A function that takes another function (the test logic) as input.
-        The input function must accept a Session object as its argument.
-        The helper executes the input function within a `get_db_context()` block.
-
-    Example:
-        def test_cli_pattern(cli_test):
-            def _logic_using_session(session: Session):
-                # ... use session ...
-                return result
-
-            result = cli_test(_logic_using_session)
-            # ... assert result ...
-    """
-    logger.debug("[Fixture cli_test] Creating context runner function")
-
-    def _run_with_context(test_func: Callable[[Session], Any]) -> Any:
-        from sologm.database.session import get_db_context
-
-        logger.debug(
-            f"[Fixture cli_test] Running function {test_func.__name__} within DB context"
-        )
-        with get_db_context() as session:
-            result = test_func(session)
-        logger.debug(
-            f"[Fixture cli_test] Finished running function {test_func.__name__}"
-        )
-        return result
-
-    return _run_with_context
-
-
-# --- Session Context Fixture ---
-
-
-@pytest.fixture
-def session_context() -> SessionContext:
-    """Provide a SessionContext instance for managing test database sessions.
-
-    This allows tests to use the same `with session_context as session:` pattern
-    as the application code.
-
-    Returns:
-        A SessionContext instance connected to the test database.
-    """
-    # Import locally to avoid potential issues if this file is imported early
-    from sologm.database.session import SessionContext
-
-    logger.debug("[Fixture session_context] Creating SessionContext instance")
-    return SessionContext()
-
-
-# --- Factory Fixtures ---
-
-
-# Standard library imports
-import logging
-from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
-from unittest.mock import MagicMock
-
-# Third-party imports
-import pytest
-from sqlalchemy import Engine, create_engine, event  # Import event
-from sqlalchemy.orm import Session
-
-# Local application/library imports
-from sologm.core.factory import create_all_managers
-from sologm.database.session import DatabaseManager, SessionContext
-from sologm.integrations.anthropic import AnthropicClient
-from sologm.models.base import Base
-from sologm.models.event import Event
-from sologm.models.event_source import EventSource
-from sologm.models.game import Game
-from sologm.models.scene import Scene
-from sologm.utils.config import Config
-
-# Conditional imports for type checking
-if TYPE_CHECKING:
-    from sologm.models.act import Act
-    from sologm.models.oracle import Interpretation, InterpretationSet
-
-logger = logging.getLogger(__name__)
-
-
-@pytest.fixture
-def mock_config_no_api_key() -> MagicMock:
-    """Create a mock Config object simulating a missing API key.
-
-    This mock returns None when `get("anthropic_api_key")` is called.
-
-    Returns:
-        A configured MagicMock object simulating the Config class.
-    """
-    logger.debug("[Fixture mock_config_no_api_key] Creating mock Config object")
-    mock_config = MagicMock(spec=Config)
-
-    # Define the behavior for the mock's get method
-    def mock_get(key: str, default: Any = None) -> Any:
-        logger.debug(
-            f"[Fixture mock_config_no_api_key] Mock config.get called with key: {key}"
-        )
-        if key == "anthropic_api_key":
-            logger.debug(
-                f"[Fixture mock_config_no_api_key] Mock config returning None "
-                f"for key: {key}"
-            )
-            return None
-        # For other keys, maybe return default or raise an error if unexpected
-        logger.debug(
-            f"[Fixture mock_config_no_api_key] Mock config returning default "
-            f"for key: {key}"
-        )
-        return default
-
-    mock_config.get.side_effect = mock_get
-    logger.debug("[Fixture mock_config_no_api_key] Returning configured mock object")
-    return mock_config
-
-
-# --- Database Fixtures ---
-
-
-@pytest.fixture
-def db_engine() -> Generator[Engine, None, None]:
-    """Create a new in-memory SQLite database engine for each test.
-
-    Enables foreign key support for SQLite.
-
-    Yields:
-        An SQLAlchemy Engine connected to an in-memory SQLite database.
-    """
-    logger.debug("Creating in-memory SQLite engine for test")
-    engine = create_engine("sqlite:///:memory:")
-
-    # --- Enable Foreign Key support for SQLite ---
-    # This is crucial for cascade deletes to work correctly in tests
-    @event.listens_for(engine, "connect")
-    def _enable_sqlite_foreign_keys(dbapi_con, connection_record):
-        logger.debug("Executing PRAGMA foreign_keys=ON for new SQLite connection")
-        cursor = dbapi_con.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON;")
-        cursor.close()
-
-    # --- End Foreign Key support ---
-
-    logger.debug("Creating all tables on the test engine")
-    Base.metadata.create_all(engine)
-    yield engine
-    logger.debug("Disposing of the test engine")
-    engine.dispose()
-
-
-@pytest.fixture(scope="function", autouse=True)
-def database_manager(db_engine: Engine) -> Generator[DatabaseManager, None, None]:
-    """Provide a test-specific DatabaseManager instance using an in-memory DB.
-
-    Replaces the singleton DatabaseManager instance for the duration of a test,
-    ensuring test isolation by using a dedicated in-memory SQLite database.
-    The original instance is restored after the test.
-
-    Args:
-        db_engine: The in-memory SQLite engine fixture.
-
-    Yields:
-        A DatabaseManager instance configured for the test database.
-    """
-    # Import locally to avoid potential issues if this file is imported early
-    from sologm.database.session import DatabaseManager
-
-    logger.debug("Saving original DatabaseManager instance")
-    # Save original instance to restore it after the test.
-    # This prevents tests from affecting each other or the real application state.
-    old_instance = DatabaseManager._instance
-
-    # Create a new DatabaseManager instance using the test engine.
-    logger.debug("Creating new DatabaseManager instance for test")
-    db_manager = DatabaseManager(engine=db_engine)
-    DatabaseManager._instance = db_manager
-
-    yield db_manager
-
-    # Restore the original singleton instance to prevent test pollution.
-    logger.debug("Restoring original DatabaseManager instance")
-    DatabaseManager._instance = old_instance
-
-
-# --- Mock Fixtures ---
-
-
-@pytest.fixture
-def mock_anthropic_client() -> MagicMock:
-    """Create a mock Anthropic client.
-
-    Returns:
-        A MagicMock object simulating the AnthropicClient.
-    """
-    logger.debug("Creating mock AnthropicClient")
-    return MagicMock(spec=AnthropicClient)
+# --- Session Context Fixtures ---
 
 
 @pytest.fixture
@@ -446,7 +268,8 @@ def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
         from sologm.database.session import get_db_context
 
         logger.debug(
-            f"[Fixture cli_test] Running function {test_func.__name__} within DB context"
+            f"[Fixture cli_test] Running function {test_func.__name__} within "
+            "DB context"
         )
         with get_db_context() as session:
             result = test_func(session)
@@ -456,9 +279,6 @@ def cli_test() -> Callable[[Callable[[Session], Any]], Any]:
         return result
 
     return _run_with_context
-
-
-# --- Session Context Fixture ---
 
 
 @pytest.fixture
@@ -544,7 +364,8 @@ def create_test_act(
         sequence: Optional[int] = None,
     ) -> Act:
         logger.debug(
-            f"[Factory create_test_act] Creating act: title='{title}', game_id='{game_id}'"
+            f"[Factory create_test_act] Creating act: title='{title}', "
+            f"game_id='{game_id}'"
         )
         # Pass the mock client to the factory
         managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
@@ -560,7 +381,8 @@ def create_test_act(
         # If issues arise, a targeted flush might be needed, but start without.
         if sequence is not None:
             logger.debug(
-                f"[Factory create_test_act] Setting sequence to {sequence} for act ID: {act.id}"
+                f"[Factory create_test_act] Setting sequence to {sequence} for "
+                f"act ID: {act.id}"
             )
             act.sequence = sequence
             # session.flush([act]) # Consider if needed later
@@ -598,7 +420,8 @@ def create_test_scene(
         is_active: bool = True,
     ) -> Scene:
         logger.debug(
-            f"[Factory create_test_scene] Creating scene: title='{title}', act_id='{act_id}'"
+            f"[Factory create_test_scene] Creating scene: title='{title}', "
+            f"act_id='{act_id}'"
         )
         # Pass the mock client to the factory
         managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
@@ -615,18 +438,22 @@ def create_test_scene(
         # before refresh.
         try:
             logger.debug(
-                f"[Factory create_test_scene] Flushing session before refresh for scene ID: {scene.id}"
+                f"[Factory create_test_scene] Flushing session before refresh for "
+                f"scene ID: {scene.id}"
             )
-            session.flush()  # Flush *before* refresh to ensure state is synchronized.
+            # Flush *before* refresh to ensure state is synchronized.
+            session.flush()
             # Refresh common relationships typically needed immediately after creation.
             logger.debug(
-                f"[Factory create_test_scene] Refreshing 'act' relationship for scene ID: {scene.id}"
+                f"[Factory create_test_scene] Refreshing 'act' relationship for "
+                f"scene ID: {scene.id}"
             )
             session.refresh(scene, attribute_names=["act"])
         except Exception as e:
             # Use logger.warning for non-critical issues during test setup
             logger.warning(
-                f"Warning: Error refreshing relationships in create_test_scene factory for scene ID {scene.id}: {e}",
+                f"Warning: Error refreshing relationships in create_test_scene "
+                f"factory for scene ID {scene.id}: {e}",
                 exc_info=True,  # Include traceback for warnings if helpful
             )
             # Log and continue for now, but this might hide issues in tests.
@@ -664,7 +491,8 @@ def create_test_event(
         interpretation_id: Optional[str] = None,
     ) -> Event:
         logger.debug(
-            f"[Factory create_test_event] Creating event: description='{description[:20]}...', scene_id='{scene_id}'"
+            f"[Factory create_test_event] Creating event: "
+            f"description='{description[:20]}...', scene_id='{scene_id}'"
         )
         # Pass the mock client to the factory
         managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
@@ -678,14 +506,16 @@ def create_test_event(
         try:
             # Refresh relationships to ensure they are loaded.
             logger.debug(
-                f"[Factory create_test_event] Refreshing relationships for event ID: {event.id}"
+                f"[Factory create_test_event] Refreshing relationships for "
+                f"event ID: {event.id}"
             )
             session.refresh(
                 event, attribute_names=["scene", "source", "interpretation"]
             )
         except Exception as e:
             logger.warning(
-                f"Warning: Error refreshing relationships in create_test_event factory for event ID {event.id}: {e}",
+                f"Warning: Error refreshing relationships in create_test_event "
+                f"factory for event ID {event.id}: {e}",
                 exc_info=True,
             )
         # Object is already session-bound via the manager.
@@ -708,7 +538,8 @@ def create_test_interpretation_set(
         ... other args
 
     Returns:
-        A callable function `_create_interpretation_set(session, scene_id, context="...", ...)`
+        A callable function `_create_interpretation_set(session, scene_id,
+        context="...", ...)`
         that creates and returns a persisted InterpretationSet instance.
     """
     logger.debug("[Fixture create_test_interpretation_set] Creating factory function")
@@ -723,11 +554,12 @@ def create_test_interpretation_set(
         is_current: bool = False,
     ) -> InterpretationSet:
         logger.debug(
-            f"[Factory create_test_interpretation_set] Creating set: scene_id='{scene_id}'"
+            f"[Factory create_test_interpretation_set] Creating set: "
+            f"scene_id='{scene_id}'"
         )
         # Pass mock client even if managers aren't used by this specific factory's logic
         # (Good practice in case manager usage is added later)
-        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
+        create_all_managers(session, anthropic_client=mock_anthropic_client)
         # Current implementation uses direct model creation:
         interp_set = InterpretationSet.create(
             scene_id=scene_id,
@@ -740,16 +572,20 @@ def create_test_interpretation_set(
         session.flush()
         try:
             logger.debug(
-                f"[Factory create_test_interpretation_set] Refreshing relationships for set ID: {interp_set.id}"
+                f"[Factory create_test_interpretation_set] Refreshing relationships "
+                f"for set ID: {interp_set.id}"
             )
             session.refresh(interp_set, attribute_names=["scene", "interpretations"])
         except Exception as e:
             logger.warning(
-                f"Warning: Error refreshing relationships in create_test_interpretation_set factory for set ID {interp_set.id}: {e}",
+                f"Warning: Error refreshing relationships in "
+                f"create_test_interpretation_set factory for set ID "
+                f"{interp_set.id}: {e}",
                 exc_info=True,
             )
         logger.warning(
-            "create_test_interpretation_set fixture is using placeholder implementation."
+            "create_test_interpretation_set fixture is using placeholder "
+            "implementation."
         )
         logger.debug(
             f"[Factory create_test_interpretation_set] Created set ID: {interp_set.id}"
@@ -772,7 +608,8 @@ def create_test_interpretation(
         ... other args
 
     Returns:
-        A callable function `_create_interpretation(session, set_id, title="...", ...)`
+        A callable function `_create_interpretation(session, set_id,
+        title="...", ...)`
         that creates and returns a persisted Interpretation instance.
     """
     logger.debug("[Fixture create_test_interpretation] Creating factory function")
@@ -786,10 +623,11 @@ def create_test_interpretation(
         is_selected: bool = False,
     ) -> Interpretation:
         logger.debug(
-            f"[Factory create_test_interpretation] Creating interpretation: title='{title}', set_id='{set_id}'"
+            f"[Factory create_test_interpretation] Creating interpretation: "
+            f"title='{title}', set_id='{set_id}'"
         )
         # Pass mock client
-        managers = create_all_managers(session, anthropic_client=mock_anthropic_client)
+        create_all_managers(session, anthropic_client=mock_anthropic_client)
         # Current implementation uses direct model creation:
         interp = Interpretation.create(
             set_id=set_id,
@@ -804,21 +642,25 @@ def create_test_interpretation(
             # Also, Interpretation doesn't directly link to a single event, but a list.
             # Refreshing 'interpretation_set' is usually sufficient.
             logger.debug(
-                f"[Factory create_test_interpretation] Refreshing relationships for interpretation ID: {interp.id}"
+                f"[Factory create_test_interpretation] Refreshing relationships for "
+                f"interpretation ID: {interp.id}"
             )
             session.refresh(
                 interp, attribute_names=["interpretation_set", "events"]
             )  # Corrected 'event' to 'events'
         except Exception as e:
             logger.warning(
-                f"Warning: Error refreshing relationships in create_test_interpretation factory for interpretation ID {interp.id}: {e}",
+                f"Warning: Error refreshing relationships in "
+                f"create_test_interpretation factory for interpretation ID "
+                f"{interp.id}: {e}",
                 exc_info=True,
             )
         logger.warning(
             "create_test_interpretation fixture is using placeholder implementation."
         )
         logger.debug(
-            f"[Factory create_test_interpretation] Created interpretation ID: {interp.id}"
+            f"[Factory create_test_interpretation] Created interpretation ID: "
+            f"{interp.id}"
         )
         return interp
 
@@ -858,26 +700,150 @@ def initialize_event_sources() -> Callable[[Session], None]:
             existing = session.query(EventSource).filter_by(name=source_name).first()
             if not existing:
                 logger.debug(
-                    f"[Initializer initialize_event_sources] Adding source: {source_name}"
+                    f"[Initializer initialize_event_sources] Adding source: "
+                    f"{source_name}"
                 )
                 source = EventSource.create(name=source_name)
                 session.add(source)
                 added_count += 1
             else:
                 logger.debug(
-                    f"[Initializer initialize_event_sources] Source '{source_name}' already exists."
+                    f"[Initializer initialize_event_sources] Source "
+                    f"'{source_name}' already exists."
                 )
         if added_count > 0:
             # Flush here if immediate ID access or constraint checking is needed
-            # before the test continues, otherwise rely on context manager's flush/commit.
+            # before the test continues, otherwise rely on context manager's
+            # flush/commit.
             # session.flush()
             logger.debug(
-                f"[Initializer initialize_event_sources] Added {added_count} new sources."
+                f"[Initializer initialize_event_sources] Added {added_count} "
+                f"new sources."
             )
         else:
             logger.debug(
-                "[Initializer initialize_event_sources] All default sources already existed."
+                "[Initializer initialize_event_sources] All default sources "
+                "already existed."
             )
         # Rely on the calling context (test's session_context) to commit/rollback.
 
     return _initialize
+
+
+# --- Mock Entity Fixtures for Navigation Utils ---
+
+
+@pytest.fixture
+def create_mock_entity() -> Callable[..., Any]:
+    """Factory for creating mock entities with common navigation attributes.
+
+    Creates lightweight mock objects for testing navigation utility functions
+    without requiring actual database models.
+
+    Returns:
+        A callable that creates mock entities with specified attributes.
+    """
+    logger.debug("[Fixture create_mock_entity] Creating factory function")
+
+    def _create(
+        entity_id: str = None,
+        is_active: bool = False,
+        is_current: bool = False,
+        is_selected: bool = False,
+        created_at: datetime = None,
+        sequence: int = None,
+        **kwargs,
+    ) -> Any:
+        """Create a mock entity with navigation-related attributes.
+
+        Args:
+            entity_id: Entity ID (generated if not provided)
+            is_active: Whether entity is active
+            is_current: Whether entity is current
+            is_selected: Whether entity is selected
+            created_at: Creation timestamp
+            sequence: Sequence number for ordering
+            **kwargs: Additional attributes to set on the entity
+
+        Returns:
+            A mock entity object with the specified attributes.
+        """
+        logger.debug(
+            f"[Factory create_mock_entity] Creating mock entity with "
+            f"is_active={is_active}, sequence={sequence}"
+        )
+
+        class MockEntity:
+            """Simple mock entity class for testing."""
+
+            def __repr__(self):
+                return f"<MockEntity id={self.id}>"
+
+        entity = MockEntity()
+        entity.id = entity_id or str(uuid.uuid4())
+        entity.is_active = is_active
+        entity.is_current = is_current
+        entity.is_selected = is_selected
+        entity.created_at = created_at if created_at is not None else datetime.now()
+        entity.sequence = sequence
+
+        # Add any additional attributes
+        for key, value in kwargs.items():
+            setattr(entity, key, value)
+            logger.debug(f"[Factory create_mock_entity] Set attribute {key}={value}")
+
+        return entity
+
+    return _create
+
+
+@pytest.fixture
+def create_mock_entity_with_relationships(
+    create_mock_entity: Callable[..., Any],
+) -> Callable[..., Any]:
+    """Factory for creating mock entities with relationship attributes.
+
+    Extends create_mock_entity to support relationship attributes for testing
+    cross-relationship navigation utilities.
+
+    Args:
+        create_mock_entity: The base mock entity creation fixture
+
+    Returns:
+        A callable that creates mock entities with relationships.
+    """
+    logger.debug(
+        "[Fixture create_mock_entity_with_relationships] Creating factory function"
+    )
+
+    def _create(relationships: dict = None, **kwargs) -> Any:
+        """Create a mock entity with relationship attributes.
+
+        Args:
+            relationships: Dict mapping relationship names to values
+                          (can be lists for collections or single entities)
+            **kwargs: Additional attributes passed to create_mock_entity
+
+        Returns:
+            A mock entity with relationships set.
+        """
+        # Create base entity with standard attributes
+        entity = create_mock_entity(**kwargs)
+
+        # Add relationship attributes
+        if relationships:
+            for rel_name, rel_value in relationships.items():
+                setattr(entity, rel_name, rel_value)
+                item_count = (
+                    len(rel_value)
+                    if hasattr(rel_value, "__len__") and not isinstance(rel_value, str)
+                    else 1
+                )
+                logger.debug(
+                    f"[Factory create_mock_entity_with_relationships] "
+                    f"Set relationship {rel_name} with {item_count} items"
+                )
+
+        return entity
+
+    return _create

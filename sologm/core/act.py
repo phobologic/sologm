@@ -1,7 +1,6 @@
 """Act manager for SoloGM."""
 
 import logging
-import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -202,7 +201,8 @@ class ActManager(BaseManager[Act, Act]):
                 session,
                 Act,
                 identifier,
-                GameError,  # Use GameError for consistency, or create ActError if preferred
+                GameError,  # Use GameError for consistency, or create
+                # ActError if preferred
                 f"Act not found with identifier '{identifier}'",
             )
 
@@ -271,10 +271,7 @@ class ActManager(BaseManager[Act, Act]):
         )
 
         result = acts[0] if acts else None
-        if result:
-            act_info = f"{result.id} ({result.title or 'Untitled'})"
-        else:
-            act_info = "None"
+        act_info = f"{result.id} ({result.title or 'Untitled'})" if result else "None"
         logger.debug(f"Active act for game {game_id}: {act_info}")
         return result
 
@@ -517,7 +514,8 @@ class ActManager(BaseManager[Act, Act]):
             active_game = self.game_manager.get_active_game()
             if not active_game:
                 self.logger.warning("Cannot get most recent act: No active game.")
-                # Raise error or return None depending on desired strictness. Returning None for status cmd.
+                # Raise error or return None depending on desired strictness.
+                # Returning None for status cmd.
                 return None
             game_id = active_game.id
             self.logger.debug(f"Using active game ID: {game_id}")
@@ -657,7 +655,6 @@ class ActManager(BaseManager[Act, Act]):
 
         # Import prompts locally if needed (or move to top if preferred)
         from sologm.core.prompts.act import ActPrompts
-        from sologm.utils.errors import APIError
 
         # Build the prompt (no change here)
         prompt = ActPrompts.build_summary_prompt(act_data)
@@ -888,7 +885,8 @@ class ActManager(BaseManager[Act, Act]):
             # Prepare scene and event data
             scene_list_data = []
             for scene in scenes:
-                # Fetch events for the scene, ensuring chronological order (oldest first)
+                # Fetch events for the scene, ensuring chronological order
+                # (oldest first)
                 events = self.scene_manager.event_manager.list_events(
                     scene_id=scene.id, order_direction="asc"
                 )
@@ -951,8 +949,10 @@ class ActManager(BaseManager[Act, Act]):
 
         Args:
             act_id: ID of the act to generate the narrative for.
-            user_guidance: Optional dictionary containing user guidance (tone, focus, etc.).
-            previous_narrative: Optional previously generated narrative (for regeneration).
+            user_guidance: Optional dictionary containing user guidance
+                (tone, focus, etc.).
+            previous_narrative: Optional previously generated narrative
+                (for regeneration).
             feedback: Optional user feedback on the previous narrative.
 
         Returns:
@@ -978,7 +978,8 @@ class ActManager(BaseManager[Act, Act]):
         # 2. Build the appropriate prompt (prompt logic now depends on act_title)
         if previous_narrative and feedback:
             logger.debug(
-                f"Building narrative regeneration prompt (Act has title: {bool(act_title)})."
+                f"Building narrative regeneration prompt "
+                f"(Act has title: {bool(act_title)})."
             )
             prompt = ActPrompts.build_narrative_regeneration_prompt(
                 narrative_data=narrative_data,
@@ -1015,7 +1016,8 @@ class ActManager(BaseManager[Act, Act]):
                 return final_narrative
             else:
                 logger.debug(
-                    "Act did not have an existing title. Returning AI response directly (should include title)."
+                    "Act did not have an existing title. Returning AI response "
+                    "directly (should include title)."
                 )
                 # AI was instructed to include the title, return its response directly
                 # AI was instructed to include the title, return its response directly
@@ -1024,4 +1026,5 @@ class ActManager(BaseManager[Act, Act]):
             logger.error(f"Error generating act narrative: {str(e)}", exc_info=True)
             # Import APIError if not already imported at top
             from sologm.utils.errors import APIError
+
             raise APIError(f"Failed to generate act narrative: {str(e)}") from e

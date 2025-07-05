@@ -76,10 +76,12 @@ def list_games(ctx: typer.Context) -> None:
 def activate_game(
     ctx: typer.Context,
     game_id: str = typer.Option(
-        ..., "--id", help="ID or slug of the game to activate" # Updated help text
+        ...,
+        "--id",
+        help="ID or slug of the game to activate",  # Updated help text
     ),
 ) -> None:
-    """Activate a game using its ID or slug.""" # Updated docstring
+    """Activate a game using its ID or slug."""  # Updated docstring
     renderer: "Renderer" = ctx.obj["renderer"]
 
     try:
@@ -92,7 +94,9 @@ def activate_game(
             activated_game = game_manager.activate_game(game_to_activate.id)
 
             renderer.display_success("Game activated successfully!")
-            renderer.display_message(f"Name: {activated_game.name} ({activated_game.id})")
+            renderer.display_message(
+                f"Name: {activated_game.name} ({activated_game.id})"
+            )
             renderer.display_message(f"Description: {activated_game.description}")
     except GameError as e:
         # Error message from get_game_by_identifier_or_error or activate_game
@@ -183,7 +187,8 @@ def game_status(ctx: typer.Context) -> None:
                     scene=latest_scene, limit=3
                 )
                 logger.debug(
-                    f"Retrieved {len(recent_rolls)} recent dice rolls for scene {scene_id}"
+                    f"Retrieved {len(recent_rolls)} recent dice rolls for scene "
+                    f"{scene_id}"
                 )
                 for i, roll in enumerate(recent_rolls):
                     logger.debug(
@@ -217,10 +222,12 @@ def game_status(ctx: typer.Context) -> None:
 def edit_game(
     ctx: typer.Context,
     game_id: str = typer.Option(
-        None, "--id", help="ID or slug of the game to edit (defaults to active game)" # Updated help text
+        None,
+        "--id",
+        help="ID or slug of the game to edit (defaults to active game)",
     ),
 ) -> None:
-    """Edit the name and description of a game using its ID or slug.""" # Updated docstring
+    """Edit the name and description of a game using its ID or slug."""
     renderer: "Renderer" = ctx.obj["renderer"]
     console: "Console" = ctx.obj["console"]
 
@@ -236,14 +243,18 @@ def edit_game(
                 target_game = game_manager.get_active_game()
                 if not target_game:
                     renderer.display_warning(
-                        "No active game. Specify a game ID/slug or activate a game first.", # Updated message
+                        "No active game. Specify a game ID/slug or activate a game "
+                        "first.",
                     )
                     raise typer.Exit(1)
 
-            game_data = {"name": target_game.name, "description": target_game.description}
+            game_data = {
+                "name": target_game.name,
+                "description": target_game.description,
+            }
 
             editor_config = EditorConfig(
-                edit_message=f"Editing game {target_game.slug} ({target_game.id}):", # Show slug and ID
+                edit_message=f"Editing game {target_game.slug} ({target_game.id}):",
                 success_message="Game updated successfully.",
                 cancel_message="Game unchanged.",
                 error_message="Could not open editor",
@@ -276,7 +287,7 @@ def edit_game(
                 context_info=f"Editing game: {target_game.name} ({target_game.id})\n",
                 editor_config=editor_config,
                 is_new=False,
-                original_data_for_comments=game_data, # Pass original for comparison
+                original_data_for_comments=game_data,  # Pass original for comparison
             )
 
             # Check status from edit_structured_data
@@ -290,13 +301,13 @@ def edit_game(
                 renderer.display_success("Game updated successfully!")
                 renderer.display_game_info(updated_game)
             elif status == EditorStatus.SAVED_UNCHANGED:
-                 renderer.display_message("No changes detected. Game unchanged.")
+                renderer.display_message("No changes detected. Game unchanged.")
             elif status == EditorStatus.ABORTED:
                 renderer.display_warning("Game edit cancelled.")
-            else: # VALIDATION_ERROR or EDITOR_ERROR
-                 # Error message should be displayed by edit_structured_data or caught below
-                 raise typer.Exit(1)
-
+            else:  # VALIDATION_ERROR or EDITOR_ERROR
+                # Error message should be displayed by edit_structured_data or
+                # caught below
+                raise typer.Exit(1)
 
     except GameError as e:
         renderer.display_error(f"Error editing game: {str(e)}")
@@ -325,7 +336,7 @@ def dump_game(
     ),
 ) -> None:
     """Export a game with all scenes and events as a markdown document to stdout,
-    identifying the game by ID or slug.""" # Updated docstring
+    identifying the game by ID or slug."""  # Updated docstring
     renderer: "Renderer" = ctx.obj["renderer"]  # Needed for error reporting
 
     try:
@@ -340,20 +351,21 @@ def dump_game(
                 target_game = game_manager.get_active_game()
                 if not target_game:
                     renderer.display_warning(
-                        "No active game. Specify a game ID/slug or activate a game first.", # Updated message
+                        "No active game. Specify a game ID/slug or activate a game "
+                        "first.",
                     )
                     raise typer.Exit(1)
 
             # Ensure related data is loaded if needed by the markdown generator
             # Pass the found game object (target_game)
-            session.refresh(target_game) # Refresh the specific game instance
+            session.refresh(target_game)  # Refresh the specific game instance
 
             act_manager = game_manager.act_manager
             scene_manager = act_manager.scene_manager
             event_manager = scene_manager.event_manager
 
             markdown_content = generate_game_markdown(
-                game=target_game, # Pass the found game
+                game=target_game,  # Pass the found game
                 scene_manager=scene_manager,
                 event_manager=event_manager,
                 include_metadata=include_metadata,
@@ -363,7 +375,7 @@ def dump_game(
             # Print directly to stdout, bypassing the renderer
             print(markdown_content)
 
-    except GameError as e: # Catch GameError specifically
+    except GameError as e:  # Catch GameError specifically
         renderer.display_error(f"Error exporting game: {str(e)}")
         raise typer.Exit(1) from e
     except Exception as e:

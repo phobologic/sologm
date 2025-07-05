@@ -53,7 +53,8 @@ def test_create_all_managers(session_context):
                 f"{name} manager should have a _session attribute"
             )
             assert manager_instance._session is session, (
-                f"{name} manager session ID {id(manager_instance._session)} should match factory session ID {id(session)}"
+                f"{name} manager session ID {id(manager_instance._session)} should "
+                f"match factory session ID {id(session)}"
             )
             logger.debug(f"managers.{name} has correct session ID: {id(session)}")
 

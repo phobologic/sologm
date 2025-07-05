@@ -512,7 +512,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
         self.logger.debug(
             f"Getting interpretations: scene_id={scene_id}, context='{context}', "
             f"oracle_results='{oracle_results}', count={count}, "
-            f"retry_attempt={retry_attempt}, max_retries={max_retries or 'from config'}, "
+            f"retry_attempt={retry_attempt}, "
+            f"max_retries={max_retries or 'from config'}, "
             f"previous_set_id={previous_set_id or 'None'}"
         )
 
@@ -614,7 +615,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                             )
 
                         self.logger.info(
-                            f"Successfully created interpretation set with {len(parsed)} "
+                            f"Successfully created interpretation set with "
+                            f"{len(parsed)} "
                             f"interpretations for scene '{scene.title}'"
                         )
                         return interp_set
@@ -812,7 +814,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             for other_interp in interp_set.interpretations:
                 if other_interp.is_selected:
                     self.logger.debug(
-                        f"Clearing selection from interpretation: '{other_interp.title}' "
+                        f"Clearing selection from interpretation: "
+                        f"'{other_interp.title}' "
                         f"(ID: {other_interp.id})"
                     )
                     other_interp.is_selected = False
@@ -858,7 +861,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
             OracleError: If neither scene_id nor act_id is provided
         """
         self.logger.debug(
-            f"Listing interpretation sets: scene_id={scene_id}, act_id={act_id}, limit={limit}"
+            f"Listing interpretation sets: scene_id={scene_id}, "
+            f"act_id={act_id}, limit={limit}"
         )
 
         if not scene_id and not act_id:
@@ -943,7 +947,8 @@ class OracleManager(BaseManager[InterpretationSet, InterpretationSet]):
                 f"Interpretation {interpretation_id} not found",
             )
             self.logger.debug(
-                f"Found interpretation: '{interpretation.title}' (ID: {interpretation.id})"
+                f"Found interpretation: '{interpretation.title}' "
+                f"(ID: {interpretation.id})"
             )
 
             # Use model relationships to get scene_id

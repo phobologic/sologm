@@ -6,7 +6,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from anthropic._types import NOT_GIVEN
 
-# Import Config for type hinting if needed elsewhere, but not strictly required for this change
+# Import Config for type hinting if needed elsewhere, but not strictly
+# required for this change
 # from sologm.utils.config import Config
 from sologm.integrations.anthropic import AnthropicClient
 from sologm.utils.errors import APIError
@@ -34,7 +35,7 @@ def mock_response():
 def test_init_with_api_key(mock_anthropic):
     """Test initializing client with explicit API key."""
     mock_class, mock_instance = mock_anthropic
-    client = AnthropicClient(api_key="test_key")
+    AnthropicClient(api_key="test_key")
     mock_class.assert_called_once_with(api_key="test_key")
 
 
@@ -42,13 +43,15 @@ def test_init_with_env_var(mock_anthropic, monkeypatch):
     """Test initializing client with API key from environment."""
     mock_class, mock_instance = mock_anthropic
     monkeypatch.setenv("ANTHROPIC_API_KEY", "env_test_key")
-    client = AnthropicClient()
+    AnthropicClient()
     mock_class.assert_called_once_with(api_key="env_test_key")
 
 
 # Use the new fixture name and apply patch within the test
 def test_init_no_api_key(
-    mock_anthropic, monkeypatch, mock_config_no_api_key
+    mock_anthropic,  # noqa: ARG001
+    monkeypatch,
+    mock_config_no_api_key,  # noqa: ARG001
 ):  # Use new fixture
     """Test initialization fails without API key from env or config."""
     logger.debug("--- Starting test_init_no_api_key ---")
@@ -63,7 +66,8 @@ def test_init_no_api_key(
     # Define the target to patch - WHERE get_config IS LOOKED UP/USED
     patch_target = "sologm.integrations.anthropic.get_config"  # <--- CORRECT TARGET
     logger.debug(
-        f"Attempting to patch '{patch_target}' to return mock config: {mock_config_no_api_key}"
+        f"Attempting to patch '{patch_target}' to return mock config: "
+        f"{mock_config_no_api_key}"
     )
 
     # Apply the patch using a context manager JUST around the code that needs it
@@ -74,11 +78,12 @@ def test_init_no_api_key(
             f"Patch active for '{patch_target}'. Mock object: {mock_get_config}"
         )
         logger.debug(
-            "Expecting APIError during AnthropicClient initialization inside patch block..."
+            "Expecting APIError during AnthropicClient initialization "
+            "inside patch block..."
         )
         with pytest.raises(APIError) as exc:
             # Instantiation happens HERE, while the patch is active
-            client = AnthropicClient()
+            AnthropicClient()
             # This should not be reached
             logger.error(
                 "AnthropicClient initialized unexpectedly without raising APIError!"
@@ -175,10 +180,11 @@ def test_send_message_invalid_response_format_no_text(mock_anthropic):
     malformed_content_item = MagicMock()
     # Ensure 'text' attribute is missing by removing it if present
     # or by ensuring it's not part of the spec if creating a new mock
-    try:
+    import contextlib
+
+    with contextlib.suppress(AttributeError):
+        # Attribute didn't exist, which is the desired state
         del malformed_content_item.text
-    except AttributeError:
-        pass  # Attribute didn't exist, which is the desired state
     malformed_response.content = [malformed_content_item]
     mock_instance.messages.create.return_value = malformed_response
 

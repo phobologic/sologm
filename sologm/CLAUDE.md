@@ -18,6 +18,14 @@ All development follows comprehensive conventions in `../conventions/`:
 
 ## Development Patterns
 
+### Linting
+Whenever you modify python files, you must then run two ruff commands against them:
+
+- ruff format $filename
+- ruff check --select=E,F,W,I,N,B,A,C4,SIM,ARG $filename
+
+Fix any issues you find as they come up.
+
 ### Database Operations
 Always use the session context pattern:
 ```python

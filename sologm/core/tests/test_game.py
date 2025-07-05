@@ -329,7 +329,7 @@ class TestGameManager:
         with session_context as session:
             managers = create_all_managers(session)
             # Create two games
-            game1 = managers.game.create_game(
+            managers.game.create_game(
                 name="First Game", description="First description"
             )
             game2 = managers.game.create_game(

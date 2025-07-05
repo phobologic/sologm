@@ -1,6 +1,14 @@
 ## Your Assignment
 
-I want you to implement **Step 1** of the implementation plan I've shared above. This is part of a larger feature that we're building incrementally, with each step building on the previous one.
+Do not make any changes, or run any commands- only come up with a plan, share that plan, ask any high level questions, and then once I give you explicit permission to do so you may proceed with the code change.
+
+Please ensure that any changes you make follow the conventions in @conventions/code_style.md (or any of the conventions linked in @conventions/README.md)
+
+I want you to implement **Phase 2.3, Sub-step 2.3.1** of the the implementation plan at @features/refactor_models/phase2-plan.md. This is part of a larger feature that we're building incrementally, with each step building on the previous one.
+
+Please refer to @features/refactor_models/tdd.md for any questions about implementation.
+
+Use context7 mcp if installed if there are any questions about various library documentation.
 
 ## How to Approach This Task
 

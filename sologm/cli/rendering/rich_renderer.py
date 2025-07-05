@@ -10,7 +10,7 @@ from rich.markdown import Markdown  # Added Markdown import
 from rich.panel import Panel
 
 # Removed Abort from import, InvalidResponse might not be needed either if not used
-from rich.prompt import InvalidResponse, Prompt
+from rich.prompt import Prompt
 from rich.table import Table
 from rich.text import Text
 
@@ -43,7 +43,8 @@ logger = logging.getLogger(__name__)
 
 class RichRenderer(Renderer):
     """
-    Renders CLI output using Rich library components like Panels, Tables, and styled text.
+    Renders CLI output using Rich library components like Panels, Tables, and
+    styled text.
     """
 
     def __init__(self, console: Console):
@@ -138,7 +139,8 @@ class RichRenderer(Renderer):
     ) -> None:
         """Displays a single oracle interpretation using Rich."""
         logger.debug(
-            f"Displaying interpretation {interp.id} (selected: {interp.is_selected or selected})"
+            f"Displaying interpretation {interp.id} "
+            f"(selected: {interp.is_selected or selected})"
         )
         logger.debug(
             f"Interpretation title: '{interp.title}', created: {interp.created_at}"
@@ -195,7 +197,8 @@ class RichRenderer(Renderer):
             max_description_length: Maximum length for descriptions if truncating
         """
         logger.debug(
-            f"Displaying events table for scene '{scene.title}' with {len(events)} events"
+            f"Displaying events table for scene '{scene.title}' "
+            f"with {len(events)} events"
         )
         if not events:
             logger.debug(f"No events to display for scene '{scene.title}'")
@@ -580,16 +583,20 @@ class RichRenderer(Renderer):
             latest_act: The most recent act in the game.
             latest_scene: The most recent scene in the latest act.
             recent_events: Recent events (limited list, typically from latest scene).
-            scene_manager: Optional scene manager for additional context (like prev scene).
+            scene_manager: Optional scene manager for additional context
+                (like prev scene).
             oracle_manager: Optional oracle manager for interpretation context.
-            recent_rolls: Optional list of recent dice rolls (typically from latest scene).
+            recent_rolls: Optional list of recent dice rolls
+                (typically from latest scene).
             is_act_active: Whether the latest_act is flagged as active.
             is_scene_active: Whether the latest_scene is flagged as active.
         """
         logger.debug(
             f"Displaying game status for {game.id} with {len(recent_events)} events. "
-            f"Latest Act: {latest_act.id if latest_act else 'None'} (Active: {is_act_active}). "
-            f"Latest Scene: {latest_scene.id if latest_scene else 'None'} (Active: {is_scene_active})."
+            f"Latest Act: {latest_act.id if latest_act else 'None'} "
+            f"(Active: {is_act_active}). "
+            f"Latest Scene: {latest_scene.id if latest_scene else 'None'} "
+            f"(Active: {is_scene_active})."
         )
 
         # Calculate display dimensions using self._calculate_truncation_length
@@ -610,7 +617,8 @@ class RichRenderer(Renderer):
         grid.add_column("Left", ratio=1)
         grid.add_column("Right", ratio=1)
 
-        # Add scene panels and events panel using self._create_scene_panels_grid and self._create_events_panel
+        # Add scene panels and events panel using
+        # self._create_scene_panels_grid and self._create_events_panel
         left_grid = self._create_scene_panels_grid(
             game, latest_scene, scene_manager, is_scene_active
         )
@@ -624,7 +632,8 @@ class RichRenderer(Renderer):
         bottom_grid.add_column("Oracle", ratio=7)  # 70% width
         bottom_grid.add_column("Dice", ratio=3)  # 30% width
 
-        # Create oracle panel using self._create_oracle_panel or self._create_empty_oracle_panel
+        # Create oracle panel using self._create_oracle_panel or
+        # self._create_empty_oracle_panel
         logger.debug("Creating oracle panel")
         oracle_panel = (
             self._create_oracle_panel(
@@ -656,7 +665,8 @@ class RichRenderer(Renderer):
             console_width = self.console.width
             logger.debug(f"Console width detected: {console_width} characters")
             # Calculate appropriate truncation length based on console width
-            # Since we're using a two-column layout, each column gets roughly half the width
+            # Since we're using a two-column layout, each column gets roughly
+            # half the width
             # Subtract some space for borders, padding, and formatting
             truncation_length = max(
                 40, int(console_width / 2) - 10
@@ -667,15 +677,17 @@ class RichRenderer(Renderer):
             )
             return truncation_length
         except (TypeError, ValueError) as e:
-            # Default to a reasonable truncation length if console width is not available
+            # Default to a reasonable truncation length if console width
+            # is not available
             logger.debug(
-                f"Could not determine console width due to error: {e}, using default value."
+                f"Could not determine console width due to error: {e}, "
+                f"using default value."
             )
             return 40
 
     def _create_act_panel(
         self,
-        game: Game,
+        game: Game,  # noqa: ARG002
         latest_act: Optional[Act] = None,
         is_act_active: bool = False,
         truncation_length: int = 80,  # Add parameter with a default
@@ -791,7 +803,8 @@ class RichRenderer(Renderer):
             game.description, max_length=max_desc_length
         )
         logger.debug(
-            f"Truncated game description from {len(game.description)} to {len(truncated_description)} chars"
+            f"Truncated game description from {len(game.description)} "
+            f"to {len(truncated_description)} chars"
         )
 
         # Create content with styled text
@@ -832,7 +845,8 @@ class RichRenderer(Renderer):
             A Table grid containing the scene panels.
         """
         logger.debug(
-            f"Creating scene panels grid for game {game.id} (Latest Scene Active: {is_scene_active})"
+            f"Creating scene panels grid for game {game.id} "
+            f"(Latest Scene Active: {is_scene_active})"
         )
 
         st = StyledText
@@ -844,13 +858,15 @@ class RichRenderer(Renderer):
         logger.debug(f"Using self.console width: {console_width}")
 
         # For scene descriptions in a two-column layout, use about 1/3 of console width
-        # This accounts for the panel taking up roughly half the screen, minus borders/padding
+        # This accounts for the panel taking up roughly half the screen,
+        # minus borders/padding
         chars_per_line = max(30, int(console_width / 3))
         # Allow for about 4 lines of text
         max_desc_length = chars_per_line * 8
 
         logger.debug(
-            f"Chars per line: {chars_per_line}, Max description length: {max_desc_length}"
+            f"Chars per line: {chars_per_line}, "
+            f"Max description length: {max_desc_length}"
         )
 
         # Determine title and border for the latest scene panel
@@ -861,12 +877,15 @@ class RichRenderer(Renderer):
         scenes_content = Text()
         if latest_scene:
             logger.debug(f"Including latest scene {latest_scene.id} in panel")
-            # ... (use latest_scene to build content, act_info, truncated_description) ...
+            # ... (use latest_scene to build content, act_info,
+            # truncated_description) ...
             truncated_description = truncate_text(
                 latest_scene.description, max_length=max_desc_length
             )
             logger.debug(
-                f"Truncated latest scene description from {len(latest_scene.description)} to {len(truncated_description)} chars."
+                f"Truncated latest scene description from "
+                f"{len(latest_scene.description)} to "
+                f"{len(truncated_description)} chars."
             )
             act_info = ""
             if hasattr(latest_scene, "act") and latest_scene.act:
@@ -912,7 +931,8 @@ class RichRenderer(Renderer):
             expand=True,
         )
 
-        # Create previous scene panel (logic remains similar, finds scene before latest_scene)
+        # Create previous scene panel (logic remains similar,
+        # finds scene before latest_scene)
         prev_scene = None
         if latest_scene and scene_manager:
             logger.debug(
@@ -928,7 +948,9 @@ class RichRenderer(Renderer):
                 prev_scene.description, max_length=max_desc_length
             )
             logger.debug(
-                f"Truncated previous scene description from {len(prev_scene.description)} to {len(truncated_description)} chars."
+                f"Truncated previous scene description from "
+                f"{len(prev_scene.description)} to "
+                f"{len(truncated_description)} chars."
             )
             act_info = ""
             if hasattr(prev_scene, "act") and prev_scene.act:
@@ -1661,7 +1683,7 @@ class RichRenderer(Renderer):
                 + st.combine(st.title("Summary:"), "\n", completed_act.summary).plain
             )
 
-    def display_act_ai_feedback_prompt(self, console: Console) -> str:
+    def display_act_ai_feedback_prompt(self, console: Console) -> str:  # noqa: ARG002
         """Displays the prompt asking for feedback on AI generation using Rich Prompt.
 
         Args:
@@ -1679,7 +1701,8 @@ class RichRenderer(Renderer):
         default_choice = "E"
 
         prompt_message = st.warning(
-            "What would you like to do with this content? (A)ccept / (E)dit / (R)egenerate"
+            "What would you like to do with this content? "
+            "(A)ccept / (E)dit / (R)egenerate"
         )
 
         choice = Prompt.ask(
@@ -1777,7 +1800,8 @@ class RichRenderer(Renderer):
                     # Manually display invalid choice message
                     # Use Rich's standard style for invalid prompt input
                     console.print(
-                        f"[prompt.invalid]'{raw_choice}' is not a valid choice {valid_choices}."
+                        f"[prompt.invalid]'{raw_choice}' is not a valid choice "
+                        f"{valid_choices}."
                     )
             except KeyboardInterrupt:
                 # Handle Ctrl+C directly
@@ -1786,4 +1810,5 @@ class RichRenderer(Renderer):
                 )
                 console.print("\n[prompt.invalid]Prompt aborted.")  # Provide feedback
                 return None
-            # No need to catch InvalidResponse here as we're not using 'choices' validation
+            # No need to catch InvalidResponse here as we're not using
+            # 'choices' validation

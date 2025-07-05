@@ -300,7 +300,7 @@ class TestDiceManager:
         with session_context as session:
             managers = create_all_managers(session)
             # Test logging in roll method
-            roll = managers.dice.roll("2d6+3")
+            managers.dice.roll("2d6+3")
 
             # Check for expected log messages
             assert "Rolling dice with notation: 2d6+3" in caplog.text

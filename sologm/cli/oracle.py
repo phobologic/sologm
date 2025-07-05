@@ -15,7 +15,6 @@ from sologm.cli.utils.structured_editor import (
     edit_structured_data,
 )
 from sologm.core.oracle import OracleManager
-from sologm.core.oracle import OracleManager
 from sologm.database.session import get_db_context
 from sologm.models.oracle import Interpretation, InterpretationSet
 from sologm.utils.config import get_config
@@ -218,7 +217,8 @@ def _get_event_description_from_interpretation(
     default_description = (
         f"Question: {interpretation_set.context}\n"
         f"Oracle: {interpretation_set.oracle_results}\n"
-        f"Interpretation: {selected_interpretation.title} - {selected_interpretation.description}"
+        f"Interpretation: {selected_interpretation.title} - "
+        f"{selected_interpretation.description}"
     )
 
     event_description = default_description

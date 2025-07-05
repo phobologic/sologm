@@ -202,8 +202,8 @@ class MockEditorStrategy:
                 - 'save_unchanged': Simulate saving without changes.
                 - 'abort': Simulate aborting the editor (raises EditorAbortedError).
                 - 'error': Simulate an editor launch error (raises EditorError).
-            return_text: The text to return when behavior is 'save_modified' or 'save_unchanged'.
-                         If None, returns the input text.
+            return_text: The text to return when behavior is 'save_modified' or
+                'save_unchanged'. If None, returns the input text.
         """
         self.behavior = behavior
         self.return_text = return_text
@@ -213,11 +213,11 @@ class MockEditorStrategy:
     def edit_text(
         self,
         text: str,
-        console: Optional[Console] = None,
-        message: str = "Edit the text below:",
-        success_message: str = "Text updated.",
-        cancel_message: str = "Text unchanged.",
-        error_message: str = "Could not open editor.",
+        console: Optional[Console] = None,  # noqa: ARG002
+        message: str = "Edit the text below:",  # noqa: ARG002
+        success_message: str = "Text updated.",  # noqa: ARG002
+        cancel_message: str = "Text unchanged.",  # noqa: ARG002
+        error_message: str = "Could not open editor.",  # noqa: ARG002
     ) -> tuple[str, bool]:
         """Mock the edit_text method."""
         self.call_count += 1
@@ -245,7 +245,8 @@ class MockEditorStrategy:
 
 # Use parametrize for different scenarios
 @pytest.mark.parametrize(
-    "is_new, editor_behavior, initial_data, editor_return_text, expected_data, expected_status, expected_mock_calls",
+    "is_new, editor_behavior, initial_data, editor_return_text, expected_data, "
+    "expected_status, expected_mock_calls",
     [
         # --- SCENARIO: Create New Item (is_new=True) ---
         # Save modified -> SAVED_MODIFIED

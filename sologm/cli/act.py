@@ -351,7 +351,8 @@ def _get_edit_data(
         logger.debug("Using CLI arguments for edit data.")
         # Basic check: ensure at least one was provided if we took this path
         if cli_title is None and cli_summary is None:
-            # This case should ideally not be reachable if options were defined correctly
+            # This case should ideally not be reachable if options were defined
+            # correctly
             logger.warning("CLI path taken but both title and summary are None.")
             renderer.display_warning("No changes specified via command line options.")
             return None  # Indicate no update needed
@@ -365,7 +366,7 @@ def edit_act(
     identifier: Optional[str] = typer.Option(  # Renamed act_id to identifier
         None,
         "--id",
-        help="ID or slug of the act to edit (defaults to active act)",  # Updated help text
+        help="ID or slug of the act to edit (defaults to active act)",
     ),
     title: Optional[str] = typer.Option(
         None, "--title", "-t", help="New title for the act"
@@ -473,7 +474,8 @@ def edit_act(
 
         # --- Now we have act_to_edit and game_for_context ---
         # --- Step 3: Get Edit Data (uses helper) ---
-        # Helper handles editor interaction, cancellation messages, and returns None if no update needed
+        # Helper handles editor interaction, cancellation messages, and returns
+        # None if no update needed
         edit_data = _get_edit_data(
             act_to_edit, game_for_context, title, summary, console, renderer
         )
@@ -522,13 +524,12 @@ def edit_act(
     logger.debug("edit_act command finished.")
 
 
-def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool:
+def _check_existing_content(act: Act, force: bool) -> bool:
     """Check if act has existing content and confirm replacement if needed.
 
     Args:
         act: The act to check.
         force: Whether to force replacement without confirmation.
-        renderer: The renderer instance for displaying messages.
 
     Returns:
         True if should proceed, False if cancelled.
@@ -564,7 +565,7 @@ def _check_existing_content(act: Act, force: bool, renderer: "Renderer") -> bool
 
 
 def _collect_user_context(
-    act: Act, game_name: str, console: "Console", renderer: "Renderer"
+    act: Act, game_name: str, console: "Console"
 ) -> Optional[str]:
     """Collect context from the user for AI generation.
 
@@ -576,7 +577,6 @@ def _collect_user_context(
         act: The act being completed.
         game_name: Name of the game the act belongs to.
         console: The console instance for the editor.
-        renderer: The renderer instance for displaying messages.
 
     Returns:
         The user-provided context, or None if the user cancels.
@@ -655,7 +655,6 @@ def _collect_regeneration_feedback(
     act: Act,
     game_name: str,
     console: "Console",
-    renderer: "Renderer",
     original_context: Optional[str] = None,
 ) -> Optional[Dict[str, str]]:
     """Collect feedback for regenerating AI content.
@@ -665,14 +664,16 @@ def _collect_regeneration_feedback(
         act: The act being completed.
         game_name: Name of the game the act belongs to.
         console: The console instance for the editor.
-        renderer: The renderer instance for displaying messages.
         original_context: The original context provided for the first generation.
 
     Returns:
         Dictionary with feedback and context, or None if user cancels.
     """
     original_context_log = (
-        f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+        (
+            f"'{original_context[:100]}"
+            f"{'...' if original_context and len(original_context) > 100 else ''}'"
+        )
         if original_context
         else "None"
     )
@@ -942,7 +943,10 @@ def _handle_user_feedback_loop(
         Final dictionary with title and summary, or None if user cancels.
     """
     original_context_log = (
-        f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+        (
+            f"'{original_context[:100]}"
+            f"{'...' if original_context and len(original_context) > 100 else ''}'"
+        )
         if original_context
         else "None"
     )
@@ -1000,7 +1004,10 @@ def _handle_user_feedback_loop(
                 "[_handle_user_feedback_loop] Calling _collect_regeneration_feedback"
             )
             original_context_log_for_collector = (
-                f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+                (
+                    f"'{original_context[:100]}"
+                    f"{'...' if len(original_context) > 100 else ''}"
+                )
                 if original_context
                 else "None"
             )
@@ -1013,13 +1020,13 @@ def _handle_user_feedback_loop(
                 act,
                 game_name,
                 console,
-                renderer,
                 original_context,  # Pass original context
             )
 
             if not feedback_data:
                 logger.debug(
-                    "[_handle_user_feedback_loop] Regeneration feedback cancelled, returning to prompt."
+                    "[_handle_user_feedback_loop] Regeneration feedback cancelled, "
+                    "returning to prompt."
                 )
                 renderer.display_warning("Regeneration cancelled. Returning to prompt.")
                 continue
@@ -1035,7 +1042,10 @@ def _handle_user_feedback_loop(
                 regeneration_context = feedback_data.get("context")
                 regeneration_feedback = feedback_data.get("feedback")
                 context_log = (
-                    f"'{regeneration_context[:100]}{'...' if regeneration_context and len(regeneration_context) > 100 else ''}'"
+                    (
+                        f"'{regeneration_context[:100]}"
+                        f"{'...' if len(regeneration_context) > 100 else ''}"
+                    )
                     if regeneration_context
                     else "None"
                 )
@@ -1057,7 +1067,7 @@ def _handle_user_feedback_loop(
                         act.id,
                         feedback=regeneration_feedback,
                         previous_generation=current_results,
-                        context=regeneration_context,  # Pass potentially updated context
+                        context=regeneration_context,
                     )
                 else:
                     # If no feedback, generate again but *still use the context*
@@ -1079,7 +1089,8 @@ def _handle_user_feedback_loop(
 
                 # Display the new results using the renderer
                 logger.debug(
-                    "[_handle_user_feedback_loop] Calling renderer.display_act_ai_generation_results"
+                    "[_handle_user_feedback_loop] Calling "
+                    "renderer.display_act_ai_generation_results"
                 )
                 renderer.display_act_ai_generation_results(new_results, act)
 
@@ -1131,7 +1142,7 @@ def _handle_ai_completion(
     # 1. Check existing content - do not regenerate if force is not true and
     # content already exists in title/summary
     logger.debug("Checking existing content before AI generation")
-    should_proceed = _check_existing_content(active_act, force, renderer)
+    should_proceed = _check_existing_content(active_act, force)
     if not should_proceed:
         logger.warning("AI completion cancelled by user during existing content check.")
         renderer.display_warning("Operation cancelled.")
@@ -1142,7 +1153,10 @@ def _handle_ai_completion(
     # Keep track of the initial CLI context for regeneration feedback
     original_context = context
     original_context_log = (
-        f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+        (
+            f"'{original_context[:100]}"
+            f"{'...' if original_context and len(original_context) > 100 else ''}'"
+        )
         if original_context
         else "None"
     )
@@ -1156,7 +1170,7 @@ def _handle_ai_completion(
             "collect from user."
         )
         logger.debug("[_handle_ai_completion] Calling _collect_user_context")
-        context = _collect_user_context(active_act, active_game.name, console, renderer)
+        context = _collect_user_context(active_act, active_game.name, console)
         context_log_after = (
             f"'{context[:100]}{'...' if context and len(context) > 100 else ''}'"
             if context
@@ -1204,7 +1218,10 @@ def _handle_ai_completion(
         # 5. Handle user feedback loop
         logger.debug("[_handle_ai_completion] Entering user feedback loop")
         original_context_log_before_loop = (
-            f"'{original_context[:100]}{'...' if original_context and len(original_context) > 100 else ''}'"
+            (
+                f"'{original_context[:100]}"
+                f"{'...' if original_context and len(original_context) > 100 else ''}"
+            )
             if original_context
             else "None"
         )
@@ -1263,7 +1280,6 @@ def _handle_manual_completion(
     active_act: Act,
     active_game: Game,
     console: "Console",
-    renderer: "Renderer",
 ) -> Optional[Act]:
     """Handles the manual act completion flow using the editor.
 
@@ -1272,7 +1288,6 @@ def _handle_manual_completion(
         active_act: The act being completed.
         active_game: The game the act belongs to.
         console: Rich console instance for editor.
-        renderer: Renderer instance for display.
 
     Returns:
         The completed Act object on success, or None if the editor is cancelled.
@@ -1379,7 +1394,8 @@ def complete_act(
     show_prompt: bool = typer.Option(
         False,
         "--show-prompt",
-        help="Show the prompt that would be sent to the AI without sending it (requires --ai)",
+        help="Show the prompt that would be sent to the AI without sending it "
+        "(requires --ai)",
     ),
 ) -> None:
     """[bold]Complete the current active act.[/bold]
@@ -1464,15 +1480,16 @@ def complete_act(
                     # Collect context if needed (similar logic to _handle_ai_completion)
                     if not context:
                         logger.debug(
-                            "[complete_act] No context provided via CLI for show-prompt, "
-                            "collecting from user."
+                            "[complete_act] No context provided via CLI for "
+                            "show-prompt, collecting from user."
                         )
                         context = _collect_user_context(
-                            active_act, active_game.name, console, renderer
+                            active_act, active_game.name, console
                         )
                         if context is None:
                             logger.warning(
-                                "[complete_act] Prompt display cancelled during user context collection."
+                                "[complete_act] Prompt display cancelled during user "
+                                "context collection."
                             )
                             raise typer.Exit(0)
                     try:
@@ -1518,7 +1535,7 @@ def complete_act(
                 logger.debug("[complete_act] Manual completion path chosen.")
                 logger.debug("[complete_act] Calling _handle_manual_completion")
                 completed_act = _handle_manual_completion(
-                    act_manager, active_act, active_game, console, renderer
+                    act_manager, active_act, active_game, console
                 )
                 logger.debug(
                     "[complete_act] _handle_manual_completion returned: "
@@ -1550,7 +1567,7 @@ def complete_act(
 
 
 def _collect_narrative_guidance(
-    act: Act, game: Game, console: "Console", renderer: "Renderer"
+    act: Act, game: Game, console: "Console"
 ) -> Optional[Dict[str, str]]:
     """Collect initial user guidance for AI narrative generation.
 
@@ -1561,7 +1578,6 @@ def _collect_narrative_guidance(
         act: The act for which the narrative is being generated.
         game: The game the act belongs to.
         console: The console instance for the editor.
-        renderer: The renderer instance for displaying messages.
 
     Returns:
         A dictionary containing the user's guidance, or None if the user cancels.
@@ -1584,8 +1600,8 @@ def _collect_narrative_guidance(
             name="point_of_view",
             display_name="Point of View",
             help_text=(
-                "Specify the narrative perspective (e.g., 'Third-person limited on protagonist', "
-                "'Omniscient narrator', 'First-person from character X')"
+                "Specify the narrative perspective (e.g., 'Third-person limited on "
+                "protagonist', 'Omniscient narrator', 'First-person from character X')"
             ),
             required=False,
             multiline=False,
@@ -1594,8 +1610,9 @@ def _collect_narrative_guidance(
             name="key_focus",
             display_name="Key Focus",
             help_text=(
-                "What aspects should the narrative emphasize? (e.g., 'Internal conflicts', "
-                "'The mystery element', 'Character relationships', 'World-building details')"
+                "What aspects should the narrative emphasize? (e.g., "
+                "'Internal conflicts', 'The mystery element', 'Character "
+                "relationships', 'World-building details')"
             ),
             required=False,
             multiline=True,
@@ -1604,8 +1621,9 @@ def _collect_narrative_guidance(
             name="other_instructions",
             display_name="Other Instructions",
             help_text=(
-                "Any other specific instructions for the AI (e.g., 'Include weather descriptions', "
-                "'Minimize dialogue', 'Start with a specific scene')"
+                "Any other specific instructions for the AI (e.g., "
+                "'Include weather descriptions', 'Minimize dialogue', "
+                "'Start with a specific scene')"
             ),
             required=False,
             multiline=True,
@@ -1620,7 +1638,8 @@ def _collect_narrative_guidance(
         f"Game: {game.name}\n"
         f"ID: {act.id}\n\n"
         "Provide guidance for the AI storyteller. The AI will use the act's scenes "
-        "and events, along with your instructions, to write a narrative in Markdown.\n\n"
+        "and events, along with your instructions, to write a narrative in "
+        "Markdown.\n\n"
         "You can leave any field empty if you don't have specific preferences."
     )
 
@@ -1730,7 +1749,7 @@ def generate_narrative(
         # Collect initial guidance (needed for both generation and showing prompt)
         logger.debug("Calling _collect_narrative_guidance")
         original_guidance = _collect_narrative_guidance(
-            active_act, active_game, console, renderer
+            active_act, active_game, console
         )
         if original_guidance is None:
             # Message already displayed by helper or editor
@@ -1825,7 +1844,6 @@ def generate_narrative(
                     active_act,
                     active_game,
                     console,
-                    renderer,
                     original_guidance,
                 )
                 if feedback_data:
@@ -1843,16 +1861,18 @@ def generate_narrative(
                             "Regenerating narrative with AI...", style="yellow"
                         )
                         logger.debug(
-                            f"Calling generate_act_narrative for regeneration (act {active_act.id})"
+                            f"Calling generate_act_narrative for regeneration "
+                            f"(act {active_act.id})"
                         )
                         new_narrative = act_manager.generate_act_narrative(
                             act_id=active_act.id,
-                            user_guidance=updated_guidance,  # Pass potentially updated guidance
+                            user_guidance=updated_guidance,
                             previous_narrative=current_narrative,
                             feedback=feedback,
                         )
                         logger.info(
-                            f"Narrative regenerated successfully for act {active_act.id}"
+                            f"Narrative regenerated successfully for act "
+                            f"{active_act.id}"
                         )
                         current_narrative = new_narrative
                         renderer.display_markdown(
@@ -1894,7 +1914,6 @@ def _collect_narrative_regeneration_feedback(
     act: Act,
     game: Game,
     console: "Console",
-    renderer: "Renderer",
     original_guidance: Optional[Dict[str, str]],
 ) -> Optional[Dict[str, str]]:
     """Collect feedback and updated guidance for regenerating an AI narrative.
@@ -1907,7 +1926,6 @@ def _collect_narrative_regeneration_feedback(
         act: The act for which the narrative is being generated.
         game: The game the act belongs to.
         console: The console instance for the editor.
-        renderer: The renderer instance for displaying messages.
         original_guidance: The guidance dictionary used for the previous generation.
 
     Returns:
@@ -1977,7 +1995,8 @@ def _collect_narrative_regeneration_feedback(
         f"Game: {game.name}\n"
         f"ID: {act.id}\n\n"
         "Provide feedback on the previous narrative and/or update the guidance below.\n"
-        "The AI will use your feedback and the updated guidance to generate a new narrative.\n\n"
+        "The AI will use your feedback and the updated guidance to generate a "
+        "new narrative.\n\n"
         "PREVIOUS NARRATIVE (Preview):\n"
         f"{textwrap.indent(preview_text, '  ')}\n\n"
         "---"  # Separator
@@ -2021,15 +2040,15 @@ def _collect_narrative_regeneration_feedback(
         ),
     )
     logger.debug(
-        f"[_collect_narrative_regeneration_feedback] Editor returned status: {status.name}, "
-        f"data: {result_data}"
+        f"[_collect_narrative_regeneration_feedback] Editor returned status: "
+        f"{status.name}, data: {result_data}"
     )
 
     # Check status
     if status not in (EditorStatus.SAVED_MODIFIED, EditorStatus.SAVED_UNCHANGED):
         logger.debug(
-            "[_collect_narrative_regeneration_feedback] User cancelled feedback collection "
-            f"(status: {status.name})"
+            "[_collect_narrative_regeneration_feedback] User cancelled feedback "
+            f"collection (status: {status.name})"
         )
         return None
 
